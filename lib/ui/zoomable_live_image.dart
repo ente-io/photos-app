@@ -3,6 +3,7 @@ import 'package:chewie/chewie.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:logging/logging.dart';
 import 'package:photos/core/constants.dart';
 import 'package:photos/models/file.dart';
@@ -33,16 +34,16 @@ class ZoomableLiveImage extends StatefulWidget {
 class _ZoomableLiveImageState extends State<ZoomableLiveImage>
     with SingleTickerProviderStateMixin {
   final Logger _logger = Logger("ZoomableLiveImage");
-  File _livePhoto;
-  bool _loadLivePhotoVideo = false;
+  File _file;
+  bool _showVideo = false;
+  bool _isLoadingVideoPlayer = false;
 
   VideoPlayerController _videoPlayerController;
   ChewieController _chewieController;
 
   @override
   void initState() {
-    _livePhoto = widget.photo;
-    _loadLiveVideo();
+    _file = widget.photo;
     _showLivePhotoToast();
     super.initState();
   }
@@ -54,7 +55,7 @@ class _ZoomableLiveImageState extends State<ZoomableLiveImage>
     }
     if (mounted) {
       setState(() {
-        _loadLivePhotoVideo = isPressed;
+        _showVideo = isPressed;
       });
     }
   }
@@ -62,10 +63,13 @@ class _ZoomableLiveImageState extends State<ZoomableLiveImage>
   @override
   Widget build(BuildContext context) {
     Widget content;
-    if (_loadLivePhotoVideo && _videoPlayerController != null) {
+    if(_showVideo && _videoPlayerController == null) {
+      _loadLiveVideo();
+    }
+    if (_showVideo && _videoPlayerController != null) {
       content = _getVideoPlayer();
     } else {
-      content = ZoomableImage(_livePhoto,
+      content = ZoomableImage(_file,
           tagPrefix: widget.tagPrefix,
           shouldDisableScroll: widget.shouldDisableScroll,
           backgroundDecoration: widget.backgroundDecoration);
@@ -101,7 +105,14 @@ class _ZoomableLiveImageState extends State<ZoomableLiveImage>
     return Chewie(controller: _chewieController);
   }
 
-  void _loadLiveVideo() {
+  void _loadLiveVideo() async {
+    if (_isLoadingVideoPlayer || _videoPlayerController != null) {
+      return;
+    }
+    _isLoadingVideoPlayer = true;
+    if (_file.isRemoteFile() && !(await isFileCached(_file, liveVideo: true))) {
+      showToast("downloading...", toastLength: Toast.LENGTH_LONG);
+    }
     // todo: add wrapper to download file from server if local is missing
     getFile(widget.photo, liveVideo: true).then((file) {
       if (file != null && file.existsSync()) {
@@ -109,7 +120,7 @@ class _ZoomableLiveImageState extends State<ZoomableLiveImage>
         _setVideoPlayerController(file: file);
       } else if (widget.photo.uploadedFileID != null) {
         _logger.fine("loading from remote");
-        getFileFromServer(widget.photo, liveVideo: true).then((file) {
+        return getFileFromServer(widget.photo, liveVideo: true).then((file) {
           if (file != null && file.existsSync()) {
             _setVideoPlayerController(file: file);
           } else {
@@ -117,7 +128,7 @@ class _ZoomableLiveImageState extends State<ZoomableLiveImage>
           }
         });
       }
-    });
+    }).whenComplete(() => _isLoadingVideoPlayer = false);
   }
 
   VideoPlayerController _setVideoPlayerController({io.File file}) {
@@ -125,7 +136,9 @@ class _ZoomableLiveImageState extends State<ZoomableLiveImage>
     return _videoPlayerController = videoPlayerController
       ..initialize().whenComplete(() {
         if (mounted) {
-          setState(() {});
+          setState(() {
+            _showVideo = true; // auto play the video on first load
+          });
         }
       });
   }

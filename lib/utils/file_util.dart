@@ -130,6 +130,15 @@ Future<io.File> getFileFromServer(
   return fileDownloadsInProgress[file.uploadedFileID];
 }
 
+Future<bool> isFileCached(ente.File file,
+    {bool liveVideo = false}) async {
+  final cacheManager = (file.fileType == FileType.video || liveVideo)
+      ? VideoCacheManager.instance
+      : DefaultCacheManager();
+  final fileInfo = await cacheManager.getFileFromCache(file.getDownloadUrl());
+  return fileInfo != null;
+}
+
 Future<io.File> _downloadLivePhoto(ente.File file,
     {ProgressCallback progressCallback, bool liveVideo = false}) async {
   return downloadAndDecrypt(file, progressCallback: progressCallback)
