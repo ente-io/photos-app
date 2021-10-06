@@ -98,8 +98,8 @@ void preloadThumbnail(ente.File file) {
   }
 }
 
-final Map<int, Future<io.File>> fileDownloadsInProgress =
-    Map<int, Future<io.File>>();
+final Map<String, Future<io.File>> fileDownloadsInProgress =
+    Map<String, Future<io.File>>();
 
 Future<io.File> getFileFromServer(
   ente.File file, {
@@ -109,27 +109,25 @@ Future<io.File> getFileFromServer(
   final cacheManager = (file.fileType == FileType.video || liveVideo)
       ? VideoCacheManager.instance
       : DefaultCacheManager();
-  return cacheManager.getFileFromCache(file.getDownloadUrl()).then((info) {
-    if (info == null) {
-      if (!fileDownloadsInProgress.containsKey(file.uploadedFileID)) {
-        if (file.fileType == FileType.livePhoto) {
-          fileDownloadsInProgress[file.uploadedFileID] = _downloadLivePhoto(
-              file,
-              progressCallback: progressCallback,
-              liveVideo: liveVideo);
-        } else {
-          fileDownloadsInProgress[file.uploadedFileID] = _downloadAndCache(
-            file,
-            cacheManager,
-            progressCallback: progressCallback,
-          );
-        }
-      }
-      return fileDownloadsInProgress[file.uploadedFileID];
+  final fileInfo = await cacheManager.getFileFromCache(file.getDownloadUrl());
+  if (fileInfo != null) {
+    return fileInfo.file;
+  }
+  final String downloadID = file.uploadedFileID.toString() + liveVideo.toString();
+  if (!fileDownloadsInProgress.containsKey(file.uploadedFileID)) {
+    if (file.fileType == FileType.livePhoto) {
+      fileDownloadsInProgress[downloadID] = _downloadLivePhoto(file,
+              progressCallback: progressCallback, liveVideo: liveVideo)
+          .whenComplete(() => fileDownloadsInProgress.remove(downloadID));
     } else {
-      return info.file;
+      fileDownloadsInProgress[downloadID] = _downloadAndCache(
+        file,
+        cacheManager,
+        progressCallback: progressCallback,
+      ).whenComplete(() => fileDownloadsInProgress.remove(downloadID));
     }
-  });
+  }
+  return fileDownloadsInProgress[file.uploadedFileID];
 }
 
 Future<io.File> _downloadLivePhoto(ente.File file,
@@ -189,11 +187,10 @@ Future<io.File> _downloadLivePhoto(ente.File file,
         }
       }
     }
-    fileDownloadsInProgress.remove(file.uploadedFileID);
     return liveVideo ? videoFileCache : imageFileCache;
   }).catchError((e) {
-    fileDownloadsInProgress.remove(file.uploadedFileID);
     _logger.warning("failed to download live photos" + e.toString());
+    throw e;
   });
 }
 
@@ -224,10 +221,10 @@ Future<io.File> _downloadAndCache(ente.File file, BaseCacheManager cacheManager,
       fileExtension: fileExtension,
     );
     await outputFile.delete();
-    fileDownloadsInProgress.remove(file.uploadedFileID);
     return cachedFile;
   }).catchError((e) {
-    fileDownloadsInProgress.remove(file.uploadedFileID);
+    _logger.warning("failed to download file" + e.toString());
+    throw e;
   });
 }
 
