@@ -18,6 +18,7 @@ import 'package:photos/events/trigger_logout_event.dart';
 import 'package:photos/models/backup_status.dart';
 import 'package:photos/models/file_type.dart';
 import 'package:photos/services/local_sync_service.dart';
+import 'package:photos/services/ml_service.dart';
 import 'package:photos/services/notification_service.dart';
 import 'package:photos/services/remote_sync_service.dart';
 import 'package:photos/utils/file_uploader.dart';
@@ -217,6 +218,7 @@ class SyncService {
       if (shouldSync) {
         await _remoteSyncService.sync();
       }
+      await MLService.instance.sync();
     }
   }
 
