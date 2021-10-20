@@ -7,6 +7,7 @@ import 'package:google_ml_kit/google_ml_kit.dart';
 import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:photo_manager/photo_manager.dart';
+import 'package:photos/core/configuration.dart';
 import 'package:photos/core/constants.dart';
 import 'package:photos/db/files_db.dart';
 import 'package:photos/utils/thumbnail_util.dart';
@@ -20,7 +21,10 @@ class MLService {
   bool _isBackground = false;
   SharedPreferences _prefs;
 
-  final faceDetector = GoogleMlKit.vision.faceDetector();
+  final faceDetector = GoogleMlKit.vision
+      .faceDetector(FaceDetectorOptions(mode: FaceDetectorMode.accurate));
+  final imageLabeler = GoogleMlKit.vision.imageLabeler();
+  final textDetector = GoogleMlKit.vision.textDetector();
 
   MLService._privateConstructor();
 
@@ -36,43 +40,62 @@ class MLService {
   }
 
   Future<void> sync() async {
-    final files = await _db.getLatestCollectionFiles();
-    for (final file in files) {
+    final fileLoadResult = await _db.getAllUploadedFiles(
+        0,
+        DateTime.now().microsecondsSinceEpoch,
+        Configuration.instance.getUserID(),
+        limit: 15);
+    for (final file in fileLoadResult.files) {
       await _syncFile(file);
     }
+  }
+
+  // TODO: Remove once MLKit plugin is modified to get inmemory image
+  Future<io.File> getTempFile(File file, Uint8List thumbData) async {
+    io.Directory tempDir = await getTemporaryDirectory();
+    String tempFileName = (file.title ?? file.uploadedFileID); //uuid.v1();
+    tempFileName = tempFileName.replaceAll("/", "-");
+    // _logger.fine(
+    // "Creating Temp file for ${file.localID} - ${file.uploadedFileID} - $uuidStr in ${tempDir.path}");
+    String tempPath = '${tempDir.path}/$tempFileName.jpeg';
+    io.File tempFile = io.File(tempPath);
+    tempFile.writeAsBytesSync(thumbData);
+    return tempFile;
   }
 
   Future<void> _syncFile(File file) async {
     Uint8List thumbData;
     if (file.isRemoteFile()) {
       thumbData = await getThumbnailFromServer(file);
+      // _logger
+      // .fine("Remote File: ${file.title}, thumbSize: ${thumbData.length}");
     } else {
       // TODO: kThumbnailQuality = 50 may be less for some models
       thumbData = await getThumbnailFromLocal(file,
           size: kThumbnailLargeSize); //, updateCache: false
+      // _logger.fine("Local File: ${file.title}, thumbSize: ${thumbData.length}");
     }
 
-    io.Directory tempDir = await getTemporaryDirectory();
-    String tempPath = '${tempDir.path}/${file.localID ?? file.uploadedFileID}';
-    io.File tempFile = io.File(tempPath);
-    tempFile.writeAsBytesSync(thumbData);
-    await _sync(tempPath);
-    tempFile.deleteSync();
+    final thumbnailFile = await getTempFile(file, thumbData);
+    await _sync(file, thumbnailFile.path);
+    thumbnailFile.deleteSync();
   }
 
-  Future<void> _sync(String cacheThumbnailPath) async {
-    _logger.info("Syncing ML state for photo $cacheThumbnailPath");
-    final inputImage = InputImage.fromFilePath(cacheThumbnailPath);
+  Future<void> _sync(File file, String thumbnailPath) async {
+    // _logger.fine("Syncing ML state for photo $cacheThumbnailPath");
+    final inputImage = InputImage.fromFilePath(thumbnailPath);
 
     final startTime = DateTime.now();
 
     final List<Face> faces = await faceDetector.processImage(inputImage);
+    final List<ImageLabel> labels = await imageLabeler.processImage(inputImage);
+    final recognisedText = await textDetector.processImage(inputImage);
 
     final endTime = DateTime.now();
     final duration = Duration(
         microseconds:
             endTime.microsecondsSinceEpoch - startTime.microsecondsSinceEpoch);
     _logger.info(
-        "Detected ${faces.length} faces in $cacheThumbnailPath, time taken: ${duration.inMilliseconds}ms");
+        "Detected ${faces.length} faces, ${labels.map((e) => e.label)} labels, '${recognisedText.blocks.map((e) => e.lines.map((l) => l.text))}' text in ${file.isRemoteFile() ? "Remote" : "Local"} file ${file.title}, time taken: ${duration.inMilliseconds}ms");
   }
 }
