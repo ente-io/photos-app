@@ -10,6 +10,7 @@ import 'package:photo_manager/photo_manager.dart';
 import 'package:photos/core/configuration.dart';
 import 'package:photos/core/constants.dart';
 import 'package:photos/db/files_db.dart';
+import 'package:photos/services/file_magic_service.dart';
 import 'package:photos/utils/thumbnail_util.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:photos/models/file.dart';
@@ -48,6 +49,8 @@ class MLService {
     for (final file in fileLoadResult.files) {
       await _syncFile(file);
     }
+
+    // Bus.instance.fire(ForceReloadHomeGalleryEvent());
   }
 
   // TODO: Remove once MLKit plugin is modified to get inmemory image
@@ -81,21 +84,38 @@ class MLService {
     thumbnailFile.deleteSync();
   }
 
+  Future<List<Face>> detectFaces(InputImage inputImage) {
+    return faceDetector.processImage(inputImage);
+  }
+
+  Future<List<ImageLabel>> detectLabels(InputImage inputImage) {
+    return imageLabeler.processImage(inputImage);
+  }
+
+  Future<RecognisedText> detectText(InputImage inputImage) {
+    return textDetector.processImage(inputImage);
+  }
+
   Future<void> _sync(File file, String thumbnailPath) async {
     // _logger.fine("Syncing ML state for photo $cacheThumbnailPath");
     final inputImage = InputImage.fromFilePath(thumbnailPath);
 
     final startTime = DateTime.now();
 
-    final List<Face> faces = await faceDetector.processImage(inputImage);
-    final List<ImageLabel> labels = await imageLabeler.processImage(inputImage);
-    final recognisedText = await textDetector.processImage(inputImage);
+    final List<Face> faces = await detectFaces(inputImage);
+    final List<ImageLabel> labels = await detectLabels(inputImage);
+    final recognisedText = await detectText(inputImage);
 
     final endTime = DateTime.now();
     final duration = Duration(
         microseconds:
             endTime.microsecondsSinceEpoch - startTime.microsecondsSinceEpoch);
-    _logger.info(
-        "Detected ${faces.length} faces, ${labels.map((e) => e.label)} labels, '${recognisedText.blocks.map((e) => e.lines.map((l) => l.text))}' text in ${file.isRemoteFile() ? "Remote" : "Local"} file ${file.title}, time taken: ${duration.inMilliseconds}ms");
+    _logger.info("Detected ${faces.length} faces, " +
+        "with boundingBoxes: ${faces.map((f) => f.boundingBox)}, " +
+        "lables: ${labels.map((l) => l.label)}, " +
+        "textBlocks: ${recognisedText.blocks.map((b) => b.lines.map((l) => l.text))}" +
+        "in ${file.isRemoteFile() ? "Remote" : "Local"} file ${file.title}, " +
+        "time taken: ${duration.inMilliseconds}ms");
+    await FileMagicService.instance.updateDetectedMLKitV1Faces(file, faces);
   }
 }

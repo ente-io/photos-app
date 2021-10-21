@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_sodium/flutter_sodium.dart';
+import 'package:google_ml_kit/google_ml_kit.dart';
 import 'package:logging/logging.dart';
 import 'package:photos/core/event_bus.dart';
 import 'package:photos/core/network.dart';
@@ -40,6 +41,21 @@ class FileMagicService {
       // Force reload home gallery to pull in the now unarchived files
       Bus.instance.fire(ForceReloadHomeGalleryEvent());
     }
+  }
+
+  Future<void> updateDetectedMLKitV1Faces(File file, List<Face> faces) async {
+    Map<String, dynamic> update = {};
+    final faceBoxes = <Map<String, dynamic>>[];
+    for (final face in faces) {
+      faceBoxes.add(FaceBoundingBox(
+              left: face.boundingBox.left,
+              top: face.boundingBox.top,
+              right: face.boundingBox.right,
+              bottom: face.boundingBox.bottom)
+          .toJson());
+    }
+    update[kMagicKeyMLKitV1Faces] = faceBoxes;
+    await _updateMagicData([file], update);
   }
 
   Future<void> _updateMagicData(
