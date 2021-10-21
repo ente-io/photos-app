@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'dart:io' as io;
 import 'dart:typed_data';
+import 'dart:ui' as ui show Image;
+import 'dart:ui';
 
 import 'package:computer/computer.dart';
+import 'package:flutter/material.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
 import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
@@ -79,9 +82,40 @@ class MLService {
       // _logger.fine("Local File: ${file.title}, thumbSize: ${thumbData.length}");
     }
 
-    final thumbnailFile = await getTempFile(file, thumbData);
-    await _sync(file, thumbnailFile.path);
-    thumbnailFile.deleteSync();
+    // final thumbImage = await decodeImageFromList(thumbData);
+    // final thumbnail = await fromThumbImage(thumbImage);
+    // await _sync(file, thumbnail);
+
+    // final thumbnailFile = await getTempFile(file, thumbData);
+    // final thumbnail = fromThumbFile(thumbnailFile);
+    // await _sync(file, thumbnail);
+    // thumbnailFile.deleteSync();
+
+    final thumbnail = fromThumbData(thumbData);
+    await _sync(file, thumbnail);
+  }
+
+  InputImage fromThumbData(Uint8List thumbData) {
+    return InputImage.fromFileBytes(bytes: thumbData);
+  }
+
+  InputImage fromThumbFile(io.File thumbnailFile) {
+    return InputImage.fromFile(thumbnailFile);
+  }
+
+  Future<InputImage> fromThumbImage(ui.Image thumbImage) async {
+    InputImagePlaneMetadata metadata = InputImagePlaneMetadata(
+        bytesPerRow: thumbImage.width * thumbImage.height * 4);
+    InputImageData data = InputImageData(
+        inputImageFormat: InputImageFormat.BGRA8888,
+        size: Size(thumbImage.width as double, thumbImage.height as double),
+        imageRotation: InputImageRotation.Rotation_0deg,
+        planeData: [metadata]);
+    final rgbaThumbData =
+        await thumbImage.toByteData(format: ImageByteFormat.rawRgba);
+    final rgbaThumbList = rgbaThumbData.buffer
+        .asUint8List(rgbaThumbData.offsetInBytes, rgbaThumbData.lengthInBytes);
+    return InputImage.fromBytes(bytes: rgbaThumbList, inputImageData: data);
   }
 
   Future<List<Face>> detectFaces(InputImage inputImage) {
@@ -96,15 +130,13 @@ class MLService {
     return textDetector.processImage(inputImage);
   }
 
-  Future<void> _sync(File file, String thumbnailPath) async {
+  Future<void> _sync(File file, InputImage thumbnail) async {
     // _logger.fine("Syncing ML state for photo $cacheThumbnailPath");
-    final inputImage = InputImage.fromFilePath(thumbnailPath);
-
     final startTime = DateTime.now();
 
-    final List<Face> faces = await detectFaces(inputImage);
-    final List<ImageLabel> labels = await detectLabels(inputImage);
-    final recognisedText = await detectText(inputImage);
+    final List<Face> faces = await detectFaces(thumbnail);
+    final List<ImageLabel> labels = await detectLabels(thumbnail);
+    final recognisedText = await detectText(thumbnail);
 
     final endTime = DateTime.now();
     final duration = Duration(
