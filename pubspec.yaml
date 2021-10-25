@@ -103,6 +103,9 @@ dependencies:
   visibility_detector: ^0.2.0
   wallpaper_manager_flutter: ^0.0.2
   google_ml_kit: ^0.7.2
+  tflite_flutter: ^0.9.0
+  tflite_flutter_helper: ^0.3.0
+  simple_cluster: ^0.3.0
 
 dependency_overrides:
   provider: ^6.0.1 # for chewie 1.2.2 https://github.com/brianegan/chewie/issues/530
