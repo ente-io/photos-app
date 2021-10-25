@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_sodium/flutter_sodium.dart';
 import 'package:photos/core/configuration.dart';
 import 'package:photos/core/network.dart';
+import 'package:photos/ui/ml_debug_page.dart';
 import 'package:photos/ui/settings/settings_section_title.dart';
 import 'package:photos/ui/settings/settings_text_item.dart';
+import 'package:photos/utils/navigation_util.dart';
 
 class DebugSectionWidget extends StatelessWidget {
   const DebugSectionWidget({Key key}) : super(key: key);
@@ -28,6 +30,16 @@ class DebugSectionWidget extends StatelessWidget {
         },
         child: SettingsTextItem(
             text: "network requests", icon: Icons.navigate_next),
+      ),
+      GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () async {
+          routeToPage(
+            context,
+            MLDebugPage(),
+          );
+        },
+        child: SettingsTextItem(text: "ML Debug", icon: Icons.navigate_next),
       )
     ]);
   }
