@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 class SetRecoveryKeyRequest {
-  final String masterKeyEncryptedWithRecoveryKey;
-  final String masterKeyDecryptionNonce;
-  final String recoveryKeyEncryptedWithMasterKey;
-  final String recoveryKeyDecryptionNonce;
+  final String? masterKeyEncryptedWithRecoveryKey;
+  final String? masterKeyDecryptionNonce;
+  final String? recoveryKeyEncryptedWithMasterKey;
+  final String? recoveryKeyDecryptionNonce;
 
   SetRecoveryKeyRequest(
     this.masterKeyEncryptedWithRecoveryKey,

@@ -31,13 +31,13 @@ class TrashDiffFetcher {
       final restoredFiles = <TrashFile>[];
       if (response != null) {
         final diff = response.data["diff"] as List;
-        final bool hasMore = response.data["hasMore"] as bool;
+        final bool? hasMore = response.data["hasMore"] as bool?;
         final startTime = DateTime.now();
         for (final item in diff) {
           final trash = TrashFile();
           trash.createdAt = item['createdAt'];
           trash.updateAt = item['updatedAt'];
-          latestUpdatedAtTime = max(latestUpdatedAtTime, trash.updateAt);
+          latestUpdatedAtTime = max(latestUpdatedAtTime, trash.updateAt!);
           trash.deleteBy = item['deleteBy'];
           trash.uploadedFileID = item["file"]["id"];
           trash.collectionID = item["file"]["collectionID"];
@@ -54,7 +54,7 @@ class TrashDiffFetcher {
           final encodedMetadata = await CryptoUtil.decryptChaCha(
             Sodium.base642bin(item["file"]["metadata"]["encryptedData"]),
             fileDecryptionKey,
-            Sodium.base642bin(trash.metadataDecryptionHeader),
+            Sodium.base642bin(trash.metadataDecryptionHeader!),
           );
           Map<String, dynamic> metadata =
               jsonDecode(utf8.decode(encodedMetadata));
@@ -75,7 +75,7 @@ class TrashDiffFetcher {
             trash.pubMmdEncodedJson = utf8.decode(utfEncodedMmd);
             trash.pubMmdVersion = item["file"]['pubMagicMetadata']['version'];
             trash.pubMagicMetadata =
-                PubMagicMetadata.fromEncodedJson(trash.pubMmdEncodedJson);
+                PubMagicMetadata.fromEncodedJson(trash.pubMmdEncodedJson!);
           }
           if (item["isDeleted"]) {
             deletedFiles.add(trash);
@@ -113,7 +113,7 @@ class Diff {
   final List<TrashFile> trashedFiles;
   final List<TrashFile> restoredFiles;
   final List<TrashFile> deletedFiles;
-  final bool hasMore;
+  final bool? hasMore;
   final int lastSyncedTimeStamp;
 
   Diff(this.trashedFiles, this.restoredFiles, this.deletedFiles, this.hasMore,

@@ -26,7 +26,7 @@ enum PasswordEntryMode {
 class PasswordEntryPage extends StatefulWidget {
   final PasswordEntryMode mode;
 
-  PasswordEntryPage({this.mode = PasswordEntryMode.set, Key key})
+  PasswordEntryPage({this.mode = PasswordEntryMode.set, Key? key})
       : super(key: key);
 
   @override
@@ -40,7 +40,7 @@ class _PasswordEntryPageState extends State<PasswordEntryPage> {
   final _passwordController1 = TextEditingController(),
       _passwordController2 = TextEditingController();
   double _passwordStrength = 0;
-  String _password;
+  String? _password;
   bool _password1Visible = false;
   bool _password2Visible = false;
   final _password1FocusNode = FocusNode();
@@ -53,7 +53,7 @@ class _PasswordEntryPageState extends State<PasswordEntryPage> {
     super.initState();
     _password = Configuration.instance.getVolatilePassword();
     if (_password != null) {
-      Future.delayed(Duration.zero, () => _showRecoveryCodeDialog(_password));
+      Future.delayed(Duration.zero, () => _showRecoveryCodeDialog(_password!));
     }
     _password1FocusNode.addListener(() {
       setState(() {
@@ -100,7 +100,7 @@ class _PasswordEntryPageState extends State<PasswordEntryPage> {
           strengthCallback: (strength) {
             _passwordStrength = strength;
           },
-          strengthColors: passwordStrengthColors,
+          strengthColors: passwordStrengthColors as Animatable<Color>?,
         ),
         SingleChildScrollView(
           child: Container(

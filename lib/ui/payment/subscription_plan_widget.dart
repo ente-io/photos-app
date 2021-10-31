@@ -4,20 +4,20 @@ import 'package:photos/utils/data_util.dart';
 
 class SubscriptionPlanWidget extends StatelessWidget {
   const SubscriptionPlanWidget({
-    Key key,
-    @required this.storage,
-    @required this.price,
-    @required this.period,
+    Key? key,
+    required this.storage,
+    required this.price,
+    required this.period,
     this.isActive = false,
   }) : super(key: key);
 
-  final int storage;
-  final String price;
-  final String period;
+  final int? storage;
+  final String? price;
+  final String? period;
   final bool isActive;
 
   String _displayPrice() {
-    var result = price + (period.isNotEmpty ? " per " + period : "");
+    var result = price! + (period!.isNotEmpty ? " per " + period! : "");
     return result.isNotEmpty ? result : "free";
   }
 
@@ -42,7 +42,7 @@ class SubscriptionPlanWidget extends StatelessWidget {
                     child: Column(
                       children: [
                         Text(
-                          convertBytesToReadableFormat(storage),
+                          convertBytesToReadableFormat(storage!),
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,

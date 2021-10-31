@@ -16,7 +16,7 @@ import 'package:photos/utils/toast_util.dart';
 class DeduplicatePage extends StatefulWidget {
   final List<DuplicateFiles> duplicates;
 
-  DeduplicatePage(this.duplicates, {Key key}) : super(key: key);
+  DeduplicatePage(this.duplicates, {Key? key}) : super(key: key);
 
   @override
   _DeduplicatePageState createState() => _DeduplicatePageState();
@@ -50,7 +50,7 @@ class _DeduplicatePageState extends State<DeduplicatePage> {
   );
 
   final Set<File> _selectedFiles = <File>{};
-  final Map<int, int> _fileSizeMap = {};
+  final Map<int?, int?> _fileSizeMap = {};
 
   SortKey sortKey = SortKey.size;
 
@@ -95,13 +95,13 @@ class _DeduplicatePageState extends State<DeduplicatePage> {
   void _sortDuplicates() {
     widget.duplicates.sort((first, second) {
       if (sortKey == SortKey.size) {
-        final aSize = first.files.length * first.size;
-        final bSize = second.files.length * second.size;
+        final aSize = first.files.length * first.size!;
+        final bSize = second.files.length * second.size!;
         return bSize - aSize;
       } else if (sortKey == SortKey.count) {
         return second.files.length - first.files.length;
       } else {
-        return second.files.first.creationTime - first.files.first.creationTime;
+        return second.files.first.creationTime! - first.files.first.creationTime!;
       }
     });
   }
@@ -239,7 +239,7 @@ class _DeduplicatePageState extends State<DeduplicatePage> {
     }
     int size = 0;
     for (final file in _selectedFiles) {
-      size += _fileSizeMap[file.uploadedFileID];
+      size += _fileSizeMap[file.uploadedFileID]!;
     }
     return SizedBox(
       width: double.infinity,
@@ -344,7 +344,7 @@ class _DeduplicatePageState extends State<DeduplicatePage> {
           border: _selectedFiles.contains(file)
               ? Border.all(
                   width: 3,
-                  color: Colors.red[700],
+                  color: Colors.red[700]!,
                 )
               : null,
         ),

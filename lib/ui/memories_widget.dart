@@ -12,19 +12,19 @@ import 'package:photos/utils/navigation_util.dart';
 import 'package:photos/utils/share_util.dart';
 
 class MemoriesWidget extends StatelessWidget {
-  const MemoriesWidget({Key key}) : super(key: key);
+  const MemoriesWidget({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<Memory>>(
+    return FutureBuilder<List<Memory>?>(
       future: MemoriesService.instance.getMemories(),
       builder: (context, snapshot) {
-        if (snapshot.hasError || !snapshot.hasData || snapshot.data.isEmpty) {
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
           return Container();
         } else {
           return Padding(
             padding: const EdgeInsets.all(8.0),
-            child: _buildMemories(snapshot.data),
+            child: _buildMemories(snapshot.data!),
           );
         }
       },
@@ -64,17 +64,17 @@ class MemoriesWidget extends StatelessWidget {
 
   bool _areMemoriesFromSameYear(Memory first, Memory second) {
     var firstDate =
-        DateTime.fromMicrosecondsSinceEpoch(first.file.creationTime);
+        DateTime.fromMicrosecondsSinceEpoch(first.file.creationTime!);
     var secondDate =
-        DateTime.fromMicrosecondsSinceEpoch(second.file.creationTime);
+        DateTime.fromMicrosecondsSinceEpoch(second.file.creationTime!);
     return firstDate.year == secondDate.year;
   }
 }
 
 class MemoryWidget extends StatefulWidget {
   const MemoryWidget({
-    Key key,
-    @required this.memories,
+    Key? key,
+    required this.memories,
   }) : super(key: key);
 
   final List<Memory> memories;
@@ -178,7 +178,7 @@ class _MemoryWidgetState extends State<MemoryWidget> {
 
   String _getTitle(Memory memory) {
     final present = DateTime.now();
-    final then = DateTime.fromMicrosecondsSinceEpoch(memory.file.creationTime);
+    final then = DateTime.fromMicrosecondsSinceEpoch(memory.file.creationTime!);
     final diffInYears = present.year - then.year;
     if (diffInYears == 1) {
       return "1 year ago";
@@ -193,7 +193,7 @@ class FullScreenMemory extends StatefulWidget {
   final List<Memory> memories;
   final int index;
 
-  FullScreenMemory(this.title, this.memories, this.index, {Key key})
+  FullScreenMemory(this.title, this.memories, this.index, {Key? key})
       : super(key: key);
 
   @override
@@ -203,7 +203,7 @@ class FullScreenMemory extends StatefulWidget {
 class _FullScreenMemoryState extends State<FullScreenMemory> {
   int _index = 0;
   double _opacity = 1;
-  PageController _pageController;
+  PageController? _pageController;
   bool _shouldDisableScroll = false;
 
   @override
@@ -226,7 +226,7 @@ class _FullScreenMemoryState extends State<FullScreenMemory> {
     return Scaffold(
       appBar: AppBar(
         title: Text(getFormattedDate(
-            DateTime.fromMicrosecondsSinceEpoch(file.creationTime))),
+            DateTime.fromMicrosecondsSinceEpoch(file.creationTime!))),
         backgroundColor: Color(0x00000000),
         elevation: 0,
         actions: [

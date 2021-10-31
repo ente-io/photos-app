@@ -18,8 +18,8 @@ import 'package:photos/utils/file_uploader_util.dart';
 import 'package:photos/utils/file_util.dart';
 
 final _logger = Logger("ThumbnailUtil");
-final _map = <int, FileDownloadItem>{};
-final _queue = Queue<int>();
+final _map = <int?, FileDownloadItem>{};
+final _queue = Queue<int?>();
 const int kMaximumConcurrentDownloads = 500;
 
 class FileDownloadItem {
@@ -41,7 +41,7 @@ Future<Uint8List> getThumbnailFromServer(File file) async {
   if (!_map.containsKey(file.uploadedFileID)) {
     if (_queue.length > kMaximumConcurrentDownloads) {
       final id = _queue.removeFirst();
-      final item = _map.remove(id);
+      final item = _map.remove(id)!;
       item.cancelToken.cancel();
       item.completer.completeError(RequestCancelledError());
     }
@@ -52,12 +52,12 @@ Future<Uint8List> getThumbnailFromServer(File file) async {
     _downloadItem(item);
     return item.completer.future;
   } else {
-    _map[file.uploadedFileID].counter++;
-    return _map[file.uploadedFileID].completer.future;
+    _map[file.uploadedFileID]!.counter++;
+    return _map[file.uploadedFileID]!.completer.future;
   }
 }
 
-Future<Uint8List> getThumbnailFromLocal(File file,
+Future<Uint8List?> getThumbnailFromLocal(File file,
     {int size = kThumbnailSmallSize, int quality = kThumbnailQuality}) async {
   final lruCachedThumbnail = ThumbnailLruCache.get(file, size);
   if (lruCachedThumbnail != null) {
@@ -92,7 +92,7 @@ Future<Uint8List> getThumbnailFromLocal(File file,
 
 void removePendingGetThumbnailRequestIfAny(File file) {
   if (_map.containsKey(file.uploadedFileID)) {
-    final item = _map[file.uploadedFileID];
+    final item = _map[file.uploadedFileID]!;
     item.counter--;
     if (item.counter <= 0) {
       _map.remove(file.uploadedFileID);
@@ -116,7 +116,7 @@ void _downloadItem(FileDownloadItem item) async {
 
 Future<void> _downloadAndDecryptThumbnail(FileDownloadItem item) async {
   final file = item.file;
-  Uint8List encryptedThumbnail;
+  Uint8List? encryptedThumbnail;
   try {
     encryptedThumbnail = (await Network.instance.getDio().get(
               file.getThumbnailUrl(),
@@ -140,7 +140,7 @@ Future<void> _downloadAndDecryptThumbnail(FileDownloadItem item) async {
   var data = await CryptoUtil.decryptChaCha(
     encryptedThumbnail,
     thumbnailDecryptionKey,
-    Sodium.base642bin(file.thumbnailDecryptionHeader),
+    Sodium.base642bin(file.thumbnailDecryptionHeader!),
   );
   final thumbnailSize = data.length;
   if (thumbnailSize > kThumbnailDataLimit) {

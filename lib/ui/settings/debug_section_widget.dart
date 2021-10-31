@@ -6,7 +6,7 @@ import 'package:photos/ui/settings/settings_section_title.dart';
 import 'package:photos/ui/settings/settings_text_item.dart';
 
 class DebugSectionWidget extends StatelessWidget {
-  const DebugSectionWidget({Key key}) : super(key: key);
+  const DebugSectionWidget({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +24,7 @@ class DebugSectionWidget extends StatelessWidget {
       GestureDetector(
         behavior: HitTestBehavior.translucent,
         onTap: () async {
-          Network.instance.getAlice().showInspector();
+          Network.instance.getAlice()!.showInspector();
         },
         child: SettingsTextItem(
             text: "network requests", icon: Icons.navigate_next),
@@ -33,23 +33,23 @@ class DebugSectionWidget extends StatelessWidget {
   }
 
   void _showKeyAttributesDialog(BuildContext context) {
-    final keyAttributes = Configuration.instance.getKeyAttributes();
+    final keyAttributes = Configuration.instance.getKeyAttributes()!;
     AlertDialog alert = AlertDialog(
       title: Text("key attributes"),
       content: SingleChildScrollView(
         child: Column(children: [
           Text("Key", style: TextStyle(fontWeight: FontWeight.bold)),
-          Text(Sodium.bin2base64(Configuration.instance.getKey())),
+          Text(Sodium.bin2base64(Configuration.instance.getKey()!)),
           Padding(padding: EdgeInsets.all(12)),
           Text("Encrypted Key", style: TextStyle(fontWeight: FontWeight.bold)),
-          Text(keyAttributes.encryptedKey),
+          Text(keyAttributes.encryptedKey!),
           Padding(padding: EdgeInsets.all(12)),
           Text("Key Decryption Nonce",
               style: TextStyle(fontWeight: FontWeight.bold)),
-          Text(keyAttributes.keyDecryptionNonce),
+          Text(keyAttributes.keyDecryptionNonce!),
           Padding(padding: EdgeInsets.all(12)),
           Text("KEK Salt", style: TextStyle(fontWeight: FontWeight.bold)),
-          Text(keyAttributes.kekSalt),
+          Text(keyAttributes.kekSalt!),
           Padding(padding: EdgeInsets.all(12)),
         ]),
       ),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-Future<T> routeToPage<T extends Object>(BuildContext context, Widget page) {
+Future<T?> routeToPage<T extends Object>(BuildContext context, Widget page) {
   return Navigator.of(context).push(
     _buildPageRoute(page),
   );

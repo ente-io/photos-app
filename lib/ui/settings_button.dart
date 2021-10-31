@@ -4,7 +4,7 @@ import 'package:photos/ui/settings_page.dart';
 import 'package:photos/utils/navigation_util.dart';
 
 class SettingsButton extends StatelessWidget {
-  const SettingsButton({Key key}) : super(key: key);
+  const SettingsButton({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

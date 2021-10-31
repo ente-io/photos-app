@@ -9,20 +9,20 @@ import 'package:photos/ui/zoomable_live_image.dart';
 
 class FileWidget extends StatelessWidget {
   final File file;
-  final String tagPrefix;
-  final Function(bool) shouldDisableScroll;
-  final Function(bool) playbackCallback;
-  final BoxDecoration backgroundDecoration;
-  final bool autoPlay;
+  final String? tagPrefix;
+  final Function(bool)? shouldDisableScroll;
+  final Function(bool)? playbackCallback;
+  final BoxDecoration? backgroundDecoration;
+  final bool? autoPlay;
 
   const FileWidget(
-    this.file, {
+    @required this.file, {
     this.autoPlay,
     this.shouldDisableScroll,
     this.playbackCallback,
     this.tagPrefix,
     this.backgroundDecoration,
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override

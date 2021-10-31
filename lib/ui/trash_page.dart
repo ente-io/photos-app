@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart' show IterableExtension;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:photos/core/event_bus.dart';
@@ -17,7 +18,7 @@ class TrashPage extends StatelessWidget {
   TrashPage({
     this.tagPrefix = "trash_page",
     this.appBarType = GalleryAppBarType.trash,
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override
@@ -30,9 +31,8 @@ class TrashPage extends StatelessWidget {
       },
       reloadEvent: Bus.instance.on<FilesUpdatedEvent>().where(
             (event) =>
-                event.updatedFiles.firstWhere(
-                    (element) => element.uploadedFileID != null,
-                    orElse: () => null) !=
+                event.updatedFiles.firstWhereOrNull(
+                    (element) => element.uploadedFileID != null) !=
                 null,
           ),
       forceReloadEvents: [
@@ -58,7 +58,7 @@ class TrashPage extends StatelessWidget {
   }
 
   Widget _headerWidget() {
-    return FutureBuilder<TrashFile>(
+    return FutureBuilder<TrashFile?>(
       future: TrashDB.instance.getRecentlyTrashedFile(),
       builder: (context, snapshot) {
         if (snapshot.hasData) {

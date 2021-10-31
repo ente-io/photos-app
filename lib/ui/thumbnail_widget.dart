@@ -17,31 +17,31 @@ import 'package:photos/utils/file_util.dart';
 import 'package:photos/utils/thumbnail_util.dart';
 
 class ThumbnailWidget extends StatefulWidget {
-  final File file;
+  final File? file;
   final BoxFit fit;
   final bool shouldShowSyncStatus;
   final bool shouldShowLivePhotoOverlay;
-  final Duration diskLoadDeferDuration;
-  final Duration serverLoadDeferDuration;
+  final Duration? diskLoadDeferDuration;
+  final Duration? serverLoadDeferDuration;
 
   ThumbnailWidget(
     this.file, {
-    Key key,
+    Key? key,
     this.fit = BoxFit.cover,
     this.shouldShowSyncStatus = true,
     this.shouldShowLivePhotoOverlay = false,
     this.diskLoadDeferDuration,
     this.serverLoadDeferDuration,
-  }) : super(key: key ?? Key(file.tag()));
+  }) : super(key: key ?? Key(file!.tag()));
 
   @override
   _ThumbnailWidgetState createState() => _ThumbnailWidgetState();
 }
 
-Widget getFileInfoContainer(File file) {
+Widget getFileInfoContainer(File? file) {
   if (file is TrashFile) {
     return Container(
-      child: Text(daysLeft(file.deleteBy)),
+      child: Text(daysLeft(file.deleteBy!)),
       alignment: Alignment.bottomCenter,
       padding: EdgeInsets.fromLTRB(0, 0, 0, 5),
     );
@@ -108,7 +108,7 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
   bool _errorLoadingLocalThumbnail = false;
   bool _isLoadingRemoteThumbnail = false;
   bool _errorLoadingRemoteThumbnail = false;
-  ImageProvider _imageProvider;
+  ImageProvider? _imageProvider;
 
   @override
   void initState() {
@@ -120,8 +120,8 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
     super.dispose();
     Future.delayed(Duration(milliseconds: 10), () {
       // Cancel request only if the widget has been unmounted
-      if (!mounted && widget.file.isRemoteFile() && !_hasLoadedThumbnail) {
-        removePendingGetThumbnailRequestIfAny(widget.file);
+      if (!mounted && widget.file!.isRemoteFile() && !_hasLoadedThumbnail) {
+        removePendingGetThumbnailRequestIfAny(widget.file!);
       }
     });
   }
@@ -129,29 +129,29 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
   @override
   void didUpdateWidget(ThumbnailWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.file.generatedID != oldWidget.file.generatedID) {
+    if (widget.file!.generatedID != oldWidget.file!.generatedID) {
       _reset();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (widget.file.isRemoteFile()) {
+    if (widget.file!.isRemoteFile()) {
       _loadNetworkImage();
     } else {
       _loadLocalImage(context);
     }
-    Widget image;
+    Widget? image;
     if (_imageProvider != null) {
       image = Image(
-        image: _imageProvider,
+        image: _imageProvider!,
         fit: widget.fit,
       );
     }
 
-    Widget content;
+    Widget? content;
     if (image != null) {
-      if (widget.file.fileType == FileType.video) {
+      if (widget.file!.fileType == FileType.video) {
         content = Stack(
           children: [
             image,
@@ -159,7 +159,7 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
           ],
           fit: StackFit.expand,
         );
-      } else if (widget.file.fileType == FileType.livePhoto &&
+      } else if (widget.file!.fileType == FileType.livePhoto &&
           widget.shouldShowLivePhotoOverlay) {
         content = Stack(
           children: [
@@ -180,7 +180,7 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
           duration: Duration(milliseconds: 200),
           child: content,
         ),
-        widget.shouldShowSyncStatus && widget.file.uploadedFileID == null
+        widget.shouldShowSyncStatus && widget.file!.uploadedFileID == null
             ? kUnsyncedIconOverlay
             : getFileInfoContainer(widget.file),
       ],
@@ -194,13 +194,13 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
         !_isLoadingLocalThumbnail) {
       _isLoadingLocalThumbnail = true;
       final cachedSmallThumbnail =
-          ThumbnailLruCache.get(widget.file, kThumbnailSmallSize);
+          ThumbnailLruCache.get(widget.file!, kThumbnailSmallSize);
       if (cachedSmallThumbnail != null) {
         _imageProvider = Image.memory(cachedSmallThumbnail).image;
         _hasLoadedThumbnail = true;
       } else {
         if (widget.diskLoadDeferDuration != null) {
-          Future.delayed(widget.diskLoadDeferDuration, () {
+          Future.delayed(widget.diskLoadDeferDuration!, () {
             if (mounted) {
               _getThumbnailFromDisk();
             }
@@ -213,21 +213,21 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
   }
 
   Future _getThumbnailFromDisk() async {
-    getThumbnailFromLocal(widget.file).then((thumbData) async {
+    getThumbnailFromLocal(widget.file!).then((thumbData) async {
       if (thumbData == null) {
-        if (widget.file.uploadedFileID != null) {
-          _logger.fine("Removing localID reference for " + widget.file.tag());
-          widget.file.localID = null;
+        if (widget.file!.uploadedFileID != null) {
+          _logger.fine("Removing localID reference for " + widget.file!.tag());
+          widget.file!.localID = null;
           if (widget.file is TrashFile) {
-            TrashDB.instance.update(widget.file);
+            TrashDB.instance.update(widget.file as TrashFile);
           } else {
-            FilesDB.instance.update(widget.file);
+            FilesDB.instance.update(widget.file!);
           }
           _loadNetworkImage();
         } else {
-          if (await doesLocalFileExist(widget.file) == false) {
-            _logger.info("Deleting file " + widget.file.tag());
-            FilesDB.instance.deleteLocalFile(widget.file);
+          if (await doesLocalFileExist(widget.file!) == false) {
+            _logger.info("Deleting file " + widget.file!.tag());
+            FilesDB.instance.deleteLocalFile(widget.file!);
             Bus.instance.fire(LocalPhotosUpdatedEvent([widget.file]));
           }
         }
@@ -238,7 +238,7 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
         final imageProvider = Image.memory(thumbData).image;
         _cacheAndRender(imageProvider);
       }
-      ThumbnailLruCache.put(widget.file, thumbData, kThumbnailSmallSize);
+      ThumbnailLruCache.put(widget.file!, thumbData, kThumbnailSmallSize);
     }).catchError((e) {
       _logger.warning("Could not load image: ", e);
       _errorLoadingLocalThumbnail = true;
@@ -250,14 +250,14 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
         !_errorLoadingRemoteThumbnail &&
         !_isLoadingRemoteThumbnail) {
       _isLoadingRemoteThumbnail = true;
-      final cachedThumbnail = ThumbnailLruCache.get(widget.file);
+      final cachedThumbnail = ThumbnailLruCache.get(widget.file!);
       if (cachedThumbnail != null) {
         _imageProvider = Image.memory(cachedThumbnail).image;
         _hasLoadedThumbnail = true;
         return;
       }
       if (widget.serverLoadDeferDuration != null) {
-        Future.delayed(widget.serverLoadDeferDuration, () {
+        Future.delayed(widget.serverLoadDeferDuration!, () {
           if (mounted) {
             _getThumbnailFromServer();
           }
@@ -270,7 +270,7 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
 
   void _getThumbnailFromServer() async {
     try {
-      final thumbnail = await getThumbnailFromServer(widget.file);
+      final thumbnail = await getThumbnailFromServer(widget.file!);
       if (mounted) {
         final imageProvider = Image.memory(thumbnail).image;
         _cacheAndRender(imageProvider);
@@ -291,10 +291,10 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
   }
 
   void _cacheAndRender(ImageProvider<Object> imageProvider) {
-    if (imageCache.currentSizeBytes > 256 * 1024 * 1024) {
+    if (imageCache!.currentSizeBytes > 256 * 1024 * 1024) {
       _logger.info("Clearing image cache");
-      imageCache.clear();
-      imageCache.clearLiveImages();
+      imageCache!.clear();
+      imageCache!.clearLiveImages();
     }
     precacheImage(imageProvider, context).then((value) {
       if (mounted) {

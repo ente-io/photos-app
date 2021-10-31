@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 
 class SettingsSectionTitle extends StatelessWidget {
   final String title;
-  final Color color;
+  final Color? color;
 
   const SettingsSectionTitle(
     this.title, {
-    Key key,
+    Key? key,
     this.color,
   }) : super(key: key);
 

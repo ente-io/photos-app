@@ -1,13 +1,13 @@
 import 'package:photos/events/event.dart';
 
 class SyncStatusUpdate extends Event {
-  final int completed;
-  final int total;
+  final int? completed;
+  final int? total;
   final bool wasStopped;
   final SyncStatus status;
   final String reason;
-  final Error error;
-  int timestamp;
+  final Error? error;
+  late int timestamp;
 
   SyncStatusUpdate(
     this.status, {

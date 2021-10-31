@@ -18,9 +18,9 @@ import 'package:photos/utils/navigation_util.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 class LazyLoadingGallery extends StatefulWidget {
-  final List<File> files;
+  final List<File?> files;
   final int index;
-  final Stream<FilesUpdatedEvent> reloadEvent;
+  final Stream<FilesUpdatedEvent>? reloadEvent;
   final Set<EventType> removalEventTypes;
   final GalleryLoader asyncLoader;
   final SelectedFiles selectedFiles;
@@ -36,7 +36,7 @@ class LazyLoadingGallery extends StatefulWidget {
     this.selectedFiles,
     this.tag,
     this.currentIndexStream, {
-    Key key,
+    Key? key,
   }) : super(key: key ?? UniqueKey());
 
   @override
@@ -50,10 +50,10 @@ class _LazyLoadingGalleryState extends State<LazyLoadingGallery> {
 
   static final Logger _logger = Logger("LazyLoadingGallery");
 
-  List<File> _files;
-  StreamSubscription<FilesUpdatedEvent> _reloadEventSubscription;
-  StreamSubscription<int> _currentIndexSubscription;
-  bool _shouldRender;
+  List<File?>? _files;
+  late StreamSubscription<FilesUpdatedEvent> _reloadEventSubscription;
+  late StreamSubscription<int> _currentIndexSubscription;
+  bool? _shouldRender;
 
   @override
   void initState() {
@@ -65,7 +65,7 @@ class _LazyLoadingGalleryState extends State<LazyLoadingGallery> {
     _shouldRender = true;
     _files = widget.files;
 
-    _reloadEventSubscription = widget.reloadEvent.listen((e) => _onReload(e));
+    _reloadEventSubscription = widget.reloadEvent!.listen((e) => _onReload(e));
 
     _currentIndexSubscription =
         widget.currentIndexStream.listen((currentIndex) {
@@ -81,9 +81,9 @@ class _LazyLoadingGalleryState extends State<LazyLoadingGallery> {
 
   Future _onReload(FilesUpdatedEvent event) async {
     final galleryDate =
-        DateTime.fromMicrosecondsSinceEpoch(_files[0].creationTime);
+        DateTime.fromMicrosecondsSinceEpoch(_files![0]!.creationTime!);
     final filesUpdatedThisDay = event.updatedFiles.where((file) {
-      final fileDate = DateTime.fromMicrosecondsSinceEpoch(file.creationTime);
+      final fileDate = DateTime.fromMicrosecondsSinceEpoch(file.creationTime!);
       return fileDate.year == galleryDate.year &&
           fileDate.month == galleryDate.month &&
           fileDate.day == galleryDate.day;
@@ -105,13 +105,13 @@ class _LazyLoadingGalleryState extends State<LazyLoadingGallery> {
         }
       } else if (widget.removalEventTypes.contains(event.type)) {
         // Files were removed
-        final updateFileIDs = <int>{};
+        final updateFileIDs = <int?>{};
         for (final file in filesUpdatedThisDay) {
           updateFileIDs.add(file.generatedID);
         }
-        final List<File> files = [];
-        files.addAll(_files);
-        files.removeWhere((file) => updateFileIDs.contains(file.generatedID));
+        final List<File?> files = [];
+        files.addAll(_files!);
+        files.removeWhere((file) => updateFileIDs.contains(file!.generatedID));
         if (mounted) {
           setState(() {
             _files = files;
@@ -139,15 +139,15 @@ class _LazyLoadingGalleryState extends State<LazyLoadingGallery> {
 
   @override
   Widget build(BuildContext context) {
-    if (_files.isEmpty) {
+    if (_files!.isEmpty) {
       return Container();
     }
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
         children: [
-          getDayWidget(_files[0].creationTime),
-          _shouldRender ? _getGallery() : PlaceHolderWidget(_files.length),
+          getDayWidget(_files![0]!.creationTime!),
+          _shouldRender! ? _getGallery() : PlaceHolderWidget(_files!.length),
         ],
       ),
     );
@@ -155,14 +155,14 @@ class _LazyLoadingGalleryState extends State<LazyLoadingGallery> {
 
   Widget _getGallery() {
     List<Widget> childGalleries = [];
-    for (int index = 0; index < _files.length; index += kSubGalleryItemLimit) {
+    for (int index = 0; index < _files!.length; index += kSubGalleryItemLimit) {
       childGalleries.add(LazyLoadingGridView(
         widget.tag,
-        _files.sublist(index, min(index + kSubGalleryItemLimit, _files.length)),
+        _files!.sublist(index, min(index + kSubGalleryItemLimit, _files!.length)),
         widget.asyncLoader,
         widget.selectedFiles,
         index == 0,
-        _files.length > kRecycleLimit,
+        _files!.length > kRecycleLimit,
       ));
     }
 
@@ -174,7 +174,7 @@ class _LazyLoadingGalleryState extends State<LazyLoadingGallery> {
 
 class LazyLoadingGridView extends StatefulWidget {
   final String tag;
-  final List<File> files;
+  final List<File?> files;
   final GalleryLoader asyncLoader;
   final SelectedFiles selectedFiles;
   final bool shouldRender;
@@ -187,7 +187,7 @@ class LazyLoadingGridView extends StatefulWidget {
     this.selectedFiles,
     this.shouldRender,
     this.shouldRecycle, {
-    Key key,
+    Key? key,
   }) : super(key: key ?? UniqueKey());
 
   @override
@@ -195,7 +195,7 @@ class LazyLoadingGridView extends StatefulWidget {
 }
 
 class _LazyLoadingGridViewState extends State<LazyLoadingGridView> {
-  bool _shouldRender;
+  bool? _shouldRender;
 
   @override
   void initState() {
@@ -242,18 +242,18 @@ class _LazyLoadingGridViewState extends State<LazyLoadingGridView> {
           });
         }
       },
-      child: _shouldRender
+      child: _shouldRender!
           ? _getGridView()
           : PlaceHolderWidget(widget.files.length),
     );
   }
 
   Widget _getNonRecyclableView() {
-    if (!_shouldRender) {
+    if (!_shouldRender!) {
       return VisibilityDetector(
         key: UniqueKey(),
         onVisibilityChanged: (visibility) {
-          if (mounted && visibility.visibleFraction > 0 && !_shouldRender) {
+          if (mounted && visibility.visibleFraction > 0 && !_shouldRender!) {
             setState(() {
               _shouldRender = true;
             });
@@ -272,7 +272,7 @@ class _LazyLoadingGridViewState extends State<LazyLoadingGridView> {
       physics:
           NeverScrollableScrollPhysics(), // to disable GridView's scrolling
       itemBuilder: (context, index) {
-        return _buildFile(context, widget.files[index]);
+        return _buildFile(context, widget.files[index]!);
       },
       itemCount: widget.files.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(

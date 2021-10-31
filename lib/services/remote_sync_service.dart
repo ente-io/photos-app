@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:collection/collection.dart' show IterableExtension;
 import 'package:logging/logging.dart';
 import 'package:photos/core/configuration.dart';
 import 'package:photos/core/errors.dart';
@@ -30,8 +31,8 @@ class RemoteSyncService {
   final _collectionsService = CollectionsService.instance;
   final _diffFetcher = DiffFetcher();
   int _completedUploads = 0;
-  SharedPreferences _prefs;
-  Completer<void> _existingSync;
+  late SharedPreferences _prefs;
+  Completer<void>? _existingSync;
 
   static const kHasSyncedArchiveKey = "has_synced_archive";
 
@@ -58,7 +59,7 @@ class RemoteSyncService {
     }
     if (_existingSync != null) {
       _logger.info("Remote sync already in progress, skipping");
-      return _existingSync.future;
+      return _existingSync!.future;
     }
     _existingSync = Completer<void>();
 
@@ -80,9 +81,9 @@ class RemoteSyncService {
     // recently trashed.
     await TrashSyncService.instance
         .syncTrash()
-        .onError((e, s) => _logger.severe('trash sync failed', e, s));
+        .onError((dynamic e, s) => _logger.severe('trash sync failed', e, s));
     bool hasUploadedFiles = await _uploadDiff();
-    _existingSync.complete();
+    _existingSync!.complete();
     _existingSync = null;
     if (hasUploadedFiles) {
       sync(silently: true);
@@ -113,7 +114,7 @@ class RemoteSyncService {
     }
   }
 
-  Future<void> _syncCollectionDiff(int collectionID, int sinceTime) async {
+  Future<void> _syncCollectionDiff(int? collectionID, int sinceTime) async {
     final diff =
         await _diffFetcher.getEncryptedFilesDiff(collectionID, sinceTime);
     if (diff.deletedFiles.isNotEmpty) {
@@ -141,7 +142,7 @@ class RemoteSyncService {
       await _collectionsService.setCollectionSyncTime(
           collectionID, diff.latestUpdatedAtTime);
     }
-    if (diff.hasMore) {
+    if (diff.hasMore!) {
       return await _syncCollectionDiff(collectionID,
           _collectionsService.getCollectionSyncTime(collectionID));
     }
@@ -157,13 +158,13 @@ class RemoteSyncService {
       filesToBeUploaded =
           await _db.getFilesToBeUploadedWithinFolders(foldersToBackUp);
     }
-    if (!Configuration.instance.shouldBackupVideos()) {
+    if (!Configuration.instance.shouldBackupVideos()!) {
       filesToBeUploaded
           .removeWhere((element) => element.fileType == FileType.video);
     }
     if (filesToBeUploaded.isNotEmpty) {
       final int prevCount = filesToBeUploaded.length;
-      final ignoredIDs = await IgnoredFilesService.instance.ignoredIDs;
+      final ignoredIDs = await IgnoredFilesService.instance.ignoredIDs!;
       filesToBeUploaded.removeWhere((file) =>
           IgnoredFilesService.instance.shouldSkipUpload(ignoredIDs, file));
       if (prevCount != filesToBeUploaded.length) {
@@ -189,7 +190,7 @@ class RemoteSyncService {
     }
     final List<Future> futures = [];
     for (final uploadedFileID in updatedFileIDs) {
-      final file = await _db.getUploadedFileInAnyCollection(uploadedFileID);
+      final file = await (_db.getUploadedFileInAnyCollection(uploadedFileID) as FutureOr<File>);
       final future = _uploader
           .upload(file, file.collectionID)
           .then((uploadedFile) => _onFileUploaded(uploadedFile));
@@ -198,7 +199,7 @@ class RemoteSyncService {
 
     for (final file in filesToBeUploaded) {
       final collectionID = (await CollectionsService.instance
-              .getOrCreateForPath(file.deviceFolder))
+              .getOrCreateForPath(file.deviceFolder))!
           .id;
       final future = _uploader
           .upload(file, collectionID)
@@ -254,7 +255,7 @@ class RemoteSyncService {
         completed: _completedUploads, total: toBeUploadedInThisSession));
   }
 
-  Future _storeDiff(List<File> diff, int collectionID) async {
+  Future _storeDiff(List<File> diff, int? collectionID) async {
     int existing = 0,
         updated = 0,
         remote = 0,
@@ -281,7 +282,7 @@ class RemoteSyncService {
         // [DiffFetcher.getEncryptedFilesDiff]
 
         final fileWithLocalID = existingFiles
-            .firstWhere((e) => e.localID != null, orElse: () => null);
+            .firstWhereOrNull((e) => e.localID != null);
         if (fileWithLocalID != null) {
           // File should ideally have the same localID
           if (file.localID != null && file.localID != fileWithLocalID.localID) {

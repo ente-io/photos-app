@@ -15,8 +15,8 @@ class MemoriesService extends ChangeNotifier {
   static final daysBefore = 7;
   static final daysAfter = 1;
 
-  List<Memory> _cachedMemories;
-  Future<List<Memory>> _future;
+  List<Memory>? _cachedMemories;
+  Future<List<Memory>?>? _future;
 
   MemoriesService._privateConstructor();
 
@@ -35,7 +35,7 @@ class MemoriesService extends ChangeNotifier {
     _future = null;
   }
 
-  Future<List<Memory>> getMemories() async {
+  Future<List<Memory>?>? getMemories() async {
     if (_cachedMemories != null) {
       return _cachedMemories;
     }
@@ -46,7 +46,7 @@ class MemoriesService extends ChangeNotifier {
     return _future;
   }
 
-  Future<List<Memory>> _fetchMemories() async {
+  Future<List<Memory>?> _fetchMemories() async {
     _logger.info("Fetching memories");
     final presentTime = DateTime.now();
     final present = presentTime.subtract(Duration(

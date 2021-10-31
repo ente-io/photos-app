@@ -20,9 +20,9 @@ import 'package:photos/utils/share_util.dart';
 import 'package:photos/utils/toast_util.dart';
 
 class SharingDialog extends StatefulWidget {
-  final Collection collection;
+  final Collection? collection;
 
-  SharingDialog(this.collection, {Key key}) : super(key: key);
+  SharingDialog(this.collection, {Key? key}) : super(key: key);
 
   @override
   _SharingDialogState createState() => _SharingDialogState();
@@ -30,18 +30,18 @@ class SharingDialog extends StatefulWidget {
 
 class _SharingDialogState extends State<SharingDialog> {
   bool _showEntryField = false;
-  List<User> _sharees;
-  String _email;
+  List<User>? _sharees;
+  String? _email;
   final Logger _logger = Logger("SharingDialogState");
 
   @override
   Widget build(BuildContext context) {
-    _sharees = widget.collection.sharees;
+    _sharees = widget.collection!.sharees;
     final children = <Widget>[];
-    if (!_showEntryField && _sharees.isEmpty) {
+    if (!_showEntryField && _sharees!.isEmpty) {
       _showEntryField = true;
     } else {
-      for (final user in _sharees) {
+      for (final user in _sharees!) {
         children.add(EmailItemWidget(widget.collection, user.email));
       }
     }
@@ -73,7 +73,7 @@ class _SharingDialogState extends State<SharingDialog> {
           child: button(
             "add",
             onPressed: () {
-              _addEmailToCollection(_email.trim());
+              _addEmailToCollection(_email!.trim());
             },
           ),
         ),
@@ -117,7 +117,7 @@ class _SharingDialogState extends State<SharingDialog> {
               _email = pattern;
               return PublicKeysDB.instance.searchByEmail(_email);
             },
-            itemBuilder: (context, suggestion) {
+            itemBuilder: (context, dynamic suggestion) {
               return Container(
                 padding: EdgeInsets.fromLTRB(12, 8, 12, 8),
                 child: Text(
@@ -127,7 +127,7 @@ class _SharingDialogState extends State<SharingDialog> {
               );
             },
             onSuggestionSelected: (PublicKey suggestion) {
-              _addEmailToCollection(suggestion.email,
+              _addEmailToCollection(suggestion.email!,
                   publicKey: suggestion.publicKey);
             },
           ),
@@ -141,7 +141,7 @@ class _SharingDialogState extends State<SharingDialog> {
           onPressed: () async {
             final emailContact = await FlutterContactPicker.pickEmailContact(
                 askForPermission: true);
-            _addEmailToCollection(emailContact.email.email);
+            _addEmailToCollection(emailContact.email!.email!);
           },
         ),
       ],
@@ -150,18 +150,18 @@ class _SharingDialogState extends State<SharingDialog> {
 
   Future<void> _addEmailToCollection(
     String email, {
-    String publicKey,
+    String? publicKey,
   }) async {
     if (!isValidEmail(email)) {
       showErrorDialog(context, "invalid email address",
           "please enter a valid email address.");
       return;
     } else if (email == Configuration.instance.getEmail()) {
-      showErrorDialog(context, AppLocalizations.of(context).oops,
+      showErrorDialog(context, AppLocalizations.of(context)!.oops,
           "you cannot share with yourself");
       return;
-    } else if (widget.collection.sharees.any((user) => user.email == email)) {
-      showErrorDialog(context, AppLocalizations.of(context).oops,
+    } else if (widget.collection!.sharees!.any((user) => user.email == email)) {
+      showErrorDialog(context, AppLocalizations.of(context)!.oops,
           "you're already sharing this with " + email);
       return;
     }
@@ -208,7 +208,7 @@ class _SharingDialogState extends State<SharingDialog> {
     } else {
       final dialog = createProgressDialog(context, "sharing...");
       await dialog.show();
-      final collection = widget.collection;
+      final collection = widget.collection!;
       try {
         if (collection.type == CollectionType.folder) {
           final path =
@@ -218,11 +218,11 @@ class _SharingDialogState extends State<SharingDialog> {
           }
         }
         await CollectionsService.instance
-            .share(widget.collection.id, email, publicKey);
+            .share(widget.collection!.id, email, publicKey);
         await dialog.hide();
         showToast("shared successfully!");
         setState(() {
-          _sharees.add(User(email: email));
+          _sharees!.add(User(email: email));
           _showEntryField = false;
         });
       } catch (e) {
@@ -270,13 +270,13 @@ class _SharingDialogState extends State<SharingDialog> {
 }
 
 class EmailItemWidget extends StatelessWidget {
-  final Collection collection;
-  final String email;
+  final Collection? collection;
+  final String? email;
 
   const EmailItemWidget(
     this.collection,
     this.email, {
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override
@@ -287,7 +287,7 @@ class EmailItemWidget extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(8, 0, 0, 0),
           child: Text(
-            email,
+            email!,
             style: TextStyle(fontSize: 16),
           ),
         ),
@@ -299,10 +299,10 @@ class EmailItemWidget extends StatelessWidget {
             final dialog = createProgressDialog(context, "please wait...");
             await dialog.show();
             try {
-              await CollectionsService.instance.unshare(collection.id, email);
-              collection.sharees.removeWhere((user) => user.email == email);
+              await CollectionsService.instance.unshare(collection!.id, email);
+              collection!.sharees!.removeWhere((user) => user.email == email);
               await dialog.hide();
-              showToast("stopped sharing with " + email + ".");
+              showToast("stopped sharing with " + email! + ".");
               Navigator.of(context).pop();
             } catch (e, s) {
               Logger("EmailItemWidget").severe(e, s);

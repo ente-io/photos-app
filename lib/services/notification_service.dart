@@ -24,7 +24,7 @@ class NotificationService {
         onSelectNotification: selectNotification);
   }
 
-  Future selectNotification(String payload) async {}
+  Future selectNotification(String? payload) async {}
 
   Future<void> showNotification(String title, String message) async {
     if (!Platform.isAndroid) {

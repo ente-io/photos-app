@@ -8,7 +8,7 @@ enum ActionType {
   critical,
 }
 // if dialog is dismissed by tapping outside, this will return null
-Future<T> showChoiceDialog<T>(
+Future<T?> showChoiceDialog<T>(
   BuildContext context,
   String title,
   String content, {

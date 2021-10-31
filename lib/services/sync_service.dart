@@ -30,9 +30,9 @@ class SyncService {
   final _dio = Network.instance.getDio();
   final _uploader = FileUploader.instance;
   bool _syncStopRequested = false;
-  Completer<bool> _existingSync;
-  SharedPreferences _prefs;
-  SyncStatusUpdate _lastSyncStatusEvent;
+  Completer<bool>? _existingSync;
+  late SharedPreferences _prefs;
+  SyncStatusUpdate? _lastSyncStatusEvent;
 
   static const kLastStorageLimitExceededNotificationPushTime =
       "last_storage_limit_exceeded_notification_push_time";
@@ -71,23 +71,23 @@ class SyncService {
   }
 
   Future<bool> existingSync() async {
-    return _existingSync.future;
+    return _existingSync!.future;
   }
 
   Future<bool> sync() async {
     _syncStopRequested = false;
     if (_existingSync != null) {
       _logger.warning("Sync already in progress, skipping.");
-      return _existingSync.future;
+      return _existingSync!.future;
     }
     _existingSync = Completer<bool>();
     bool successful = false;
     try {
       await _doSync();
       if (_lastSyncStatusEvent != null &&
-          _lastSyncStatusEvent.status !=
+          _lastSyncStatusEvent!.status !=
               SyncStatus.completed_first_gallery_import &&
-          _lastSyncStatusEvent.status != SyncStatus.completed_backup) {
+          _lastSyncStatusEvent!.status != SyncStatus.completed_backup) {
         Bus.instance.fire(SyncStatusUpdate(SyncStatus.completed_backup));
       }
       successful = true;
@@ -124,7 +124,7 @@ class SyncService {
       Bus.instance.fire(SyncStatusUpdate(SyncStatus.error));
       rethrow;
     } finally {
-      _existingSync.complete(successful);
+      _existingSync!.complete(successful);
       _existingSync = null;
       _lastSyncStatusEvent = null;
       _logger.info("Syncing completed");
@@ -145,7 +145,7 @@ class SyncService {
     return _existingSync != null;
   }
 
-  SyncStatusUpdate getLastSyncStatusEvent() {
+  SyncStatusUpdate? getLastSyncStatusEvent() {
     return _lastSyncStatusEvent;
   }
 
@@ -157,7 +157,7 @@ class SyncService {
     LocalSyncService.instance.addChangeCallback(() => sync());
   }
 
-  void onFoldersSet(Set<String> paths) {
+  void onFoldersSet(Set<String?> paths) {
     _uploader.removeFromQueueWhere((file) {
       return !paths.contains(file.deviceFolder);
     }, UserCancelledUploadError());
@@ -169,7 +169,7 @@ class SyncService {
     }, UserCancelledUploadError());
   }
 
-  Future<void> deleteFilesOnServer(List<int> fileIDs) async {
+  Future<dynamic> deleteFilesOnServer(List<int> fileIDs) async {
     return await _dio.post(
       Configuration.instance.getHttpEndpoint() + "/files/delete",
       options: Options(
@@ -189,7 +189,7 @@ class SyncService {
     return BackupStatus(ids.localIDs, size);
   }
 
-  Future<int> _getFileSize(List<int> fileIDs) async {
+  Future<int?> _getFileSize(List<int?> fileIDs) async {
     try {
       final response = await _dio.post(
         Configuration.instance.getHttpEndpoint() + "/files/size",

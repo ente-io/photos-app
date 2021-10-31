@@ -18,7 +18,7 @@ class LocalSyncService {
   final _db = FilesDB.instance;
   final Computer _computer = Computer();
   bool _isBackground = false;
-  SharedPreferences _prefs;
+  late SharedPreferences _prefs;
 
   static const kDbUpdationTimeKey = "db_updation_time";
   static const kHasCompletedFirstImportKey = "has_completed_firstImport";
@@ -68,8 +68,8 @@ class LocalSyncService {
     final existingLocalFileIDs = await _db.getExistingLocalFileIDs();
     _logger.info(
         existingLocalFileIDs.length.toString() + " localIDs were discovered");
-    final editedFileIDs = getEditedFileIDs().toSet();
-    final downloadedFileIDs = getDownloadedFileIDs().toSet();
+    final editedFileIDs = getEditedFileIDs()!.toSet();
+    final downloadedFileIDs = getDownloadedFileIDs()!.toSet();
     final syncStartTime = DateTime.now().microsecondsSinceEpoch;
     final lastDBUpdationTime = _prefs.getInt(kDbUpdationTimeKey) ?? 0;
     final startTime = DateTime.now().microsecondsSinceEpoch;
@@ -109,7 +109,7 @@ class LocalSyncService {
       );
     }
     if (!_prefs.containsKey(kHasCompletedFirstImportKey) ||
-        !_prefs.getBool(kHasCompletedFirstImportKey)) {
+        !_prefs.getBool(kHasCompletedFirstImportKey)!) {
       await _prefs.setBool(kHasCompletedFirstImportKey, true);
       _logger.fine("first gallery import finished");
       Bus.instance
@@ -146,12 +146,12 @@ class LocalSyncService {
   }
 
   Future<void> trackEditedFile(File file) async {
-    final editedIDs = getEditedFileIDs();
-    editedIDs.add(file.localID);
+    final editedIDs = getEditedFileIDs()!;
+    editedIDs.add(file.localID!);
     await _prefs.setStringList(kEditedFileIDsKey, editedIDs);
   }
 
-  List<String> getEditedFileIDs() {
+  List<String>? getEditedFileIDs() {
     if (_prefs.containsKey(kEditedFileIDsKey)) {
       return _prefs.getStringList(kEditedFileIDsKey);
     } else {
@@ -161,12 +161,12 @@ class LocalSyncService {
   }
 
   Future<void> trackDownloadedFile(String localID) async {
-    final downloadedIDs = getDownloadedFileIDs();
+    final downloadedIDs = getDownloadedFileIDs()!;
     downloadedIDs.add(localID);
     await _prefs.setStringList(kDownloadedFileIDsKey, downloadedIDs);
   }
 
-  List<String> getDownloadedFileIDs() {
+  List<String>? getDownloadedFileIDs() {
     if (_prefs.containsKey(kDownloadedFileIDsKey)) {
       return _prefs.getStringList(kDownloadedFileIDsKey);
     } else {
@@ -176,14 +176,14 @@ class LocalSyncService {
   }
 
   Future<void> trackInvalidFile(File file) async {
-    final invalidIDs = getInvalidFileIDs();
-    invalidIDs.add(file.localID);
+    final invalidIDs = getInvalidFileIDs()!;
+    invalidIDs.add(file.localID!);
     await _prefs.setStringList(kInvalidFileIDsKey, invalidIDs);
   }
 
   List<String> getInvalidFileIDs() {
     if (_prefs.containsKey(kInvalidFileIDsKey)) {
-      return _prefs.getStringList(kInvalidFileIDsKey);
+      return _prefs.getStringList(kInvalidFileIDsKey)!;
     } else {
       List<String> invalidIDs = [];
       return invalidIDs;
@@ -211,7 +211,7 @@ class LocalSyncService {
   Future<void> _loadAndStorePhotos(
     int fromTime,
     int toTime,
-    Set<String> existingLocalFileIDs,
+    Set<String?> existingLocalFileIDs,
     Set<String> editedFileIDs,
     Set<String> downloadedFileIDs,
   ) async {
@@ -233,7 +233,7 @@ class LocalSyncService {
         await _db.updateUploadedFile(
           file.localID,
           file.title,
-          file.location,
+          file.location!,
           file.creationTime,
           file.modificationTime,
           null,

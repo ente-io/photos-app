@@ -1,6 +1,7 @@
 import 'package:exif/exif.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:photo_manager/photo_manager.dart';
 import 'package:photos/models/file.dart';
 import 'package:photos/models/file_type.dart';
 import 'package:photos/services/collections_service.dart';
@@ -15,7 +16,7 @@ class FileInfoWidget extends StatefulWidget {
 
   const FileInfoWidget(
     this.file, {
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override
@@ -23,7 +24,7 @@ class FileInfoWidget extends StatefulWidget {
 }
 
 class _FileInfoWidgetState extends State<FileInfoWidget> {
-  Map<String, IfdTag> _exif;
+  Map<String, IfdTag>? _exif;
   bool _isImage = false;
 
   @override
@@ -52,7 +53,7 @@ class _FileInfoWidgetState extends State<FileInfoWidget> {
           Padding(padding: EdgeInsets.all(4)),
           Text(
             getFormattedTime(
-              DateTime.fromMicrosecondsSinceEpoch(widget.file.creationTime),
+              DateTime.fromMicrosecondsSinceEpoch(widget.file.creationTime!),
             ),
             style: TextStyle(
               color: Colors.white.withOpacity(0.85),
@@ -71,8 +72,8 @@ class _FileInfoWidgetState extends State<FileInfoWidget> {
           Text(
             widget.file.deviceFolder ??
                 CollectionsService.instance
-                    .getCollectionByID(widget.file.collectionID)
-                    .name,
+                    .getCollectionByID(widget.file.collectionID)!
+                    .name!,
             style: TextStyle(
               color: Colors.white.withOpacity(0.85),
             ),
@@ -106,12 +107,12 @@ class _FileInfoWidgetState extends State<FileInfoWidget> {
                 color: Colors.white.withOpacity(0.85),
               ),
               Padding(padding: EdgeInsets.all(4)),
-              FutureBuilder(
+              FutureBuilder<AssetEntity?>(
                 future: widget.file.getAsset(),
                 builder: (context, snapshot) {
                   if (snapshot.hasData) {
                     return Text(
-                      snapshot.data.videoDuration.toString().split(".")[0],
+                      snapshot.data!.videoDuration.toString().split(".")[0],
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.85),
                       ),
@@ -135,9 +136,10 @@ class _FileInfoWidgetState extends State<FileInfoWidget> {
       );
     }
     if (_isImage && _exif != null) {
-      items.add(_getExifWidgets(_exif));
+      items.add(_getExifWidgets(_exif!));
     }
-    if (widget.file.uploadedFileID != null && widget.file.updationTime != null) {
+    if (widget.file.uploadedFileID != null &&
+        widget.file.updationTime != null) {
       items.addAll(
         [
           Row(
@@ -149,7 +151,7 @@ class _FileInfoWidgetState extends State<FileInfoWidget> {
               Padding(padding: EdgeInsets.all(4)),
               Text(
                 getFormattedTime(DateTime.fromMicrosecondsSinceEpoch(
-                    widget.file.updationTime)),
+                    widget.file.updationTime!)),
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.85),
                 ),
@@ -170,7 +172,7 @@ class _FileInfoWidgetState extends State<FileInfoWidget> {
       ),
     );
     return AlertDialog(
-      title: Text(widget.file.title),
+      title: Text(widget.file.title!),
       content: SingleChildScrollView(
         child: ListBody(
           children: items,
@@ -216,7 +218,7 @@ class _FileInfoWidgetState extends State<FileInfoWidget> {
             },
           ),
         );
-      } else if (_exif.isNotEmpty) {
+      } else if (_exif!.isNotEmpty) {
         actions.add(
           TextButton(
             child: Row(
@@ -290,12 +292,12 @@ class _FileInfoWidgetState extends State<FileInfoWidget> {
 
   Widget _getExifWidgets(Map<String, IfdTag> exif) {
     final focalLength = exif["EXIF FocalLength"] != null
-        ? (exif["EXIF FocalLength"].values.toList()[0] as Ratio).numerator /
-            (exif["EXIF FocalLength"].values.toList()[0] as Ratio).denominator
+        ? (exif["EXIF FocalLength"]!.values.toList()[0] as Ratio).numerator /
+            (exif["EXIF FocalLength"]!.values.toList()[0] as Ratio).denominator
         : null;
     final fNumber = exif["EXIF FNumber"] != null
-        ? (exif["EXIF FNumber"].values.toList()[0] as Ratio).numerator /
-            (exif["EXIF FNumber"].values.toList()[0] as Ratio).denominator
+        ? (exif["EXIF FNumber"]!.values.toList()[0] as Ratio).numerator /
+            (exif["EXIF FNumber"]!.values.toList()[0] as Ratio).denominator
         : null;
     final List<Widget> children = [];
     if (exif["EXIF ExifImageWidth"] != null &&
@@ -434,12 +436,12 @@ class _FileInfoWidgetState extends State<FileInfoWidget> {
   }
 
   Widget _getFileSize() {
-    return FutureBuilder(
-      future: getFile(widget.file).then((f) => f.length()),
+    return FutureBuilder<int?>(
+      future: getFile(widget.file)!.then((f) => f!.length()),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
           return Text(
-            (snapshot.data / (1024 * 1024)).toStringAsFixed(2) + " MB",
+            (snapshot.data! / (1024 * 1024)).toStringAsFixed(2) + " MB",
             style: TextStyle(
               color: Colors.white.withOpacity(0.85),
             ),

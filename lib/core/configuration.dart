@@ -60,16 +60,16 @@ class Configuration {
 
   static final _logger = Logger("Configuration");
 
-  String _cachedToken;
-  String _documentsDirectory;
-  String _key;
-  SharedPreferences _preferences;
-  String _secretKey;
-  FlutterSecureStorage _secureStorage;
-  String _tempDirectory;
-  String _thumbnailCacheDirectory;
-  String _sharedMediaDirectory;
-  String _volatilePassword;
+  String? _cachedToken;
+  late String _documentsDirectory;
+  String? _key;
+  late SharedPreferences _preferences;
+  String? _secretKey;
+  late FlutterSecureStorage _secureStorage;
+  late String _tempDirectory;
+  late String _thumbnailCacheDirectory;
+  late String _sharedMediaDirectory;
+  String? _volatilePassword;
 
   final _secureStorageOptionsIOS =
       IOSOptions(accessibility: IOSAccessibility.first_unlock_this_device);
@@ -113,7 +113,7 @@ class Configuration {
       );
       await _migrateSecurityStorageToFirstUnlock();
     }
-    SuperLogging.setUserID(await _getOrCreateAnonymousUserID());
+    SuperLogging.setUserID(await (_getOrCreateAnonymousUserID()));
   }
 
   Future<void> logout() async {
@@ -158,8 +158,8 @@ class Configuration {
     // Derive a key from the password that will be used to encrypt and
     // decrypt the master key
     final kekSalt = CryptoUtil.getSaltToDeriveKey();
-    final derivedKeyResult =
-        await CryptoUtil.deriveSensitiveKey(utf8.encode(password), kekSalt);
+    final derivedKeyResult = await CryptoUtil.deriveSensitiveKey(
+        utf8.encode(password) as Uint8List, kekSalt);
 
     // Encrypt the key with this derived key
     final encryptedKeyData =
@@ -172,17 +172,17 @@ class Configuration {
 
     final attributes = KeyAttributes(
       Sodium.bin2base64(kekSalt),
-      Sodium.bin2base64(encryptedKeyData.encryptedData),
-      Sodium.bin2base64(encryptedKeyData.nonce),
+      Sodium.bin2base64(encryptedKeyData.encryptedData!),
+      Sodium.bin2base64(encryptedKeyData.nonce!),
       Sodium.bin2base64(keyPair.pk),
-      Sodium.bin2base64(encryptedSecretKeyData.encryptedData),
-      Sodium.bin2base64(encryptedSecretKeyData.nonce),
+      Sodium.bin2base64(encryptedSecretKeyData.encryptedData!),
+      Sodium.bin2base64(encryptedSecretKeyData.nonce!),
       derivedKeyResult.memLimit,
       derivedKeyResult.opsLimit,
-      Sodium.bin2base64(encryptedMasterKey.encryptedData),
-      Sodium.bin2base64(encryptedMasterKey.nonce),
-      Sodium.bin2base64(encryptedRecoveryKey.encryptedData),
-      Sodium.bin2base64(encryptedRecoveryKey.nonce),
+      Sodium.bin2base64(encryptedMasterKey.encryptedData!),
+      Sodium.bin2base64(encryptedMasterKey.nonce!),
+      Sodium.bin2base64(encryptedRecoveryKey.encryptedData!),
+      Sodium.bin2base64(encryptedRecoveryKey.nonce!),
     );
     final privateAttributes = PrivateKeyAttributes(Sodium.bin2base64(masterKey),
         Sodium.bin2hex(recoveryKey), Sodium.bin2base64(keyPair.sk));
@@ -196,19 +196,19 @@ class Configuration {
     // Derive a key from the password that will be used to encrypt and
     // decrypt the master key
     final kekSalt = CryptoUtil.getSaltToDeriveKey();
-    final derivedKeyResult =
-        await CryptoUtil.deriveSensitiveKey(utf8.encode(password), kekSalt);
+    final derivedKeyResult = await CryptoUtil.deriveSensitiveKey(
+        utf8.encode(password) as Uint8List, kekSalt);
 
     // Encrypt the key with this derived key
     final encryptedKeyData =
         CryptoUtil.encryptSync(masterKey, derivedKeyResult.key);
 
-    final existingAttributes = getKeyAttributes();
+    final existingAttributes = getKeyAttributes()!;
 
     return existingAttributes.copyWith(
       kekSalt: Sodium.bin2base64(kekSalt),
-      encryptedKey: Sodium.bin2base64(encryptedKeyData.encryptedData),
-      keyDecryptionNonce: Sodium.bin2base64(encryptedKeyData.nonce),
+      encryptedKey: Sodium.bin2base64(encryptedKeyData.encryptedData!),
+      keyDecryptionNonce: Sodium.bin2base64(encryptedKeyData.nonce!),
       memLimit: derivedKeyResult.memLimit,
       opsLimit: derivedKeyResult.opsLimit,
     );
@@ -217,27 +217,27 @@ class Configuration {
   Future<void> decryptAndSaveSecrets(
       String password, KeyAttributes attributes) async {
     final kek = await CryptoUtil.deriveKey(
-      utf8.encode(password),
-      Sodium.base642bin(attributes.kekSalt),
+      utf8.encode(password) as Uint8List,
+      Sodium.base642bin(attributes.kekSalt!),
       attributes.memLimit,
       attributes.opsLimit,
     );
     Uint8List key;
     try {
-      key = CryptoUtil.decryptSync(Sodium.base642bin(attributes.encryptedKey),
-          kek, Sodium.base642bin(attributes.keyDecryptionNonce));
+      key = CryptoUtil.decryptSync(Sodium.base642bin(attributes.encryptedKey!),
+          kek, Sodium.base642bin(attributes.keyDecryptionNonce!));
     } catch (e) {
       throw Exception("Incorrect password");
     }
     await setKey(Sodium.bin2base64(key));
     final secretKey = CryptoUtil.decryptSync(
-        Sodium.base642bin(attributes.encryptedSecretKey),
+        Sodium.base642bin(attributes.encryptedSecretKey!),
         key,
-        Sodium.base642bin(attributes.secretKeyDecryptionNonce));
+        Sodium.base642bin(attributes.secretKeyDecryptionNonce!));
     await setSecretKey(Sodium.bin2base64(secretKey));
     final token = CryptoUtil.openSealSync(
-        Sodium.base642bin(getEncryptedToken()),
-        Sodium.base642bin(attributes.publicKey),
+        Sodium.base642bin(getEncryptedToken()!),
+        Sodium.base642bin(attributes.publicKey!),
         secretKey);
     await setToken(
         Sodium.bin2base64(token, variant: Sodium.base64VariantUrlsafe));
@@ -245,7 +245,7 @@ class Configuration {
 
   Future<KeyAttributes> createNewRecoveryKey() async {
     final masterKey = getKey();
-    final existingAttributes = getKeyAttributes();
+    final existingAttributes = getKeyAttributes()!;
 
     // Create a recovery key
     final recoveryKey = CryptoUtil.generateKey();
@@ -256,35 +256,36 @@ class Configuration {
 
     return existingAttributes.copyWith(
       masterKeyEncryptedWithRecoveryKey:
-          Sodium.bin2base64(encryptedMasterKey.encryptedData),
-      masterKeyDecryptionNonce: Sodium.bin2base64(encryptedMasterKey.nonce),
+          Sodium.bin2base64(encryptedMasterKey.encryptedData!),
+      masterKeyDecryptionNonce: Sodium.bin2base64(encryptedMasterKey.nonce!),
       recoveryKeyEncryptedWithMasterKey:
-          Sodium.bin2base64(encryptedRecoveryKey.encryptedData),
-      recoveryKeyDecryptionNonce: Sodium.bin2base64(encryptedRecoveryKey.nonce),
+          Sodium.bin2base64(encryptedRecoveryKey.encryptedData!),
+      recoveryKeyDecryptionNonce:
+          Sodium.bin2base64(encryptedRecoveryKey.nonce!),
     );
   }
 
   Future<void> recover(String recoveryKey) async {
-    final attributes = getKeyAttributes();
+    final attributes = getKeyAttributes()!;
     Uint8List masterKey;
     try {
       masterKey = await CryptoUtil.decrypt(
-          Sodium.base642bin(attributes.masterKeyEncryptedWithRecoveryKey),
+          Sodium.base642bin(attributes.masterKeyEncryptedWithRecoveryKey!),
           Sodium.hex2bin(recoveryKey),
-          Sodium.base642bin(attributes.masterKeyDecryptionNonce));
+          Sodium.base642bin(attributes.masterKeyDecryptionNonce!));
     } catch (e) {
       _logger.severe(e);
       rethrow;
     }
     await setKey(Sodium.bin2base64(masterKey));
     final secretKey = CryptoUtil.decryptSync(
-        Sodium.base642bin(attributes.encryptedSecretKey),
+        Sodium.base642bin(attributes.encryptedSecretKey!),
         masterKey,
-        Sodium.base642bin(attributes.secretKeyDecryptionNonce));
+        Sodium.base642bin(attributes.secretKeyDecryptionNonce!));
     await setSecretKey(Sodium.bin2base64(secretKey));
     final token = CryptoUtil.openSealSync(
-        Sodium.base642bin(getEncryptedToken()),
-        Sodium.base642bin(attributes.publicKey),
+        Sodium.base642bin(getEncryptedToken()!),
+        Sodium.base642bin(attributes.publicKey!),
         secretKey);
     await setToken(
         Sodium.bin2base64(token, variant: Sodium.base64VariantUrlsafe));
@@ -294,7 +295,7 @@ class Configuration {
     return endpoint;
   }
 
-  String getToken() {
+  String? getToken() {
     _cachedToken ??= _preferences.getString(tokenKey);
     return _cachedToken;
   }
@@ -308,11 +309,11 @@ class Configuration {
     await _preferences.setString(encryptedTokenKey, encryptedToken);
   }
 
-  String getEncryptedToken() {
+  String? getEncryptedToken() {
     return _preferences.getString(encryptedTokenKey);
   }
 
-  String getEmail() {
+  String? getEmail() {
     return _preferences.getString(emailKey);
   }
 
@@ -320,7 +321,7 @@ class Configuration {
     await _preferences.setString(emailKey, email);
   }
 
-  String getName() {
+  String? getName() {
     return _preferences.getString(nameKey);
   }
 
@@ -328,7 +329,7 @@ class Configuration {
     await _preferences.setString(nameKey, name);
   }
 
-  int getUserID() {
+  int? getUserID() {
     return _preferences.getInt(userIDKey);
   }
 
@@ -336,16 +337,17 @@ class Configuration {
     await _preferences.setInt(userIDKey, userID);
   }
 
-  Set<String> getPathsToBackUp() {
+  Set<String?> getPathsToBackUp() {
     if (_preferences.containsKey(foldersToBackUpKey)) {
-      return _preferences.getStringList(foldersToBackUpKey).toSet();
+      return _preferences.getStringList(foldersToBackUpKey)!.toSet();
     } else {
-      return <String>{};
+      return <String?>{};
     }
   }
 
-  Future<void> setPathsToBackUp(Set<String> newPaths) async {
-    await _preferences.setStringList(foldersToBackUpKey, newPaths.toList());
+  Future<void> setPathsToBackUp(Set<String?> newPaths) async {
+    await _preferences.setStringList(
+        foldersToBackUpKey, newPaths.toList() as List<String>);
     final allFolders = (await FilesDB.instance.getLatestLocalFiles())
         .map((file) => file.deviceFolder)
         .toList();
@@ -361,10 +363,10 @@ class Configuration {
   }
 
   Future<void> setKeyAttributes(KeyAttributes attributes) async {
-    await _preferences.setString(keyAttributesKey, attributes?.toJson());
+    await _preferences.setString(keyAttributesKey, attributes.toJson());
   }
 
-  KeyAttributes getKeyAttributes() {
+  KeyAttributes? getKeyAttributes() {
     final jsonValue = _preferences.getString(keyAttributesKey);
     if (jsonValue == null) {
       return null;
@@ -373,7 +375,7 @@ class Configuration {
     }
   }
 
-  Future<void> setKey(String key) async {
+  Future<void> setKey(String? key) async {
     _key = key;
     if (key == null) {
       await _secureStorage.delete(
@@ -389,7 +391,7 @@ class Configuration {
     }
   }
 
-  Future<void> setSecretKey(String secretKey) async {
+  Future<void> setSecretKey(String? secretKey) async {
     _secretKey = secretKey;
     if (secretKey == null) {
       await _secureStorage.delete(
@@ -405,20 +407,20 @@ class Configuration {
     }
   }
 
-  Uint8List getKey() {
-    return _key == null ? null : Sodium.base642bin(_key);
+  Uint8List? getKey() {
+    return _key == null ? null : Sodium.base642bin(_key!);
   }
 
-  Uint8List getSecretKey() {
-    return _secretKey == null ? null : Sodium.base642bin(_secretKey);
+  Uint8List? getSecretKey() {
+    return _secretKey == null ? null : Sodium.base642bin(_secretKey!);
   }
 
   Uint8List getRecoveryKey() {
-    final keyAttributes = getKeyAttributes();
+    final keyAttributes = getKeyAttributes()!;
     return CryptoUtil.decryptSync(
-        Sodium.base642bin(keyAttributes.recoveryKeyEncryptedWithMasterKey),
+        Sodium.base642bin(keyAttributes.recoveryKeyEncryptedWithMasterKey!),
         getKey(),
-        Sodium.base642bin(keyAttributes.recoveryKeyDecryptionNonce));
+        Sodium.base642bin(keyAttributes.recoveryKeyDecryptionNonce!));
   }
 
   String getDocumentsDirectory() {
@@ -442,7 +444,7 @@ class Configuration {
     return getToken() != null && _key != null;
   }
 
-  bool shouldBackupOverMobileData() {
+  bool? shouldBackupOverMobileData() {
     if (_preferences.containsKey(keyShouldBackupOverMobileData)) {
       return _preferences.getBool(keyShouldBackupOverMobileData);
     } else {
@@ -457,7 +459,7 @@ class Configuration {
     }
   }
 
-  bool shouldBackupVideos() {
+  bool? shouldBackupVideos() {
     if (_preferences.containsKey(keyShouldBackupVideos)) {
       return _preferences.getBool(keyShouldBackupVideos);
     } else {
@@ -474,7 +476,7 @@ class Configuration {
     }
   }
 
-  bool shouldShowLockScreen() {
+  bool? shouldShowLockScreen() {
     if (_preferences.containsKey(keyShouldShowLockScreen)) {
       return _preferences.getBool(keyShouldShowLockScreen);
     } else {
@@ -486,7 +488,7 @@ class Configuration {
     return _preferences.setBool(keyShouldShowLockScreen, value);
   }
 
-  bool shouldHideFromRecents() {
+  bool? shouldHideFromRecents() {
     if (_preferences.containsKey(keyShouldHideFromRecents)) {
       return _preferences.getBool(keyShouldHideFromRecents);
     } else {
@@ -498,11 +500,11 @@ class Configuration {
     return _preferences.setBool(keyShouldHideFromRecents, value);
   }
 
-  void setVolatilePassword(String volatilePassword) {
+  void setVolatilePassword(String? volatilePassword) {
     _volatilePassword = volatilePassword;
   }
 
-  String getVolatilePassword() {
+  String? getVolatilePassword() {
     return _volatilePassword;
   }
 
@@ -547,6 +549,6 @@ class Configuration {
     if (!_preferences.containsKey(anonymousUserIDKey)) {
       await _preferences.setString(anonymousUserIDKey, Uuid().v4());
     }
-    return _preferences.getString(anonymousUserIDKey);
+    return _preferences.getString(anonymousUserIDKey)!;
   }
 }

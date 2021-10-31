@@ -10,8 +10,8 @@ import 'package:uuid/uuid.dart';
 int kConnectTimeout = 15000;
 
 class Network {
-  Dio _dio;
-  Alice _alice;
+  Dio? _dio;
+  Alice? _alice;
 
   Future<void> init() async {
     _alice = Alice(darkTheme: true, showNotification: kDebugMode);
@@ -22,17 +22,17 @@ class Network {
       'X-Client-Version': packageInfo.version,
       'X-Client-Package': packageInfo.packageName,
     }));
-    _dio.interceptors.add(RequestIdInterceptor());
-    _dio.interceptors.add(_alice.getDioInterceptor());
+    _dio!.interceptors.add(RequestIdInterceptor());
+    _dio!.interceptors.add(_alice!.getDioInterceptor());
   }
 
   Network._privateConstructor();
 
   static Network instance = Network._privateConstructor();
 
-  Dio getDio() => _dio;
+  Dio getDio() => _dio!;
 
-  Alice getAlice() => _alice;
+  Alice? getAlice() => _alice;
 }
 
 class RequestIdInterceptor extends Interceptor {

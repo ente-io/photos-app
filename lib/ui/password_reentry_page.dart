@@ -10,7 +10,7 @@ import 'package:photos/ui/recovery_page.dart';
 import 'package:photos/utils/dialog_util.dart';
 
 class PasswordReentryPage extends StatefulWidget {
-  PasswordReentryPage({Key key}) : super(key: key);
+  PasswordReentryPage({Key? key}) : super(key: key);
 
   @override
   _PasswordReentryPageState createState() => _PasswordReentryPageState();
@@ -93,7 +93,7 @@ class _PasswordReentryPageState extends State<PasswordReentryPage> {
           width: double.infinity,
           height: 64,
           child: button(
-            AppLocalizations.of(context).log_in,
+            AppLocalizations.of(context)!.log_in,
             fontSize: 18,
             onPressed: _passwordController.text.isNotEmpty
                 ? () async {
@@ -103,7 +103,7 @@ class _PasswordReentryPageState extends State<PasswordReentryPage> {
                     try {
                       await Configuration.instance.decryptAndSaveSecrets(
                           _passwordController.text,
-                          Configuration.instance.getKeyAttributes());
+                          Configuration.instance.getKeyAttributes()!);
                     } catch (e) {
                       Logger("PRP").warning(e);
                       await dialog.hide();

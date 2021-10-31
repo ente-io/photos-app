@@ -17,7 +17,7 @@ import 'package:photos/utils/dialog_util.dart';
 import 'package:photos/utils/toast_util.dart';
 
 class AccountSectionWidget extends StatefulWidget {
-  AccountSectionWidget({Key key}) : super(key: key);
+  AccountSectionWidget({Key? key}) : super(key: key);
 
   @override
   AccountSectionWidgetState createState() => AccountSectionWidgetState();
@@ -56,10 +56,10 @@ class AccountSectionWidgetState extends State<AccountSectionWidget> {
         GestureDetector(
           behavior: HitTestBehavior.translucent,
           onTap: () async {
-            AppLock.of(context).setEnabled(false);
+            AppLock.of(context)!.setEnabled(false);
             final result = await requestAuthentication();
-            AppLock.of(context)
-                .setEnabled(Configuration.instance.shouldShowLockScreen());
+            AppLock.of(context)!
+                .setEnabled(Configuration.instance.shouldShowLockScreen()!);
             if (!result) {
               Logger("harami").info("Showing toast");
               showToast("please authenticate to view your recovery key");
@@ -95,10 +95,10 @@ class AccountSectionWidgetState extends State<AccountSectionWidget> {
         GestureDetector(
           behavior: HitTestBehavior.translucent,
           onTap: () async {
-            AppLock.of(context).setEnabled(false);
+            AppLock.of(context)!.setEnabled(false);
             final result = await requestAuthentication();
-            AppLock.of(context)
-                .setEnabled(Configuration.instance.shouldShowLockScreen());
+            AppLock.of(context)!
+                .setEnabled(Configuration.instance.shouldShowLockScreen()!);
             if (!result) {
               showToast("please authenticate to change your email");
               return;
@@ -123,10 +123,10 @@ class AccountSectionWidgetState extends State<AccountSectionWidget> {
         GestureDetector(
           behavior: HitTestBehavior.translucent,
           onTap: () async {
-            AppLock.of(context).setEnabled(false);
+            AppLock.of(context)!.setEnabled(false);
             final result = await requestAuthentication();
-            AppLock.of(context)
-                .setEnabled(Configuration.instance.shouldShowLockScreen());
+            AppLock.of(context)!
+                .setEnabled(Configuration.instance.shouldShowLockScreen()!);
             if (!result) {
               showToast("please authenticate to change your password");
               return;

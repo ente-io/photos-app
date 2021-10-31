@@ -8,7 +8,7 @@ Future<void> showToast(String message,
     {toastLength = Toast.LENGTH_LONG}) async {
   if (Platform.isAndroid) {
     await Fluttertoast.cancel();
-    return Fluttertoast.showToast(
+    await Fluttertoast.showToast(
         msg: message,
         toastLength: toastLength,
         gravity: ToastGravity.BOTTOM,

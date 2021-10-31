@@ -36,7 +36,7 @@ import 'package:super_logging/super_logging.dart';
 
 final _logger = Logger("main");
 
-Completer<void> _initializationStatus;
+Completer<void>? _initializationStatus;
 const kLastBGTaskHeartBeatTime = "bg_task_hb_time";
 const kLastFGTaskHeartBeatTime = "fg_task_hb_time";
 const kHeartBeatFrequency = Duration(seconds: 1);
@@ -131,7 +131,7 @@ void _headlessTaskHandler(HeadlessTask task) {
 
 Future<void> _init(bool isBackground) async {
   if (_initializationStatus != null) {
-    return _initializationStatus.future;
+    return _initializationStatus!.future;
   }
   _initializationStatus = Completer<void>();
   _scheduleHeartBeat(isBackground);
@@ -153,7 +153,7 @@ Future<void> _init(bool isBackground) async {
   await LocalSettings.instance.init();
   FeatureFlagService.instance.init();
   _logger.info("Initialization done");
-  _initializationStatus.complete();
+  _initializationStatus!.complete();
 }
 
 Future<void> _sync({bool isAppInBackground = false}) async {
@@ -238,7 +238,7 @@ class _EnteAppState extends State<EnteApp> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance!.addObserver(this);
     _configureBackgroundFetch();
   }
 
@@ -249,7 +249,7 @@ class _EnteAppState extends State<EnteApp> with WidgetsBindingObserver {
       theme: themeData,
       home: EnteApp._homeWidget,
       debugShowCheckedModeBanner: false,
-      navigatorKey: Network.instance.getAlice().getNavigatorKey(),
+      navigatorKey: Network.instance.getAlice()!.getNavigatorKey(),
       builder: EasyLoading.init(),
       supportedLocales: L10n.all,
       localizationsDelegates: [

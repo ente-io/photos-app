@@ -4,9 +4,9 @@ import 'package:photos/ui/loading_widget.dart';
 
 class WebPage extends StatefulWidget {
   final String title;
-  final String url;
+  final String? url;
 
-  const WebPage(this.title, this.url, {Key key}) : super(key: key);
+  const WebPage(this.title, this.url, {Key? key}) : super(key: key);
 
   @override
   _WebPageState createState() => _WebPageState();
@@ -23,7 +23,7 @@ class _WebPageState extends State<WebPage> {
         actions: [_hasLoadedPage ? Container() : loadWidget],
       ),
       body: InAppWebView(
-        initialUrlRequest: URLRequest(url: Uri.parse(widget.url)),
+        initialUrlRequest: URLRequest(url: Uri.parse(widget.url!)),
         onLoadStop: (c, url) {
           setState(() {
             _hasLoadedPage = true;

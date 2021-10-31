@@ -3,17 +3,17 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 class Collection {
-  final int id;
-  final User owner;
+  final int? id;
+  final User? owner;
   final String encryptedKey;
   final String keyDecryptionNonce;
-  final String name;
-  final String encryptedName;
-  final String nameDecryptionNonce;
+  final String? name;
+  final String? encryptedName;
+  final String? nameDecryptionNonce;
   final CollectionType type;
   final CollectionAttributes attributes;
-  final List<User> sharees;
-  final int updationTime;
+  final List<User>? sharees;
+  final int? updationTime;
   final bool isDeleted;
 
   Collection(
@@ -31,7 +31,7 @@ class Collection {
     this.isDeleted = false,
   });
 
-  static CollectionType typeFromString(String type) {
+  static CollectionType typeFromString(String? type) {
     switch (type) {
       case "folder":
         return CollectionType.folder;
@@ -53,18 +53,18 @@ class Collection {
   }
 
   Collection copyWith({
-    int id,
-    User owner,
-    String encryptedKey,
-    String keyDecryptionNonce,
-    String name,
-    String encryptedName,
-    String nameDecryptionNonce,
-    CollectionType type,
-    CollectionAttributes attributes,
-    List<User> sharees,
-    int updationTime,
-    bool isDeleted,
+    int? id,
+    User? owner,
+    String? encryptedKey,
+    String? keyDecryptionNonce,
+    String? name,
+    String? encryptedName,
+    String? nameDecryptionNonce,
+    CollectionType? type,
+    CollectionAttributes? attributes,
+    List<User>? sharees,
+    int? updationTime,
+    bool? isDeleted,
   }) {
     return Collection(
       id ?? this.id,
@@ -92,15 +92,17 @@ class Collection {
       'encryptedName': encryptedName,
       'nameDecryptionNonce': nameDecryptionNonce,
       'type': typeToString(type),
-      'attributes': attributes?.toMap(),
-      'sharees': sharees?.map((x) => x?.toMap())?.toList(),
+      'attributes': attributes.toMap(),
+      'sharees': sharees?.map((x) => x.toMap()).toList(),
       'updationTime': updationTime,
       'isDeleted': isDeleted,
     };
   }
 
-  factory Collection.fromMap(Map<String, dynamic> map) {
-    if (map == null) return null;
+  factory Collection.fromMap(Map<String, dynamic>? map) {
+    if (map == null) {
+      throw ArgumentError('map can not be null');
+    }
     final sharees = (map['sharees'] == null || map['sharees'].length == 0)
         ? <User>[]
         : List<User>.from(map['sharees'].map((x) => User.fromMap(x)));
@@ -173,9 +175,9 @@ enum CollectionType {
 }
 
 class CollectionAttributes {
-  final String encryptedPath;
-  final String pathDecryptionNonce;
-  final int version;
+  final String? encryptedPath;
+  final String? pathDecryptionNonce;
+  final int? version;
 
   CollectionAttributes({
     this.encryptedPath,
@@ -184,9 +186,9 @@ class CollectionAttributes {
   });
 
   CollectionAttributes copyWith({
-    String encryptedPath,
-    String pathDecryptionNonce,
-    int version,
+    String? encryptedPath,
+    String? pathDecryptionNonce,
+    int? version,
   }) {
     return CollectionAttributes(
       encryptedPath: encryptedPath ?? this.encryptedPath,
@@ -207,7 +209,7 @@ class CollectionAttributes {
     return map;
   }
 
-  factory CollectionAttributes.fromMap(Map<String, dynamic> map) {
+  static fromMap(Map<String, dynamic>? map) {
     if (map == null) return null;
 
     return CollectionAttributes(
@@ -242,9 +244,9 @@ class CollectionAttributes {
 }
 
 class User {
-  int id;
-  String email;
-  String name;
+  int? id;
+  String? email;
+  String? name;
 
   User({
     this.id,
@@ -253,9 +255,9 @@ class User {
   });
 
   User copyWith({
-    int id,
-    String email,
-    String name,
+    int? id,
+    String? email,
+    String? name,
   }) {
     return User(
       id: id ?? this.id,
@@ -272,7 +274,7 @@ class User {
     };
   }
 
-  factory User.fromMap(Map<String, dynamic> map) {
+  static fromMap(Map<String, dynamic>? map) {
     if (map == null) return null;
 
     return User(

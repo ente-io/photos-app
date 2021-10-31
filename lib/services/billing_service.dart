@@ -25,7 +25,7 @@ class BillingService {
 
   bool _isOnSubscriptionPage = false;
 
-  Future<BillingPlans> _future;
+  Future<BillingPlans>? _future;
 
   Future<void> init() async {
     InAppPurchaseConnection.enablePendingPurchases();
@@ -57,7 +57,7 @@ class BillingService {
     _future = null;
   }
 
-  Future<BillingPlans> getBillingPlans() {
+  Future<BillingPlans>? getBillingPlans() {
     _future ??= _dio
         .get(_config.getHttpEndpoint() + "/billing/plans/v2")
         .then((response) {
@@ -147,7 +147,7 @@ class BillingService {
     }
   }
 
-  Future<String> getStripeCustomerPortalUrl(
+  Future<String?> getStripeCustomerPortalUrl(
       {String endpoint = kWebPaymentRedirectUrl}) async {
     try {
       final response = await _dio.get(
@@ -168,7 +168,7 @@ class BillingService {
     }
   }
 
-  Future<int> fetchUsage() async {
+  Future<int?> fetchUsage() async {
     try {
       final response = await _dio.get(
         _config.getHttpEndpoint() + "/billing/usage",

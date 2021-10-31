@@ -30,7 +30,7 @@ void preloadFile(ente.File file) {
 
 // IMPORTANT: Delete the returned file if `isOrigin` is set to true
 // https://github.com/CaiJingLong/flutter_photo_manager#cache-problem-of-ios
-Future<io.File> getFile(
+Future<io.File?>? getFile(
   ente.File file, {
   bool liveVideo = false,
   bool isOrigin = false,
@@ -62,7 +62,7 @@ Future<bool> doesLocalFileExist(ente.File file) async {
   return await _getLocalDiskFile(file) != null;
 }
 
-Future<io.File> _getLocalDiskFile(
+Future<io.File?> _getLocalDiskFile(
   ente.File file, {
   bool liveVideo = false,
   bool isOrigin = false,
@@ -73,7 +73,7 @@ Future<io.File> _getLocalDiskFile(
       return exist ? localFile : null;
     });
   } else if (file.fileType == FileType.livePhoto && liveVideo) {
-    return Motionphoto.getLivePhotoFile(file.localID);
+    return Motionphoto.getLivePhotoFile(file.localID!);
   } else {
     return file.getAsset().then((asset) async {
       if (asset == null || !(await asset.exists)) {
@@ -87,7 +87,7 @@ Future<io.File> _getLocalDiskFile(
 String getSharedMediaFilePath(ente.File file) {
   return Configuration.instance.getSharedMediaCacheDirectory() +
       "/" +
-      file.localID.replaceAll(kSharedMediaIdentifier, '');
+      file.localID!.replaceAll(kSharedMediaIdentifier, '');
 }
 
 void preloadThumbnail(ente.File file) {
@@ -98,12 +98,12 @@ void preloadThumbnail(ente.File file) {
   }
 }
 
-final Map<String, Future<io.File>> fileDownloadsInProgress =
+final Map<String, Future<io.File?>> fileDownloadsInProgress =
     <String, Future<io.File>>{};
 
-Future<io.File> getFileFromServer(
+Future<io.File?>? getFileFromServer(
   ente.File file, {
-  ProgressCallback progressCallback,
+  ProgressCallback? progressCallback,
   bool liveVideo = false, // only needed in case of live photos
 }) async {
   final cacheManager = (file.fileType == FileType.video || liveVideo)
@@ -134,8 +134,7 @@ Future<io.File> getFileFromServer(
   return fileDownloadsInProgress[downloadID];
 }
 
-Future<bool> isFileCached(ente.File file,
-    {bool liveVideo = false}) async {
+Future<bool> isFileCached(ente.File file, {bool liveVideo = false}) async {
   final cacheManager = (file.fileType == FileType.video || liveVideo)
       ? VideoCacheManager.instance
       : DefaultCacheManager();
@@ -143,11 +142,11 @@ Future<bool> isFileCached(ente.File file,
   return fileInfo != null;
 }
 
-final Map<int, Future<_LivePhoto>> livePhotoDownloadsTracker =
-    <int, Future<_LivePhoto>>{};
+final Map<int?, Future<_LivePhoto?>> livePhotoDownloadsTracker =
+    <int?, Future<_LivePhoto>>{};
 
-Future<io.File> _getLivePhotoFromServer(ente.File file,
-    {ProgressCallback progressCallback, bool needLiveVideo}) async {
+Future<io.File?> _getLivePhotoFromServer(ente.File file,
+    {ProgressCallback? progressCallback, bool? needLiveVideo}) async {
   final downloadID = file.uploadedFileID;
   try {
     if (!livePhotoDownloadsTracker.containsKey(downloadID)) {
@@ -159,23 +158,23 @@ Future<io.File> _getLivePhotoFromServer(ente.File file,
     if (livePhoto == null) {
       return null;
     }
-    return needLiveVideo ? livePhoto.video : livePhoto.image;
-  } catch (e,s) {
+    return needLiveVideo! ? livePhoto.video : livePhoto.image;
+  } catch (e, s) {
     _logger.warning("live photo get failed", e, s);
     livePhotoDownloadsTracker.remove(downloadID);
     return null;
   }
 }
 
-Future<_LivePhoto> _downloadLivePhoto(ente.File file,
-    {ProgressCallback progressCallback}) async {
+Future<_LivePhoto?> _downloadLivePhoto(ente.File file,
+    {ProgressCallback? progressCallback}) async {
   return downloadAndDecrypt(file, progressCallback: progressCallback)
       .then((decryptedFile) async {
     if (decryptedFile == null) {
       return null;
     }
     _logger.fine("Decoded zipped live photo from " + decryptedFile.path);
-    io.File imageFileCache, videoFileCache;
+    io.File? imageFileCache, videoFileCache;
     List<int> bytes = await decryptedFile.readAsBytes();
     Archive archive = ZipDecoder().decodeBytes(bytes);
     final tempPath = Configuration.instance.getTempDirectory();
@@ -186,19 +185,19 @@ Future<_LivePhoto> _downloadLivePhoto(ente.File file,
         String fileExtension = getExtension(archiveFile.name);
         String decodePath =
             tempPath + file.uploadedFileID.toString() + filename;
-        List<int> data = archiveFile.content;
+        List<int>? data = archiveFile.content;
         if (filename.startsWith("image")) {
           final imageFile = io.File(decodePath);
           await imageFile.create(recursive: true);
-          await imageFile.writeAsBytes(data);
-          io.File imageConvertedFile = imageFile;
+          await imageFile.writeAsBytes(data!);
+          io.File? imageConvertedFile = imageFile;
           if ((fileExtension == "unknown") ||
               (io.Platform.isAndroid && fileExtension == "heic")) {
-            imageConvertedFile = await FlutterImageCompress.compressAndGetFile(
+            imageConvertedFile = await (FlutterImageCompress.compressAndGetFile(
               decodePath,
               decodePath + ".jpg",
               keepExif: true,
-            );
+            ) as FutureOr<io.File>);
             await imageFile.delete();
           }
           imageFileCache = await DefaultCacheManager().putFile(
@@ -212,7 +211,7 @@ Future<_LivePhoto> _downloadLivePhoto(ente.File file,
         } else if (filename.startsWith("video")) {
           final videoFile = io.File(decodePath);
           await videoFile.create(recursive: true);
-          await videoFile.writeAsBytes(data);
+          await videoFile.writeAsBytes(data!);
           videoFileCache = await VideoCacheManager.instance.putFile(
             file.getDownloadUrl(),
             await videoFile.readAsBytes(),
@@ -226,22 +225,22 @@ Future<_LivePhoto> _downloadLivePhoto(ente.File file,
     }
     return _LivePhoto(imageFileCache, videoFileCache);
   }).catchError((e) {
-    _logger.warning(
-        "failed to download live photos : ${file.tag()}", e);
+    _logger.warning("failed to download live photos : ${file.tag()}", e);
     throw e;
   });
 }
 
-Future<io.File> _downloadAndCache(ente.File file, BaseCacheManager cacheManager,
-    {ProgressCallback progressCallback}) async {
+Future<io.File?> _downloadAndCache(
+    ente.File file, BaseCacheManager cacheManager,
+    {ProgressCallback? progressCallback}) async {
   return downloadAndDecrypt(file, progressCallback: progressCallback)
       .then((decryptedFile) async {
     if (decryptedFile == null) {
       return null;
     }
     var decryptedFilePath = decryptedFile.path;
-    String fileExtension = getExtension(file.title);
-    var outputFile = decryptedFile;
+    String fileExtension = getExtension(file.title!);
+    io.File? outputFile = decryptedFile;
     if ((fileExtension == "unknown" && file.fileType == FileType.image) ||
         (io.Platform.isAndroid && fileExtension == "heic")) {
       outputFile = await FlutterImageCompress.compressAndGetFile(
@@ -253,7 +252,7 @@ Future<io.File> _downloadAndCache(ente.File file, BaseCacheManager cacheManager,
     }
     final cachedFile = await cacheManager.putFile(
       file.getDownloadUrl(),
-      await outputFile.readAsBytes(),
+      await outputFile!.readAsBytes(),
       eTag: file.getDownloadUrl(),
       maxAge: Duration(days: 365),
       fileExtension: fileExtension,
@@ -301,8 +300,8 @@ Future<void> clearCache(ente.File file) async {
 }
 
 class _LivePhoto {
-  final io.File image;
-  final io.File video;
+  final io.File? image;
+  final io.File? video;
 
   _LivePhoto(this.image, this.video);
 }

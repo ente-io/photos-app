@@ -15,16 +15,16 @@ import 'package:visibility_detector/visibility_detector.dart';
 
 class VideoWidget extends StatefulWidget {
   final File file;
-  final bool autoPlay;
-  final String tagPrefix;
-  final Function(bool) playbackCallback;
+  final bool? autoPlay;
+  final String? tagPrefix;
+  final Function(bool)? playbackCallback;
 
   VideoWidget(
     this.file, {
     this.autoPlay = false,
     this.tagPrefix,
     this.playbackCallback,
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override
@@ -33,10 +33,10 @@ class VideoWidget extends StatefulWidget {
 
 class _VideoWidgetState extends State<VideoWidget> {
   final _logger = Logger("VideoWidget");
-  VideoPlayerController _videoPlayerController;
-  ChewieController _chewieController;
-  double _progress;
-  bool _isPlaying;
+  VideoPlayerController? _videoPlayerController;
+  ChewieController? _chewieController;
+  double? _progress;
+  bool _isPlaying = false;
 
   @override
   void initState() {
@@ -79,7 +79,8 @@ class _VideoWidgetState extends State<VideoWidget> {
           });
         }
       },
-    ).then((file) {
+    )!
+        .then((file) {
       if (file != null) {
         _setVideoPlayerController(file: file);
       }
@@ -89,20 +90,21 @@ class _VideoWidgetState extends State<VideoWidget> {
   @override
   void dispose() {
     if (_videoPlayerController != null) {
-      _videoPlayerController.dispose();
+      _videoPlayerController!.dispose();
     }
     if (_chewieController != null) {
-      _chewieController.dispose();
+      _chewieController!.dispose();
     }
     super.dispose();
   }
 
-  VideoPlayerController _setVideoPlayerController({String url, io.File file}) {
+  VideoPlayerController _setVideoPlayerController(
+      {String? url, io.File? file}) {
     VideoPlayerController videoPlayerController;
     if (url != null) {
       videoPlayerController = VideoPlayerController.network(url);
     } else {
-      videoPlayerController = VideoPlayerController.file(file);
+      videoPlayerController = VideoPlayerController.file(file!);
     }
     return _videoPlayerController = videoPlayerController
       ..initialize().whenComplete(() {
@@ -115,7 +117,7 @@ class _VideoWidgetState extends State<VideoWidget> {
   @override
   Widget build(BuildContext context) {
     final content = _videoPlayerController != null &&
-            _videoPlayerController.value.isInitialized
+            _videoPlayerController!.value.isInitialized
         ? _getVideoPlayer()
         : _getLoadingWidget();
     return VisibilityDetector(
@@ -123,12 +125,12 @@ class _VideoWidgetState extends State<VideoWidget> {
       onVisibilityChanged: (info) {
         if (info.visibleFraction < 1) {
           if (mounted && _chewieController != null) {
-            _chewieController.pause();
+            _chewieController!.pause();
           }
         }
       },
       child: Hero(
-        tag: widget.tagPrefix + widget.file.tag(),
+        tag: widget.tagPrefix! + widget.file.tag(),
         child: content,
       ),
     );
@@ -168,23 +170,23 @@ class _VideoWidgetState extends State<VideoWidget> {
   }
 
   Widget _getVideoPlayer() {
-    _videoPlayerController.addListener(() {
-      if (_isPlaying != _videoPlayerController.value.isPlaying) {
-        _isPlaying = _videoPlayerController.value.isPlaying;
+    _videoPlayerController!.addListener(() {
+      if (_isPlaying != _videoPlayerController!.value.isPlaying) {
+        _isPlaying = _videoPlayerController!.value.isPlaying;
         if (widget.playbackCallback != null) {
-          widget.playbackCallback(_isPlaying);
+          widget.playbackCallback!(_isPlaying);
         }
       }
     });
     _chewieController = ChewieController(
-      videoPlayerController: _videoPlayerController,
-      aspectRatio: _videoPlayerController.value.aspectRatio,
-      autoPlay: widget.autoPlay,
+      videoPlayerController: _videoPlayerController!,
+      aspectRatio: _videoPlayerController!.value.aspectRatio,
+      autoPlay: widget.autoPlay!,
       autoInitialize: true,
       looping: true,
       allowFullScreen: false,
       customControls: VideoControls(),
     );
-    return Chewie(controller: _chewieController);
+    return Chewie(controller: _chewieController!);
   }
 }

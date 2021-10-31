@@ -15,6 +15,7 @@ import 'package:photos/ui/image_editor_page.dart';
 import 'package:photos/utils/dialog_util.dart';
 import 'package:photos/utils/file_util.dart';
 import 'package:photos/utils/navigation_util.dart';
+import 'package:photos/utils/toast_util.dart';
 
 enum DetailPageMode {
   minimalistic,
@@ -23,7 +24,7 @@ enum DetailPageMode {
 
 class DetailPageConfiguration {
   final List<File> files;
-  final GalleryLoader asyncLoader;
+  final GalleryLoader? asyncLoader;
   final int selectedIndex;
   final String tagPrefix;
   final DetailPageMode mode;
@@ -37,10 +38,10 @@ class DetailPageConfiguration {
   });
 
   DetailPageConfiguration copyWith({
-    List<File> files,
-    GalleryLoader asyncLoader,
-    int selectedIndex,
-    String tagPrefix,
+    List<File>? files,
+    GalleryLoader? asyncLoader,
+    int? selectedIndex,
+    String? tagPrefix,
   }) {
     return DetailPageConfiguration(
       files ?? this.files,
@@ -64,15 +65,15 @@ class _DetailPageState extends State<DetailPage> {
   static const kLoadLimit = 100;
   final _logger = Logger("DetailPageState");
   bool _shouldDisableScroll = false;
-  List<File> _files;
-  PageController _pageController;
+  List<File>? _files;
+  PageController? _pageController;
   int _selectedIndex = 0;
   bool _hasPageChanged = false;
   bool _hasLoadedTillStart = false;
   bool _hasLoadedTillEnd = false;
   bool _shouldHideAppBar = false;
-  GlobalKey<FadingAppBarState> _appBarKey;
-  GlobalKey<FadingBottomBarState> _bottomBarKey;
+  GlobalKey<FadingAppBarState>? _appBarKey;
+  GlobalKey<FadingBottomBarState>? _bottomBarKey;
 
   @override
   void initState() {
@@ -93,17 +94,17 @@ class _DetailPageState extends State<DetailPage> {
   @override
   Widget build(BuildContext context) {
     _logger.info("Opening " +
-        _files[_selectedIndex].toString() +
+        _files![_selectedIndex].toString() +
         ". " +
         (_selectedIndex + 1).toString() +
         " / " +
-        _files.length.toString() +
+        _files!.length.toString() +
         " files .");
     _appBarKey = GlobalKey<FadingAppBarState>();
     _bottomBarKey = GlobalKey<FadingBottomBarState>();
     return Scaffold(
       appBar: FadingAppBar(
-        _files[_selectedIndex],
+        _files![_selectedIndex],
         _onFileDeleted,
         Configuration.instance.getUserID(),
         100,
@@ -116,7 +117,7 @@ class _DetailPageState extends State<DetailPage> {
           children: [
             _buildPageView(),
             FadingBottomBar(
-              _files[_selectedIndex],
+              _files![_selectedIndex],
               _onEditFileRequested,
               widget.config.mode == DetailPageMode.minimalistic,
               key: _bottomBarKey,
@@ -133,7 +134,7 @@ class _DetailPageState extends State<DetailPage> {
     _pageController = PageController(initialPage: _selectedIndex);
     return PageView.builder(
       itemBuilder: (context, index) {
-        final file = _files[index];
+        final file = _files![index];
         Widget content = FileWidget(
           file,
           autoPlay: !_hasPageChanged,
@@ -171,17 +172,17 @@ class _DetailPageState extends State<DetailPage> {
           ? NeverScrollableScrollPhysics()
           : PageScrollPhysics(),
       controller: _pageController,
-      itemCount: _files.length,
+      itemCount: _files!.length,
     );
   }
 
   void _toggleFullScreen() {
     if (_shouldHideAppBar) {
-      _appBarKey.currentState.hide();
-      _bottomBarKey.currentState.hide();
+      _appBarKey!.currentState!.hide();
+      _bottomBarKey!.currentState!.hide();
     } else {
-      _appBarKey.currentState.show();
-      _bottomBarKey.currentState.show();
+      _appBarKey!.currentState!.show();
+      _bottomBarKey!.currentState!.show();
     }
     Future.delayed(Duration.zero, () {
       SystemChrome.setEnabledSystemUIOverlays(
@@ -195,8 +196,8 @@ class _DetailPageState extends State<DetailPage> {
       return;
     }
     if (_selectedIndex == 0 && !_hasLoadedTillStart) {
-      final result = await widget.config.asyncLoader(
-          _files[_selectedIndex].creationTime + 1,
+      final result = await widget.config.asyncLoader!(
+          _files![_selectedIndex].creationTime! + 1,
           DateTime.now().microsecondsSinceEpoch,
           limit: kLoadLimit,
           asc: true);
@@ -208,36 +209,36 @@ class _DetailPageState extends State<DetailPage> {
           _hasLoadedTillStart = true;
         }
         final length = files.length;
-        files.addAll(_files);
+        files.addAll(_files!);
         _files = files;
-        _pageController.jumpToPage(length);
+        _pageController!.jumpToPage(length);
         _selectedIndex = length;
       });
     }
-    if (_selectedIndex == _files.length - 1 && !_hasLoadedTillEnd) {
-      final result = await widget.config.asyncLoader(
-          kGalleryLoadStartTime, _files[_selectedIndex].creationTime - 1,
+    if (_selectedIndex == _files!.length - 1 && !_hasLoadedTillEnd) {
+      final result = await widget.config.asyncLoader!(
+          kGalleryLoadStartTime, _files![_selectedIndex].creationTime! - 1,
           limit: kLoadLimit);
       setState(() {
         if (!result.hasMore) {
           _hasLoadedTillEnd = true;
         }
-        _files.addAll(result.files);
+        _files!.addAll(result.files);
       });
     }
   }
 
   void _preloadFiles(int index) {
     if (index > 0) {
-      preloadFile(_files[index - 1]);
+      preloadFile(_files![index - 1]);
     }
-    if (index < _files.length - 1) {
-      preloadFile(_files[index + 1]);
+    if (index < _files!.length - 1) {
+      preloadFile(_files![index + 1]);
     }
   }
 
   Future<void> _onFileDeleted(File file) async {
-    final totalFiles = _files.length;
+    final totalFiles = _files!.length;
     if (totalFiles == 1) {
       // Deleted the only file
       Navigator.of(context).pop(); // Close pageview
@@ -245,17 +246,17 @@ class _DetailPageState extends State<DetailPage> {
     }
     if (_selectedIndex == totalFiles - 1) {
       // Deleted the last file
-      await _pageController.previousPage(
+      await _pageController!.previousPage(
           duration: Duration(milliseconds: 200), curve: Curves.easeInOut);
       setState(() {
-        _files.remove(file);
+        _files!.remove(file);
       });
     } else {
-      await _pageController.nextPage(
+      await _pageController!.nextPage(
           duration: Duration(milliseconds: 200), curve: Curves.easeInOut);
       setState(() {
         _selectedIndex--;
-        _files.remove(file);
+        _files!.remove(file);
       });
     }
   }
@@ -271,8 +272,14 @@ class _DetailPageState extends State<DetailPage> {
     }
     final dialog = createProgressDialog(context, "please wait...");
     await dialog.show();
+    final fileResult = await getFile(file);
+    if (fileResult == null) {
+      showToast('something went wrong');
+      await dialog.hide();
+      return;
+    }
     final imageProvider =
-        ExtendedFileImageProvider(await getFile(file), cacheRawData: true);
+        ExtendedFileImageProvider(fileResult, cacheRawData: true);
     await precacheImage(imageProvider, context);
     await dialog.hide();
     replacePage(

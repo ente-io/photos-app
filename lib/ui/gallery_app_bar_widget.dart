@@ -34,10 +34,10 @@ enum GalleryAppBarType {
 
 class GalleryAppBarWidget extends StatefulWidget {
   final GalleryAppBarType type;
-  final String title;
+  final String? title;
   final SelectedFiles selectedFiles;
-  final String path;
-  final Collection collection;
+  final String? path;
+  final Collection? collection;
 
   GalleryAppBarWidget(
     this.type,
@@ -53,9 +53,9 @@ class GalleryAppBarWidget extends StatefulWidget {
 
 class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
   final _logger = Logger("GalleryAppBar");
-  StreamSubscription _userAuthEventSubscription;
-  Function() _selectedFilesListener;
-  String _appBarTitle;
+  late StreamSubscription _userAuthEventSubscription;
+  late Function() _selectedFilesListener;
+  String? _appBarTitle;
 
   @override
   void initState() {
@@ -90,7 +90,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
             ? Container()
             : TextButton(
                 child: Text(
-                  _appBarTitle,
+                  _appBarTitle!,
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.80),
                     fontWeight: FontWeight.bold,
@@ -137,7 +137,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
     final dialog = createProgressDialog(context, "changing name...");
     await dialog.show();
     try {
-      await CollectionsService.instance.rename(widget.collection, result);
+      await CollectionsService.instance.rename(widget.collection!, result);
       await dialog.hide();
       if (mounted) {
         _appBarTitle = result;
@@ -167,7 +167,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
       );
     }
     if (widget.type == GalleryAppBarType.owned_collection &&
-        widget.collection.type == CollectionType.album) {
+        widget.collection!.type == CollectionType.album) {
       actions.add(PopupMenuButton(
         itemBuilder: (context) {
           final List<PopupMenuItem> items = [];
@@ -187,7 +187,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
           );
           return items;
         },
-        onSelected: (value) async {
+        onSelected: (dynamic value) async {
           if (value == 1) {
             await _renameAlbum(context);
           }
@@ -302,7 +302,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
     }
     if (Configuration.instance.hasConfiguredAccount() &&
         widget.type == GalleryAppBarType.owned_collection &&
-        widget.collection.type != CollectionType.favorites) {
+        widget.collection!.type != CollectionType.favorites) {
       actions.add(
         Tooltip(
           message: "move",
@@ -346,7 +346,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
         ),
       );
     } else if (widget.type == GalleryAppBarType.owned_collection) {
-      if (widget.collection.type == CollectionType.folder) {
+      if (widget.collection!.type == CollectionType.folder) {
         actions.add(
           Tooltip(
             message: "delete",
@@ -459,7 +459,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
           " file" +
           (count == 1 ? "" : "s") +
           " from " +
-          widget.collection.name +
+          widget.collection!.name! +
           "?"),
       actions: <Widget>[
         CupertinoActionSheetAction(
@@ -471,7 +471,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
             await dialog.show();
             try {
               await CollectionsService.instance.removeFromCollection(
-                  widget.collection.id, widget.selectedFiles.files.toList());
+                  widget.collection!.id, widget.selectedFiles.files.toList());
               await dialog.hide();
               widget.selectedFiles.clearAll();
             } catch (e, s) {

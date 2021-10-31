@@ -52,7 +52,7 @@ import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:uni_links/uni_links.dart';
 
 class HomeWidget extends StatefulWidget {
-  const HomeWidget({Key key}) : super(key: key);
+  const HomeWidget({Key? key}) : super(key: key);
 
   @override
   State<StatefulWidget> createState() => _HomeWidgetState();
@@ -68,20 +68,20 @@ class _HomeWidgetState extends State<HomeWidget> {
   final _settingsButton = SettingsButton();
   final PageController _pageController = PageController();
   int _selectedTabIndex = 0;
-  Widget _headerWidgetWithSettingsButton;
+  Widget? _headerWidgetWithSettingsButton;
 
   // for receiving media files
-  StreamSubscription _intentDataStreamSubscription;
-  List<SharedMediaFile> _sharedFiles;
+  StreamSubscription? _intentDataStreamSubscription;
+  List<SharedMediaFile>? _sharedFiles;
 
-  StreamSubscription<TabChangedEvent> _tabChangedEventSubscription;
-  StreamSubscription<SubscriptionPurchasedEvent> _subscriptionPurchaseEvent;
-  StreamSubscription<TriggerLogoutEvent> _triggerLogoutEvent;
-  StreamSubscription<UserLoggedOutEvent> _loggedOutEvent;
-  StreamSubscription<PermissionGrantedEvent> _permissionGrantedEvent;
-  StreamSubscription<SyncStatusUpdate> _firstImportEvent;
-  StreamSubscription<BackupFoldersUpdatedEvent> _backupFoldersUpdatedEvent;
-  StreamSubscription<AccountConfiguredEvent> _accountConfiguredEvent;
+  late StreamSubscription<TabChangedEvent> _tabChangedEventSubscription;
+  late StreamSubscription<SubscriptionPurchasedEvent> _subscriptionPurchaseEvent;
+  late StreamSubscription<TriggerLogoutEvent> _triggerLogoutEvent;
+  late StreamSubscription<UserLoggedOutEvent> _loggedOutEvent;
+  late StreamSubscription<PermissionGrantedEvent> _permissionGrantedEvent;
+  late StreamSubscription<SyncStatusUpdate> _firstImportEvent;
+  late StreamSubscription<BackupFoldersUpdatedEvent> _backupFoldersUpdatedEvent;
+  late StreamSubscription<AccountConfiguredEvent> _accountConfiguredEvent;
 
   @override
   void initState() {
@@ -121,12 +121,12 @@ class _HomeWidgetState extends State<HomeWidget> {
     _triggerLogoutEvent =
         Bus.instance.on<TriggerLogoutEvent>().listen((event) async {
       AlertDialog alert = AlertDialog(
-        title: Text(AppLocalizations.of(context).auth_session_expired),
-        content: Text(AppLocalizations.of(context).auth_login_again),
+        title: Text(AppLocalizations.of(context)!.auth_session_expired),
+        content: Text(AppLocalizations.of(context)!.auth_login_again),
         actions: [
           TextButton(
             child: Text(
-              AppLocalizations.of(context).ok,
+              AppLocalizations.of(context)!.ok,
               style: TextStyle(
                 color: Theme.of(context).buttonColor,
               ),
@@ -134,7 +134,7 @@ class _HomeWidgetState extends State<HomeWidget> {
             onPressed: () async {
               Navigator.of(context, rootNavigator: true).pop('dialog');
               final dialog = createProgressDialog(
-                  context, AppLocalizations.of(context).auth_logging_out);
+                  context, AppLocalizations.of(context)!.auth_logging_out);
               await dialog.show();
               await Configuration.instance.logout();
               await dialog.hide();
@@ -261,7 +261,7 @@ class _HomeWidgetState extends State<HomeWidget> {
     if (!LocalSyncService.instance.hasCompletedFirstImport()) {
       return LoadingPhotosWidget();
     }
-    if (_sharedFiles != null && _sharedFiles.isNotEmpty) {
+    if (_sharedFiles != null && _sharedFiles!.isNotEmpty) {
       ReceiveSharingIntent.reset();
       return CreateCollectionPage(null, _sharedFiles);
     }
@@ -297,7 +297,7 @@ class _HomeWidgetState extends State<HomeWidget> {
   Future<bool> _initDeepLinks() async {
     // Platform messages may fail, so we use a try/catch PlatformException.
     try {
-      String initialLink = await getInitialLink();
+      String? initialLink = await getInitialLink();
       // Parse the link and warn the user, if it is not correct,
       // but keep in mind it could be `null`.
       if (initialLink != null) {
@@ -314,8 +314,8 @@ class _HomeWidgetState extends State<HomeWidget> {
     }
 
     // Attach a listener to the stream
-    linkStream.listen((String link) {
-      _logger.info("Link received: " + link);
+    linkStream.listen((String? link) {
+      _logger.info("Link received: " + link!);
       _getCredentials(context, link);
     }, onError: (err) {
       _logger.severe(err);
@@ -323,16 +323,16 @@ class _HomeWidgetState extends State<HomeWidget> {
     return false;
   }
 
-  void _getCredentials(BuildContext context, String link) {
+  void _getCredentials(BuildContext context, String? link) {
     if (Configuration.instance.hasConfiguredAccount()) {
       return;
     }
-    final ott = Uri.parse(link).queryParameters["ott"];
+    final ott = Uri.parse(link!).queryParameters["ott"];
     UserService.instance.verifyEmail(context, ott);
   }
 
   Widget _getMainGalleryWidget() {
-    Widget header;
+    Widget? header;
     if (_selectedFiles.files.isEmpty) {
       header = _headerWidgetWithSettingsButton;
     } else {
@@ -359,7 +359,7 @@ class _HomeWidgetState extends State<HomeWidget> {
           }
         }
         // hide ignored files from home page UI
-        final ignoredIDs = await IgnoredFilesService.instance.ignoredIDs;
+        final ignoredIDs = await IgnoredFilesService.instance.ignoredIDs!;
         result.files.removeWhere((f) =>
             f.uploadedFileID == null &&
             IgnoredFilesService.instance.shouldSkipUpload(ignoredIDs, f));
@@ -395,7 +395,7 @@ class _HomeWidgetState extends State<HomeWidget> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _headerWidgetWithSettingsButton,
+        _headerWidgetWithSettingsButton!,
         Image.asset(
           "assets/preserved.png",
           height: 160,
@@ -410,7 +410,7 @@ class _HomeWidgetState extends State<HomeWidget> {
                 height: 64,
                 padding: const EdgeInsets.fromLTRB(60, 0, 60, 0),
                 child: button(
-                  AppLocalizations.of(context).start_backup,
+                  AppLocalizations.of(context)!.start_backup,
                   fontSize: 16,
                   lineHeight: 1.5,
                   padding: EdgeInsets.only(bottom: 4),
@@ -423,7 +423,7 @@ class _HomeWidgetState extends State<HomeWidget> {
                         context,
                         BackupFolderSelectionPage(
                           shouldSelectAll: true,
-                          buttonText: AppLocalizations.of(context).start_backup,
+                          buttonText: AppLocalizations.of(context)!.start_backup,
                         ),
                       );
                     }
@@ -499,7 +499,7 @@ class _HomeWidgetState extends State<HomeWidget> {
 class HomePageAppBar extends StatefulWidget {
   const HomePageAppBar(
     this.selectedFiles, {
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   final SelectedFiles selectedFiles;
@@ -540,7 +540,7 @@ class HeaderWidget extends StatelessWidget {
   static const _syncIndicator = SyncIndicator();
 
   const HeaderWidget({
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override

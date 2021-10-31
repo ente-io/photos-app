@@ -1,11 +1,11 @@
 import 'dart:convert';
 
 class SetKeysRequest {
-  final String kekSalt;
-  final String encryptedKey;
-  final String keyDecryptionNonce;
-  final int memLimit;
-  final int opsLimit;
+  final String? kekSalt;
+  final String? encryptedKey;
+  final String? keyDecryptionNonce;
+  final int? memLimit;
+  final int? opsLimit;
 
   SetKeysRequest({
     this.kekSalt,

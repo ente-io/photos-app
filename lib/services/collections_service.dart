@@ -32,15 +32,15 @@ class CollectionsService {
 
   final _logger = Logger("CollectionsService");
 
-  CollectionsDB _db;
-  FilesDB _filesDB;
-  Configuration _config;
-  SharedPreferences _prefs;
-  Future<List<File>> _cachedLatestFiles;
+  late CollectionsDB _db;
+  late FilesDB _filesDB;
+  late Configuration _config;
+  late SharedPreferences _prefs;
+  Future<List<File>>? _cachedLatestFiles;
   final _dio = Network.instance.getDio();
   final _localCollections = <String, Collection>{};
-  final _collectionIDToCollections = <int, Collection>{};
-  final _cachedKeys = <int, Uint8List>{};
+  final _collectionIDToCollections = <int?, Collection>{};
+  final _cachedKeys = <int?, Uint8List>{};
 
   CollectionsService._privateConstructor() {
     _db = CollectionsDB.instance;
@@ -74,9 +74,9 @@ class CollectionsService {
 
     // Might not have synced the collection fully
     final fetchedCollections =
-        await _fetchCollections(lastCollectionUpdationTime ?? 0);
+        await _fetchCollections(lastCollectionUpdationTime);
     final updatedCollections = <Collection>[];
-    int maxUpdationTime = lastCollectionUpdationTime;
+    int? maxUpdationTime = lastCollectionUpdationTime;
     final ownerID = _config.getUserID();
     for (final collection in fetchedCollections) {
       if (collection.isDeleted) {
@@ -85,19 +85,19 @@ class CollectionsService {
         Bus.instance.fire(LocalPhotosUpdatedEvent(List<File>.empty()));
       }
       // remove reference for incoming collections when unshared/deleted
-      if (collection.isDeleted && ownerID != collection?.owner?.id) {
+      if (collection.isDeleted && ownerID != collection.owner?.id) {
         await _db.deleteCollection(collection.id);
       } else {
         // keep entry for deletedCollection as collectionKey may be used during
         // trash file decryption
         updatedCollections.add(collection);
       }
-      maxUpdationTime = collection.updationTime > maxUpdationTime
+      maxUpdationTime = collection.updationTime! > maxUpdationTime!
           ? collection.updationTime
           : maxUpdationTime;
     }
     await _updateDB(updatedCollections);
-    _prefs.setInt(_collectionsSyncTimeKey, maxUpdationTime);
+    _prefs.setInt(_collectionsSyncTimeKey, maxUpdationTime!);
     final collections = await _db.getAllCollections();
     for (final collection in collections) {
       _cacheCollectionAttributes(collection);
@@ -119,25 +119,25 @@ class CollectionsService {
     final collections = await _db.getAllCollections();
     final updatedCollections = <Collection>[];
     for (final c in collections) {
-      if (c.updationTime > getCollectionSyncTime(c.id) && !c.isDeleted) {
+      if (c.updationTime! > getCollectionSyncTime(c.id) && !c.isDeleted) {
         updatedCollections.add(c);
       }
     }
     return updatedCollections;
   }
 
-  int getCollectionSyncTime(int collectionID) {
+  int getCollectionSyncTime(int? collectionID) {
     return _prefs
             .getInt(_collectionSyncTimeKeyPrefix + collectionID.toString()) ??
         0;
   }
 
-  Future<List<File>> getLatestCollectionFiles() {
+  Future<List<File>>? getLatestCollectionFiles() {
     _cachedLatestFiles ??= _filesDB.getLatestCollectionFiles();
     return _cachedLatestFiles;
   }
 
-  Future<void> setCollectionSyncTime(int collectionID, int time) async {
+  Future<bool> setCollectionSyncTime(int? collectionID, int? time) async {
     final key = _collectionSyncTimeKeyPrefix + collectionID.toString();
     if (time == null) {
       return _prefs.remove(key);
@@ -145,8 +145,8 @@ class CollectionsService {
     return _prefs.setInt(key, time);
   }
 
-  Collection getCollectionForPath(String path) {
-    return _localCollections[path];
+  Collection? getCollectionForPath(String? path) {
+    return _localCollections[path!];
   }
 
   // getActiveCollections returns list of collections which are not deleted yet
@@ -157,7 +157,7 @@ class CollectionsService {
         .toList();
   }
 
-  Future<List<User>> getSharees(int collectionID) {
+  Future<List<User>> getSharees(int? collectionID) {
     return _dio
         .get(
       Configuration.instance.getHttpEndpoint() + "/collections/sharees",
@@ -177,9 +177,9 @@ class CollectionsService {
     });
   }
 
-  Future<void> share(int collectionID, String email, String publicKey) async {
+  Future<void> share(int? collectionID, String email, String publicKey) async {
     final encryptedKey = CryptoUtil.sealSync(
-        getCollectionKey(collectionID), Sodium.base642bin(publicKey));
+        getCollectionKey(collectionID)!, Sodium.base642bin(publicKey));
     try {
       await _dio.post(
         Configuration.instance.getHttpEndpoint() + "/collections/share",
@@ -192,7 +192,7 @@ class CollectionsService {
             headers: {"X-Auth-Token": Configuration.instance.getToken()}),
       );
     } on DioError catch (e) {
-      if (e.response.statusCode == 402) {
+      if (e.response!.statusCode == 402) {
         throw SharingNotPermittedForFreeAccountsError();
       }
       rethrow;
@@ -200,7 +200,7 @@ class CollectionsService {
     RemoteSyncService.instance.sync(silently: true);
   }
 
-  Future<void> unshare(int collectionID, String email) async {
+  Future<void> unshare(int? collectionID, String? email) async {
     try {
       await _dio.post(
         Configuration.instance.getHttpEndpoint() + "/collections/unshare",
@@ -211,8 +211,8 @@ class CollectionsService {
         options: Options(
             headers: {"X-Auth-Token": Configuration.instance.getToken()}),
       );
-      _collectionIDToCollections[collectionID]
-          .sharees
+      _collectionIDToCollections[collectionID]!
+          .sharees!
           .removeWhere((user) => user.email == email);
       _db.insert([_collectionIDToCollections[collectionID]]);
     } catch (e) {
@@ -222,7 +222,7 @@ class CollectionsService {
     RemoteSyncService.instance.sync(silently: true);
   }
 
-  Uint8List getCollectionKey(int collectionID) {
+  Uint8List? getCollectionKey(int? collectionID) {
     if (!_cachedKeys.containsKey(collectionID)) {
       final collection = _collectionIDToCollections[collectionID];
       if (collection == null) {
@@ -239,27 +239,27 @@ class CollectionsService {
 
   Uint8List _getDecryptedKey(Collection collection) {
     final encryptedKey = Sodium.base642bin(collection.encryptedKey);
-    if (collection.owner.id == _config.getUserID()) {
+    if (collection.owner!.id == _config.getUserID()) {
       return CryptoUtil.decryptSync(encryptedKey, _config.getKey(),
           Sodium.base642bin(collection.keyDecryptionNonce));
     } else {
       return CryptoUtil.openSealSync(
           encryptedKey,
-          Sodium.base642bin(_config.getKeyAttributes().publicKey),
-          _config.getSecretKey());
+          Sodium.base642bin(_config.getKeyAttributes()!.publicKey!),
+          _config.getSecretKey()!);
     }
   }
 
   Future<void> rename(Collection collection, String newName) async {
     try {
       final encryptedName = CryptoUtil.encryptSync(
-          utf8.encode(newName), getCollectionKey(collection.id));
+          utf8.encode(newName) as Uint8List?, getCollectionKey(collection.id));
       await _dio.post(
         Configuration.instance.getHttpEndpoint() + "/collections/rename",
         data: {
           "collectionID": collection.id,
-          "encryptedName": Sodium.bin2base64(encryptedName.encryptedData),
-          "nameDecryptionNonce": Sodium.bin2base64(encryptedName.nonce)
+          "encryptedName": Sodium.bin2base64(encryptedName.encryptedData!),
+          "nameDecryptionNonce": Sodium.bin2base64(encryptedName.nonce!)
         },
         options: Options(
             headers: {"X-Auth-Token": Configuration.instance.getToken()}),
@@ -283,11 +283,9 @@ class CollectionsService {
             headers: {"X-Auth-Token": Configuration.instance.getToken()}),
       );
       final List<Collection> collections = [];
-      if (response != null) {
-        final c = response.data["collections"];
-        for (final collection in c) {
-          collections.add(Collection.fromMap(collection));
-        }
+      final c = response.data["collections"];
+      for (final collection in c) {
+        collections.add(Collection.fromMap(collection));
       }
       return collections;
     } catch (e) {
@@ -298,22 +296,23 @@ class CollectionsService {
     }
   }
 
-  Collection getCollectionByID(int collectionID) {
+  Collection? getCollectionByID(int? collectionID) {
     return _collectionIDToCollections[collectionID];
   }
 
   Future<Collection> createAlbum(String albumName) async {
     final key = CryptoUtil.generateKey();
     final encryptedKeyData = CryptoUtil.encryptSync(key, _config.getKey());
-    final encryptedName = CryptoUtil.encryptSync(utf8.encode(albumName), key);
+    final encryptedName =
+        CryptoUtil.encryptSync(utf8.encode(albumName) as Uint8List?, key);
     final collection = await createAndCacheCollection(Collection(
       null,
       null,
-      Sodium.bin2base64(encryptedKeyData.encryptedData),
-      Sodium.bin2base64(encryptedKeyData.nonce),
+      Sodium.bin2base64(encryptedKeyData.encryptedData!),
+      Sodium.bin2base64(encryptedKeyData.nonce!),
       null,
-      Sodium.bin2base64(encryptedName.encryptedData),
-      Sodium.bin2base64(encryptedName.nonce),
+      Sodium.bin2base64(encryptedName.encryptedData!),
+      Sodium.bin2base64(encryptedName.nonce!),
       CollectionType.album,
       CollectionAttributes(),
       null,
@@ -322,7 +321,7 @@ class CollectionsService {
     return collection;
   }
 
-  Future<Collection> fetchCollectionByID(int collectionID) async {
+  Future<Collection> fetchCollectionByID(int? collectionID) async {
     try {
       _logger.fine('fetching collectionByID $collectionID');
       final response = await _dio.get(
@@ -344,26 +343,27 @@ class CollectionsService {
     }
   }
 
-  Future<Collection> getOrCreateForPath(String path) async {
+  Future<Collection?> getOrCreateForPath(String? path) async {
     if (_localCollections.containsKey(path) &&
-        _localCollections[path].owner.id == _config.getUserID()) {
+        _localCollections[path!]!.owner!.id == _config.getUserID()) {
       return _localCollections[path];
     }
     final key = CryptoUtil.generateKey();
     final encryptedKeyData = CryptoUtil.encryptSync(key, _config.getKey());
-    final encryptedPath = CryptoUtil.encryptSync(utf8.encode(path), key);
+    final encryptedPath =
+        CryptoUtil.encryptSync(utf8.encode(path!) as Uint8List?, key);
     final collection = await createAndCacheCollection(Collection(
       null,
       null,
-      Sodium.bin2base64(encryptedKeyData.encryptedData),
-      Sodium.bin2base64(encryptedKeyData.nonce),
+      Sodium.bin2base64(encryptedKeyData.encryptedData!),
+      Sodium.bin2base64(encryptedKeyData.nonce!),
       null,
-      Sodium.bin2base64(encryptedPath.encryptedData),
-      Sodium.bin2base64(encryptedPath.nonce),
+      Sodium.bin2base64(encryptedPath.encryptedData!),
+      Sodium.bin2base64(encryptedPath.nonce!),
       CollectionType.folder,
       CollectionAttributes(
-        encryptedPath: Sodium.bin2base64(encryptedPath.encryptedData),
-        pathDecryptionNonce: Sodium.bin2base64(encryptedPath.nonce),
+        encryptedPath: Sodium.bin2base64(encryptedPath.encryptedData!),
+        pathDecryptionNonce: Sodium.bin2base64(encryptedPath.nonce!),
         version: 1,
       ),
       null,
@@ -372,16 +372,16 @@ class CollectionsService {
     return collection;
   }
 
-  Future<void> addToCollection(int collectionID, List<File> files) async {
+  Future<void> addToCollection(int? collectionID, List<File?> files) async {
     final containsUploadedFile = files.firstWhere(
-            (element) => element.uploadedFileID != null,
+            (element) => element!.uploadedFileID != null,
             orElse: () => null) !=
         null;
     if (containsUploadedFile) {
       final existingFileIDsInCollection =
           await FilesDB.instance.getUploadedFileIDs(collectionID);
       files.removeWhere((element) =>
-          element.uploadedFileID != null &&
+          element!.uploadedFileID != null &&
           existingFileIDsInCollection.contains(element.uploadedFileID));
       if (files.isEmpty) {
         _logger.info("nothing to add to the collection");
@@ -392,13 +392,13 @@ class CollectionsService {
     final params = <String, dynamic>{};
     params["collectionID"] = collectionID;
     for (final file in files) {
-      final key = decryptFileKey(file);
+      final key = decryptFileKey(file!);
       file.generatedID = null; // So that a new entry is created in the FilesDB
       file.collectionID = collectionID;
       final encryptedKeyData =
           CryptoUtil.encryptSync(key, getCollectionKey(collectionID));
-      file.encryptedKey = Sodium.bin2base64(encryptedKeyData.encryptedData);
-      file.keyDecryptionNonce = Sodium.bin2base64(encryptedKeyData.nonce);
+      file.encryptedKey = Sodium.bin2base64(encryptedKeyData.encryptedData!);
+      file.keyDecryptionNonce = Sodium.bin2base64(encryptedKeyData.nonce!);
       if (params["files"] == null) {
         params["files"] = [];
       }
@@ -421,7 +421,7 @@ class CollectionsService {
     }
   }
 
-  Future<void> restore(int toCollectionID, List<File> files) async {
+  Future<void> restore(int? toCollectionID, List<File> files) async {
     final params = <String, dynamic>{};
     params["collectionID"] = toCollectionID;
     params["files"] = [];
@@ -431,8 +431,8 @@ class CollectionsService {
       file.generatedID = null; // So that a new entry is created in the FilesDB
       file.collectionID = toCollectionID;
       final encryptedKeyData = CryptoUtil.encryptSync(key, toCollectionKey);
-      file.encryptedKey = Sodium.bin2base64(encryptedKeyData.encryptedData);
-      file.keyDecryptionNonce = Sodium.bin2base64(encryptedKeyData.nonce);
+      file.encryptedKey = Sodium.bin2base64(encryptedKeyData.encryptedData!);
+      file.keyDecryptionNonce = Sodium.bin2base64(encryptedKeyData.nonce!);
       params["files"].add(CollectionFileItem(
               file.uploadedFileID, file.encryptedKey, file.keyDecryptionNonce)
           .toMap());
@@ -469,7 +469,7 @@ class CollectionsService {
   }
 
   Future<void> move(
-      int toCollectionID, int fromCollectionID, List<File> files) async {
+      int toCollectionID, int? fromCollectionID, List<File> files) async {
     _validateMoveRequest(toCollectionID, fromCollectionID, files);
     final existingUploadedIDs =
         await FilesDB.instance.getUploadedFileIDs(toCollectionID);
@@ -490,8 +490,8 @@ class CollectionsService {
       file.collectionID = toCollectionID;
       final encryptedKeyData =
           CryptoUtil.encryptSync(fileKey, getCollectionKey(toCollectionID));
-      file.encryptedKey = Sodium.bin2base64(encryptedKeyData.encryptedData);
-      file.keyDecryptionNonce = Sodium.bin2base64(encryptedKeyData.nonce);
+      file.encryptedKey = Sodium.bin2base64(encryptedKeyData.encryptedData!);
+      file.keyDecryptionNonce = Sodium.bin2base64(encryptedKeyData.nonce!);
       params["files"].add(CollectionFileItem(
               file.uploadedFileID, file.encryptedKey, file.keyDecryptionNonce)
           .toMap());
@@ -516,7 +516,7 @@ class CollectionsService {
   }
 
   void _validateMoveRequest(
-      int toCollectionID, int fromCollectionID, List<File> files) {
+      int? toCollectionID, int? fromCollectionID, List<File> files) {
     if (toCollectionID == fromCollectionID) {
       throw AssertionError("can't move to same album");
     }
@@ -533,7 +533,7 @@ class CollectionsService {
     }
   }
 
-  Future<void> removeFromCollection(int collectionID, List<File> files) async {
+  Future<void> removeFromCollection(int? collectionID, List<File> files) async {
     final params = <String, dynamic>{};
     params["collectionID"] = collectionID;
     for (final file in files) {
@@ -585,9 +585,9 @@ class CollectionsService {
         ? _getDecryptedKey(collection)
         : _config.getKey();
     return utf8.decode(CryptoUtil.decryptSync(
-        Sodium.base642bin(collection.attributes.encryptedPath),
+        Sodium.base642bin(collection.attributes.encryptedPath!),
         key,
-        Sodium.base642bin(collection.attributes.pathDecryptionNonce)));
+        Sodium.base642bin(collection.attributes.pathDecryptionNonce!)));
   }
 
   bool hasSyncedCollections() {
@@ -596,13 +596,13 @@ class CollectionsService {
 
   Collection _getCollectionWithDecryptedName(Collection collection) {
     if (collection.encryptedName != null &&
-        collection.encryptedName.isNotEmpty) {
+        collection.encryptedName!.isNotEmpty) {
       String name;
       try {
         final result = CryptoUtil.decryptSync(
-            Sodium.base642bin(collection.encryptedName),
+            Sodium.base642bin(collection.encryptedName!),
             _getDecryptedKey(collection),
-            Sodium.base642bin(collection.nameDecryptionNonce));
+            Sodium.base642bin(collection.nameDecryptionNonce!));
         name = utf8.decode(result);
       } catch (e, s) {
         _logger.severe(
@@ -641,11 +641,11 @@ class AddFilesRequest {
   );
 
   AddFilesRequest copyWith({
-    int collectionID,
-    List<CollectionFileItem> files,
+    required int collectionID,
+    List<CollectionFileItem>? files,
   }) {
     return AddFilesRequest(
-      collectionID ?? this.collectionID,
+      collectionID,
       files ?? this.files,
     );
   }
@@ -653,11 +653,11 @@ class AddFilesRequest {
   Map<String, dynamic> toMap() {
     return {
       'collectionID': collectionID,
-      'files': files?.map((x) => x?.toMap())?.toList(),
+      'files': files.map((x) => x.toMap()).toList(),
     };
   }
 
-  factory AddFilesRequest.fromMap(Map<String, dynamic> map) {
+  static fromMap(Map<String, dynamic>? map) {
     if (map == null) return null;
 
     return AddFilesRequest(

@@ -9,14 +9,14 @@ import 'package:wallpaper_manager_flutter/wallpaper_manager_flutter.dart';
 class SetWallpaperDialog extends StatefulWidget {
   final File file;
 
-  const SetWallpaperDialog(this.file, {Key key}) : super(key: key);
+  const SetWallpaperDialog(this.file, {Key? key}) : super(key: key);
 
   @override
   _SetWallpaperDialogState createState() => _SetWallpaperDialogState();
 }
 
 class _SetWallpaperDialogState extends State<SetWallpaperDialog> {
-  int _lockscreenValue = WallpaperManagerFlutter.HOME_SCREEN;
+  int? _lockscreenValue = WallpaperManagerFlutter.HOME_SCREEN;
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +30,7 @@ class _SetWallpaperDialogState extends State<SetWallpaperDialog> {
               title: const Text("homescreen"),
               value: WallpaperManagerFlutter.HOME_SCREEN,
               groupValue: _lockscreenValue,
-              onChanged: (v) {
+              onChanged: (dynamic v) {
                 setState(() {
                   _lockscreenValue = v;
                 });
@@ -40,7 +40,7 @@ class _SetWallpaperDialogState extends State<SetWallpaperDialog> {
               title: const Text("lockscreen"),
               value: WallpaperManagerFlutter.LOCK_SCREEN,
               groupValue: _lockscreenValue,
-              onChanged: (v) {
+              onChanged: (dynamic v) {
                 setState(() {
                   _lockscreenValue = v;
                 });
@@ -50,7 +50,7 @@ class _SetWallpaperDialogState extends State<SetWallpaperDialog> {
               title: const Text("both"),
               value: WallpaperManagerFlutter.BOTH_SCREENS,
               groupValue: _lockscreenValue,
-              onChanged: (v) {
+              onChanged: (dynamic v) {
                 setState(() {
                   _lockscreenValue = v;
                 });

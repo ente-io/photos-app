@@ -7,10 +7,10 @@ import 'package:photos/utils/data_util.dart';
 import 'package:photos/utils/date_time_util.dart';
 
 class SubscriptionHeaderWidget extends StatefulWidget {
-  final bool isOnboarding;
-  final Future<int> usageFuture;
+  final bool? isOnboarding;
+  final Future<int?>? usageFuture;
 
-  const SubscriptionHeaderWidget({Key key, this.isOnboarding, this.usageFuture})
+  const SubscriptionHeaderWidget({Key? key, this.isOnboarding, this.usageFuture})
       : super(key: key);
 
   @override
@@ -22,7 +22,7 @@ class SubscriptionHeaderWidget extends StatefulWidget {
 class _SubscriptionHeaderWidgetState extends State<SubscriptionHeaderWidget> {
   @override
   Widget build(BuildContext context) {
-    if (widget.isOnboarding) {
+    if (widget.isOnboarding!) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
         child: Text(
@@ -60,9 +60,9 @@ class _SubscriptionHeaderWidgetState extends State<SubscriptionHeaderWidget> {
 }
 
 class ValidityWidget extends StatelessWidget {
-  final Subscription currentSubscription;
+  final Subscription? currentSubscription;
 
-  const ValidityWidget({Key key, this.currentSubscription}) : super(key: key);
+  const ValidityWidget({Key? key, this.currentSubscription}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -70,11 +70,11 @@ class ValidityWidget extends StatelessWidget {
       return Container();
     }
     var endDate = getDateAndMonthAndYear(
-        DateTime.fromMicrosecondsSinceEpoch(currentSubscription.expiryTime));
+        DateTime.fromMicrosecondsSinceEpoch(currentSubscription!.expiryTime!));
     var message = "renews on $endDate";
-    if (currentSubscription.productID == kFreeProductID) {
+    if (currentSubscription!.productID == kFreeProductID) {
       message = "free plan valid till $endDate";
-    } else if (currentSubscription.attributes?.isCancelled ?? false) {
+    } else if (currentSubscription!.attributes?.isCancelled ?? false) {
       message = "your subscription will be cancelled on $endDate";
     }
     return Padding(

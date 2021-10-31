@@ -11,7 +11,7 @@ import 'package:photos/utils/dialog_util.dart';
 import 'package:photos/utils/email_util.dart';
 
 class LoginPage extends StatefulWidget {
-  LoginPage({Key key}) : super(key: key);
+  LoginPage({Key? key}) : super(key: key);
 
   @override
   _LoginPageState createState() => _LoginPageState();
@@ -19,7 +19,7 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _config = Configuration.instance;
-  String _email;
+  String? _email;
 
   @override
   void initState() {
@@ -36,7 +36,7 @@ class _LoginPageState extends State<LoginPage> {
           child: Material(
             type: MaterialType.transparency,
             child: Text(
-              AppLocalizations.of(context).log_in,
+              AppLocalizations.of(context)!.log_in,
               style: TextStyle(
                 fontSize: 16,
                 letterSpacing: 0.6,
@@ -138,15 +138,15 @@ class _LoginPageState extends State<LoginPage> {
           height: 64,
           padding: const EdgeInsets.fromLTRB(80, 0, 80, 0),
           child: button(
-            AppLocalizations.of(context).log_in,
-            onPressed: _email != null && _email.isNotEmpty
+            AppLocalizations.of(context)!.log_in,
+            onPressed: _email != null && _email!.isNotEmpty
                 ? () {
-                    if (!isValidEmail(_email)) {
+                    if (!isValidEmail(_email!)) {
                       showErrorDialog(context, "invalid email address",
                           "please enter a valid email address.");
                       return;
                     }
-                    _config.setEmail(_email);
+                    _config.setEmail(_email!);
                     UserService.instance.getOtt(context, _email);
                   }
                 : null,

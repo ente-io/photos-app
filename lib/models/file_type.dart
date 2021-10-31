@@ -5,7 +5,7 @@ enum FileType {
   other,
 }
 
-int getInt(FileType fileType) {
+int getInt(FileType? fileType) {
   switch (fileType) {
     case FileType.image:
       return 0;
@@ -18,7 +18,7 @@ int getInt(FileType fileType) {
   }
 }
 
-FileType getFileType(int fileType) {
+FileType getFileType(int? fileType) {
   switch (fileType) {
     case 0:
       return FileType.image;

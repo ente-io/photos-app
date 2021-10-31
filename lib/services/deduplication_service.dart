@@ -32,26 +32,27 @@ class DeduplicationService {
   }
 
   List<DuplicateFiles> _filterDuplicatesByCreationTime(
-      DuplicateFilesResponse dupes, Map<int, File> fileMap) {
+      DuplicateFilesResponse dupes, Map<int?, File> fileMap) {
     final result = <DuplicateFiles>[];
     for (final dupe in dupes.duplicates) {
       final files = <File>[];
       final Map<int, int> creationTimeCounter = {};
-      int mostFrequentCreationTime = 0, mostFrequentCreationTimeCount = 0;
+      int? mostFrequentCreationTime = 0, mostFrequentCreationTimeCount = 0;
       // Counts the frequency of creationTimes within the supposed duplicates
       for (final id in dupe.fileIDs) {
         final file = fileMap[id];
         if (file != null) {
-          if (creationTimeCounter.containsKey(file.creationTime)) {
-            creationTimeCounter[file.creationTime]++;
+          if (creationTimeCounter.containsKey(file.creationTime!)) {
+            final int cnt = creationTimeCounter[file.creationTime]!;
+            creationTimeCounter[file.creationTime!] = cnt + 1;
           } else {
-            creationTimeCounter[file.creationTime] = 0;
+            creationTimeCounter[file.creationTime!] = 0;
           }
-          if (creationTimeCounter[file.creationTime] >
-              mostFrequentCreationTimeCount) {
+          if (creationTimeCounter[file.creationTime!]! >
+              mostFrequentCreationTimeCount!) {
             mostFrequentCreationTimeCount =
-                creationTimeCounter[file.creationTime];
-            mostFrequentCreationTime = file.creationTime;
+                creationTimeCounter[file.creationTime!];
+            mostFrequentCreationTime = file.creationTime!;
           }
           files.add(file);
         } else {

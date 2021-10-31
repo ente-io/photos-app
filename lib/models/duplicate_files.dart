@@ -22,7 +22,7 @@ class DuplicateFilesResponse {
 
 class DuplicateItems {
   final List<int> fileIDs;
-  final int size;
+  final int? size;
   DuplicateItems(this.fileIDs, this.size);
 
   factory DuplicateItems.fromMap(Map<String, dynamic> map) {
@@ -41,7 +41,7 @@ class DuplicateItems {
 
 class DuplicateFiles {
   final List<File> files;
-  final int size;
+  final int? size;
 
   DuplicateFiles(this.files, this.size);
 

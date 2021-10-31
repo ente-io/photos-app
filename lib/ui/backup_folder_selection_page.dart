@@ -18,9 +18,9 @@ class BackupFolderSelectionPage extends StatefulWidget {
   final String buttonText;
 
   const BackupFolderSelectionPage({
-    @required this.buttonText,
+    required this.buttonText,
     this.shouldSelectAll = false,
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override
@@ -29,10 +29,10 @@ class BackupFolderSelectionPage extends StatefulWidget {
 }
 
 class _BackupFolderSelectionPageState extends State<BackupFolderSelectionPage> {
-  final Set<String> _allFolders = <String>{};
-  Set<String> _selectedFolders = <String>{};
-  List<File> _latestFiles;
-  Map<String, int> _itemCount;
+  final Set<String?> _allFolders = <String?>{};
+  Set<String?> _selectedFolders = <String?>{};
+  List<File>? _latestFiles;
+  late Map<String?, int?> _itemCount;
 
   @override
   void initState() {
@@ -41,12 +41,12 @@ class _BackupFolderSelectionPageState extends State<BackupFolderSelectionPage> {
       _itemCount = await FilesDB.instance.getFileCountInDeviceFolders();
       setState(() {
         _latestFiles = files;
-        _latestFiles.sort((first, second) {
-          return first.deviceFolder
+        _latestFiles!.sort((first, second) {
+          return first.deviceFolder!
               .toLowerCase()
-              .compareTo(second.deviceFolder.toLowerCase());
+              .compareTo(second.deviceFolder!.toLowerCase());
         });
-        for (final file in _latestFiles) {
+        for (final file in _latestFiles!) {
           _allFolders.add(file.deviceFolder);
         }
         if (widget.shouldSelectAll) {
@@ -112,10 +112,10 @@ class _BackupFolderSelectionPageState extends State<BackupFolderSelectionPage> {
                     } else {
                       _selectedFolders.addAll(_allFolders);
                     }
-                    _latestFiles.sort((first, second) {
-                      return first.deviceFolder
+                    _latestFiles!.sort((first, second) {
+                      return first.deviceFolder!
                           .toLowerCase()
-                          .compareTo(second.deviceFolder.toLowerCase());
+                          .compareTo(second.deviceFolder!.toLowerCase());
                     });
                     setState(() {});
                   }),
@@ -163,12 +163,12 @@ class _BackupFolderSelectionPageState extends State<BackupFolderSelectionPage> {
           padding: const EdgeInsets.only(right: 4),
           child: ImplicitlyAnimatedReorderableList<File>(
             controller: scrollController,
-            items: _latestFiles,
+            items: _latestFiles!,
             areItemsTheSame: (oldItem, newItem) =>
                 oldItem.deviceFolder == newItem.deviceFolder,
             onReorderFinished: (item, from, to, newItems) {
               setState(() {
-                _latestFiles
+                _latestFiles!
                   ..clear()
                   ..addAll(newItems);
               });
@@ -178,7 +178,7 @@ class _BackupFolderSelectionPageState extends State<BackupFolderSelectionPage> {
                 key: ValueKey(file),
                 builder: (context, dragAnimation, inDrag) {
                   final t = dragAnimation.value;
-                  final elevation = lerpDouble(0, 8, t);
+                  final elevation = lerpDouble(0, 8, t)!;
                   final color = Color.lerp(
                       Colors.white, Colors.white.withOpacity(0.8), t);
                   return SizeFadeTransition(
@@ -232,7 +232,7 @@ class _BackupFolderSelectionPageState extends State<BackupFolderSelectionPage> {
                       Container(
                         constraints: BoxConstraints(maxWidth: 140),
                         child: Text(
-                          file.deviceFolder,
+                          file.deviceFolder!,
                           style: TextStyle(
                             fontSize: 14,
                             height: 1.5,
@@ -264,7 +264,7 @@ class _BackupFolderSelectionPageState extends State<BackupFolderSelectionPage> {
               Checkbox(
                 value: isSelected,
                 onChanged: (value) {
-                  if (value) {
+                  if (value!) {
                     _selectedFolders.add(file.deviceFolder);
                   } else {
                     _selectedFolders.remove(file.deviceFolder);
@@ -289,20 +289,20 @@ class _BackupFolderSelectionPageState extends State<BackupFolderSelectionPage> {
   }
 
   void _sortFiles() {
-    _latestFiles.sort((first, second) {
+    _latestFiles!.sort((first, second) {
       if (_selectedFolders.contains(first.deviceFolder) &&
           _selectedFolders.contains(second.deviceFolder)) {
-        return first.deviceFolder
+        return first.deviceFolder!
             .toLowerCase()
-            .compareTo(second.deviceFolder.toLowerCase());
+            .compareTo(second.deviceFolder!.toLowerCase());
       } else if (_selectedFolders.contains(first.deviceFolder)) {
         return -1;
       } else if (_selectedFolders.contains(second.deviceFolder)) {
         return 1;
       }
-      return first.deviceFolder
+      return first.deviceFolder!
           .toLowerCase()
-          .compareTo(second.deviceFolder.toLowerCase());
+          .compareTo(second.deviceFolder!.toLowerCase());
     });
   }
 

@@ -19,9 +19,9 @@ Future<void> sendLogs(
   BuildContext context,
   String title,
   String toEmail, {
-  Function postShare,
-  String subject,
-  String body,
+  Function? postShare,
+  String? subject,
+  String? body,
 }) async {
   final List<Widget> actions = [
     TextButton(
@@ -62,7 +62,7 @@ Future<void> sendLogs(
       ),
       onPressed: () async {
         Navigator.of(context, rootNavigator: true).pop('dialog');
-        await _sendLogs(context, toEmail, subject, body);
+        await _sendLogs(context, toEmail, subject!, body!);
         if (postShare != null) {
           postShare();
         }

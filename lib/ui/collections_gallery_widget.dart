@@ -27,7 +27,7 @@ import 'package:photos/utils/navigation_util.dart';
 import 'package:photos/utils/toast_util.dart';
 
 class CollectionsGalleryWidget extends StatefulWidget {
-  const CollectionsGalleryWidget({Key key}) : super(key: key);
+  const CollectionsGalleryWidget({Key? key}) : super(key: key);
 
   @override
   _CollectionsGalleryWidgetState createState() =>
@@ -37,11 +37,12 @@ class CollectionsGalleryWidget extends StatefulWidget {
 class _CollectionsGalleryWidgetState extends State<CollectionsGalleryWidget>
     with AutomaticKeepAliveClientMixin {
   final _logger = Logger("CollectionsGallery");
-  StreamSubscription<LocalPhotosUpdatedEvent> _localFilesSubscription;
-  StreamSubscription<CollectionUpdatedEvent> _collectionUpdatesSubscription;
-  StreamSubscription<BackupFoldersUpdatedEvent> _backupFoldersUpdatedEvent;
-  StreamSubscription<UserLoggedOutEvent> _loggedOutEvent;
-  AlbumSortKey sortKey;
+  late StreamSubscription<LocalPhotosUpdatedEvent> _localFilesSubscription;
+  late StreamSubscription<CollectionUpdatedEvent>
+      _collectionUpdatesSubscription;
+  late StreamSubscription<BackupFoldersUpdatedEvent> _backupFoldersUpdatedEvent;
+  late StreamSubscription<UserLoggedOutEvent> _loggedOutEvent;
+  late AlbumSortKey sortKey;
 
   @override
   void initState() {
@@ -73,7 +74,7 @@ class _CollectionsGalleryWidgetState extends State<CollectionsGalleryWidget>
       future: _getCollections(),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
-          return _getCollectionsGalleryWidget(snapshot.data);
+          return _getCollectionsGalleryWidget(snapshot.data!);
         } else if (snapshot.hasError) {
           return Text(snapshot.error.toString());
         } else {
@@ -92,28 +93,28 @@ class _CollectionsGalleryWidgetState extends State<CollectionsGalleryWidget>
     for (final file in latestLocalFiles) {
       folders.add(DeviceFolder(file.deviceFolder, file.deviceFolder, file));
     }
-    folders.sort((first, second) =>
-        second.thumbnail.creationTime.compareTo(first.thumbnail.creationTime));
+    folders.sort((first, second) => second.thumbnail.creationTime!
+        .compareTo(first.thumbnail.creationTime!));
 
     final List<CollectionWithThumbnail> collectionsWithThumbnail = [];
     final latestCollectionFiles =
-        await collectionsService.getLatestCollectionFiles();
+        await collectionsService.getLatestCollectionFiles()!;
     for (final file in latestCollectionFiles) {
-      final c = collectionsService.getCollectionByID(file.collectionID);
-      if (c.owner.id == userID) {
+      final c = collectionsService.getCollectionByID(file.collectionID)!;
+      if (c.owner!.id == userID) {
         collectionsWithThumbnail.add(CollectionWithThumbnail(c, file));
       }
     }
     collectionsWithThumbnail.sort((first, second) {
       if (sortKey == AlbumSortKey.albumName) {
         // alphabetical ASC order
-        return first.collection.name.compareTo(second.collection.name);
+        return first.collection.name!.compareTo(second.collection.name!);
       } else if (sortKey == AlbumSortKey.recentPhoto) {
-        return second.thumbnail.creationTime
-            .compareTo(first.thumbnail.creationTime);
+        return second.thumbnail!.creationTime!
+            .compareTo(first.thumbnail!.creationTime!);
       } else {
-        return second.collection.updationTime
-            .compareTo(first.collection.updationTime);
+        return second.collection.updationTime!
+            .compareTo(first.collection.updationTime!);
       }
     });
     return CollectionItems(folders, collectionsWithThumbnail);
@@ -303,7 +304,7 @@ class _CollectionsGalleryWidgetState extends State<CollectionsGalleryWidget>
       padding: const EdgeInsets.only(right: 24),
       child: PopupMenuButton(
         offset: Offset(10, 40),
-        initialValue: sortKey?.index ?? 0,
+        initialValue: sortKey.index,
         child: Align(
           child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
@@ -386,7 +387,7 @@ class _CollectionsGalleryWidgetState extends State<CollectionsGalleryWidget>
 class DeviceFolderIcon extends StatelessWidget {
   const DeviceFolderIcon(
     this.folder, {
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   static final kUnsyncedIconOverlay = Container(
@@ -431,14 +432,14 @@ class DeviceFolderIcon extends StatelessWidget {
               borderRadius: BorderRadius.circular(18.0),
               child: SizedBox(
                 child: Hero(
-                  tag: "device_folder:" + folder.path + folder.thumbnail.tag(),
+                  tag: "device_folder:" + folder.path! + folder.thumbnail.tag(),
                   child: Stack(
                     children: [
                       ThumbnailWidget(
                         folder.thumbnail,
                         shouldShowSyncStatus: false,
                         key: Key("device_folder:" +
-                            folder.path +
+                            folder.path! +
                             folder.thumbnail.tag()),
                       ),
                       isBackedUp ? Container() : kUnsyncedIconOverlay,
@@ -452,7 +453,7 @@ class DeviceFolderIcon extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 10),
               child: Text(
-                folder.name,
+                folder.name!,
                 style: TextStyle(
                   fontSize: 12,
                 ),
@@ -472,7 +473,7 @@ class DeviceFolderIcon extends StatelessWidget {
 class CollectionItem extends StatelessWidget {
   CollectionItem(
     this.c, {
-    Key key,
+    Key? key,
   }) : super(key: Key(c.collection.id.toString()));
 
   final CollectionWithThumbnail c;
@@ -486,10 +487,10 @@ class CollectionItem extends StatelessWidget {
             borderRadius: BorderRadius.circular(18.0),
             child: SizedBox(
               child: Hero(
-                  tag: "collection" + c.thumbnail.tag(),
+                  tag: "collection" + c.thumbnail!.tag(),
                   child: ThumbnailWidget(
                     c.thumbnail,
-                    key: Key("collection" + c.thumbnail.tag()),
+                    key: Key("collection" + c.thumbnail!.tag()),
                   )),
               height: 140,
               width: 140,
@@ -498,7 +499,7 @@ class CollectionItem extends StatelessWidget {
           Padding(padding: EdgeInsets.all(4)),
           Expanded(
             child: Text(
-              c.collection.name,
+              c.collection.name!,
               style: TextStyle(
                 fontSize: 16,
               ),
@@ -522,7 +523,7 @@ class SectionTitle extends StatelessWidget {
   const SectionTitle(
     this.title, {
     this.opacity = 0.8,
-    Key key,
+    Key? key,
     this.alignment = Alignment.centerLeft,
   }) : super(key: key);
 

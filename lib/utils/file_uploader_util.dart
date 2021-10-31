@@ -21,8 +21,8 @@ final _logger = Logger("FileUtil");
 const kMaximumThumbnailCompressionAttempts = 2;
 
 class MediaUploadData {
-  final io.File sourceFile;
-  final Uint8List thumbnail;
+  final io.File? sourceFile;
+  final Uint8List? thumbnail;
   final bool isDeleted;
 
   MediaUploadData(this.sourceFile, this.thumbnail, this.isDeleted);
@@ -37,8 +37,8 @@ Future<MediaUploadData> getUploadDataFromEnteFile(ente.File file) async {
 }
 
 Future<MediaUploadData> _getMediaUploadDataFromAssetFile(ente.File file) async {
-  io.File sourceFile;
-  Uint8List thumbnailData;
+  io.File? sourceFile;
+  Uint8List? thumbnailData;
   bool isDeleted;
 
   // The timeouts are to safeguard against https://github.com/CaiJingLong/flutter_photo_manager/issues/467
@@ -72,7 +72,7 @@ Future<MediaUploadData> _getMediaUploadDataFromAssetFile(ente.File file) async {
   await _decorateEnteFileData(file, asset);
 
   if (file.fileType == FileType.livePhoto && io.Platform.isIOS) {
-    final io.File videoUrl = await Motionphoto.getLivePhotoFile(file.localID);
+    final io.File videoUrl = await Motionphoto.getLivePhotoFile(file.localID!);
     if (videoUrl == null || !videoUrl.existsSync()) {
       String errMsg = "missing livePhoto url for " + file.toString();
       _logger.severe(errMsg);
@@ -104,7 +104,7 @@ Future<MediaUploadData> _getMediaUploadDataFromAssetFile(ente.File file) async {
     throw InvalidFileError("unable to get asset thumbData");
   }
   int compressionAttempts = 0;
-  while (thumbnailData.length > kThumbnailDataLimit &&
+  while (thumbnailData!.length > kThumbnailDataLimit &&
       compressionAttempts < kMaximumThumbnailCompressionAttempts) {
     _logger.info("Thumbnail size " + thumbnailData.length.toString());
     thumbnailData = await compressThumbnail(thumbnailData);
@@ -120,12 +120,12 @@ Future<MediaUploadData> _getMediaUploadDataFromAssetFile(ente.File file) async {
 Future<void> _decorateEnteFileData(ente.File file, AssetEntity asset) async {
   // h4ck to fetch location data if missing (thank you Android Q+) lazily only during uploads
   if (file.location == null ||
-      (file.location.latitude == 0 && file.location.longitude == 0)) {
+      (file.location!.latitude == 0 && file.location!.longitude == 0)) {
     final latLong = await asset.latlngAsync();
     file.location = Location(latLong.latitude, latLong.longitude);
   }
 
-  if (file.title == null || file.title.isEmpty) {
+  if (file.title == null || file.title!.isEmpty) {
     _logger.severe("Title was missing");
     file.title = await asset.titleAsync;
   }
@@ -133,7 +133,7 @@ Future<void> _decorateEnteFileData(ente.File file, AssetEntity asset) async {
 
 Future<MediaUploadData> _getMediaUploadDataFromAppCache(ente.File file) async {
   io.File sourceFile;
-  Uint8List thumbnailData;
+  Uint8List? thumbnailData;
   bool isDeleted = false;
   var localPath = getSharedMediaFilePath(file);
   sourceFile = io.File(localPath);
@@ -151,19 +151,19 @@ Future<MediaUploadData> _getMediaUploadDataFromAppCache(ente.File file) async {
   }
 }
 
-Future<Uint8List> getThumbnailFromInAppCacheFile(ente.File file) async {
+Future<Uint8List?> getThumbnailFromInAppCacheFile(ente.File file) async {
   var localFile = io.File(getSharedMediaFilePath(file));
   if (!localFile.existsSync()) {
     return null;
   }
   if (file.fileType == FileType.video) {
-    final thumbnailFilePath = await VideoThumbnail.thumbnailFile(
+    final thumbnailFilePath = await (VideoThumbnail.thumbnailFile(
       video: localFile.path,
       imageFormat: ImageFormat.JPEG,
       thumbnailPath: (await getTemporaryDirectory()).path,
       maxWidth: kThumbnailLargeSize,
       quality: 80,
-    );
+    ) as FutureOr<String>);
     localFile = io.File(thumbnailFilePath);
   }
   var thumbnailData = await localFile.readAsBytes();

@@ -9,11 +9,11 @@ import 'package:photos/utils/toast_util.dart';
 
 class SkipSubscriptionWidget extends StatelessWidget {
   const SkipSubscriptionWidget({
-    Key key,
-    @required this.freePlan,
+    Key? key,
+    required this.freePlan,
   }) : super(key: key);
 
-  final FreePlan freePlan;
+  final FreePlan? freePlan;
 
   @override
   Widget build(BuildContext context) {

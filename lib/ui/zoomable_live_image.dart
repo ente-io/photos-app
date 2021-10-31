@@ -16,15 +16,15 @@ import 'package:video_player/video_player.dart';
 
 class ZoomableLiveImage extends StatefulWidget {
   final File file;
-  final Function(bool) shouldDisableScroll;
-  final String tagPrefix;
-  final Decoration backgroundDecoration;
+  final Function(bool)? shouldDisableScroll;
+  final String? tagPrefix;
+  final Decoration? backgroundDecoration;
 
   ZoomableLiveImage(
     this.file, {
-    Key key,
+    Key? key,
     this.shouldDisableScroll,
-    @required this.tagPrefix,
+    required this.tagPrefix,
     this.backgroundDecoration,
   }) : super(key: key);
 
@@ -35,12 +35,12 @@ class ZoomableLiveImage extends StatefulWidget {
 class _ZoomableLiveImageState extends State<ZoomableLiveImage>
     with SingleTickerProviderStateMixin {
   final Logger _logger = Logger("ZoomableLiveImage");
-  File _file;
+  File? _file;
   bool _showVideo = false;
   bool _isLoadingVideoPlayer = false;
 
-  VideoPlayerController _videoPlayerController;
-  ChewieController _chewieController;
+  VideoPlayerController? _videoPlayerController;
+  ChewieController? _chewieController;
 
   @override
   void initState() {
@@ -52,7 +52,7 @@ class _ZoomableLiveImageState extends State<ZoomableLiveImage>
   void _onLongPressEvent(bool isPressed) {
     if (_videoPlayerController != null && isPressed == false) {
       // stop playing video
-      _videoPlayerController.pause();
+      _videoPlayerController!.pause();
     }
     if (mounted) {
       setState(() {
@@ -86,26 +86,26 @@ class _ZoomableLiveImageState extends State<ZoomableLiveImage>
   @override
   void dispose() {
     if (_videoPlayerController != null) {
-      _videoPlayerController.pause();
-      _videoPlayerController.dispose();
+      _videoPlayerController!.pause();
+      _videoPlayerController!.dispose();
     }
     if (_chewieController != null) {
-      _chewieController.dispose();
+      _chewieController!.dispose();
     }
     super.dispose();
   }
 
   Widget _getVideoPlayer() {
-    _videoPlayerController.seekTo(Duration.zero);
+    _videoPlayerController!.seekTo(Duration.zero);
     _chewieController = ChewieController(
-        videoPlayerController: _videoPlayerController,
-        aspectRatio: _videoPlayerController.value.aspectRatio,
+        videoPlayerController: _videoPlayerController!,
+        aspectRatio: _videoPlayerController!.value.aspectRatio,
         autoPlay: true,
         autoInitialize: true,
         looping: true,
         allowFullScreen: false,
         showControls: false);
-    return Chewie(controller: _chewieController);
+    return Chewie(controller: _chewieController!);
   }
 
   Future<void> _loadLiveVideo() async {
@@ -114,23 +114,23 @@ class _ZoomableLiveImageState extends State<ZoomableLiveImage>
       return;
     }
     _isLoadingVideoPlayer = true;
-    if (_file.isRemoteFile() && !(await isFileCached(_file, liveVideo: true))) {
+    if (_file!.isRemoteFile() && !(await isFileCached(_file!, liveVideo: true))) {
       showToast("downloading...", toastLength: Toast.LENGTH_LONG);
     }
 
-    var videoFile = await getFile(widget.file, liveVideo: true)
+    var videoFile = await getFile(widget.file, liveVideo: true)!
         .timeout(Duration(seconds: 15))
-        .onError((e, s) {
-      _logger.info("getFile failed ${_file.tag()}", e);
+        .onError((dynamic e, s) {
+      _logger.info("getFile failed ${_file!.tag()}", e);
       return null;
     });
 
     if ((videoFile == null || !videoFile.existsSync()) &&
-        _file.isRemoteFile()) {
-      videoFile = await getFileFromServer(widget.file, liveVideo: true)
+        _file!.isRemoteFile()) {
+      videoFile = await getFileFromServer(widget.file, liveVideo: true)!
           .timeout(Duration(seconds: 15))
-          .onError((e, s) {
-        _logger.info("getRemoteFile failed ${_file.tag()}", e);
+          .onError((dynamic e, s) {
+        _logger.info("getRemoteFile failed ${_file!.tag()}", e);
         return null;
       });
     }
@@ -143,7 +143,7 @@ class _ZoomableLiveImageState extends State<ZoomableLiveImage>
     _isLoadingVideoPlayer = false;
   }
 
-  VideoPlayerController _setVideoPlayerController({io.File file}) {
+  VideoPlayerController _setVideoPlayerController({required io.File file}) {
     var videoPlayerController = VideoPlayerController.file(file);
     return _videoPlayerController = videoPlayerController
       ..initialize().whenComplete(() {

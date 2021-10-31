@@ -18,7 +18,7 @@ class TrashSyncService {
   final _diffFetcher = TrashDiffFetcher();
   final _trashDB = TrashDB.instance;
   static const kLastTrashSyncTime = "last_trash_sync_time";
-  SharedPreferences _prefs;
+  late SharedPreferences _prefs;
 
   TrashSyncService._privateConstructor();
 
@@ -54,7 +54,7 @@ class TrashSyncService {
     if (diff.lastSyncedTimeStamp != 0) {
       await _setSyncTime(diff.lastSyncedTimeStamp);
     }
-    if (diff.hasMore) {
+    if (diff.hasMore!) {
       return await syncTrash();
     }
   }
@@ -79,7 +79,7 @@ class TrashSyncService {
     }
   }
 
-  Future<void> _setSyncTime(int time) async {
+  Future<bool> _setSyncTime(int time) async {
     return _prefs.setInt(kLastTrashSyncTime, time);
   }
 
@@ -87,7 +87,8 @@ class TrashSyncService {
     return _prefs.getInt(kLastTrashSyncTime) ?? 0;
   }
 
-  Future<void> trashFilesOnServer(List<TrashRequest> trashRequestItems) async {
+  Future<dynamic> trashFilesOnServer(
+      List<TrashRequest> trashRequestItems) async {
     final params = <String, dynamic>{};
     final includedFileIDs = <int>{};
     params["items"] = [];

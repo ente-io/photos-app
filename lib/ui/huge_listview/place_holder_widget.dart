@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class PlaceHolderWidget extends StatelessWidget {
   const PlaceHolderWidget(
     this.count, {
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   final int count;
@@ -29,6 +29,6 @@ class PlaceHolderWidget extends StatelessWidget {
         ),
       );
     }
-    return _gridViewCache[count];
+    return _gridViewCache[count]!;
   }
 }

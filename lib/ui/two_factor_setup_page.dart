@@ -13,10 +13,10 @@ import 'package:photos/utils/toast_util.dart';
 import 'package:pinput/pin_put/pin_put.dart';
 
 class TwoFactorSetupPage extends StatefulWidget {
-  final String secretCode;
-  final String qrCode;
+  final String? secretCode;
+  final String? qrCode;
 
-  TwoFactorSetupPage(this.secretCode, this.qrCode, {Key key}) : super(key: key);
+  TwoFactorSetupPage(this.secretCode, this.qrCode, {Key? key}) : super(key: key);
 
   @override
   _TwoFactorSetupPageState createState() => _TwoFactorSetupPageState();
@@ -24,21 +24,21 @@ class TwoFactorSetupPage extends StatefulWidget {
 
 class _TwoFactorSetupPageState extends State<TwoFactorSetupPage>
     with SingleTickerProviderStateMixin {
-  TabController _tabController;
+  TabController? _tabController;
   final _pinController = TextEditingController();
   final _pinPutDecoration = BoxDecoration(
     border: Border.all(color: Color.fromRGBO(45, 194, 98, 1.0)),
     borderRadius: BorderRadius.circular(15.0),
   );
   String _code = "";
-  ImageProvider _imageProvider;
-  LifecycleEventHandler _lifecycleEventHandler;
+  late ImageProvider _imageProvider;
+  late LifecycleEventHandler _lifecycleEventHandler;
 
   @override
   void initState() {
     _tabController = new TabController(length: 2, vsync: this);
     _imageProvider = Image.memory(
-      Sodium.base642bin(widget.qrCode),
+      Sodium.base642bin(widget.qrCode!),
       height: 180,
       width: 180,
     ).image;
@@ -46,19 +46,19 @@ class _TwoFactorSetupPageState extends State<TwoFactorSetupPage>
       resumeCallBack: () async {
         if (mounted) {
           final data = await Clipboard.getData(Clipboard.kTextPlain);
-          if (data != null && data.text != null && data.text.length == 6) {
-            _pinController.text = data.text;
+          if (data != null && data.text != null && data.text!.length == 6) {
+            _pinController.text = data.text!;
           }
         }
       },
     );
-    WidgetsBinding.instance.addObserver(_lifecycleEventHandler);
+    WidgetsBinding.instance!.addObserver(_lifecycleEventHandler);
     super.initState();
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(_lifecycleEventHandler);
+    WidgetsBinding.instance!.removeObserver(_lifecycleEventHandler);
     super.dispose();
   }
 
@@ -149,7 +149,7 @@ class _TwoFactorSetupPageState extends State<TwoFactorSetupPage>
                 padding: EdgeInsets.all(16),
                 child: Center(
                   child: Text(
-                    widget.secretCode,
+                    widget.secretCode!,
                     style: TextStyle(
                       fontSize: 15,
                       fontFeatures: [FontFeature.tabularFigures()],

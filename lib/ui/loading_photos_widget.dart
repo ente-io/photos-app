@@ -9,14 +9,14 @@ import 'package:photos/ui/backup_folder_selection_page.dart';
 import 'package:photos/utils/navigation_util.dart';
 
 class LoadingPhotosWidget extends StatefulWidget {
-  const LoadingPhotosWidget({Key key}) : super(key: key);
+  const LoadingPhotosWidget({Key? key}) : super(key: key);
 
   @override
   _LoadingPhotosWidgetState createState() => _LoadingPhotosWidgetState();
 }
 
 class _LoadingPhotosWidgetState extends State<LoadingPhotosWidget> {
-  StreamSubscription<SyncStatusUpdate> _firstImportEvent;
+  late StreamSubscription<SyncStatusUpdate> _firstImportEvent;
   int _currentPage = 0;
   final PageController _pageController = PageController(
     initialPage: 0,

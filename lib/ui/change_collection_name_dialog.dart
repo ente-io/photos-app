@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:photos/utils/dialog_util.dart';
 
 class ChangeCollectionNameDialog extends StatefulWidget {
-  final String name;
+  final String? name;
 
-  const ChangeCollectionNameDialog({Key key, this.name}) : super(key: key);
+  const ChangeCollectionNameDialog({Key? key, this.name}) : super(key: key);
 
   @override
   _ChangeCollectionNameDialogState createState() =>
@@ -14,7 +14,7 @@ class ChangeCollectionNameDialog extends StatefulWidget {
 
 class _ChangeCollectionNameDialogState
     extends State<ChangeCollectionNameDialog> {
-  String _newCollectionName;
+  String? _newCollectionName;
 
   @override
   void initState() {
@@ -72,21 +72,21 @@ class _ChangeCollectionNameDialogState
             ),
           ),
           onPressed: () {
-            if (_newCollectionName.trim().isEmpty) {
+            if (_newCollectionName!.trim().isEmpty) {
               showErrorDialog(
                   context, "empty name", "album name cannot be empty");
               return;
             }
-            if (_newCollectionName.trim().length > 100) {
+            if (_newCollectionName!.trim().length > 100) {
               showErrorDialog(context, "name too large",
                   "album name should be less than 100 characters");
               return;
             }
-            if (_newCollectionName.trim() == widget.name.trim()) {
+            if (_newCollectionName!.trim() == widget.name!.trim()) {
               Navigator.of(context).pop(null);
               return;
             }
-            Navigator.of(context).pop(_newCollectionName.trim());
+            Navigator.of(context).pop(_newCollectionName!.trim());
           },
         ),
       ],

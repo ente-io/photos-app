@@ -22,7 +22,7 @@ import 'package:photos/utils/share_util.dart';
 import 'package:photos/utils/toast_util.dart';
 
 class SharedCollectionGallery extends StatefulWidget {
-  const SharedCollectionGallery({Key key}) : super(key: key);
+  const SharedCollectionGallery({Key? key}) : super(key: key);
 
   @override
   _SharedCollectionGalleryState createState() =>
@@ -32,9 +32,9 @@ class SharedCollectionGallery extends StatefulWidget {
 class _SharedCollectionGalleryState extends State<SharedCollectionGallery>
     with AutomaticKeepAliveClientMixin {
   final Logger _logger = Logger("SharedCollectionGallery");
-  StreamSubscription<LocalPhotosUpdatedEvent> _localFilesSubscription;
-  StreamSubscription<CollectionUpdatedEvent> _collectionUpdatesSubscription;
-  StreamSubscription<UserLoggedOutEvent> _loggedOutEvent;
+  late StreamSubscription<LocalPhotosUpdatedEvent> _localFilesSubscription;
+  late StreamSubscription<CollectionUpdatedEvent> _collectionUpdatesSubscription;
+  late StreamSubscription<UserLoggedOutEvent> _loggedOutEvent;
 
   @override
   void initState() {
@@ -64,9 +64,9 @@ class _SharedCollectionGalleryState extends State<SharedCollectionGallery>
         final List<CollectionWithThumbnail> incoming = [];
         for (final file in files) {
           final c =
-              CollectionsService.instance.getCollectionByID(file.collectionID);
-          if (c.owner.id == Configuration.instance.getUserID()) {
-            if (c.sharees.isNotEmpty) {
+              CollectionsService.instance.getCollectionByID(file.collectionID)!;
+          if (c.owner!.id == Configuration.instance.getUserID()) {
+            if (c.sharees!.isNotEmpty) {
               outgoing.add(
                 CollectionWithThumbnail(
                   c,
@@ -84,18 +84,18 @@ class _SharedCollectionGalleryState extends State<SharedCollectionGallery>
           }
         }
         outgoing.sort((first, second) {
-          return second.collection.updationTime
-              .compareTo(first.collection.updationTime);
+          return second.collection.updationTime!
+              .compareTo(first.collection.updationTime!);
         });
         incoming.sort((first, second) {
-          return second.collection.updationTime
-              .compareTo(first.collection.updationTime);
+          return second.collection.updationTime!
+              .compareTo(first.collection.updationTime!);
         });
         return SharedCollections(outgoing, incoming);
       }),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
-          return _getSharedCollectionsGallery(snapshot.data);
+          return _getSharedCollectionsGallery(snapshot.data!);
         } else if (snapshot.hasError) {
           _logger.shout(snapshot.error);
           return Center(child: Text(snapshot.error.toString()));
@@ -275,20 +275,20 @@ class OutgoingCollectionItem extends StatelessWidget {
 
   const OutgoingCollectionItem(
     this.c, {
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final sharees = <String>[];
-    for (int index = 0; index < c.collection.sharees.length; index++) {
+    final sharees = <String?>[];
+    for (int index = 0; index < c.collection.sharees!.length; index++) {
       if (index < 2) {
-        sharees.add(c.collection.sharees[index].name);
+        sharees.add(c.collection.sharees![index].name);
       } else {
-        final remaining = c.collection.sharees.length - index;
+        final remaining = c.collection.sharees!.length - index;
         if (remaining == 1) {
           // If it's the last sharee
-          sharees.add(c.collection.sharees[index].name);
+          sharees.add(c.collection.sharees![index].name);
         } else {
           sharees.add("and " +
               remaining.toString() +
@@ -308,10 +308,10 @@ class OutgoingCollectionItem extends StatelessWidget {
               borderRadius: BorderRadius.circular(8.0),
               child: Container(
                 child: Hero(
-                    tag: "outgoing_collection" + c.thumbnail.tag(),
+                    tag: "outgoing_collection" + c.thumbnail!.tag(),
                     child: ThumbnailWidget(
                       c.thumbnail,
-                      key: Key("outgoing_collection" + c.thumbnail.tag()),
+                      key: Key("outgoing_collection" + c.thumbnail!.tag()),
                     )),
                 height: 60,
                 width: 60,
@@ -322,7 +322,7 @@ class OutgoingCollectionItem extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  c.collection.name,
+                  c.collection.name!,
                   style: TextStyle(
                     fontSize: 16,
                   ),
@@ -361,7 +361,7 @@ class IncomingCollectionItem extends StatelessWidget {
 
   const IncomingCollectionItem(
     this.c, {
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override
@@ -375,19 +375,19 @@ class IncomingCollectionItem extends StatelessWidget {
               child: Stack(
                 children: [
                   Hero(
-                      tag: "shared_collection" + c.thumbnail.tag(),
+                      tag: "shared_collection" + c.thumbnail!.tag(),
                       child: ThumbnailWidget(
                         c.thumbnail,
-                        key: Key("shared_collection" + c.thumbnail.tag()),
+                        key: Key("shared_collection" + c.thumbnail!.tag()),
                       )),
                   Align(
                     alignment: Alignment.bottomRight,
                     child: Container(
                       child: Text(
-                        c.collection.owner.name == null ||
-                                c.collection.owner.name.isEmpty
-                            ? c.collection.owner.email.substring(0, 1)
-                            : c.collection.owner.name.substring(0, 1),
+                        c.collection.owner!.name == null ||
+                                c.collection.owner!.name!.isEmpty
+                            ? c.collection.owner!.email!.substring(0, 1)
+                            : c.collection.owner!.name!.substring(0, 1),
                         textAlign: TextAlign.center,
                       ),
                       padding: EdgeInsets.all(8),
@@ -409,7 +409,7 @@ class IncomingCollectionItem extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(8, 0, 8, 0),
               child: Text(
-                c.collection.name,
+                c.collection.name!,
                 style: TextStyle(
                   fontSize: 16,
                 ),

@@ -146,7 +146,7 @@ class CryptoUtil {
     Sodium.init();
   }
 
-  static EncryptionResult encryptSync(Uint8List source, Uint8List key) {
+  static EncryptionResult encryptSync(Uint8List? source, Uint8List? key) {
     final nonce = Sodium.randombytesBuf(Sodium.cryptoSecretboxNoncebytes);
 
     final args = <String, dynamic>{};
@@ -172,7 +172,7 @@ class CryptoUtil {
 
   static Uint8List decryptSync(
     Uint8List cipher,
-    Uint8List key,
+    Uint8List? key,
     Uint8List nonce,
   ) {
     final args = <String, dynamic>{};
@@ -183,7 +183,7 @@ class CryptoUtil {
   }
 
   static Future<EncryptionResult> encryptChaCha(
-      Uint8List source, Uint8List key) async {
+      Uint8List? source, Uint8List? key) async {
     final args = <String, dynamic>{};
     args["source"] = source;
     args["key"] = key;
@@ -191,7 +191,7 @@ class CryptoUtil {
   }
 
   static Future<Uint8List> decryptChaCha(
-      Uint8List source, Uint8List key, Uint8List header) async {
+      Uint8List? source, Uint8List key, Uint8List header) async {
     final args = <String, dynamic>{};
     args["source"] = source;
     args["key"] = key;
@@ -202,7 +202,7 @@ class CryptoUtil {
   static Future<EncryptionResult> encryptFile(
     String sourceFilePath,
     String destinationFilePath, {
-    Uint8List key,
+    Uint8List? key,
   }) {
     final args = <String, dynamic>{};
     args["sourceFilePath"] = sourceFilePath;
@@ -269,8 +269,8 @@ class CryptoUtil {
   static Future<Uint8List> deriveKey(
     Uint8List password,
     Uint8List salt,
-    int memLimit,
-    int opsLimit,
+    int? memLimit,
+    int? opsLimit,
   ) {
     return _computer.compute(cryptoPwHash, param: {
       "password": password,

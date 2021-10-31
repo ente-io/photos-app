@@ -11,7 +11,7 @@ class CollectionItems {
 
 class CollectionWithThumbnail {
   final Collection collection;
-  final File thumbnail;
+  final File? thumbnail;
 
   CollectionWithThumbnail(
     this.collection,

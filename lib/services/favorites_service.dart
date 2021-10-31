@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter_sodium/flutter_sodium.dart';
 import 'package:photos/core/configuration.dart';
@@ -13,11 +14,11 @@ import 'package:photos/utils/crypto_util.dart';
 import 'package:photos/utils/file_uploader.dart';
 
 class FavoritesService {
-  Configuration _config;
-  CollectionsService _collectionsService;
-  FileUploader _fileUploader;
-  FilesDB _filesDB;
-  int _cachedFavoritesCollectionID;
+  late Configuration _config;
+  late CollectionsService _collectionsService;
+  late FileUploader _fileUploader;
+  late FilesDB _filesDB;
+  int? _cachedFavoritesCollectionID;
 
   FavoritesService._privateConstructor() {
     _config = Configuration.instance;
@@ -61,11 +62,11 @@ class FavoritesService {
     }
   }
 
-  Future<Collection> _getFavoritesCollection() async {
+  Future<Collection?> _getFavoritesCollection() async {
     if (_cachedFavoritesCollectionID == null) {
       final collections = _collectionsService.getActiveCollections();
       for (final collection in collections) {
-        if (collection.owner.id == _config.getUserID() &&
+        if (collection.owner!.id == _config.getUserID() &&
             collection.type == CollectionType.favorites) {
           _cachedFavoritesCollectionID = collection.id;
           return collection;
@@ -76,22 +77,23 @@ class FavoritesService {
     return _collectionsService.getCollectionByID(_cachedFavoritesCollectionID);
   }
 
-  Future<int> _getOrCreateFavoriteCollectionID() async {
+  Future<int?> _getOrCreateFavoriteCollectionID() async {
     if (_cachedFavoritesCollectionID != null) {
       return _cachedFavoritesCollectionID;
     }
     final key = CryptoUtil.generateKey();
     final encryptedKeyData = CryptoUtil.encryptSync(key, _config.getKey());
-    final encryptedName = CryptoUtil.encryptSync(utf8.encode("Favorites"), key);
+    final encryptedName =
+        CryptoUtil.encryptSync(utf8.encode("Favorites") as Uint8List?, key);
     final collection =
         await _collectionsService.createAndCacheCollection(Collection(
       null,
       null,
-      Sodium.bin2base64(encryptedKeyData.encryptedData),
-      Sodium.bin2base64(encryptedKeyData.nonce),
+      Sodium.bin2base64(encryptedKeyData.encryptedData!),
+      Sodium.bin2base64(encryptedKeyData.nonce!),
       null,
-      Sodium.bin2base64(encryptedName.encryptedData),
-      Sodium.bin2base64(encryptedName.nonce),
+      Sodium.bin2base64(encryptedName.encryptedData!),
+      Sodium.bin2base64(encryptedName.nonce!),
       CollectionType.favorites,
       CollectionAttributes(),
       null,

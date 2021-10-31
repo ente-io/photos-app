@@ -6,7 +6,7 @@ import 'package:photos/utils/dialog_util.dart';
 
 class AppVersionWidget extends StatefulWidget {
   const AppVersionWidget({
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override
@@ -18,7 +18,7 @@ class _AppVersionWidgetState extends State<AppVersionWidget> {
   static const kConsecutiveTapTimeWindowInMilliseconds = 2000;
   static const kDummyDelayDurationInMilliseconds = 1500;
 
-  int _lastTap;
+  int? _lastTap;
   int _consecutiveTaps = 0;
 
   @override
@@ -36,21 +36,21 @@ class _AppVersionWidgetState extends State<AppVersionWidget> {
             await Future.delayed(
                 Duration(milliseconds: kDummyDelayDurationInMilliseconds));
             await dialog.hide();
-            Network.instance.getAlice().showInspector();
+            Network.instance.getAlice()!.showInspector();
           }
         } else {
           _consecutiveTaps = 1;
         }
         _lastTap = now;
       },
-      child: FutureBuilder(
+      child: FutureBuilder<String>(
         future: _getAppVersion(),
         builder: (context, snapshot) {
           if (snapshot.hasData) {
             return Padding(
               padding: const EdgeInsets.all(20),
               child: Text(
-                "app version: " + snapshot.data,
+                "app version: " + snapshot.data!,
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.white.withOpacity(0.6),

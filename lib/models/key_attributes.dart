@@ -1,18 +1,18 @@
 import 'dart:convert';
 
 class KeyAttributes {
-  final String kekSalt;
-  final String encryptedKey;
-  final String keyDecryptionNonce;
-  final String publicKey;
-  final String encryptedSecretKey;
-  final String secretKeyDecryptionNonce;
-  final int memLimit;
-  final int opsLimit;
-  final String masterKeyEncryptedWithRecoveryKey;
-  final String masterKeyDecryptionNonce;
-  final String recoveryKeyEncryptedWithMasterKey;
-  final String recoveryKeyDecryptionNonce;
+  final String? kekSalt;
+  final String? encryptedKey;
+  final String? keyDecryptionNonce;
+  final String? publicKey;
+  final String? encryptedSecretKey;
+  final String? secretKeyDecryptionNonce;
+  final int? memLimit;
+  final int? opsLimit;
+  final String? masterKeyEncryptedWithRecoveryKey;
+  final String? masterKeyDecryptionNonce;
+  final String? recoveryKeyEncryptedWithMasterKey;
+  final String? recoveryKeyDecryptionNonce;
 
   KeyAttributes(
     this.kekSalt,
@@ -69,18 +69,18 @@ class KeyAttributes {
       KeyAttributes.fromMap(json.decode(source));
 
   KeyAttributes copyWith({
-    String kekSalt,
-    String encryptedKey,
-    String keyDecryptionNonce,
-    String publicKey,
-    String encryptedSecretKey,
-    String secretKeyDecryptionNonce,
-    int memLimit,
-    int opsLimit,
-    String masterKeyEncryptedWithRecoveryKey,
-    String masterKeyDecryptionNonce,
-    String recoveryKeyEncryptedWithMasterKey,
-    String recoveryKeyDecryptionNonce,
+    String? kekSalt,
+    String? encryptedKey,
+    String? keyDecryptionNonce,
+    String? publicKey,
+    String? encryptedSecretKey,
+    String? secretKeyDecryptionNonce,
+    int? memLimit,
+    int? opsLimit,
+    String? masterKeyEncryptedWithRecoveryKey,
+    String? masterKeyDecryptionNonce,
+    String? recoveryKeyEncryptedWithMasterKey,
+    String? recoveryKeyDecryptionNonce,
   }) {
     return KeyAttributes(
       kekSalt ?? this.kekSalt,

@@ -13,8 +13,8 @@ class FeatureFlagService {
   static const kBooleanFeatureFlagsKey = "feature_flags_key";
 
   final _logger = Logger("FeatureFlagService");
-  FeatureFlags _featureFlags;
-  SharedPreferences _prefs;
+  FeatureFlags? _featureFlags;
+  late SharedPreferences _prefs;
 
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
@@ -24,8 +24,8 @@ class FeatureFlagService {
   bool disableCFWorker() {
     try {
       _featureFlags ??=
-          FeatureFlags.fromJson(_prefs.getString(kBooleanFeatureFlagsKey));
-      return _featureFlags != null ? _featureFlags.disableCFWorker : false;
+          FeatureFlags.fromJson(_prefs.getString(kBooleanFeatureFlagsKey)!);
+      return _featureFlags != null ? _featureFlags!.disableCFWorker : false;
     } catch (e) {
       _logger.severe(e);
       return false;
@@ -38,8 +38,8 @@ class FeatureFlagService {
     }
     try {
       _featureFlags ??=
-          FeatureFlags.fromJson(_prefs.getString(kBooleanFeatureFlagsKey));
-      return _featureFlags != null ? _featureFlags.enableStripe : true;
+          FeatureFlags.fromJson(_prefs.getString(kBooleanFeatureFlagsKey)!);
+      return _featureFlags != null ? _featureFlags!.enableStripe : true;
     } catch (e) {
       _logger.severe(e);
       return true;

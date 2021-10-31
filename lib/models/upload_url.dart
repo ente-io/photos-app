@@ -5,6 +5,7 @@ class UploadURL {
   final String objectKey;
 
   UploadURL(this.url, this.objectKey);
+
   Map<String, dynamic> toMap() {
     return {
       'url': url,
@@ -13,8 +14,6 @@ class UploadURL {
   }
 
   factory UploadURL.fromMap(Map<String, dynamic> map) {
-    if (map == null) return null;
-
     return UploadURL(
       map['url'],
       map['objectKey'],

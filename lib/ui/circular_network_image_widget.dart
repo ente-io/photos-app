@@ -6,7 +6,7 @@ class CircularNetworkImageWidget extends StatelessWidget {
   final String _url;
   final double _size;
 
-  const CircularNetworkImageWidget(String url, double size, {Key key})
+  const CircularNetworkImageWidget(String url, double size, {Key? key})
       : this._url = url,
         this._size = size,
         super(key: key);

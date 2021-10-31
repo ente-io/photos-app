@@ -1,8 +1,8 @@
 import 'package:photos/models/file.dart';
 
 class DeviceFolder {
-  final String name;
-  final String path;
+  final String? name;
+  final String? path;
   final File thumbnail;
 
   DeviceFolder(

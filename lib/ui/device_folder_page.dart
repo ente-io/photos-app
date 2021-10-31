@@ -14,7 +14,7 @@ class DeviceFolderPage extends StatelessWidget {
   final DeviceFolder folder;
   final _selectedFiles = SelectedFiles();
 
-  DeviceFolderPage(this.folder, {Key key}) : super(key: key);
+  DeviceFolderPage(this.folder, {Key? key}) : super(key: key);
 
   @override
   Widget build(Object context) {
@@ -29,7 +29,7 @@ class DeviceFolderPage extends StatelessWidget {
         EventType.deletedFromDevice,
         EventType.deletedFromEverywhere,
       },
-      tagPrefix: "device_folder:" + folder.path,
+      tagPrefix: "device_folder:" + folder.path!,
       selectedFiles: _selectedFiles,
       header: Configuration.instance.hasConfiguredAccount()
           ? _getHeaderWidget()
@@ -56,9 +56,9 @@ class DeviceFolderPage extends StatelessWidget {
 }
 
 class BackupConfigurationHeaderWidget extends StatefulWidget {
-  final String path;
+  final String? path;
 
-  BackupConfigurationHeaderWidget(this.path, {Key key}) : super(key: key);
+  BackupConfigurationHeaderWidget(this.path, {Key? key}) : super(key: key);
 
   @override
   _BackupConfigurationHeaderWidgetState createState() =>

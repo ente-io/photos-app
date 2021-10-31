@@ -23,7 +23,7 @@ class HexEncoder extends Converter<List<int>, String> {
   /// If true, the encoder will encode into uppercase hexadecimal strings.
   final bool upperCase;
 
-  const HexEncoder({bool this.upperCase: false});
+  const HexEncoder({this.upperCase = false});
 
   @override
   String convert(List<int> bytes) {

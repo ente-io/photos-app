@@ -14,32 +14,32 @@ import 'package:photos/utils/crypto_util.dart';
 import 'package:photos/utils/exif_util.dart';
 
 class File {
-  int generatedID;
-  int uploadedFileID;
-  int ownerID;
-  int collectionID;
-  String localID;
-  String title;
-  String deviceFolder;
-  int creationTime;
-  int modificationTime;
-  int updationTime;
-  Location location;
-  FileType fileType;
-  int fileSubType;
-  int duration;
-  String exif;
-  String hash;
-  int metadataVersion;
-  String encryptedKey;
-  String keyDecryptionNonce;
-  String fileDecryptionHeader;
-  String thumbnailDecryptionHeader;
-  String metadataDecryptionHeader;
+  int? generatedID;
+  int? uploadedFileID;
+  int? ownerID;
+  int? collectionID;
+  String? localID;
+  String? title;
+  String? deviceFolder;
+  int? creationTime;
+  int? modificationTime;
+  int? updationTime;
+  Location? location;
+  FileType? fileType;
+  int? fileSubType;
+  int? duration;
+  String? exif;
+  String? hash;
+  int? metadataVersion;
+  String? encryptedKey;
+  String? keyDecryptionNonce;
+  String? fileDecryptionHeader;
+  String? thumbnailDecryptionHeader;
+  String? metadataDecryptionHeader;
 
-  String mMdEncodedJson;
-  int mMdVersion = 0;
-  MagicMetadata _mmd;
+  String? mMdEncodedJson;
+  int? mMdVersion = 0;
+  MagicMetadata? _mmd;
 
   MagicMetadata get magicMetadata =>
       _mmd ?? MagicMetadata.fromEncodedJson(mMdEncodedJson ?? '{}');
@@ -47,9 +47,9 @@ class File {
   set magicMetadata(val) => _mmd = val;
 
   // public magic metadata is shared if during file/album sharing
-  String pubMmdEncodedJson;
-  int pubMmdVersion = 0;
-  PubMagicMetadata _pubMmd;
+  String? pubMmdEncodedJson;
+  int? pubMmdVersion = 0;
+  PubMagicMetadata? _pubMmd;
 
   PubMagicMetadata get pubMagicMetadata =>
       _pubMmd ?? PubMagicMetadata.fromEncodedJson(pubMmdEncodedJson ?? '{}');
@@ -60,7 +60,7 @@ class File {
 
   File();
 
-  static Future<File> fromAsset(String pathName, AssetEntity asset) async {
+  static Future<File> fromAsset(String? pathName, AssetEntity asset) async {
     File file = File();
     file.localID = asset.id;
     file.title = asset.title;
@@ -71,7 +71,7 @@ class File {
     if (file.creationTime == 0) {
       try {
         final parsedDateTime = DateTime.parse(
-            basenameWithoutExtension(file.title)
+            basenameWithoutExtension(file.title!)
                 .replaceAll("IMG_", "")
                 .replaceAll("VID_", "")
                 .replaceAll("DCIM_", "")
@@ -95,8 +95,8 @@ class File {
         // PHAssetMediaSubtype.photoLive.rawValue is 8
         // This hack should go away once photos_manager support livePhotos
         if (asset.subTypes != null &&
-            asset.subTypes > -1 &&
-            (asset.subTypes & 8) != 0) {
+            asset.subTypes! > -1 &&
+            (asset.subTypes! & 8) != 0) {
           type = FileType.livePhoto;
         }
         break;
@@ -110,11 +110,11 @@ class File {
     return type;
   }
 
-  Future<AssetEntity> getAsset() {
+  Future<AssetEntity?> getAsset() {
     if (localID == null) {
       return Future.value(null);
     }
-    return AssetEntity.fromId(localID);
+    return AssetEntity.fromId(localID!);
   }
 
   void applyMetadata(Map<String, dynamic> metadata) {
@@ -164,12 +164,12 @@ class File {
     metadata["deviceFolder"] = deviceFolder;
     metadata["creationTime"] = creationTime;
     metadata["modificationTime"] = modificationTime;
-    metadata["fileType"] = fileType.index;
+    metadata["fileType"] = fileType!.index;
     if (location != null &&
-        location.latitude != null &&
-        location.longitude != null) {
-      metadata["latitude"] = location.latitude;
-      metadata["longitude"] = location.longitude;
+        location!.latitude != null &&
+        location!.longitude != null) {
+      metadata["latitude"] = location!.latitude;
+      metadata["longitude"] = location!.longitude;
     }
     if (fileSubType != null) {
       metadata["subType"] = fileSubType;
@@ -214,12 +214,12 @@ class File {
   }
 
   bool isSharedMediaToAppSandbox() {
-    return localID != null && localID.startsWith(kSharedMediaIdentifier);
+    return localID != null && localID!.startsWith(kSharedMediaIdentifier);
   }
 
   bool hasLocation() {
     return location != null &&
-        (location.longitude != 0 || location.latitude != 0);
+        (location!.longitude != 0 || location!.latitude != 0);
   }
 
   @override

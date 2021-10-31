@@ -24,9 +24,10 @@ Future<void> share(BuildContext context, List<File> files) async {
     // Note: We are requesting the origin file for performance reasons on iOS.
     // This will eat up storage, which will be reset only when the app restarts.
     // We could have cleared the cache had there been a callback to the share API.
-    pathFutures.add(getFile(file, isOrigin: true).then((file) => file.path));
+    pathFutures.add(getFile(file, isOrigin: true)!.then((file) => file!.path));
     if (file.fileType == FileType.livePhoto) {
-      pathFutures.add(getFile(file, liveVideo: true).then((file) => file.path));
+      pathFutures
+          .add(getFile(file, liveVideo: true)!.then((file) => file!.path));
     }
   }
   final paths = await Future.wait(pathFutures);
@@ -39,7 +40,7 @@ Future<void> shareText(String text) async {
 }
 
 Future<List<File>> convertIncomingSharedMediaToFile(
-    List<SharedMediaFile> sharedMedia, int collectionID) async {
+    List<SharedMediaFile> sharedMedia, int? collectionID) async {
   List<File> localFiles = [];
   for (var media in sharedMedia) {
     if (!(media.type == SharedMediaType.IMAGE ||
@@ -55,8 +56,8 @@ Future<List<File>> convertIncomingSharedMediaToFile(
     ioFile = ioFile.renameSync(
         Configuration.instance.getSharedMediaCacheDirectory() +
             "/" +
-            enteFile.title);
-    enteFile.localID = kSharedMediaIdentifier + enteFile.title;
+            enteFile.title!);
+    enteFile.localID = kSharedMediaIdentifier + enteFile.title!;
     enteFile.collectionID = collectionID;
     enteFile.fileType =
         media.type == SharedMediaType.IMAGE ? FileType.image : FileType.video;
@@ -83,7 +84,7 @@ Future<List<File>> convertIncomingSharedMediaToFile(
   return localFiles;
 }
 
-DateTime parseDateFromFileName(String fileName) {
+DateTime? parseDateFromFileName(String fileName) {
   if (fileName.startsWith('IMG-') || fileName.startsWith('VID-')) {
     // Whatsapp media files
     return DateTime.tryParse(fileName.split('-')[1]);

@@ -32,7 +32,7 @@ class ImageEditorPage extends StatefulWidget {
     this.imageProvider,
     this.originalFile,
     this.detailPageConfig, {
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override
@@ -51,8 +51,8 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
   final GlobalKey<ExtendedImageEditorState> editorKey =
       GlobalKey<ExtendedImageEditorState>();
 
-  double _brightness = kBrightnessDefault;
-  double _saturation = kSaturationDefault;
+  double? _brightness = kBrightnessDefault;
+  double? _saturation = kSaturationDefault;
   bool _hasEdited = false;
 
   @override
@@ -75,7 +75,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
                   IconButton(
                     padding: const EdgeInsets.only(right: 16, left: 16),
                     onPressed: () {
-                      editorKey.currentState.reset();
+                      editorKey.currentState!.reset();
                       setState(() {
                         _brightness = kBrightnessDefault;
                         _saturation = kSaturationDefault;
@@ -270,15 +270,15 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
   Future<void> _saveEdits() async {
     final dialog = createProgressDialog(context, "saving...");
     await dialog.show();
-    final ExtendedImageEditorState state = editorKey.currentState;
+    final ExtendedImageEditorState? state = editorKey.currentState;
     if (state == null) {
       return;
     }
-    final Rect rect = state.getCropRect();
+    final Rect? rect = state.getCropRect();
     if (rect == null) {
       return;
     }
-    final EditActionDetails action = state.editAction;
+    final EditActionDetails action = state.editAction!;
     final double radian = action.rotateAngle;
 
     final bool flipHorizontal = action.flipY;
@@ -300,13 +300,13 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
       option.addOption(RotateOption(radian.toInt()));
     }
 
-    option.addOption(ColorOption.saturation(_saturation));
-    option.addOption(ColorOption.brightness(_brightness));
+    option.addOption(ColorOption.saturation(_saturation!));
+    option.addOption(ColorOption.brightness(_brightness!));
 
     option.outputFormat = const OutputFormat.png(88);
 
     final DateTime start = DateTime.now();
-    final Uint8List result = await ImageEditor.editImage(
+    final Uint8List? result = await ImageEditor.editImage(
       image: img,
       imageEditorOption: option,
     );
@@ -321,14 +321,18 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
     }
     try {
       final fileName =
-          path.basenameWithoutExtension(widget.originalFile.title) +
+          path.basenameWithoutExtension(widget.originalFile.title!) +
               "_edited_" +
               DateTime.now().microsecondsSinceEpoch.toString() +
-              path.extension(widget.originalFile.title);
-      final newAsset = await PhotoManager.editor.saveImage(
+              path.extension(widget.originalFile.title!);
+      final newAsset = await (PhotoManager.editor.saveImage(
         result,
         title: fileName,
-      );
+      ));
+      if (newAsset == null) {
+        showToast("something went wrong");
+        return;
+      }
       final newFile =
           await ente.File.fromAsset(widget.originalFile.deviceFolder, newAsset);
       newFile.creationTime = widget.originalFile.creationTime;
@@ -349,9 +353,9 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
       _logger.info("Original file " + widget.originalFile.toString());
       _logger.info("Saved edits to file " + newFile.toString());
       final existingFiles = widget.detailPageConfig.files;
-      final files = (await widget.detailPageConfig.asyncLoader(
-              existingFiles[existingFiles.length - 1].creationTime,
-              existingFiles[0].creationTime))
+      final files = (await widget.detailPageConfig.asyncLoader!(
+              existingFiles[existingFiles.length - 1].creationTime!,
+              existingFiles[0].creationTime!))
           .files;
       replacePage(
         context,

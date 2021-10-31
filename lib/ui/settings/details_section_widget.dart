@@ -13,15 +13,15 @@ import 'package:photos/utils/toast_util.dart';
 import 'package:pie_chart/pie_chart.dart';
 
 class DetailsSectionWidget extends StatefulWidget {
-  DetailsSectionWidget({Key key}) : super(key: key);
+  DetailsSectionWidget({Key? key}) : super(key: key);
 
   @override
   _DetailsSectionWidgetState createState() => _DetailsSectionWidgetState();
 }
 
 class _DetailsSectionWidgetState extends State<DetailsSectionWidget> {
-  UserDetails _userDetails;
-  StreamSubscription<UserDetailsChangedEvent> _userDetailsChangedEvent;
+  UserDetails? _userDetails;
+  late StreamSubscription<UserDetailsChangedEvent> _userDetailsChangedEvent;
 
   @override
   void initState() {
@@ -70,18 +70,18 @@ class _DetailsSectionWidgetState extends State<DetailsSectionWidget> {
           GestureDetector(
             onTap: () {
               showToast(formatBytes(
-                      _userDetails.subscription.storage - _userDetails.usage) +
+                      _userDetails!.subscription.storage! - _userDetails!.usage!) +
                   " / " +
                   convertBytesToReadableFormat(
-                      _userDetails.subscription.storage) +
+                      _userDetails!.subscription.storage!) +
                   " free");
             },
             child: PieChart(
               dataMap: {
-                "used": _userDetails.usage.toDouble(),
+                "used": _userDetails!.usage!.toDouble(),
                 "free": max(
-                    _userDetails.subscription.storage.toDouble() -
-                        _userDetails.usage.toDouble(),
+                    _userDetails!.subscription.storage!.toDouble() -
+                        _userDetails!.usage!.toDouble(),
                     0),
               },
               colorList: const [
@@ -99,7 +99,7 @@ class _DetailsSectionWidgetState extends State<DetailsSectionWidget> {
               ringStrokeWidth: 4,
               chartType: ChartType.ring,
               centerText:
-                  convertBytesToReadableFormat(_userDetails.usage) + "\nused",
+                  convertBytesToReadableFormat(_userDetails!.usage!) + "\nused",
               centerTextStyle: TextStyle(
                 color: Colors.white,
                 fontSize: 12,
@@ -114,7 +114,7 @@ class _DetailsSectionWidgetState extends State<DetailsSectionWidget> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _userDetails.email,
+                  _userDetails!.email!,
                   style: TextStyle(
                     fontSize: 16,
                   ),
@@ -122,7 +122,7 @@ class _DetailsSectionWidgetState extends State<DetailsSectionWidget> {
                 ),
                 Padding(padding: EdgeInsets.all(6)),
                 Text(
-                  _userDetails.fileCount.toString() + " memories preserved",
+                  _userDetails!.fileCount.toString() + " memories preserved",
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.6),
                     fontSize: 14,
@@ -130,7 +130,7 @@ class _DetailsSectionWidgetState extends State<DetailsSectionWidget> {
                 ),
                 Padding(padding: EdgeInsets.all(3)),
                 Text(
-                  _userDetails.sharedCollectionsCount.toString() +
+                  _userDetails!.sharedCollectionsCount.toString() +
                       " albums shared",
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.6),

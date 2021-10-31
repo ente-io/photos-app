@@ -44,11 +44,11 @@ class CollectionsDB {
 
   static final CollectionsDB instance = CollectionsDB._privateConstructor();
 
-  static Future<Database> _dbFuture;
+  static Future<Database>? _dbFuture;
 
-  Future<Database> get database async {
+  Future<Database>? get database async {
     _dbFuture ??= _initDatabase();
-    return _dbFuture;
+    return _dbFuture!;
   }
 
   Future<Database> _initDatabase() async {
@@ -58,7 +58,7 @@ class CollectionsDB {
   }
 
   Future<void> clearTable() async {
-    final db = await instance.database;
+    final db = await instance.database!;
     await db.delete(table);
   }
 
@@ -127,18 +127,18 @@ class CollectionsDB {
     ];
   }
 
-  Future<List<dynamic>> insert(List<Collection> collections) async {
-    final db = await instance.database;
+  Future<List<dynamic>> insert(List<Collection?> collections) async {
+    final db = await instance.database!;
     var batch = db.batch();
     for (final collection in collections) {
-      batch.insert(table, _getRowForCollection(collection),
+      batch.insert(table, _getRowForCollection(collection!),
           conflictAlgorithm: ConflictAlgorithm.replace);
     }
     return await batch.commit();
   }
 
   Future<List<Collection>> getAllCollections() async {
-    final db = await instance.database;
+    final db = await instance.database!;
     final rows = await db.query(table);
     final collections = <Collection>[];
     for (final row in rows) {
@@ -147,22 +147,22 @@ class CollectionsDB {
     return collections;
   }
 
-  Future<int> getLastCollectionUpdationTime() async {
-    final db = await instance.database;
+  Future<int?> getLastCollectionUpdationTime() async {
+    final db = await instance.database!;
     final rows = await db.query(
       table,
       orderBy: '$columnUpdationTime DESC',
       limit: 1,
     );
     if (rows.isNotEmpty) {
-      return int.parse(rows[0][columnUpdationTime]);
+      return int.parse(rows[0][columnUpdationTime] as String);
     } else {
       return null;
     }
   }
 
-  Future<int> deleteCollection(int collectionID) async {
-    final db = await instance.database;
+  Future<int> deleteCollection(int? collectionID) async {
+    final db = await instance.database!;
     return db.delete(
       table,
       where: '$columnID = ?',
@@ -173,7 +173,7 @@ class CollectionsDB {
   Map<String, dynamic> _getRowForCollection(Collection collection) {
     var row = <String, dynamic>{};
     row[columnID] = collection.id;
-    row[columnOwner] = collection.owner.toJson();
+    row[columnOwner] = collection.owner!.toJson();
     row[columnEncryptedKey] = collection.encryptedKey;
     row[columnKeyDecryptionNonce] = collection.keyDecryptionNonce;
     row[columnName] = collection.name;
@@ -184,9 +184,9 @@ class CollectionsDB {
     row[columnPathDecryptionNonce] = collection.attributes.pathDecryptionNonce;
     row[columnVersion] = collection.attributes.version;
     row[columnSharees] =
-        json.encode(collection.sharees?.map((x) => x?.toMap())?.toList());
+        json.encode(collection.sharees?.map((x) => x.toMap()).toList());
     row[columnUpdationTime] = collection.updationTime;
-    if (collection.isDeleted ?? false) {
+    if (collection.isDeleted) {
       row[columnIsDeleted] = _sqlBoolTrue;
     } else {
       row[columnIsDeleted] = _sqlBoolFalse;

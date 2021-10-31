@@ -39,12 +39,12 @@ String _actionName(CollectionActionType type, bool plural) {
 }
 
 class CreateCollectionPage extends StatefulWidget {
-  final SelectedFiles selectedFiles;
-  final List<SharedMediaFile> sharedFiles;
+  final SelectedFiles? selectedFiles;
+  final List<SharedMediaFile>? sharedFiles;
   final CollectionActionType actionType;
 
   const CreateCollectionPage(this.selectedFiles, this.sharedFiles,
-      {Key key, this.actionType = CollectionActionType.addFiles})
+      {Key? key, this.actionType = CollectionActionType.addFiles})
       : super(key: key);
 
   @override
@@ -53,13 +53,13 @@ class CreateCollectionPage extends StatefulWidget {
 
 class _CreateCollectionPageState extends State<CreateCollectionPage> {
   final _logger = Logger("CreateCollectionPage");
-  String _albumName;
+  late String _albumName;
 
   @override
   Widget build(BuildContext context) {
     final filesCount = widget.sharedFiles != null
-        ? widget.sharedFiles.length
-        : widget.selectedFiles.files.length;
+        ? widget.sharedFiles!.length
+        : widget.selectedFiles!.files.length;
     return Scaffold(
       appBar: AppBar(
         title: Text(_actionName(widget.actionType, filesCount > 1)),
@@ -125,9 +125,9 @@ class _CreateCollectionPageState extends State<CreateCollectionPage> {
         } else if (snapshot.hasData) {
           return ListView.builder(
             itemBuilder: (context, index) {
-              return _buildCollectionItem(snapshot.data[index]);
+              return _buildCollectionItem(snapshot.data![index]);
             },
-            itemCount: snapshot.data.length,
+            itemCount: snapshot.data!.length,
             shrinkWrap: true,
             physics: NeverScrollableScrollPhysics(),
           );
@@ -151,13 +151,13 @@ class _CreateCollectionPageState extends State<CreateCollectionPage> {
                 child: ThumbnailWidget(item.thumbnail),
                 height: 64,
                 width: 64,
-                key: Key("collection_item:" + item.thumbnail.tag()),
+                key: Key("collection_item:" + item.thumbnail!.tag()),
               ),
             ),
             Padding(padding: EdgeInsets.all(8)),
             Expanded(
               child: Text(
-                item.collection.name,
+                item.collection.name!,
                 style: TextStyle(
                   fontSize: 16,
                 ),
@@ -166,10 +166,10 @@ class _CreateCollectionPageState extends State<CreateCollectionPage> {
           ],
         ),
         onTap: () async {
-          if (await _runCollectionAction(item.collection.id)) {
+          if (await _runCollectionAction(item.collection.id!)) {
             showToast(widget.actionType == CollectionActionType.addFiles
-                ? "added successfully to " + item.collection.name
-                : "moved successfully to " + item.collection.name);
+                ? "added successfully to " + item.collection.name!
+                : "moved successfully to " + item.collection.name!);
             _navigateToCollection(item.collection);
           }
         },
@@ -180,17 +180,17 @@ class _CreateCollectionPageState extends State<CreateCollectionPage> {
   Future<List<CollectionWithThumbnail>> _getCollectionsWithThumbnail() async {
     final List<CollectionWithThumbnail> collectionsWithThumbnail = [];
     final latestCollectionFiles =
-        await CollectionsService.instance.getLatestCollectionFiles();
+        await CollectionsService.instance.getLatestCollectionFiles()!;
     for (final file in latestCollectionFiles) {
       final c =
-          CollectionsService.instance.getCollectionByID(file.collectionID);
-      if (c.owner.id == Configuration.instance.getUserID()) {
+          CollectionsService.instance.getCollectionByID(file.collectionID)!;
+      if (c.owner!.id == Configuration.instance.getUserID()) {
         collectionsWithThumbnail.add(CollectionWithThumbnail(c, file));
       }
     }
     collectionsWithThumbnail.sort((first, second) {
-      return second.collection.updationTime
-          .compareTo(first.collection.updationTime);
+      return second.collection.updationTime!
+          .compareTo(first.collection.updationTime!);
     });
     return collectionsWithThumbnail;
   }
@@ -219,7 +219,7 @@ class _CreateCollectionPageState extends State<CreateCollectionPage> {
             Navigator.of(context, rootNavigator: true).pop('dialog');
             final collection = await _createAlbum(_albumName);
             if (collection != null) {
-              if (await _runCollectionAction(collection.id)) {
+              if (await _runCollectionAction(collection.id!)) {
                 if (widget.actionType == CollectionActionType.restoreFiles) {
                   showToast('restored files to album ' + _albumName);
                 } else {
@@ -268,16 +268,16 @@ class _CreateCollectionPageState extends State<CreateCollectionPage> {
     final dialog = createProgressDialog(context, "moving files to album...");
     await dialog.show();
     try {
-      int fromCollectionID = widget.selectedFiles.files?.first?.collectionID;
+      int? fromCollectionID = widget.selectedFiles!.files.first.collectionID;
       await CollectionsService.instance.move(toCollectionID, fromCollectionID,
-          widget.selectedFiles.files?.toList());
+          widget.selectedFiles!.files.toList());
       RemoteSyncService.instance.sync(silently: true);
       widget.selectedFiles?.clearAll();
       await dialog.hide();
       return true;
     } on AssertionError catch (e, s) {
       await dialog.hide();
-      showErrorDialog(context, "oops", e.message);
+      showErrorDialog(context, "oops", e.message as String);
       return false;
     } catch (e, s) {
       _logger.severe("Could not move to album", e, s);
@@ -292,14 +292,14 @@ class _CreateCollectionPageState extends State<CreateCollectionPage> {
     await dialog.show();
     try {
       await CollectionsService.instance
-          .restore(toCollectionID, widget.selectedFiles.files?.toList());
+          .restore(toCollectionID, widget.selectedFiles!.files.toList());
       RemoteSyncService.instance.sync(silently: true);
       widget.selectedFiles?.clearAll();
       await dialog.hide();
       return true;
     } on AssertionError catch (e, s) {
       await dialog.hide();
-      showErrorDialog(context, "oops", e.message);
+      showErrorDialog(context, "oops", e.message as String);
       return false;
     } catch (e, s) {
       _logger.severe("Could not move to album", e, s);
@@ -313,17 +313,18 @@ class _CreateCollectionPageState extends State<CreateCollectionPage> {
     final dialog = createProgressDialog(context, "uploading files to album...");
     await dialog.show();
     try {
-      final List<File> files = [];
+      final List<File?> files = [];
       if (widget.sharedFiles != null) {
         final localFiles = await convertIncomingSharedMediaToFile(
-            widget.sharedFiles, collectionID);
+            widget.sharedFiles!, collectionID);
         await FilesDB.instance.insertMultiple(localFiles);
       } else {
-        for (final file in widget.selectedFiles.files) {
-          final currentFile = await FilesDB.instance.getFile(file.generatedID);
-          if (currentFile.uploadedFileID == null) {
+        for (final file in widget.selectedFiles!.files) {
+          final currentFile =
+              await (FilesDB.instance.getFile(file.generatedID));
+          if (currentFile?.uploadedFileID == null) {
             final uploadedFile = (await FileUploader.instance
-                .forceUpload(currentFile, collectionID));
+                .forceUpload(currentFile!, collectionID));
             files.add(uploadedFile);
           } else {
             files.add(currentFile);
@@ -343,8 +344,8 @@ class _CreateCollectionPageState extends State<CreateCollectionPage> {
     return false;
   }
 
-  Future<Collection> _createAlbum(String albumName) async {
-    Collection collection;
+  Future<Collection?> _createAlbum(String albumName) async {
+    Collection? collection;
     final dialog = createProgressDialog(context, "creating album...");
     await dialog.show();
     try {

@@ -13,9 +13,9 @@ class RecoveryKeyDialog extends StatefulWidget {
   final String doneText;
   final Function() onDone;
   final bool isDismissible;
-  final String title;
-  final String text;
-  final String subText;
+  final String? title;
+  final String? text;
+  final String? subText;
 
   RecoveryKeyDialog(
     this.recoveryKey,
@@ -24,7 +24,7 @@ class RecoveryKeyDialog extends StatefulWidget {
     this.title,
     this.text,
     this.subText,
-    Key key,
+    Key? key,
     this.isDismissible = true,
   }) : super(key: key);
 

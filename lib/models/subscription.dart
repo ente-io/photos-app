@@ -6,15 +6,15 @@ const kAppStore = "appstore";
 const kPlayStore = "playstore";
 
 class Subscription {
-  final int id;
-  final String productID;
-  final int storage;
-  final String originalTransactionID;
-  final String paymentProvider;
-  final int expiryTime;
-  final String price;
-  final String period;
-  final Attributes attributes;
+  final int? id;
+  final String? productID;
+  final int? storage;
+  final String? originalTransactionID;
+  final String? paymentProvider;
+  final int? expiryTime;
+  final String? price;
+  final String? period;
+  final Attributes? attributes;
 
   Subscription({
     this.id,
@@ -29,7 +29,7 @@ class Subscription {
   });
 
   bool isValid() {
-    return expiryTime > DateTime.now().microsecondsSinceEpoch;
+    return expiryTime! > DateTime.now().microsecondsSinceEpoch;
   }
 
   bool isYearlyPlan() {
@@ -37,14 +37,14 @@ class Subscription {
   }
 
   Subscription copyWith({
-    int id,
-    String productID,
-    int storage,
-    String originalTransactionID,
-    String paymentProvider,
-    int expiryTime,
-    String price,
-    String period,
+    int? id,
+    String? productID,
+    int? storage,
+    String? originalTransactionID,
+    String? paymentProvider,
+    int? expiryTime,
+    String? price,
+    String? period,
   }) {
     return Subscription(
       id: id ?? this.id,
@@ -74,7 +74,7 @@ class Subscription {
     return map;
   }
 
-  factory Subscription.fromMap(Map<String, dynamic> map) {
+  static fromMap(Map<String, dynamic>? map) {
     if (map == null) return null;
     return Subscription(
       id: map['id'],
@@ -130,12 +130,10 @@ class Subscription {
 }
 
 class Attributes {
-  bool isCancelled;
-  String customerID;
+  bool? isCancelled;
+  String? customerID;
 
-  Attributes({
-    this.isCancelled,
-    this.customerID});
+  Attributes({this.isCancelled, this.customerID});
 
   Attributes.fromJson(dynamic json) {
     isCancelled = json["isCancelled"];
@@ -153,5 +151,4 @@ class Attributes {
   String toString() {
     return 'Attributes{isCancelled: $isCancelled, customerID: $customerID}';
   }
-
 }

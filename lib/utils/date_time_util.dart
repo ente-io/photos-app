@@ -40,34 +40,34 @@ Map<int, String> _days = {
 };
 
 String getMonthAndYear(DateTime dateTime) {
-  return _months[dateTime.month] + " " + dateTime.year.toString();
+  return _months[dateTime.month]! + " " + dateTime.year.toString();
 }
 
 String getDayAndMonth(DateTime dateTime) {
-  return _days[dateTime.weekday] +
+  return _days[dateTime.weekday]! +
       ", " +
       dateTime.day.toString() +
       " " +
-      _months[dateTime.month];
+      _months[dateTime.month]!;
 }
 
 String getDateAndMonthAndYear(DateTime dateTime) {
   return dateTime.day.toString() +
       " " +
-      _months[dateTime.month] +
+      _months[dateTime.month]! +
       ", " +
       dateTime.year.toString();
 }
 
-String getDay(DateTime dateTime) {
+String? getDay(DateTime dateTime) {
   return _days[dateTime.weekday];
 }
 
-String getMonth(DateTime dateTime) {
+String? getMonth(DateTime dateTime) {
   return _months[dateTime.month];
 }
 
-String getFullMonth(DateTime dateTime) {
+String? getFullMonth(DateTime dateTime) {
   return _fullMonths[dateTime.month];
 }
 
@@ -82,9 +82,9 @@ String getTime(DateTime dateTime) {
 }
 
 String getFormattedTime(DateTime dateTime) {
-  return getDay(dateTime) +
+  return getDay(dateTime)! +
       ", " +
-      getMonth(dateTime) +
+      getMonth(dateTime)! +
       " " +
       dateTime.day.toString() +
       ", " +
@@ -94,9 +94,9 @@ String getFormattedTime(DateTime dateTime) {
 }
 
 String getFormattedDate(DateTime dateTime) {
-  return getDay(dateTime) +
+  return getDay(dateTime)! +
       ", " +
-      getMonth(dateTime) +
+      getMonth(dateTime)! +
       " " +
       dateTime.day.toString() +
       ", " +

@@ -10,7 +10,7 @@ import 'package:photos/ui/password_reentry_page.dart';
 import 'package:photos/ui/payment/subscription.dart';
 
 class LandingPageWidget extends StatefulWidget {
-  const LandingPageWidget({Key key}) : super(key: key);
+  const LandingPageWidget({Key? key}) : super(key: key);
 
   @override
   _LandingPageWidgetState createState() => _LandingPageWidgetState();
@@ -110,7 +110,7 @@ class _LandingPageWidgetState extends State<LandingPageWidget> {
                     child: Material(
                       type: MaterialType.transparency,
                       child: Text(
-                        AppLocalizations.of(context).log_in,
+                        AppLocalizations.of(context)!.log_in,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -153,7 +153,7 @@ class _LandingPageWidgetState extends State<LandingPageWidget> {
           child: Material(
             type: MaterialType.transparency,
             child: Text(
-              AppLocalizations.of(context).sign_up,
+              AppLocalizations.of(context)!.sign_up,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
@@ -254,7 +254,7 @@ class FeatureItemWidget extends StatelessWidget {
     this.featureTitle,
     this.firstLine,
     this.secondLine, {
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override

@@ -25,42 +25,42 @@ class SubscriptionPage extends StatefulWidget {
 
   const SubscriptionPage({
     this.isOnboarding = false,
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override
-   State<SubscriptionPage> createState() => _SubscriptionPageState();
+  State<SubscriptionPage> createState() => _SubscriptionPageState();
 }
 
 class _SubscriptionPageState extends State<SubscriptionPage> {
   final _logger = Logger("SubscriptionPage");
   final _billingService = BillingService.instance;
-  Subscription _currentSubscription;
-  StreamSubscription _purchaseUpdateSubscription;
-  ProgressDialog _dialog;
-  Future<int> _usageFuture;
-  bool _hasActiveSubscription;
-  FreePlan _freePlan;
-  List<BillingPlan> _plans;
+  Subscription? _currentSubscription;
+  late StreamSubscription _purchaseUpdateSubscription;
+  late ProgressDialog _dialog;
+  Future<int?>? _usageFuture;
+  late bool _hasActiveSubscription;
+  FreePlan? _freePlan;
+  late List<BillingPlan> _plans;
   bool _hasLoadedData = false;
-  bool _isActiveStripeSubscriber;
+  late bool _isActiveStripeSubscriber;
 
   @override
   void initState() {
     _billingService.setIsOnSubscriptionPage(true);
     _billingService.fetchSubscription().then((subscription) async {
       _currentSubscription = subscription;
-      _hasActiveSubscription = _currentSubscription.isValid();
-      final billingPlans = await _billingService.getBillingPlans();
+      _hasActiveSubscription = _currentSubscription!.isValid();
+      final billingPlans = await _billingService.getBillingPlans()!;
       _isActiveStripeSubscriber =
-          _currentSubscription.paymentProvider == kStripe &&
-              _currentSubscription.isValid();
-      _plans = billingPlans.plans.where((plan) {
+          _currentSubscription!.paymentProvider == kStripe &&
+              _currentSubscription!.isValid();
+      _plans = billingPlans.plans!.where((plan) {
         final productID = _isActiveStripeSubscriber
             ? plan.stripeID
             : Platform.isAndroid
-            ? plan.androidID
-            : plan.iosID;
+                ? plan.androidID
+                : plan.iosID;
         return productID != null && productID.isNotEmpty;
       }).toList();
       _freePlan = billingPlans.freePlan;
@@ -92,9 +92,9 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
             String text = "thank you for subscribing!";
             if (!widget.isOnboarding) {
               final isUpgrade = _hasActiveSubscription &&
-                  newSubscription.storage > _currentSubscription.storage;
+                  newSubscription.storage! > _currentSubscription!.storage!;
               final isDowngrade = _hasActiveSubscription &&
-                  newSubscription.storage < _currentSubscription.storage;
+                  newSubscription.storage! < _currentSubscription!.storage!;
               if (isUpgrade) {
                 text = "your plan was successfully upgraded";
               } else if (isDowngrade) {
@@ -103,7 +103,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
             }
             showToast(text);
             _currentSubscription = newSubscription;
-            _hasActiveSubscription = _currentSubscription.isValid();
+            _hasActiveSubscription = _currentSubscription!.isValid();
             setState(() {});
             await _dialog.hide();
             Bus.instance.fire(SubscriptionPurchasedEvent());
@@ -177,7 +177,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
       widgets.add(ValidityWidget(currentSubscription: _currentSubscription));
     }
 
-    if ( _currentSubscription.productID == kFreeProductID) {
+    if (_currentSubscription!.productID == kFreeProductID) {
       if (widget.isOnboarding) {
         widgets.add(SkipSubscriptionWidget(freePlan: _freePlan));
       }
@@ -185,7 +185,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
     }
 
     if (_hasActiveSubscription &&
-        _currentSubscription.productID != kFreeProductID) {
+        _currentSubscription!.productID != kFreeProductID) {
       widgets.addAll([
         Align(
           alignment: Alignment.center,
@@ -197,7 +197,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
               if (Platform.isAndroid) {
                 launch(
                     "https://play.google.com/store/account/subscriptions?sku=" +
-                        _currentSubscription.productID +
+                        _currentSubscription!.productID! +
                         "&package=io.ente.photos");
               } else {
                 launch("https://apps.apple.com/account/billing");
@@ -245,8 +245,8 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
       if (productID == null || productID.isEmpty) {
         continue;
       }
-      final isActive =
-          _hasActiveSubscription && _currentSubscription.productID == productID;
+      final isActive = _hasActiveSubscription &&
+          _currentSubscription!.productID == productID;
       if (isActive) {
         foundActivePlan = true;
       }
@@ -280,11 +280,11 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
     bool foundActivePlan = false;
     final List<Widget> planWidgets = [];
     if (_hasActiveSubscription &&
-        _currentSubscription.productID == kFreeProductID) {
+        _currentSubscription!.productID == kFreeProductID) {
       foundActivePlan = true;
       planWidgets.add(
         SubscriptionPlanWidget(
-          storage: _freePlan.storage,
+          storage: _freePlan!.storage,
           price: "free",
           period: "",
           isActive: true,
@@ -293,8 +293,8 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
     }
     for (final plan in _plans) {
       final productID = Platform.isAndroid ? plan.androidID : plan.iosID;
-      final isActive =
-          _hasActiveSubscription && _currentSubscription.productID == productID;
+      final isActive = _hasActiveSubscription &&
+          _currentSubscription!.productID == productID;
       if (isActive) {
         foundActivePlan = true;
       }
@@ -307,8 +307,8 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
               }
               await _dialog.show();
               if (_usageFuture != null) {
-                final usage = await _usageFuture;
-                if (usage > plan.storage) {
+                final usage = await (_usageFuture as FutureOr<int>);
+                if (usage > plan.storage!) {
                   await _dialog.hide();
                   showErrorDialog(
                       context, "sorry", "you cannot downgrade to this plan");
@@ -316,8 +316,8 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                 }
               }
               final ProductDetailsResponse response =
-              await InAppPurchaseConnection.instance
-                  .queryProductDetails({productID});
+                  await InAppPurchaseConnection.instance
+                      .queryProductDetails({productID!});
               if (response.notFoundIDs.isNotEmpty) {
                 _logger.severe("Could not find products: " +
                     response.notFoundIDs.toString());
@@ -327,12 +327,12 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
               }
               final isCrossGradingOnAndroid = Platform.isAndroid &&
                   _hasActiveSubscription &&
-                  _currentSubscription.productID != kFreeProductID &&
-                  _currentSubscription.productID != plan.androidID;
+                  _currentSubscription!.productID != kFreeProductID &&
+                  _currentSubscription!.productID != plan.androidID;
               if (isCrossGradingOnAndroid) {
                 final existingProductDetailsResponse =
-                await InAppPurchaseConnection.instance
-                    .queryProductDetails({_currentSubscription.productID});
+                    await InAppPurchaseConnection.instance.queryProductDetails(
+                        {_currentSubscription!.productID!});
                 if (existingProductDetailsResponse.notFoundIDs.isNotEmpty) {
                   _logger.severe("Could not find existing products: " +
                       response.notFoundIDs.toString());
@@ -340,11 +340,18 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                   showGenericErrorDialog(context);
                   return;
                 }
+
+                // todo: figure out what and how to data here
                 final subscriptionChangeParam = ChangeSubscriptionParam(
                   oldPurchaseDetails: PurchaseDetails(
                     purchaseID: null,
-                    productID: _currentSubscription.productID,
-                    verificationData: null,
+                    productID: _currentSubscription!.productID!,
+                    verificationData: PurchaseVerificationData(
+                        localVerificationData: '',
+                        source: Platform.isAndroid
+                            ? IAPSource.GooglePlay
+                            : IAPSource.AppStore,
+                        serverVerificationData: ''),
                     transactionDate: null,
                   ),
                 );
@@ -381,7 +388,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
   void _addCurrentPlanWidget(List<Widget> planWidgets) {
     int activePlanIndex = 0;
     for (; activePlanIndex < _plans.length; activePlanIndex++) {
-      if (_plans[activePlanIndex].storage > _currentSubscription.storage) {
+      if (_plans[activePlanIndex].storage! > _currentSubscription!.storage!) {
         break;
       }
     }
@@ -391,9 +398,9 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
         child: InkWell(
           onTap: () {},
           child: SubscriptionPlanWidget(
-            storage: _currentSubscription.storage,
-            price: _currentSubscription.price,
-            period: _currentSubscription.period,
+            storage: _currentSubscription!.storage,
+            price: _currentSubscription!.price,
+            period: _currentSubscription!.period,
             isActive: true,
           ),
         ),
@@ -401,4 +408,3 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
     );
   }
 }
-

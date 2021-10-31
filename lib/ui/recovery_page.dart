@@ -8,7 +8,7 @@ import 'package:photos/utils/dialog_util.dart';
 import 'package:photos/utils/toast_util.dart';
 
 class RecoveryPage extends StatefulWidget {
-  const RecoveryPage({Key key}) : super(key: key);
+  const RecoveryPage({Key? key}) : super(key: key);
 
   @override
   _RecoveryPageState createState() => _RecoveryPageState();

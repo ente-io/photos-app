@@ -6,14 +6,14 @@ import 'package:photos/ui/loading_widget.dart';
 
 class LogFileViewer extends StatefulWidget {
   final File file;
-  const LogFileViewer(this.file, {Key key}) : super(key: key);
+  const LogFileViewer(this.file, {Key? key}) : super(key: key);
 
   @override
   _LogFileViewerState createState() => _LogFileViewerState();
 }
 
 class _LogFileViewerState extends State<LogFileViewer> {
-  String _logs;
+  String? _logs;
   @override
   void initState() {
     widget.file.readAsString().then((logs) {
@@ -42,7 +42,7 @@ class _LogFileViewerState extends State<LogFileViewer> {
       padding: EdgeInsets.only(left: 12, top: 8, right: 12),
       child: SingleChildScrollView(
         child: Text(
-          _logs,
+          _logs!,
           style: TextStyle(
             fontFeatures: const [
               FontFeature.tabularFigures(),

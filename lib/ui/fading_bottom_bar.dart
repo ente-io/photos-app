@@ -24,7 +24,7 @@ class FadingBottomBar extends StatefulWidget {
     this.file,
     this.onEditRequested,
     this.showOnlyInfoButton, {
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override
@@ -204,7 +204,7 @@ class FadingBottomBarState extends State<FadingBottomBar> {
             icon: Icon(Icons.delete_forever_outlined),
             onPressed: () async {
               final trashedFile = <TrashFile>[];
-              trashedFile.add(widget.file);
+              trashedFile.add(widget.file as TrashFile);
               if (await deleteFromTrash(context, trashedFile) == true) {
                 Navigator.pop(context);
               }

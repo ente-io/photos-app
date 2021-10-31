@@ -13,7 +13,7 @@ import 'package:photos/ui/settings/security_section_widget.dart';
 import 'package:photos/ui/settings/support_section_widget.dart';
 
 class SettingsPage extends StatelessWidget {
-  const SettingsPage({Key key}) : super(key: key);
+  const SettingsPage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

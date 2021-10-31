@@ -8,7 +8,7 @@ import 'package:photos/ui/thumbnail_widget.dart';
 class BlurredFileBackdrop extends StatelessWidget {
   final File file;
 
-  BlurredFileBackdrop(this.file, {Key key}) : super(key: key);
+  BlurredFileBackdrop(this.file, {Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

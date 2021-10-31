@@ -11,7 +11,7 @@ Future<List<File>> getDeviceFiles(
     int fromTime, int toTime, Computer computer) async {
   final pathEntities = await _getGalleryList(fromTime, toTime);
   List<File> files = [];
-  AssetPathEntity recents;
+  AssetPathEntity? recents;
   for (AssetPathEntity pathEntity in pathEntities) {
     if (pathEntity.name == "Recent" || pathEntity.name == "Recents") {
       recents = pathEntity;
@@ -23,7 +23,7 @@ Future<List<File>> getDeviceFiles(
     files = await _computeFiles(recents, fromTime, files, computer);
   }
   files.sort(
-      (first, second) => first.creationTime.compareTo(second.creationTime));
+      (first, second) => first.creationTime!.compareTo(second.creationTime!));
   return files;
 }
 
@@ -44,7 +44,7 @@ Future<List<LocalAsset>> getAllLocalAssets() async {
 }
 
 Future<List<File>> getUnsyncedFiles(List<LocalAsset> assets,
-    Set<String> existingIDs, Set<String> invalidIDs, Computer computer) async {
+    Set<String?> existingIDs, Set<String> invalidIDs, Computer computer) async {
   final args = Map<String, dynamic>();
   args['assets'] = assets;
   args['existingIDs'] = existingIDs;
@@ -59,11 +59,11 @@ Future<List<File>> getUnsyncedFiles(List<LocalAsset> assets,
 
 List<LocalAsset> _getUnsyncedAssets(Map<String, dynamic> args) {
   final List<LocalAsset> assets = args['assets'];
-  final Set<String> existingIDs = args['existingIDs'];
-  final Set<String> invalidIDs = args['invalidIDs'];
+  final Set<String>? existingIDs = args['existingIDs'];
+  final Set<String>? invalidIDs = args['invalidIDs'];
   final List<LocalAsset> unsyncedAssets = [];
   for (final asset in assets) {
-    if (!existingIDs.contains(asset.id) && !invalidIDs.contains(asset.id)) {
+    if (!existingIDs!.contains(asset.id) && !invalidIDs!.contains(asset.id)) {
       unsyncedAssets.add(asset);
     }
   }
@@ -86,7 +86,7 @@ Future<List<File>> _convertToFiles(
   for (final recent in recents) {
     bool presentInOthers = false;
     for (final entity in entities) {
-      if (recent.id == entity.entity.id) {
+      if (recent.id == entity.entity!.id) {
         presentInOthers = true;
         break;
       }
@@ -132,7 +132,7 @@ Future<List<File>> _computeFiles(AssetPathEntity pathEntity, int fromTime,
   return await computer.compute(_getFiles, param: args);
 }
 
-Future<List<File>> _getFiles(Map<String, dynamic> args) async {
+Future<List<File>?> _getFiles(Map<String, dynamic> args) async {
   final pathEntity = args["pathEntity"];
   final assetList = args["assetList"];
   final fromTime = args["fromTime"];
@@ -159,7 +159,7 @@ Future<List<File>> _getFilesFromAssets(List<LocalAssetEntity> assets) async {
   for (final asset in assets) {
     files.add(await File.fromAsset(
       asset.path,
-      asset.entity,
+      asset.entity!,
     ));
   }
   return files;
@@ -176,7 +176,7 @@ class LocalAsset {
 }
 
 class LocalAssetEntity {
-  final AssetEntity entity;
+  final AssetEntity? entity;
   final String path;
 
   LocalAssetEntity(this.entity, this.path);

@@ -17,10 +17,10 @@ class UploadLocksDB {
   UploadLocksDB._privateConstructor();
   static final UploadLocksDB instance = UploadLocksDB._privateConstructor();
 
-  static Future<Database> _dbFuture;
-  Future<Database> get database async {
+  static Future<Database>? _dbFuture;
+  Future<Database>? get database async {
     _dbFuture ??= _initDatabase();
-    return _dbFuture;
+    return _dbFuture!;
   }
 
   Future<Database> _initDatabase() async {
@@ -44,12 +44,12 @@ class UploadLocksDB {
   }
 
   Future<void> clearTable() async {
-    final db = await instance.database;
+    final db = await instance.database!;
     await db.delete(_table);
   }
 
-  Future<void> acquireLock(String id, String owner, int time) async {
-    final db = await instance.database;
+  Future<void> acquireLock(String? id, String owner, int time) async {
+    final db = await instance.database!;
     final row = <String, dynamic>{};
     row[_columnID] = id;
     row[_columnOwner] = owner;
@@ -57,8 +57,8 @@ class UploadLocksDB {
     await db.insert(_table, row, conflictAlgorithm: ConflictAlgorithm.fail);
   }
 
-  Future<bool> isLocked(String id, String owner) async {
-    final db = await instance.database;
+  Future<bool> isLocked(String? id, String owner) async {
+    final db = await instance.database!;
     final rows = await db.query(
       _table,
       where: '$_columnID = ? AND $_columnOwner = ?',
@@ -67,8 +67,8 @@ class UploadLocksDB {
     return rows.length == 1;
   }
 
-  Future<int> releaseLock(String id, String owner) async {
-    final db = await instance.database;
+  Future<int> releaseLock(String? id, String owner) async {
+    final db = await instance.database!;
     return db.delete(
       _table,
       where: '$_columnID = ? AND $_columnOwner = ?',
@@ -77,7 +77,7 @@ class UploadLocksDB {
   }
 
   Future<int> releaseLocksAcquiredByOwnerBefore(String owner, int time) async {
-    final db = await instance.database;
+    final db = await instance.database!;
     return db.delete(
       _table,
       where: '$_columnOwner = ? AND $_columnTime < ?',
@@ -86,7 +86,7 @@ class UploadLocksDB {
   }
 
   Future<int> releaseAllLocksAcquiredBefore(int time) async {
-    final db = await instance.database;
+    final db = await instance.database!;
     return db.delete(
       _table,
       where: '$_columnTime < ?',

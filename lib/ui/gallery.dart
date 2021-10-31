@@ -18,30 +18,30 @@ import 'package:photos/utils/date_time_util.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 typedef GalleryLoader = Future<FileLoadResult>
-    Function(int creationStartTime, int creationEndTime, {int limit, bool asc});
+    Function(int creationStartTime, int creationEndTime, {int? limit, bool? asc});
 
 class Gallery extends StatefulWidget {
   final GalleryLoader asyncLoader;
-  final List<File> initialFiles;
-  final Stream<FilesUpdatedEvent> reloadEvent;
-  final List<Stream<Event>> forceReloadEvents;
+  final List<File?>? initialFiles;
+  final Stream<FilesUpdatedEvent>? reloadEvent;
+  final List<Stream<Event>>? forceReloadEvents;
   final Set<EventType> removalEventTypes;
   final SelectedFiles selectedFiles;
   final String tagPrefix;
-  final Widget header;
-  final Widget footer;
+  final Widget? header;
+  final Widget? footer;
 
   Gallery({
-    @required this.asyncLoader,
-    @required this.selectedFiles,
-    @required this.tagPrefix,
+    required this.asyncLoader,
+    required this.selectedFiles,
+    required this.tagPrefix,
     this.initialFiles,
     this.reloadEvent,
     this.forceReloadEvents,
     this.removalEventTypes = const {},
     this.header,
     this.footer,
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override
@@ -55,10 +55,10 @@ class _GalleryState extends State<Gallery> {
 
   final _hugeListViewKey = GlobalKey<HugeListViewState>();
 
-  Logger _logger;
-  List<List<File>> _collatedFiles = [];
+  late Logger _logger;
+  List<List<File?>> _collatedFiles = [];
   bool _hasLoadedFiles = false;
-  StreamSubscription<FilesUpdatedEvent> _reloadEventSubscription;
+  StreamSubscription<FilesUpdatedEvent>? _reloadEventSubscription;
   final _forceReloadEventSubscriptions = <StreamSubscription<Event>>[];
 
   @override
@@ -66,14 +66,14 @@ class _GalleryState extends State<Gallery> {
     _logger = Logger("Gallery_" + widget.tagPrefix);
     _logger.info("initState");
     if (widget.reloadEvent != null) {
-      _reloadEventSubscription = widget.reloadEvent.listen((event) async {
+      _reloadEventSubscription = widget.reloadEvent!.listen((event) async {
         _logger.info("Building gallery because reload event fired");
         final result = await _loadFiles();
         _onFilesLoaded(result.files);
       });
     }
     if (widget.forceReloadEvents != null) {
-      for (final event in widget.forceReloadEvents) {
+      for (final event in widget.forceReloadEvents!) {
         _forceReloadEventSubscriptions.add(event.listen((event) async {
           _logger.info("Force reload triggered");
           final result = await _loadFiles();
@@ -82,7 +82,7 @@ class _GalleryState extends State<Gallery> {
       }
     }
     if (widget.initialFiles != null) {
-      _onFilesLoaded(widget.initialFiles);
+      _onFilesLoaded(widget.initialFiles!);
     }
     _loadFiles(limit: kInitialLoadLimit).then((result) async {
       _setFilesAndReload(result.files);
@@ -101,7 +101,7 @@ class _GalleryState extends State<Gallery> {
     }
   }
 
-  Future<FileLoadResult> _loadFiles({int limit}) async {
+  Future<FileLoadResult> _loadFiles({int? limit}) async {
     _logger.info("Loading files");
     try {
       final startTime = DateTime.now().microsecondsSinceEpoch;
@@ -123,7 +123,7 @@ class _GalleryState extends State<Gallery> {
   }
 
   // Collates files and returns `true` if it resulted in a gallery reload
-  bool _onFilesLoaded(List<File> files) {
+  bool _onFilesLoaded(List<File?> files) {
     final collatedFiles = _collateFiles(files);
     if (_collatedFiles.length != collatedFiles.length ||
         _collatedFiles.isEmpty) {
@@ -171,11 +171,11 @@ class _GalleryState extends State<Gallery> {
       emptyResultBuilder: (_) {
         List<Widget> children = [];
         if (widget.header != null) {
-          children.add(widget.header);
+          children.add(widget.header!);
         }
         children.add(Expanded(child: nothingToSeeHere));
         if (widget.footer != null) {
-          children.add(widget.footer);
+          children.add(widget.footer!);
         }
         return Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -198,16 +198,16 @@ class _GalleryState extends State<Gallery> {
               .map((event) => event.index),
         );
         if (widget.header != null && index == 0) {
-          gallery = Column(children: [widget.header, gallery]);
+          gallery = Column(children: [widget.header!, gallery]);
         }
         if (widget.footer != null && index == _collatedFiles.length - 1) {
-          gallery = Column(children: [gallery, widget.footer]);
+          gallery = Column(children: [gallery, widget.footer!]);
         }
         return gallery;
       },
       labelTextBuilder: (int index) {
         return getMonthAndYear(DateTime.fromMicrosecondsSinceEpoch(
-            _collatedFiles[index][0].creationTime));
+            _collatedFiles[index][0]!.creationTime!));
       },
       thumbBackgroundColor: Color(0xFF151515),
       thumbDrawColor: Colors.white.withOpacity(0.5),
@@ -218,14 +218,14 @@ class _GalleryState extends State<Gallery> {
     );
   }
 
-  List<List<File>> _collateFiles(List<File> files) {
-    final List<File> dailyFiles = [];
-    final List<List<File>> collatedFiles = [];
+  List<List<File?>> _collateFiles(List<File?> files) {
+    final List<File?> dailyFiles = [];
+    final List<List<File?>> collatedFiles = [];
     for (int index = 0; index < files.length; index++) {
       if (index > 0 &&
           !_areFromSameDay(
-              files[index - 1].creationTime, files[index].creationTime)) {
-        final List<File> collatedDailyFiles = [];
+              files[index - 1]!.creationTime!, files[index]!.creationTime!)) {
+        final List<File?> collatedDailyFiles = [];
         collatedDailyFiles.addAll(dailyFiles);
         collatedFiles.add(collatedDailyFiles);
         dailyFiles.clear();
@@ -236,7 +236,7 @@ class _GalleryState extends State<Gallery> {
       collatedFiles.add(dailyFiles);
     }
     collatedFiles
-        .sort((a, b) => b[0].creationTime.compareTo(a[0].creationTime));
+        .sort((a, b) => b[0]!.creationTime!.compareTo(a[0]!.creationTime!));
     return collatedFiles;
   }
 

@@ -10,17 +10,17 @@ class DraggableScrollbar extends StatefulWidget {
   final Color backgroundColor;
   final Color drawColor;
   final double heightScrollThumb;
-  final EdgeInsetsGeometry padding;
+  final EdgeInsetsGeometry? padding;
   final int totalCount;
   final int initialScrollIndex;
   final int currentFirstIndex;
-  final ValueChanged<double> onChange;
+  final ValueChanged<double>? onChange;
   final String Function(int) labelTextBuilder;
   final bool isEnabled;
 
   DraggableScrollbar({
-    Key key,
-    @required this.child,
+    Key? key,
+    required this.child,
     this.backgroundColor = Colors.white,
     this.drawColor = Colors.grey,
     this.heightScrollThumb = 80.0,
@@ -28,7 +28,7 @@ class DraggableScrollbar extends StatefulWidget {
     this.totalCount = 1,
     this.initialScrollIndex = 0,
     this.currentFirstIndex = 0,
-    @required this.labelTextBuilder,
+    required this.labelTextBuilder,
     this.onChange,
     this.isEnabled = true,
   }) : super(key: key);
@@ -43,17 +43,17 @@ class DraggableScrollbarState extends State<DraggableScrollbar>
   static final labelAnimationDuration = Duration(milliseconds: 1000);
   double thumbOffset = 0.0;
   bool isDragging = false;
-  int currentFirstIndex;
+  int currentFirstIndex = 0;
 
   double get thumbMin => 0.0;
 
-  double get thumbMax => context.size.height - widget.heightScrollThumb;
+  double get thumbMax => context.size!.height - widget.heightScrollThumb;
 
-  AnimationController _thumbAnimationController;
-  Animation<double> _thumbAnimation;
-  AnimationController _labelAnimationController;
-  Animation<double> _labelAnimation;
-  Timer _fadeoutTimer;
+  late AnimationController _thumbAnimationController;
+  Animation<double>? _thumbAnimation;
+  late AnimationController _labelAnimationController;
+  Animation<double>? _labelAnimation;
+  Timer? _fadeoutTimer;
 
   @override
   void initState() {
@@ -121,7 +121,6 @@ class DraggableScrollbarState extends State<DraggableScrollbar>
     } else {
       return buildThumb();
     }
-
   }
 
   Widget buildThumb() => Container(

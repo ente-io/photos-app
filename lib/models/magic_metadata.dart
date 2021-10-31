@@ -11,7 +11,7 @@ class MagicMetadata {
   // 0 -> visible
   // 1 -> archived
   // 2 -> hidden etc?
-  int visibility;
+  int? visibility;
 
   MagicMetadata({this.visibility});
 
@@ -26,7 +26,7 @@ class MagicMetadata {
     return map;
   }
 
-  factory MagicMetadata.fromMap(Map<String, dynamic> map) {
+  static fromMap(Map<String, dynamic>? map) {
     if (map == null) return null;
     return MagicMetadata(
       visibility: map[kMagicKeyVisibility] ?? kVisibilityVisible,
@@ -35,7 +35,7 @@ class MagicMetadata {
 }
 
 class PubMagicMetadata {
-  int editedTime;
+  int? editedTime;
 
   PubMagicMetadata({this.editedTime});
 
@@ -51,7 +51,7 @@ class PubMagicMetadata {
     return map;
   }
 
-  factory PubMagicMetadata.fromMap(Map<String, dynamic> map) {
+  static fromMap(Map<String, dynamic>? map) {
     if (map == null) return null;
     return PubMagicMetadata(
       editedTime: map[kPubMagicKeyEditedTime],

@@ -8,9 +8,9 @@ import 'package:photos/services/update_service.dart';
 import 'package:photos/ui/common_elements.dart';
 
 class AppUpdateDialog extends StatefulWidget {
-  final LatestVersionInfo latestVersionInfo;
+  final LatestVersionInfo? latestVersionInfo;
 
-  AppUpdateDialog(this.latestVersionInfo, {Key key}) : super(key: key);
+  AppUpdateDialog(this.latestVersionInfo, {Key? key}) : super(key: key);
 
   @override
   _AppUpdateDialogState createState() => _AppUpdateDialogState();
@@ -20,7 +20,7 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
   @override
   Widget build(BuildContext context) {
     final List<Widget> changelog = [];
-    for (final log in widget.latestVersionInfo.changelog) {
+    for (final log in widget.latestVersionInfo!.changelog) {
       changelog.add(Padding(
         padding: const EdgeInsets.fromLTRB(8, 4, 0, 4),
         child: Text("- " + log,
@@ -35,7 +35,7 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          widget.latestVersionInfo.name,
+          widget.latestVersionInfo!.name!,
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -78,7 +78,9 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
     return WillPopScope(
       onWillPop: () async => !shouldForceUpdate,
       child: AlertDialog(
-        title: Text(shouldForceUpdate? "critical update available" : "update available"),
+        title: Text(shouldForceUpdate
+            ? "critical update available"
+            : "update available"),
         content: content,
       ),
     );
@@ -86,24 +88,24 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
 }
 
 class ApkDownloaderDialog extends StatefulWidget {
-  final LatestVersionInfo versionInfo;
+  final LatestVersionInfo? versionInfo;
 
-  ApkDownloaderDialog(this.versionInfo, {Key key}) : super(key: key);
+  ApkDownloaderDialog(this.versionInfo, {Key? key}) : super(key: key);
 
   @override
   _ApkDownloaderDialogState createState() => _ApkDownloaderDialogState();
 }
 
 class _ApkDownloaderDialogState extends State<ApkDownloaderDialog> {
-  String _saveUrl;
-  double _downloadProgress;
+  String? _saveUrl;
+  double? _downloadProgress;
 
   @override
   void initState() {
     super.initState();
     _saveUrl = Configuration.instance.getTempDirectory() +
         "ente-" +
-        widget.versionInfo.name +
+        widget.versionInfo!.name! +
         ".apk";
     _downloadApk();
   }
@@ -131,10 +133,10 @@ class _ApkDownloaderDialogState extends State<ApkDownloaderDialog> {
 
   Future<void> _downloadApk() async {
     try {
-      await Network.instance.getDio().download(widget.versionInfo.url, _saveUrl,
-          onReceiveProgress: (count, _) {
+      await Network.instance.getDio().download(
+          widget.versionInfo!.url!, _saveUrl, onReceiveProgress: (count, _) {
         setState(() {
-          _downloadProgress = count / widget.versionInfo.size;
+          _downloadProgress = count / widget.versionInfo!.size!;
         });
       });
       Navigator.of(context, rootNavigator: true).pop('dialog');

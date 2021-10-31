@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:photos/models/file.dart';
+import 'package:photos/models/file_load_result.dart';
 import 'package:photos/models/location.dart';
 import 'package:photos/models/selected_files.dart';
 import 'package:photos/ui/gallery.dart';
@@ -17,9 +18,9 @@ class ViewPort {
 
 class LocationSearchResultsPage extends StatefulWidget {
   final ViewPort viewPort;
-  final String name;
+  final String? name;
 
-  LocationSearchResultsPage(this.viewPort, this.name, {Key key})
+  LocationSearchResultsPage(this.viewPort, this.name, {Key? key})
       : super(key: key);
 
   @override
@@ -34,10 +35,14 @@ class _LocationSearchResultsPageState extends State<LocationSearchResultsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.name),
+        title: Text(widget.name!),
       ),
       body: Container(
         child: Gallery(
+          asyncLoader: (creationStartTime, creationEndTime,
+              {limit, asc}) async {
+            return Future.value(FileLoadResult(List.empty(), false));
+          },
           tagPrefix: "location_search",
           selectedFiles: _selectedFiles,
         ),
@@ -55,14 +60,14 @@ class _LocationSearchResultsPageState extends State<LocationSearchResultsPage> {
 
   static List<File> _filterPhotos(Map<String, dynamic> args) {
     List<File> files = args['files'];
-    ViewPort viewPort = args['viewPort'];
+    ViewPort? viewPort = args['viewPort'];
     final result = <File>[];
     for (final file in files) {
       if (file.location != null &&
-          viewPort.northEast.latitude > file.location.latitude &&
-          viewPort.southWest.latitude < file.location.latitude &&
-          viewPort.northEast.longitude > file.location.longitude &&
-          viewPort.southWest.longitude < file.location.longitude) {
+          viewPort!.northEast.latitude! > file.location!.latitude! &&
+          viewPort.southWest.latitude! < file.location!.latitude! &&
+          viewPort.northEast.longitude! > file.location!.longitude! &&
+          viewPort.southWest.longitude! < file.location!.longitude!) {
         result.add(file);
       } else {}
     }

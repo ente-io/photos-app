@@ -10,7 +10,7 @@ import 'package:photos/ui/payment/subscription.dart';
 import 'package:photos/utils/email_util.dart';
 
 class SyncIndicator extends StatefulWidget {
-  const SyncIndicator({Key key}) : super(key: key);
+  const SyncIndicator({Key? key}) : super(key: key);
 
   @override
   _SyncIndicatorState createState() => _SyncIndicatorState();
@@ -18,9 +18,9 @@ class SyncIndicator extends StatefulWidget {
 
 class _SyncIndicatorState extends State<SyncIndicator> {
   static const kSleepDuration = Duration(milliseconds: 3000);
-  SyncStatusUpdate _event;
+  SyncStatusUpdate? _event;
   double _containerHeight = 48;
-  StreamSubscription<SyncStatusUpdate> _subscription;
+  late StreamSubscription<SyncStatusUpdate> _subscription;
   static const _inProgressIcon = CircularProgressIndicator(
     strokeWidth: 2,
     valueColor: AlwaysStoppedAnimation<Color>(Color.fromRGBO(45, 194, 98, 1.0)),
@@ -46,18 +46,18 @@ class _SyncIndicatorState extends State<SyncIndicator> {
   @override
   Widget build(BuildContext context) {
     bool isNotOutdatedEvent = _event != null &&
-        (_event.status == SyncStatus.completed_backup ||
-            _event.status == SyncStatus.completed_first_gallery_import) &&
-        (DateTime.now().microsecondsSinceEpoch - _event.timestamp >
+        (_event!.status == SyncStatus.completed_backup ||
+            _event!.status == SyncStatus.completed_first_gallery_import) &&
+        (DateTime.now().microsecondsSinceEpoch - _event!.timestamp >
             kSleepDuration.inMicroseconds);
     if (_event == null || isNotOutdatedEvent) {
       return Container();
     }
-    if (_event.status == SyncStatus.error) {
+    if (_event!.status == SyncStatus.error) {
       return _getErrorWidget();
     }
-    if (_event.status == SyncStatus.completed_first_gallery_import ||
-        _event.status == SyncStatus.completed_backup) {
+    if (_event!.status == SyncStatus.completed_first_gallery_import ||
+        _event!.status == SyncStatus.completed_backup) {
       Future.delayed(kSleepDuration, () {
         if (mounted) {
           setState(() {
@@ -68,7 +68,7 @@ class _SyncIndicatorState extends State<SyncIndicator> {
     } else {
       _containerHeight = 48;
     }
-    final icon = _event.status == SyncStatus.completed_backup
+    final icon = _event!.status == SyncStatus.completed_backup
         ? Icon(
             Icons.cloud_done_outlined,
             color: Theme.of(context).buttonColor,
@@ -111,7 +111,7 @@ class _SyncIndicatorState extends State<SyncIndicator> {
   }
 
   Widget _getErrorWidget() {
-    if (_event.error is NoActiveSubscriptionError) {
+    if (_event!.error is NoActiveSubscriptionError) {
       return Container(
         margin: EdgeInsets.only(top: 8),
         child: Column(
@@ -147,7 +147,7 @@ class _SyncIndicatorState extends State<SyncIndicator> {
           ],
         ),
       );
-    } else if (_event.error is StorageLimitExceededError) {
+    } else if (_event!.error is StorageLimitExceededError) {
       return Container(
         margin: EdgeInsets.only(top: 8),
         child: Column(
@@ -207,7 +207,7 @@ class _SyncIndicatorState extends State<SyncIndicator> {
                   padding: EdgeInsets.fromLTRB(50, 16, 50, 16),
                   side: BorderSide(
                     width: 1,
-                    color: Colors.orange[300],
+                    color: Colors.orange[300]!,
                   ),
                 ),
                 child: Text(
@@ -242,33 +242,33 @@ class _SyncIndicatorState extends State<SyncIndicator> {
   }
 
   String _getRefreshingText() {
-    if (_event.status == SyncStatus.started_first_gallery_import ||
-        _event.status == SyncStatus.completed_first_gallery_import) {
+    if (_event!.status == SyncStatus.started_first_gallery_import ||
+        _event!.status == SyncStatus.completed_first_gallery_import) {
       return "loading gallery...";
     }
-    if (_event.status == SyncStatus.applying_remote_diff) {
+    if (_event!.status == SyncStatus.applying_remote_diff) {
       return "syncing...";
     }
-    if (_event.status == SyncStatus.preparing_for_upload) {
+    if (_event!.status == SyncStatus.preparing_for_upload) {
       return "encrypting backup...";
     }
-    if (_event.status == SyncStatus.in_progress) {
-      return _event.completed.toString() +
+    if (_event!.status == SyncStatus.in_progress) {
+      return _event!.completed.toString() +
           "/" +
-          _event.total.toString() +
+          _event!.total.toString() +
           " memories preserved";
     }
-    if (_event.status == SyncStatus.paused) {
-      return _event.reason;
+    if (_event!.status == SyncStatus.paused) {
+      return _event!.reason;
     }
-    if (_event.status == SyncStatus.completed_backup) {
-      if (_event.wasStopped) {
+    if (_event!.status == SyncStatus.completed_backup) {
+      if (_event!.wasStopped) {
         return "sync stopped";
       } else {
         return "all memories preserved";
       }
     }
     // _event.status == SyncStatus.error
-    return _event.reason ?? "upload failed";
+    return _event!.reason.isEmpty ? _event!.reason : "upload failed";
   }
 }

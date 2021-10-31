@@ -10,7 +10,7 @@ import 'package:photos/ui/location_search_results_page.dart';
 
 class LocationSearchWidget extends StatefulWidget {
   const LocationSearchWidget({
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override
@@ -18,11 +18,11 @@ class LocationSearchWidget extends StatefulWidget {
 }
 
 class _LocationSearchWidgetState extends State<LocationSearchWidget> {
-  String _searchString;
+  String? _searchString;
 
   @override
   Widget build(BuildContext context) {
-    return TypeAheadField(
+    return TypeAheadField<String>(
       textFieldConfiguration: TextFieldConfiguration(
         autofocus: true,
         decoration: InputDecoration(
@@ -35,33 +35,13 @@ class _LocationSearchWidgetState extends State<LocationSearchWidget> {
       loadingBuilder: (context) {
         return loadWidget;
       },
-      suggestionsCallback: (pattern) async {
-        if (pattern.isEmpty || pattern.length < 2) {
-          return null;
-        }
-        _searchString = pattern;
-        return Network.instance
-            .getDio()
-            .get(
-              Configuration.instance.getHttpEndpoint() + "/search/location",
-              queryParameters: {
-                "query": pattern,
-              },
-              options: Options(
-                  headers: {"X-Auth-Token": Configuration.instance.getToken()}),
-            )
-            .then((response) {
-          if (_searchString == pattern) {
-            // Query has not changed
-            return response.data["results"];
-          }
-          return null;
-        });
+      suggestionsCallback: (pattern) {
+        return _getSuggestions(pattern);
       },
-      itemBuilder: (context, suggestion) {
+      itemBuilder: (context, dynamic suggestion) {
         return LocationSearchResultWidget(suggestion['name']);
       },
-      onSuggestionSelected: (suggestion) {
+      onSuggestionSelected: (dynamic suggestion) {
         Navigator.pop(context);
         Navigator.of(context).push(MaterialPageRoute(
             builder: (context) => LocationSearchResultsPage(
@@ -81,13 +61,37 @@ class _LocationSearchWidgetState extends State<LocationSearchWidget> {
       },
     );
   }
+
+  Future<List<String>> _getSuggestions(String pattern) async {
+    if (pattern.isEmpty || pattern.length < 2) {
+      return List.empty();
+    }
+    _searchString = pattern;
+    return Network.instance
+        .getDio()
+        .get(
+          Configuration.instance.getHttpEndpoint() + "/search/location",
+          queryParameters: {
+            "query": pattern,
+          },
+          options: Options(
+              headers: {"X-Auth-Token": Configuration.instance.getToken()}),
+        )
+        .then((response) {
+      if (_searchString == pattern) {
+        // Query has not changed
+        return response.data["results"] as List<String>;
+      }
+      return List.empty();
+    });
+  }
 }
 
 class LocationSearchResultWidget extends StatelessWidget {
-  final String name;
+  final String? name;
   const LocationSearchResultWidget(
     this.name, {
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override
@@ -106,7 +110,7 @@ class LocationSearchResultWidget extends StatelessWidget {
             Flexible(
               child: Container(
                 child: Text(
-                  name,
+                  name!,
                   overflow: TextOverflow.clip,
                 ),
               ),

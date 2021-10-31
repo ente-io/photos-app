@@ -6,7 +6,7 @@ import 'package:photos/ui/common_elements.dart';
 import 'package:photos/utils/auth_util.dart';
 
 class LockScreen extends StatefulWidget {
-  LockScreen({Key key}) : super(key: key);
+  LockScreen({Key? key}) : super(key: key);
 
   @override
   _LockScreenState createState() => _LockScreenState();
@@ -46,7 +46,7 @@ class _LockScreenState extends State<LockScreen> {
     try {
       final result = await requestAuthentication();
       if (result) {
-        AppLock.of(context).didUnlock();
+        AppLock.of(context)!.didUnlock();
       }
     } catch (e, s) {
       _logger.severe(e, s);

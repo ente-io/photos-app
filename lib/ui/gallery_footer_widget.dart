@@ -6,7 +6,7 @@ import 'package:photos/ui/backup_folder_selection_page.dart';
 import 'package:photos/utils/navigation_util.dart';
 
 class GalleryFooterWidget extends StatelessWidget {
-  const GalleryFooterWidget({Key key}) : super(key: key);
+  const GalleryFooterWidget({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

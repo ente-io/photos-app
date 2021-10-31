@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart' show IterableExtension;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:photos/core/configuration.dart';
@@ -17,7 +18,7 @@ class ArchivePage extends StatelessWidget {
   ArchivePage(
       {this.tagPrefix = "archived_page",
       this.appBarType = GalleryAppBarType.archive,
-      Key key})
+      Key? key})
       : super(key: key);
 
   @override
@@ -30,18 +31,16 @@ class ArchivePage extends StatelessWidget {
       },
       reloadEvent: Bus.instance.on<FilesUpdatedEvent>().where(
             (event) =>
-                event.updatedFiles.firstWhere(
-                    (element) => element.uploadedFileID != null,
-                    orElse: () => null) !=
+                event.updatedFiles.firstWhereOrNull(
+                    (element) => element.uploadedFileID != null) !=
                 null,
           ),
       removalEventTypes: const {EventType.unarchived},
       forceReloadEvents: [
         Bus.instance.on<FilesUpdatedEvent>().where(
               (event) =>
-                  event.updatedFiles.firstWhere(
-                      (element) => element.uploadedFileID != null,
-                      orElse: () => null) !=
+                  event.updatedFiles.firstWhereOrNull(
+                      (element) => element.uploadedFileID != null) !=
                   null,
             ),
       ],

@@ -8,7 +8,7 @@ import 'package:flutter/services.dart';
 
 class GNav extends StatefulWidget {
   const GNav({
-    Key key,
+    Key? key,
     this.tabs,
     this.selectedIndex = 0,
     this.onTabChange,
@@ -35,29 +35,29 @@ class GNav extends StatefulWidget {
     this.mainAxisAlignment = MainAxisAlignment.spaceBetween,
   }) : super(key: key);
 
-  final List<GButton> tabs;
+  final List<GButton>? tabs;
   final int selectedIndex;
-  final Function onTabChange;
-  final double gap;
-  final double tabBorderRadius;
-  final double iconSize;
-  final Color activeColor;
-  final Color backgroundColor;
-  final Color tabBackgroundColor;
-  final Color color;
-  final Color rippleColor;
-  final Color hoverColor;
-  final EdgeInsetsGeometry padding;
-  final EdgeInsetsGeometry tabMargin;
-  final TextStyle textStyle;
-  final Duration duration;
-  final Curve curve;
-  final bool debug;
-  final bool haptic;
-  final Border tabBorder;
-  final Border tabActiveBorder;
-  final List<BoxShadow> tabShadow;
-  final Gradient tabBackgroundGradient;
+  final Function? onTabChange;
+  final double? gap;
+  final double? tabBorderRadius;
+  final double? iconSize;
+  final Color? activeColor;
+  final Color? backgroundColor;
+  final Color? tabBackgroundColor;
+  final Color? color;
+  final Color? rippleColor;
+  final Color? hoverColor;
+  final EdgeInsetsGeometry? padding;
+  final EdgeInsetsGeometry? tabMargin;
+  final TextStyle? textStyle;
+  final Duration? duration;
+  final Curve? curve;
+  final bool? debug;
+  final bool? haptic;
+  final Border? tabBorder;
+  final Border? tabActiveBorder;
+  final List<BoxShadow>? tabShadow;
+  final Gradient? tabBackgroundGradient;
   final MainAxisAlignment mainAxisAlignment;
 
   @override
@@ -65,7 +65,7 @@ class GNav extends StatefulWidget {
 }
 
 class _GNavState extends State<GNav> {
-  int selectedIndex;
+  int? selectedIndex;
   bool clickable = true;
 
   @override
@@ -83,20 +83,20 @@ class _GNavState extends State<GNav> {
         // alignment: Alignment.center,
         child: Row(
             mainAxisAlignment: widget.mainAxisAlignment,
-            children: widget.tabs
+            children: widget.tabs!
                 .map((t) => GButton(
                       key: t.key,
                       border: t.border ?? widget.tabBorder,
                       activeBorder: t.activeBorder ?? widget.tabActiveBorder,
                       shadow: t.shadow ?? widget.tabShadow,
-                      borderRadius:
-                          t.borderRadius ?? widget.tabBorderRadius != null
+                      borderRadius: t.borderRadius ??
+                          (widget.tabBorderRadius != null
                               ? BorderRadius.all(
-                                  Radius.circular(widget.tabBorderRadius))
-                              : const BorderRadius.all(Radius.circular(100.0)),
+                                  Radius.circular(widget.tabBorderRadius!))
+                              : const BorderRadius.all(Radius.circular(100.0))),
                       debug: widget.debug ?? false,
                       margin: t.margin ?? widget.tabMargin,
-                      active: selectedIndex == widget.tabs.indexOf(t),
+                      active: selectedIndex == widget.tabs!.indexOf(t),
                       gap: t.gap ?? widget.gap,
                       iconActiveColor: t.iconActiveColor ?? widget.activeColor,
                       iconColor: t.iconColor ?? widget.color,
@@ -125,10 +125,10 @@ class _GNavState extends State<GNav> {
                       onPressed: () {
                         if (!clickable) return;
                         setState(() {
-                          selectedIndex = widget.tabs.indexOf(t);
+                          selectedIndex = widget.tabs!.indexOf(t);
                           clickable = false;
                         });
-                        widget.onTabChange(selectedIndex);
+                        widget.onTabChange!(selectedIndex);
 
                         Future.delayed(
                             widget.duration ??
@@ -144,35 +144,35 @@ class _GNavState extends State<GNav> {
 }
 
 class GButton extends StatefulWidget {
-  final bool active;
-  final bool debug;
-  final bool haptic;
-  final double gap;
-  final Color iconColor;
-  final Color rippleColor;
-  final Color hoverColor;
-  final Color iconActiveColor;
-  final Color textColor;
-  final EdgeInsetsGeometry padding;
-  final EdgeInsetsGeometry margin;
-  final TextStyle textStyle;
-  final double iconSize;
-  final Function onPressed;
+  final bool? active;
+  final bool? debug;
+  final bool? haptic;
+  final double? gap;
+  final Color? iconColor;
+  final Color? rippleColor;
+  final Color? hoverColor;
+  final Color? iconActiveColor;
+  final Color? textColor;
+  final EdgeInsetsGeometry? padding;
+  final EdgeInsetsGeometry? margin;
+  final TextStyle? textStyle;
+  final double? iconSize;
+  final Function? onPressed;
   final String text;
-  final IconData icon;
-  final Color backgroundColor;
-  final Duration duration;
-  final Curve curve;
-  final Gradient backgroundGradient;
-  final Widget leading;
-  final BorderRadius borderRadius;
-  final Border border;
-  final Border activeBorder;
-  final List<BoxShadow> shadow;
-  final String semanticLabel;
+  final IconData? icon;
+  final Color? backgroundColor;
+  final Duration? duration;
+  final Curve? curve;
+  final Gradient? backgroundGradient;
+  final Widget? leading;
+  final BorderRadius? borderRadius;
+  final Border? border;
+  final Border? activeBorder;
+  final List<BoxShadow>? shadow;
+  final String? semanticLabel;
 
   const GButton({
-    Key key,
+    Key? key,
     this.active,
     this.haptic,
     this.backgroundColor,
@@ -220,8 +220,8 @@ class _GButtonState extends State<GButton> {
         iconSize: widget.iconSize,
         active: widget.active,
         onPressed: () {
-          if (widget.haptic) HapticFeedback.selectionClick();
-          widget.onPressed();
+          if (widget.haptic!) HapticFeedback.selectionClick();
+          widget.onPressed!();
         },
         padding: widget.padding,
         margin: widget.margin,
@@ -247,7 +247,7 @@ class _GButtonState extends State<GButton> {
 
 class Button extends StatefulWidget {
   const Button(
-      {Key key,
+      {Key? key,
       this.icon,
       this.iconSize,
       this.leading,
@@ -272,38 +272,38 @@ class Button extends StatefulWidget {
       this.shadow})
       : super(key: key);
 
-  final IconData icon;
-  final double iconSize;
-  final Text text;
-  final Widget leading;
-  final Color iconActiveColor;
-  final Color iconColor;
-  final Color color;
-  final Color rippleColor;
-  final Color hoverColor;
-  final double gap;
-  final bool active;
-  final bool debug;
-  final VoidCallback onPressed;
-  final EdgeInsetsGeometry padding;
-  final EdgeInsetsGeometry margin;
-  final Duration duration;
-  final Curve curve;
-  final Gradient gradient;
-  final BorderRadius borderRadius;
-  final Border border;
-  final Border activeBorder;
-  final List<BoxShadow> shadow;
+  final IconData? icon;
+  final double? iconSize;
+  final Text? text;
+  final Widget? leading;
+  final Color? iconActiveColor;
+  final Color? iconColor;
+  final Color? color;
+  final Color? rippleColor;
+  final Color? hoverColor;
+  final double? gap;
+  final bool? active;
+  final bool? debug;
+  final VoidCallback? onPressed;
+  final EdgeInsetsGeometry? padding;
+  final EdgeInsetsGeometry? margin;
+  final Duration? duration;
+  final Curve? curve;
+  final Gradient? gradient;
+  final BorderRadius? borderRadius;
+  final Border? border;
+  final Border? activeBorder;
+  final List<BoxShadow>? shadow;
 
   @override
   _ButtonState createState() => _ButtonState();
 }
 
 class _ButtonState extends State<Button> with TickerProviderStateMixin {
-  bool _expanded;
+  bool? _expanded;
 
-  AnimationController expandController;
-  Animation<double> animation;
+  late AnimationController expandController;
+  Animation<double>? animation;
 
   @override
   void initState() {
@@ -325,12 +325,12 @@ class _ButtonState extends State<Button> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     var curveValue = expandController
-        .drive(
-            CurveTween(curve: _expanded ? widget.curve : widget.curve.flipped))
+        .drive(CurveTween(
+            curve: _expanded! ? widget.curve! : widget.curve!.flipped))
         .value;
 
-    _expanded = !widget.active;
-    if (_expanded) {
+    _expanded = !widget.active!;
+    if (_expanded!) {
       expandController.reverse();
     } else {
       expandController.forward();
@@ -339,7 +339,7 @@ class _ButtonState extends State<Button> with TickerProviderStateMixin {
     Widget icon = widget.leading ??
         Icon(
           widget.icon,
-          color: _expanded ? widget.iconColor : widget.iconActiveColor,
+          color: _expanded! ? widget.iconColor : widget.iconActiveColor,
           size: widget.iconSize,
         );
 
@@ -351,7 +351,7 @@ class _ButtonState extends State<Button> with TickerProviderStateMixin {
         borderRadius: BorderRadius.circular(100),
         // behavior: HitTestBehavior.opaque,
         onTap: () {
-          widget.onPressed();
+          widget.onPressed!();
         },
         child: Container(
           padding: widget.margin,
@@ -360,17 +360,17 @@ class _ButtonState extends State<Button> with TickerProviderStateMixin {
             // padding: EdgeInsets.symmetric(horizontal: 5),
             padding: widget.padding,
             // curve: Curves.easeOutQuad,
-            duration: widget.duration,
+            duration: widget.duration!,
             // curve: !_expanded ? widget.curve : widget.curve.flipped,
             decoration: BoxDecoration(
               boxShadow: widget.shadow,
-              border: widget.active
+              border: widget.active!
                   ? (widget.activeBorder ?? widget.border)
                   : widget.border,
               gradient: widget.gradient,
-              color: _expanded
-                  ? widget.color.withOpacity(0)
-                  : widget.debug
+              color: _expanded!
+                  ? widget.color!.withOpacity(0)
+                  : widget.debug!
                       ? Colors.red
                       : widget.gradient != null
                           ? Colors.white
@@ -394,15 +394,15 @@ class _ButtonState extends State<Button> with TickerProviderStateMixin {
                             //width: 100,
                             //color: Colors.red.withOpacity(.2),
                             child: Opacity(
-                                opacity: _expanded
-                                    ? pow(expandController.value, 13)
+                                opacity: _expanded!
+                                    ? pow(expandController.value, 13) as double
                                     : expandController
                                         .drive(CurveTween(curve: Curves.easeIn))
                                         .value,
                                 //width: 100,
                                 child: Padding(
                                   padding: EdgeInsets.only(
-                                      left: widget.gap +
+                                      left: widget.gap! +
                                           8 -
                                           (8 *
                                               expandController

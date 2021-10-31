@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
@@ -6,7 +5,8 @@ class CustomAppBar extends PreferredSize {
   final Widget child;
   final double height;
 
-  CustomAppBar(this.child, {this.height = kToolbarHeight});
+  CustomAppBar(this.child, {Key? key, this.height = kToolbarHeight})
+      : super(key: key, child: child, preferredSize: Size.fromHeight(height));
 
   @override
   Size get preferredSize => Size.fromHeight(height);

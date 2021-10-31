@@ -73,12 +73,12 @@ class TrashDB {
   static final TrashDB instance = TrashDB._privateConstructor();
 
   // only have a single app-wide reference to the database
-  static Future<Database> _dbFuture;
+  static Future<Database>? _dbFuture;
 
-  Future<Database> get database async {
+  Future<Database>? get database async {
     // lazily instantiate the db the first time it is accessed
     _dbFuture ??= _initDatabase();
-    return _dbFuture;
+    return _dbFuture!;
   }
 
   // this opens the database (and creates it if it doesn't exist)
@@ -94,13 +94,13 @@ class TrashDB {
   }
 
   Future<void> clearTable() async {
-    final db = await instance.database;
+    final db = await instance.database!;
     await db.delete(tableName);
   }
 
   // getRecentlyTrashedFile returns the file which was trashed recently
-  Future<TrashFile> getRecentlyTrashedFile() async {
-    final db = await instance.database;
+  Future<TrashFile?> getRecentlyTrashedFile() async {
+    final db = await instance.database!;
     var rows = await db.query(tableName,
         orderBy: '$columnTrashDeleteBy DESC', limit: 1);
     if (rows == null || rows.isEmpty) {
@@ -111,7 +111,7 @@ class TrashDB {
 
   Future<void> insertMultiple(List<TrashFile> trashFiles) async {
     final startTime = DateTime.now();
-    final db = await instance.database;
+    final db = await instance.database!;
     var batch = db.batch();
     int batchCounter = 0;
     for (TrashFile trash in trashFiles) {
@@ -140,7 +140,7 @@ class TrashDB {
   }
 
   Future<int> insert(TrashFile trash) async {
-    final db = await instance.database;
+    final db = await instance.database!;
     return db.insert(
       tableName,
       _getRowForTrash(trash),
@@ -148,8 +148,8 @@ class TrashDB {
     );
   }
 
-  Future<int> delete(List<int> uploadedFileIDs) async {
-    final db = await instance.database;
+  Future<int> delete(List<int?> uploadedFileIDs) async {
+    final db = await instance.database!;
     return db.delete(
       tableName,
       where: '$columnUploadedFileID IN (${uploadedFileIDs.join(', ')})',
@@ -157,7 +157,7 @@ class TrashDB {
   }
 
   Future<int> update(TrashFile file) async {
-    final db = await instance.database;
+    final db = await instance.database!;
     return await db.update(
       tableName,
       _getRowForTrash(file),
@@ -167,8 +167,8 @@ class TrashDB {
   }
 
   Future<FileLoadResult> getTrashedFiles(int startTime, int endTime,
-      {int limit, bool asc}) async {
-    final db = await instance.database;
+      {int? limit, bool? asc}) async {
+    final db = await instance.database!;
     final order = (asc ?? false ? 'ASC' : 'DESC');
     final results = await db.query(
       tableName,
@@ -195,7 +195,7 @@ class TrashDB {
     trashFile.deleteBy = row[columnTrashDeleteBy];
     trashFile.uploadedFileID = row[columnUploadedFileID];
     // dirty hack to ensure that the file_downloads & cache mechanism works
-    trashFile.generatedID = -1 * trashFile.uploadedFileID;
+    trashFile.generatedID = -1 * trashFile.uploadedFileID!;
     trashFile.ownerID = row[columnOwnerID];
     trashFile.collectionID =
         row[columnCollectionID] == -1 ? null : row[columnCollectionID];
@@ -247,7 +247,7 @@ class TrashDB {
     row[columnMMdEncodedJson] = trash.mMdEncodedJson ?? '{}';
 
     row[columnPubMMdVersion] = trash.pubMmdVersion ?? 0;
-    row[columnPubMMdEncodedJson] == trash.pubMmdEncodedJson ?? '{}';
+    row[columnPubMMdEncodedJson] = trash.pubMmdEncodedJson ?? '{}';
     return row;
   }
 }

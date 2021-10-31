@@ -7,12 +7,12 @@ import 'package:photos/utils/dialog_util.dart';
 
 class TwoFactorRecoveryPage extends StatefulWidget {
   final String sessionID;
-  final String encryptedSecret;
-  final String secretDecryptionNonce;
+  final String? encryptedSecret;
+  final String? secretDecryptionNonce;
 
   TwoFactorRecoveryPage(
       this.sessionID, this.encryptedSecret, this.secretDecryptionNonce,
-      {Key key})
+      {Key? key})
       : super(key: key);
 
   @override
@@ -73,8 +73,8 @@ class _TwoFactorRecoveryPageState extends State<TwoFactorRecoveryPage> {
                           context,
                           widget.sessionID,
                           _recoveryKey.text,
-                          widget.encryptedSecret,
-                          widget.secretDecryptionNonce);
+                          widget.encryptedSecret!,
+                          widget.secretDecryptionNonce!);
                     }
                   : null,
             ),

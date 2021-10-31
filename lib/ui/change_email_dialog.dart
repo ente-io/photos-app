@@ -5,14 +5,14 @@ import 'package:photos/utils/dialog_util.dart';
 import 'package:photos/utils/email_util.dart';
 
 class ChangeEmailDialog extends StatefulWidget {
-  const ChangeEmailDialog({Key key}) : super(key: key);
+  const ChangeEmailDialog({Key? key}) : super(key: key);
 
   @override
   _ChangeEmailDialogState createState() => _ChangeEmailDialogState();
 }
 
 class _ChangeEmailDialogState extends State<ChangeEmailDialog> {
-  String _email;
+  String? _email;
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +64,7 @@ class _ChangeEmailDialogState extends State<ChangeEmailDialog> {
             ),
           ),
           onPressed: () {
-            if (!isValidEmail(_email)) {
+            if (!isValidEmail(_email!)) {
               showErrorDialog(context, "invalid email address",
                   "please enter a valid email address.");
               return;

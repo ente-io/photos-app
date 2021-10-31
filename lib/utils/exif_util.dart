@@ -18,7 +18,7 @@ Future<Map<String, IfdTag>> getExif(File file) async {
     final originFile = await getFile(file, isOrigin: true);
     final exif = await readExifFromFile(originFile);
     if (!file.isRemoteFile() && io.Platform.isIOS) {
-      await originFile.delete();
+      await originFile!.delete();
     }
     return exif;
   } catch (e) {
@@ -27,13 +27,13 @@ Future<Map<String, IfdTag>> getExif(File file) async {
   }
 }
 
-Future<DateTime> getCreationTimeFromEXIF(io.File file) async {
+Future<DateTime?> getCreationTimeFromEXIF(io.File file) async {
   final exif = await readExifFromFile(file);
   if (exif != null) {
     final exifTime = exif.containsKey(kDateTimeOriginal)
-        ? exif[kDateTimeOriginal].printable
+        ? exif[kDateTimeOriginal]!.printable
         : exif.containsKey(kImageDateTime)
-            ? exif[kImageDateTime].printable
+            ? exif[kImageDateTime]!.printable
             : null;
     if (exifTime != null && exifTime != kEmptyExifDateTime) {
       try {

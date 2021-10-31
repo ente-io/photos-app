@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 class BillingPlans {
-  final List<BillingPlan> plans;
-  final FreePlan freePlan;
+  final List<BillingPlan>? plans;
+  final FreePlan? freePlan;
 
   BillingPlans({
     this.plans,
@@ -12,8 +12,8 @@ class BillingPlans {
   });
 
   BillingPlans copyWith({
-    List<BillingPlan> plans,
-    FreePlan freePlan,
+    List<BillingPlan>? plans,
+    FreePlan? freePlan,
   }) {
     return BillingPlans(
       plans: plans ?? this.plans,
@@ -23,14 +23,13 @@ class BillingPlans {
 
   Map<String, dynamic> toMap() {
     return {
-      'plans': plans?.map((x) => x?.toMap())?.toList(),
+      'plans': plans?.map((x) => x.toMap()).toList(),
       'freePlan': freePlan?.toMap(),
     };
   }
 
-  factory BillingPlans.fromMap(Map<String, dynamic> map) {
+  static fromMap(Map<String, dynamic>? map) {
     if (map == null) return null;
-
     return BillingPlans(
       plans: List<BillingPlan>.from(
           map['plans']?.map((x) => BillingPlan.fromMap(x))),
@@ -60,9 +59,9 @@ class BillingPlans {
 }
 
 class FreePlan {
-  final int storage;
-  final int duration;
-  final String period;
+  final int? storage;
+  final int? duration;
+  final String? period;
   FreePlan({
     this.storage,
     this.duration,
@@ -70,9 +69,9 @@ class FreePlan {
   });
 
   FreePlan copyWith({
-    int storage,
-    int duration,
-    String period,
+    int? storage,
+    int? duration,
+    String? period,
   }) {
     return FreePlan(
       storage: storage ?? this.storage,
@@ -89,7 +88,7 @@ class FreePlan {
     };
   }
 
-  factory FreePlan.fromMap(Map<String, dynamic> map) {
+  static fromMap(Map<String, dynamic>? map) {
     if (map == null) return null;
 
     return FreePlan(
@@ -123,13 +122,13 @@ class FreePlan {
 }
 
 class BillingPlan {
-  final String id;
-  final String androidID;
-  final String iosID;
-  final String stripeID;
-  final int storage;
-  final String price;
-  final String period;
+  final String? id;
+  final String? androidID;
+  final String? iosID;
+  final String? stripeID;
+  final int? storage;
+  final String? price;
+  final String? period;
 
   BillingPlan({
     this.id,
@@ -142,13 +141,13 @@ class BillingPlan {
   });
 
   BillingPlan copyWith({
-    String id,
-    String androidID,
-    String iosID,
-    String stripeID,
-    int storage,
-    String price,
-    String period,
+    String? id,
+    String? androidID,
+    String? iosID,
+    String? stripeID,
+    int? storage,
+    String? price,
+    String? period,
   }) {
     return BillingPlan(
       id: id ?? this.id,
@@ -173,7 +172,7 @@ class BillingPlan {
     };
   }
 
-  factory BillingPlan.fromMap(Map<String, dynamic> map) {
+  static fromMap(Map<String, dynamic>? map) {
     if (map == null) return null;
 
     return BillingPlan(

@@ -18,7 +18,7 @@ import 'package:photos/utils/toast_util.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class BackupSectionWidget extends StatefulWidget {
-  BackupSectionWidget({Key key}) : super(key: key);
+  BackupSectionWidget({Key? key}) : super(key: key);
 
   @override
   BackupSectionWidgetState createState() => BackupSectionWidgetState();
@@ -60,7 +60,7 @@ class BackupSectionWidgetState extends State<BackupSectionWidget> {
             children: [
               Text("backup over mobile data"),
               Switch(
-                value: Configuration.instance.shouldBackupOverMobileData(),
+                value: Configuration.instance.shouldBackupOverMobileData()!,
                 onChanged: (value) async {
                   Configuration.instance.setBackupOverMobileData(value);
                   setState(() {});
@@ -83,7 +83,7 @@ class BackupSectionWidgetState extends State<BackupSectionWidget> {
             children: [
               Text("backup videos"),
               Switch(
-                value: Configuration.instance.shouldBackupVideos(),
+                value: Configuration.instance.shouldBackupVideos()!,
                 onChanged: (value) async {
                   Configuration.instance.setShouldBackupVideos(value);
                   setState(() {});
@@ -110,7 +110,7 @@ class BackupSectionWidgetState extends State<BackupSectionWidget> {
               showErrorDialog(context, "✨ all clear",
                   "you've no files on this device that can be deleted");
             } else {
-              bool result = await routeToPage(context, FreeSpacePage(status));
+              bool? result = await routeToPage(context, FreeSpacePage(status));
               if (result == true) {
                 _showSpaceFreedDialog(status);
               }
@@ -148,7 +148,7 @@ class BackupSectionWidgetState extends State<BackupSectionWidget> {
               showErrorDialog(context, "✨ no duplicates",
                   "you've no duplicate files that can be cleared");
             } else {
-              DeduplicationResult result =
+              DeduplicationResult? result =
                   await routeToPage(context, DeduplicatePage(duplicates));
               if (result != null) {
                 _showDuplicateFilesDeletedDialog(result);

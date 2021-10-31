@@ -18,7 +18,7 @@ import 'package:photos/utils/dialog_util.dart';
 import 'package:photos/utils/email_util.dart';
 
 class EmailEntryPage extends StatefulWidget {
-  EmailEntryPage({Key key}) : super(key: key);
+  EmailEntryPage({Key? key}) : super(key: key);
 
   @override
   _EmailEntryPageState createState() => _EmailEntryPageState();
@@ -31,10 +31,10 @@ class _EmailEntryPageState extends State<EmailEntryPage> {
   final _passwordController1 = TextEditingController(),
       _passwordController2 = TextEditingController();
 
-  String _email;
+  String? _email;
   double _passwordStrength = 0;
-  bool _hasAgreedToTOS = true;
-  bool _hasAgreedToE2E = false;
+  bool? _hasAgreedToTOS = true;
+  bool? _hasAgreedToE2E = false;
   bool _password1Visible = false;
   bool _password2Visible = false;
   final _password1FocusNode = FocusNode();
@@ -66,7 +66,7 @@ class _EmailEntryPageState extends State<EmailEntryPage> {
         child: Material(
           type: MaterialType.transparency,
           child: Text(
-            AppLocalizations.of(context).sign_up,
+            AppLocalizations.of(context)!.sign_up,
             style: TextStyle(
               fontSize: 18,
               letterSpacing: 0.6,
@@ -91,7 +91,7 @@ class _EmailEntryPageState extends State<EmailEntryPage> {
           strengthCallback: (strength) {
             _passwordStrength = strength;
           },
-          strengthColors: passwordStrengthColors,
+          strengthColors: passwordStrengthColors as Animatable<Color>?,
         ),
         Expanded(
           child: ListView(
@@ -201,10 +201,10 @@ class _EmailEntryPageState extends State<EmailEntryPage> {
                 height: 64,
                 padding: const EdgeInsets.fromLTRB(80, 0, 80, 0),
                 child: button(
-                  AppLocalizations.of(context).sign_up,
+                  AppLocalizations.of(context)!.sign_up,
                   onPressed: _isFormValid()
                       ? () {
-                          if (!isValidEmail(_email)) {
+                          if (!isValidEmail(_email!)) {
                             showErrorDialog(context, "invalid email",
                                 "please enter a valid email address.");
                           } else if (_passwordController1.text !=
@@ -218,7 +218,7 @@ class _EmailEntryPageState extends State<EmailEntryPage> {
                           } else {
                             _config
                                 .setVolatilePassword(_passwordController1.text);
-                            _config.setEmail(_email);
+                            _config.setEmail(_email!);
                             UserService.instance.getOtt(context, _email);
                           }
                         }
@@ -249,7 +249,7 @@ class _EmailEntryPageState extends State<EmailEntryPage> {
     return GestureDetector(
       onTap: () {
         setState(() {
-          _hasAgreedToTOS = !_hasAgreedToTOS;
+          _hasAgreedToTOS = !_hasAgreedToTOS!;
         });
       },
       behavior: HitTestBehavior.translucent,
@@ -325,7 +325,7 @@ class _EmailEntryPageState extends State<EmailEntryPage> {
     return GestureDetector(
       onTap: () {
         setState(() {
-          _hasAgreedToE2E = !_hasAgreedToE2E;
+          _hasAgreedToE2E = !_hasAgreedToE2E!;
         });
       },
       behavior: HitTestBehavior.translucent,
@@ -383,17 +383,17 @@ class _EmailEntryPageState extends State<EmailEntryPage> {
 
   bool _isFormValid() {
     return _email != null &&
-        _email.isNotEmpty &&
+        _email!.isNotEmpty &&
         _passwordController1.text.isNotEmpty &&
         _passwordController2.text.isNotEmpty &&
-        _hasAgreedToTOS &&
-        _hasAgreedToE2E;
+        _hasAgreedToTOS! &&
+        _hasAgreedToE2E!;
   }
 }
 
 class PricingWidget extends StatelessWidget {
   const PricingWidget({
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override
@@ -413,13 +413,13 @@ class PricingWidget extends StatelessWidget {
 
   Container _buildPlans(BuildContext context, BillingPlans plans) {
     final planWidgets = <BillingPlanWidget>[];
-    for (final plan in plans.plans) {
+    for (final plan in plans.plans!) {
       final productID = Platform.isAndroid ? plan.androidID : plan.iosID;
       if (productID != null && productID.isNotEmpty) {
         planWidgets.add(BillingPlanWidget(plan));
       }
     }
-    final freePlan = plans.freePlan;
+    final freePlan = plans.freePlan!;
     return Container(
       height: 280,
       color: Theme.of(context).cardColor,
@@ -441,11 +441,11 @@ class PricingWidget extends StatelessWidget {
             ),
           ),
           Text("we offer a free trial of " +
-              convertBytesToReadableFormat(freePlan.storage) +
+              convertBytesToReadableFormat(freePlan.storage!) +
               " for " +
               freePlan.duration.toString() +
               " " +
-              freePlan.period),
+              freePlan.period!),
           GestureDetector(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -478,7 +478,7 @@ class BillingPlanWidget extends StatelessWidget {
 
   const BillingPlanWidget(
     this.plan, {
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override
@@ -495,7 +495,7 @@ class BillingPlanWidget extends StatelessWidget {
           child: Column(
             children: [
               Text(
-                convertBytesToGBs(plan.storage, precision: 0).toString() +
+                convertBytesToGBs(plan.storage!, precision: 0).toString() +
                     " GB",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
@@ -506,7 +506,7 @@ class BillingPlanWidget extends StatelessWidget {
                 padding: EdgeInsets.all(4),
               ),
               Text(
-                plan.price + " / " + plan.period,
+                plan.price! + " / " + plan.period!,
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.white70,

@@ -16,7 +16,7 @@ class DiffFetcher {
   final _logger = Logger("DiffFetcher");
   final _dio = Network.instance.getDio();
 
-  Future<Diff> getEncryptedFilesDiff(int collectionID, int sinceTime) async {
+  Future<Diff> getEncryptedFilesDiff(int? collectionID, int sinceTime) async {
     _logger.info("Fetching diff in collection " +
         collectionID.toString() +
         " since " +
@@ -35,7 +35,7 @@ class DiffFetcher {
       int latestUpdatedAtTime = 0;
       if (response != null) {
         final diff = response.data["diff"] as List;
-        final bool hasMore = response.data["hasMore"] as bool;
+        final bool? hasMore = response.data["hasMore"] as bool?;
         final startTime = DateTime.now();
         final existingFiles =
             await FilesDB.instance.getUploadedFileIDs(collectionID);
@@ -45,7 +45,7 @@ class DiffFetcher {
           file.uploadedFileID = item["id"];
           file.collectionID = item["collectionID"];
           file.updationTime = item["updationTime"];
-          latestUpdatedAtTime = max(latestUpdatedAtTime, file.updationTime);
+          latestUpdatedAtTime = max(latestUpdatedAtTime, file.updationTime!);
           if (item["isDeleted"]) {
             if (existingFiles.contains(file.uploadedFileID)) {
               deletedFiles.add(file);
@@ -71,7 +71,7 @@ class DiffFetcher {
           final encodedMetadata = await CryptoUtil.decryptChaCha(
             Sodium.base642bin(item["metadata"]["encryptedData"]),
             fileDecryptionKey,
-            Sodium.base642bin(file.metadataDecryptionHeader),
+            Sodium.base642bin(file.metadataDecryptionHeader!),
           );
           Map<String, dynamic> metadata =
               jsonDecode(utf8.decode(encodedMetadata));
@@ -84,7 +84,7 @@ class DiffFetcher {
             file.mMdEncodedJson = utf8.decode(utfEncodedMmd);
             file.mMdVersion = item['magicMetadata']['version'];
             file.magicMetadata =
-                MagicMetadata.fromEncodedJson(file.mMdEncodedJson);
+                MagicMetadata.fromEncodedJson(file.mMdEncodedJson!);
           }
           if (item['pubMagicMetadata'] != null) {
             final utfEncodedMmd = await CryptoUtil.decryptChaCha(
@@ -94,7 +94,7 @@ class DiffFetcher {
             file.pubMmdEncodedJson = utf8.decode(utfEncodedMmd);
             file.pubMmdVersion = item['pubMagicMetadata']['version'];
             file.pubMagicMetadata =
-                PubMagicMetadata.fromEncodedJson(file.pubMmdEncodedJson);
+                PubMagicMetadata.fromEncodedJson(file.pubMmdEncodedJson!);
           }
           files.add(file);
         }
@@ -124,7 +124,7 @@ class DiffFetcher {
 class Diff {
   final List<File> updatedFiles;
   final List<File> deletedFiles;
-  final bool hasMore;
+  final bool? hasMore;
   final int latestUpdatedAtTime;
 
   Diff(this.updatedFiles, this.deletedFiles, this.hasMore,

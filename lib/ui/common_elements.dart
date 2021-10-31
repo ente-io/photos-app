@@ -16,9 +16,9 @@ final nothingToSeeHere = Center(
 Widget button(
   String text, {
   double fontSize = 14,
-  VoidCallback onPressed,
-  double lineHeight,
-  EdgeInsets padding,
+  VoidCallback? onPressed,
+  double? lineHeight,
+  EdgeInsets? padding,
 }) {
   return InkWell(
     child: OutlinedButton(
@@ -51,7 +51,7 @@ Widget button(
 
 final emptyContainer = Container();
 
-Animatable<Color> passwordStrengthColors = TweenSequence<Color>(
+Animatable<Color?> passwordStrengthColors = TweenSequence<Color?>(
   [
     TweenSequenceItem(
       weight: 1.0,

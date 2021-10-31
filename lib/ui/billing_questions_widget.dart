@@ -7,7 +7,7 @@ import 'package:photos/ui/loading_widget.dart';
 
 class BillingQuestionsWidget extends StatelessWidget {
   const BillingQuestionsWidget({
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override
@@ -57,8 +57,8 @@ class BillingQuestionsWidget extends StatelessWidget {
 
 class FaqWidget extends StatelessWidget {
   const FaqWidget({
-    Key key,
-    @required this.faq,
+    Key? key,
+    required this.faq,
   }) : super(key: key);
 
   final FaqItem faq;
@@ -87,20 +87,11 @@ class FaqWidget extends StatelessWidget {
 class FaqItem {
   final String q;
   final String a;
-  FaqItem({
-    this.q,
-    this.a,
-  });
 
-  FaqItem copyWith({
-    String q,
-    String a,
-  }) {
-    return FaqItem(
-      q: q ?? this.q,
-      a: a ?? this.a,
-    );
-  }
+  FaqItem({
+    required this.q,
+    required this.a,
+  });
 
   Map<String, dynamic> toMap() {
     return {
@@ -109,12 +100,11 @@ class FaqItem {
     };
   }
 
-  factory FaqItem.fromMap(Map<String, dynamic> map) {
+  static fromMap(Map<String, dynamic>? map) {
     if (map == null) return null;
-
     return FaqItem(
-      q: map['q'],
-      a: map['a'],
+      q: map['q'] ?? '',
+      a: map['a'] ?? '',
     );
   }
 

@@ -15,7 +15,7 @@ class ImportantItemsFilter implements GalleryItemsFilter {
         if (file.uploadedFileID != null) {
           return true;
         }
-        final String folder = basename(file.deviceFolder);
+        final String folder = basename(file.deviceFolder!);
         return folder == "Camera" ||
             folder == "Recents" ||
             folder == "DCIM" ||
@@ -28,7 +28,7 @@ class ImportantItemsFilter implements GalleryItemsFilter {
     if (file.uploadedFileID != null) {
       return true;
     }
-    final folder = basename(file.deviceFolder);
+    final folder = basename(file.deviceFolder!);
     return _importantPaths.contains(folder);
   }
 }

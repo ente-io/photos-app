@@ -11,7 +11,7 @@ import 'package:photos/utils/toast_util.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class InfoSectionWidget extends StatelessWidget {
-  const InfoSectionWidget({Key key}) : super(key: key);
+  const InfoSectionWidget({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

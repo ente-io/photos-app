@@ -29,7 +29,7 @@ class FadingAppBar extends StatefulWidget implements PreferredSizeWidget {
   final Function(File) onFileDeleted;
   final double height;
   final bool shouldShowActions;
-  final int userID;
+  final int? userID;
 
   FadingAppBar(
     this.file,
@@ -37,7 +37,7 @@ class FadingAppBar extends StatefulWidget implements PreferredSizeWidget {
     this.userID,
     this.height,
     this.shouldShowActions, {
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override
@@ -161,7 +161,7 @@ class FadingAppBarState extends State<FadingAppBar> {
         }
         return items;
       },
-      onSelected: (value) {
+      onSelected: (dynamic value) {
         if (value == 1) {
           _download(widget.file);
         } else if (value == 2) {
@@ -173,7 +173,7 @@ class FadingAppBarState extends State<FadingAppBar> {
     ));
     return AppBar(
       title: Text(
-        getDayTitle(widget.file.creationTime),
+        getDayTitle(widget.file.creationTime!),
         style: TextStyle(
           fontSize: 14,
         ),
@@ -185,7 +185,7 @@ class FadingAppBarState extends State<FadingAppBar> {
   }
 
   Widget _getFavoriteButton() {
-    return FutureBuilder(
+    return FutureBuilder<bool>(
       future: FavoritesService.instance.isFavorite(widget.file),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
@@ -197,7 +197,7 @@ class FadingAppBarState extends State<FadingAppBar> {
     );
   }
 
-  Widget _getLikeButton(File file, bool isLiked) {
+  Widget _getLikeButton(File file, bool? isLiked) {
     return LikeButton(
       isLiked: isLiked,
       onTap: (oldValue) async {
@@ -205,7 +205,7 @@ class FadingAppBarState extends State<FadingAppBar> {
         bool hasError = false;
         if (isLiked) {
           final shouldBlockUser = file.uploadedFileID == null;
-          ProgressDialog dialog;
+          late ProgressDialog dialog;
           if (shouldBlockUser) {
             dialog = createProgressDialog(context, "adding to favorites...");
             await dialog.show();
@@ -247,7 +247,7 @@ class FadingAppBarState extends State<FadingAppBar> {
       context,
       minTime: DateTime(1800, 1, 1),
       maxTime: DateTime.now(),
-      currentTime: DateTime.fromMicrosecondsSinceEpoch(file.creationTime),
+      currentTime: DateTime.fromMicrosecondsSinceEpoch(file.creationTime!),
       locale: LocaleType.en,
       theme: kDatePickerTheme,
     );
@@ -332,27 +332,27 @@ class FadingAppBarState extends State<FadingAppBar> {
   Future<void> _download(File file) async {
     final dialog = createProgressDialog(context, "downloading...");
     await dialog.show();
-    FileType type = file.fileType;
+    FileType? type = file.fileType;
     // save and track image for livePhoto/image and video for FileType.video
-    io.File fileToSave = await getFile(file);
+    io.File? fileToSave = await getFile(file);
     final savedAsset = type == FileType.video
-        ? (await PhotoManager.editor.saveVideo(fileToSave, title: file.title))
-        : (await PhotoManager.editor
-            .saveImageWithPath(fileToSave.path, title: file.title));
+        ? await (PhotoManager.editor.saveVideo(fileToSave!, title: file.title))
+        : await PhotoManager.editor
+            .saveImageWithPath(fileToSave!.path, title: file.title);
     // immediately track assetID to avoid duplicate upload
-    await LocalSyncService.instance.trackDownloadedFile(savedAsset.id);
+    await LocalSyncService.instance.trackDownloadedFile(savedAsset!.id);
     file.localID = savedAsset.id;
     await FilesDB.instance.insert(file);
 
     if (type == FileType.livePhoto) {
-      io.File liveVideo = await getFileFromServer(file, liveVideo: true);
+      io.File? liveVideo = await getFileFromServer(file, liveVideo: true);
       if (liveVideo == null) {
         _logger.warning("Failed to find live video" + file.tag());
       } else {
-        final savedAsset = (await PhotoManager.editor.saveVideo(liveVideo));
+        final savedAsset = await (PhotoManager.editor.saveVideo(liveVideo));
         // in case of livePhoto, file.localID only points the image asset.
         // ignore the saved video asset for live photo from future downloads
-        await LocalSyncService.instance.trackDownloadedFile(savedAsset.id);
+        await LocalSyncService.instance.trackDownloadedFile(savedAsset!.id);
       }
     }
 

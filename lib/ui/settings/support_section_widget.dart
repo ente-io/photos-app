@@ -13,7 +13,7 @@ import 'package:photos/utils/toast_util.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SupportSectionWidget extends StatelessWidget {
-  const SupportSectionWidget({Key key}) : super(key: key);
+  const SupportSectionWidget({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +62,7 @@ class SupportSectionWidget extends StatelessWidget {
                       "/users/roadmap";
                   final isLoggedIn = Configuration.instance.getToken() != null;
                   final url = isLoggedIn
-                      ? endpoint + "?token=" + Configuration.instance.getToken()
+                      ? endpoint + "?token=" + Configuration.instance.getToken()!
                       : kRoadmapURL;
                   return WebPage("roadmap", url);
                 },
@@ -96,7 +96,7 @@ class SupportSectionWidget extends StatelessWidget {
 }
 
 class CrispChatPage extends StatefulWidget {
-  CrispChatPage({Key key}) : super(key: key);
+  CrispChatPage({Key? key}) : super(key: key);
 
   @override
   _CrispChatPageState createState() => _CrispChatPageState();
@@ -104,7 +104,7 @@ class CrispChatPage extends StatefulWidget {
 
 class _CrispChatPageState extends State<CrispChatPage> {
   static const websiteID = "86d56ea2-68a2-43f9-8acb-95e06dee42e8";
-  CrispMain _crisp;
+  late CrispMain _crisp;
 
   @override
   void initState() {

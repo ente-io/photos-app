@@ -14,7 +14,7 @@ import 'package:photos/utils/auth_util.dart';
 import 'package:photos/utils/toast_util.dart';
 
 class SecuritySectionWidget extends StatefulWidget {
-  SecuritySectionWidget({Key key}) : super(key: key);
+  SecuritySectionWidget({Key? key}) : super(key: key);
 
   @override
   _SecuritySectionWidgetState createState() => _SecuritySectionWidgetState();
@@ -23,7 +23,8 @@ class SecuritySectionWidget extends StatefulWidget {
 class _SecuritySectionWidgetState extends State<SecuritySectionWidget> {
   final _config = Configuration.instance;
 
-  StreamSubscription<TwoFactorStatusChangeEvent> _twoFactorStatusChangeEvent;
+  late StreamSubscription<TwoFactorStatusChangeEvent>
+      _twoFactorStatusChangeEvent;
 
   @override
   void initState() {
@@ -63,12 +64,12 @@ class _SecuritySectionWidgetState extends State<SecuritySectionWidget> {
                   builder: (_, snapshot) {
                     if (snapshot.hasData) {
                       return Switch(
-                        value: snapshot.data,
+                        value: snapshot.data as bool,
                         onChanged: (value) async {
-                          AppLock.of(context).setEnabled(false);
+                          AppLock.of(context)!.setEnabled(false);
                           final result = await requestAuthentication();
-                          AppLock.of(context).setEnabled(
-                              Configuration.instance.shouldShowLockScreen());
+                          AppLock.of(context)!.setEnabled(
+                              Configuration.instance.shouldShowLockScreen()!);
                           if (!result) {
                             showToast(
                                 "please authenticate to configure two-factor authentication");
@@ -109,17 +110,17 @@ class _SecuritySectionWidgetState extends State<SecuritySectionWidget> {
           children: [
             Text("lockscreen"),
             Switch(
-              value: _config.shouldShowLockScreen(),
+              value: _config.shouldShowLockScreen()!,
               onChanged: (value) async {
-                AppLock.of(context).disable();
+                AppLock.of(context)!.disable();
                 final result = await requestAuthentication();
                 if (result) {
-                  AppLock.of(context).setEnabled(value);
+                  AppLock.of(context)!.setEnabled(value);
                   _config.setShouldShowLockScreen(value);
                   setState(() {});
                 } else {
-                  AppLock.of(context)
-                      .setEnabled(_config.shouldShowLockScreen());
+                  AppLock.of(context)!
+                      .setEnabled(_config.shouldShowLockScreen()!);
                 }
               },
             ),
@@ -139,7 +140,7 @@ class _SecuritySectionWidgetState extends State<SecuritySectionWidget> {
             children: [
               Text("hide from recents"),
               Switch(
-                value: _config.shouldHideFromRecents(),
+                value: _config.shouldHideFromRecents()!,
                 onChanged: (value) async {
                   if (value) {
                     AlertDialog alert = AlertDialog(

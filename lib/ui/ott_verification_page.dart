@@ -6,13 +6,13 @@ import 'package:photos/services/user_service.dart';
 import 'package:photos/ui/common_elements.dart';
 
 class OTTVerificationPage extends StatefulWidget {
-  final String email;
+  final String? email;
   final bool isChangeEmail;
 
   OTTVerificationPage(
     this.email, {
     this.isChangeEmail = false,
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override
@@ -48,7 +48,7 @@ class _OTTVerificationPageState extends State<OTTVerificationPage> {
               ),
               Padding(padding: EdgeInsets.all(2)),
               Text(
-                widget.email,
+                widget.email!,
                 style: TextStyle(
                   color: Theme.of(context).buttonColor,
                   fontSize: 18,

@@ -22,5 +22,5 @@ StatefulWidget getSubscriptionPage({bool isOnBoarding = false}) {
 // users who might have paid via playStore. This method should be removed once
 // we have better handling for active play/app store subscription & stripe plans.
 bool _isUserCreatedPostStripeSupport() {
-  return Configuration.instance.getUserID() > 1580559962386460;
+  return Configuration.instance.getUserID()! > 1580559962386460;
 }
