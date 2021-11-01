@@ -1045,7 +1045,7 @@ class FilesDB {
     row[columnMetadataVersion] = file.metadataVersion;
 
     row[columnMMdVersion] = file.mMdVersion ?? 0;
-    row[columnMMdEncodedJson] == file.mMdEncodedJson ?? '{}';
+    row[columnMMdEncodedJson] = file.mMdEncodedJson ?? '{}';
     row[columnMMdVisibility] =
         file.magicMetadata.visibility ?? kVisibilityVisible;
 
