@@ -189,7 +189,7 @@ class SyncService {
     return BackupStatus(ids.localIDs, size);
   }
 
-  Future<int?> _getFileSize(List<int?> fileIDs) async {
+  Future<int> _getFileSize(List<int> fileIDs) async {
     try {
       final response = await _dio.post(
         Configuration.instance.getHttpEndpoint() + "/files/size",
@@ -202,7 +202,7 @@ class SyncService {
           "fileIDs": fileIDs,
         },
       );
-      return response.data["size"];
+      return response.data["size"] as int;
     } catch (e) {
       _logger.severe(e);
       rethrow;

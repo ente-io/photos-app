@@ -176,8 +176,10 @@ class LocalSyncService {
   }
 
   Future<void> trackInvalidFile(File file) async {
-    final invalidIDs = getInvalidFileIDs()!;
-    invalidIDs.add(file.localID!);
+    final invalidIDs = getInvalidFileIDs();
+    if (file.localID != null) {
+      invalidIDs.add(file.localID!);
+    }
     await _prefs.setStringList(kInvalidFileIDsKey, invalidIDs);
   }
 

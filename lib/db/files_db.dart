@@ -388,11 +388,11 @@ class FilesDB {
       where:
           '$columnLocalID IS NOT NULL AND ($columnUploadedFileID IS NOT NULL AND $columnUploadedFileID IS NOT -1)',
     );
-    final localIDs = <String?>{};
-    final uploadedIDs = <int?>{};
+    final localIDs = <String>{};
+    final uploadedIDs = <int>{};
     for (final result in results) {
-      localIDs.add(result[columnLocalID] as String?);
-      uploadedIDs.add(result[columnUploadedFileID] as int?);
+      localIDs.add(result[columnLocalID] as String);
+      uploadedIDs.add(result[columnUploadedFileID] as int);
     }
     return BackedUpFileIDs(localIDs.toList(), uploadedIDs.toList());
   }
