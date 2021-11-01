@@ -35,7 +35,7 @@ class DiffFetcher {
       int latestUpdatedAtTime = 0;
       if (response != null) {
         final diff = response.data["diff"] as List;
-        final bool? hasMore = response.data["hasMore"] as bool?;
+        final bool hasMore = response.data["hasMore"] as bool;
         final startTime = DateTime.now();
         final existingFiles =
             await FilesDB.instance.getUploadedFileIDs(collectionID);
@@ -124,7 +124,7 @@ class DiffFetcher {
 class Diff {
   final List<File> updatedFiles;
   final List<File> deletedFiles;
-  final bool? hasMore;
+  final bool hasMore;
   final int latestUpdatedAtTime;
 
   Diff(this.updatedFiles, this.deletedFiles, this.hasMore,

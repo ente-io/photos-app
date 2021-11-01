@@ -85,12 +85,11 @@ class FilesDB {
   static final FilesDB instance = FilesDB._privateConstructor();
 
   // only have a single app-wide reference to the database
-  static Future<Database>? _dbFuture;
+  // lazily instantiate the db the first time it is accessed
+  late final Future<Database> _dbFuture = _initDatabase();
 
-  Future<Database>? get database async {
-    // lazily instantiate the db the first time it is accessed
-    _dbFuture ??= _initDatabase();
-    return _dbFuture!;
+  Future<Database> get database async {
+    return _dbFuture;
   }
 
   // this opens the database (and creates it if it doesn't exist)
@@ -294,13 +293,13 @@ class FilesDB {
   }
 
   Future<void> clearTable() async {
-    final db = await instance.database!;
+    final db = await instance.database;
     await db.delete(table);
   }
 
   Future<void> insertMultiple(List<File?> files) async {
     final startTime = DateTime.now();
-    final db = await instance.database!;
+    final db = await instance.database;
     var batch = db.batch();
     int batchCounter = 0;
     for (File? file in files) {
@@ -329,7 +328,7 @@ class FilesDB {
   }
 
   Future<int> insert(File file) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     return db.insert(
       table,
       _getRowForFile(file),
@@ -338,7 +337,7 @@ class FilesDB {
   }
 
   Future<File?> getFile(int? generatedID) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     final results = await db.query(table,
         where: '$columnGeneratedID = ?', whereArgs: [generatedID]);
     if (results.isEmpty) {
@@ -348,7 +347,7 @@ class FilesDB {
   }
 
   Future<File?> getUploadedFile(int? uploadedID, int? collectionID) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     final results = await db.query(
       table,
       where: '$columnUploadedFileID = ? AND $columnCollectionID = ?',
@@ -364,7 +363,7 @@ class FilesDB {
   }
 
   Future<Set<int?>> getUploadedFileIDs(int? collectionID) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     final results = await db.query(
       table,
       columns: [columnUploadedFileID],
@@ -381,7 +380,7 @@ class FilesDB {
   }
 
   Future<BackedUpFileIDs> getBackedUpIDs() async {
-    final db = await instance.database!;
+    final db = await instance.database;
     final results = await db.query(
       table,
       columns: [columnLocalID, columnUploadedFileID],
@@ -400,7 +399,7 @@ class FilesDB {
   Future<FileLoadResult> getAllUploadedFiles(
       int startTime, int endTime, int? ownerID,
       {int? limit, bool? asc, int visibility = kVisibilityVisible}) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     final order = (asc ?? false ? 'ASC' : 'DESC');
     final results = await db.query(
       table,
@@ -420,7 +419,7 @@ class FilesDB {
   Future<FileLoadResult> getAllLocalAndUploadedFiles(
       int startTime, int endTime, int? ownerID,
       {int? limit, bool? asc}) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     final order = (asc ?? false ? 'ASC' : 'DESC');
     final results = await db.query(
       table,
@@ -440,7 +439,7 @@ class FilesDB {
   Future<FileLoadResult> getImportantFiles(
       int startTime, int endTime, int? ownerID, List<String?> paths,
       {int? limit, bool? asc}) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     String inParam = "";
     for (final path in paths) {
       inParam += "'" + path!.replaceAll("'", "''") + "',";
@@ -479,7 +478,7 @@ class FilesDB {
   Future<FileLoadResult> getFilesInCollection(
       int? collectionID, int startTime, int endTime,
       {int? limit, bool? asc}) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     final order = (asc ?? false ? 'ASC' : 'DESC');
     final results = await db.query(
       table,
@@ -498,7 +497,7 @@ class FilesDB {
   Future<FileLoadResult> getFilesInPath(
       String? path, int startTime, int endTime,
       {int? limit, bool? asc}) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     final order = (asc ?? false ? 'ASC' : 'DESC');
     final results = await db.query(
       table,
@@ -515,7 +514,7 @@ class FilesDB {
   }
 
   Future<List<File>> getAllVideos() async {
-    final db = await instance.database!;
+    final db = await instance.database;
     final results = await db.query(
       table,
       where: '$columnLocalID IS NOT NULL AND $columnFileType = 1',
@@ -525,7 +524,7 @@ class FilesDB {
   }
 
   Future<List<File>> getAllInPath(String path) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     final results = await db.query(
       table,
       where: '$columnLocalID IS NOT NULL AND $columnDeviceFolder = ?',
@@ -538,7 +537,7 @@ class FilesDB {
 
   Future<List<File>> getFilesCreatedWithinDurations(
       List<List<int>> durations) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     String whereClause = "";
     for (int index = 0; index < durations.length; index++) {
       whereClause += "($columnCreationTime > " +
@@ -563,7 +562,7 @@ class FilesDB {
     if (folders.isEmpty) {
       return [];
     }
-    final db = await instance.database!;
+    final db = await instance.database;
     String inParam = "";
     for (final folder in folders) {
       inParam += "'" + folder!.replaceAll("'", "''") + "',";
@@ -580,7 +579,7 @@ class FilesDB {
   }
 
   Future<List<File>> getAllLocalFiles() async {
-    final db = await instance.database!;
+    final db = await instance.database;
     final results = await db.query(
       table,
       where:
@@ -592,7 +591,7 @@ class FilesDB {
   }
 
   Future<List<File>> getEditedRemoteFiles() async {
-    final db = await instance.database!;
+    final db = await instance.database;
     final results = await db.query(
       table,
       where:
@@ -604,7 +603,7 @@ class FilesDB {
   }
 
   Future<List<int?>> getUploadedFileIDsToBeUpdated() async {
-    final db = await instance.database!;
+    final db = await instance.database;
     final rows = await db.query(
       table,
       columns: [columnUploadedFileID],
@@ -621,7 +620,7 @@ class FilesDB {
   }
 
   Future<File?> getUploadedFileInAnyCollection(int? uploadedFileID) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     final results = await db.query(
       table,
       where: '$columnUploadedFileID = ?',
@@ -637,7 +636,7 @@ class FilesDB {
   }
 
   Future<Set<String>> getExistingLocalFileIDs() async {
-    final db = await instance.database!;
+    final db = await instance.database;
     final rows = await db.query(
       table,
       columns: [columnLocalID],
@@ -652,7 +651,7 @@ class FilesDB {
   }
 
   Future<int> getNumberOfUploadedFiles() async {
-    final db = await instance.database!;
+    final db = await instance.database;
     final rows = await db.query(
       table,
       columns: [columnUploadedFileID],
@@ -671,7 +670,7 @@ class FilesDB {
     int? modificationTime,
     int? updationTime,
   ) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     return await db.update(
       table,
       {
@@ -691,7 +690,7 @@ class FilesDB {
     String? title,
     String? deviceFolder,
   ) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     final rows = await db.query(
       table,
       where: '''$columnTitle=? AND $columnDeviceFolder=?''',
@@ -708,7 +707,7 @@ class FilesDB {
   }
 
   Future<int> update(File file) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     return await db.update(
       table,
       _getRowForFile(file),
@@ -718,7 +717,7 @@ class FilesDB {
   }
 
   Future<int> updateUploadedFileAcrossCollections(File file) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     return await db.update(
       table,
       _getRowForFileWithoutCollection(file),
@@ -728,7 +727,7 @@ class FilesDB {
   }
 
   Future<int> delete(int uploadedFileID) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     return db.delete(
       table,
       where: '$columnUploadedFileID =?',
@@ -737,7 +736,7 @@ class FilesDB {
   }
 
   Future<int> deleteMultipleUploadedFiles(List<int?> uploadedFileIDs) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     return await db.delete(
       table,
       where: '$columnUploadedFileID IN (${uploadedFileIDs.join(', ')})',
@@ -745,7 +744,7 @@ class FilesDB {
   }
 
   Future<int> deleteLocalFile(File file) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     if (file.localID != null) {
       // delete all files with same local ID
       return db.delete(
@@ -768,7 +767,7 @@ class FilesDB {
       inParam += "'" + localID! + "',";
     }
     inParam = inParam.substring(0, inParam.length - 1);
-    final db = await instance.database!;
+    final db = await instance.database;
     await db.rawQuery('''
       UPDATE $table
       SET $columnLocalID = NULL
@@ -782,7 +781,7 @@ class FilesDB {
       inParam += "'" + localID! + "',";
     }
     inParam = inParam.substring(0, inParam.length - 1);
-    final db = await instance.database!;
+    final db = await instance.database;
     final results = await db.query(
       table,
       where: '$columnLocalID IN ($inParam)',
@@ -796,7 +795,7 @@ class FilesDB {
       inParam += "'" + localID! + "',";
     }
     inParam = inParam.substring(0, inParam.length - 1);
-    final db = await instance.database!;
+    final db = await instance.database;
     return db.delete(
       table,
       where:
@@ -805,7 +804,7 @@ class FilesDB {
   }
 
   Future<int> deleteFromCollection(int uploadedFileID, int collectionID) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     return db.delete(
       table,
       where: '$columnUploadedFileID = ? AND $columnCollectionID = ?',
@@ -815,7 +814,7 @@ class FilesDB {
 
   Future<int> deleteFilesFromCollection(
       int? collectionID, List<int?> uploadedFileIDs) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     return db.delete(
       table,
       where:
@@ -825,7 +824,7 @@ class FilesDB {
   }
 
   Future<int> deleteCollection(int? collectionID) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     return db.delete(
       table,
       where: '$columnCollectionID = ?',
@@ -835,7 +834,7 @@ class FilesDB {
 
   Future<int> removeFromCollection(
       int? collectionID, List<int?> fileIDs) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     return db.delete(
       table,
       where:
@@ -845,7 +844,7 @@ class FilesDB {
   }
 
   Future<List<File>> getLatestLocalFiles() async {
-    final db = await instance.database!;
+    final db = await instance.database;
     final rows = await db.rawQuery('''
       SELECT $table.*
       FROM $table
@@ -874,7 +873,7 @@ class FilesDB {
   }
 
   Future<List<File>> getLatestCollectionFiles() async {
-    final db = await instance.database!;
+    final db = await instance.database;
     final rows = await db.rawQuery('''
       SELECT $table.*
       FROM $table
@@ -904,7 +903,7 @@ class FilesDB {
   }
 
   Future<File?> getLastModifiedFileInCollection(int collectionID) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     final rows = await db.query(
       table,
       where: '$columnCollectionID = ?',
@@ -920,7 +919,7 @@ class FilesDB {
   }
 
   Future<Map<String?, int?>> getFileCountInDeviceFolders() async {
-    final db = await instance.database!;
+    final db = await instance.database;
     final rows = await db.rawQuery('''
       SELECT COUNT($columnGeneratedID) as count, $columnDeviceFolder
       FROM $table
@@ -936,7 +935,7 @@ class FilesDB {
 
   Future<bool> doesFileExistInCollection(
       int? uploadedFileID, int? collectionID) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     final rows = await db.query(
       table,
       where: '$columnUploadedFileID = ? AND $columnCollectionID = ?',
@@ -956,7 +955,7 @@ class FilesDB {
       inParam += "'" + id.toString() + "',";
     }
     inParam = inParam.substring(0, inParam.length - 1);
-    final db = await instance.database!;
+    final db = await instance.database;
     final results = await db.query(
       table,
       where: '$columnUploadedFileID IN ($inParam)',

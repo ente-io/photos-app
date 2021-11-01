@@ -101,7 +101,8 @@ class _DeduplicatePageState extends State<DeduplicatePage> {
       } else if (sortKey == SortKey.count) {
         return second.files.length - first.files.length;
       } else {
-        return second.files.first.creationTime! - first.files.first.creationTime!;
+        return second.files.first.creationTime! -
+            first.files.first.creationTime!;
       }
     });
   }
@@ -192,7 +193,7 @@ class _DeduplicatePageState extends State<DeduplicatePage> {
       children: [
         Container(),
         PopupMenuButton(
-          initialValue: sortKey?.index ?? 0,
+          initialValue: sortKey.index,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(24, 6, 24, 6),
             child: Row(

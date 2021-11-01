@@ -44,11 +44,12 @@ class CollectionsDB {
 
   static final CollectionsDB instance = CollectionsDB._privateConstructor();
 
-  static Future<Database>? _dbFuture;
+  // only have a single app-wide reference to the database
+  // lazily instantiate the db the first time it is accessed
+  late final Future<Database> _dbFuture = _initDatabase();
 
-  Future<Database>? get database async {
-    _dbFuture ??= _initDatabase();
-    return _dbFuture!;
+  Future<Database> get database async {
+    return _dbFuture;
   }
 
   Future<Database> _initDatabase() async {
@@ -58,7 +59,7 @@ class CollectionsDB {
   }
 
   Future<void> clearTable() async {
-    final db = await instance.database!;
+    final db = await instance.database;
     await db.delete(table);
   }
 
@@ -128,7 +129,7 @@ class CollectionsDB {
   }
 
   Future<List<dynamic>> insert(List<Collection?> collections) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     var batch = db.batch();
     for (final collection in collections) {
       batch.insert(table, _getRowForCollection(collection!),
@@ -138,7 +139,7 @@ class CollectionsDB {
   }
 
   Future<List<Collection>> getAllCollections() async {
-    final db = await instance.database!;
+    final db = await instance.database;
     final rows = await db.query(table);
     final collections = <Collection>[];
     for (final row in rows) {
@@ -148,7 +149,7 @@ class CollectionsDB {
   }
 
   Future<int?> getLastCollectionUpdationTime() async {
-    final db = await instance.database!;
+    final db = await instance.database;
     final rows = await db.query(
       table,
       orderBy: '$columnUpdationTime DESC',
@@ -162,7 +163,7 @@ class CollectionsDB {
   }
 
   Future<int> deleteCollection(int? collectionID) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     return db.delete(
       table,
       where: '$columnID = ?',

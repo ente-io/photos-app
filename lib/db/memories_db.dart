@@ -18,10 +18,9 @@ class MemoriesDB {
   MemoriesDB._privateConstructor();
   static final MemoriesDB instance = MemoriesDB._privateConstructor();
 
-  static Future<Database>? _dbFuture;
-  Future<Database>? get database async {
-    _dbFuture ??= _initDatabase();
-    return _dbFuture!;
+  late final Future<Database> _dbFuture = _initDatabase();
+  Future<Database> get database async {
+    return _dbFuture;
   }
 
   Future<Database> _initDatabase() async {
@@ -44,12 +43,12 @@ class MemoriesDB {
   }
 
   Future<void> clearTable() async {
-    final db = await instance.database!;
+    final db = await instance.database;
     await db.delete(table);
   }
 
   Future<int> clearMemoriesSeenBeforeTime(int timestamp) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     return db.delete(
       table,
       where: '$columnSeenTime < ?',
@@ -58,13 +57,13 @@ class MemoriesDB {
   }
 
   Future<int> markMemoryAsSeen(Memory memory, int timestamp) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     return await db.insert(table, _getRowForSeenMemory(memory, timestamp),
         conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<Map<int?, int>> getSeenTimes() async {
-    final db = await instance.database!;
+    final db = await instance.database;
     return _convertToSeenTimes(await db.query(table));
   }
 

@@ -177,7 +177,7 @@ class CollectionsService {
     });
   }
 
-  Future<void> share(int? collectionID, String email, String publicKey) async {
+  Future<void> share(int collectionID, String email, String publicKey) async {
     final encryptedKey = CryptoUtil.sealSync(
         getCollectionKey(collectionID)!, Sodium.base642bin(publicKey));
     try {
@@ -200,7 +200,7 @@ class CollectionsService {
     RemoteSyncService.instance.sync(silently: true);
   }
 
-  Future<void> unshare(int? collectionID, String? email) async {
+  Future<void> unshare(int collectionID, String email) async {
     try {
       await _dio.post(
         Configuration.instance.getHttpEndpoint() + "/collections/unshare",

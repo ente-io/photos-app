@@ -40,12 +40,11 @@ class IgnoredFilesDB {
   static final IgnoredFilesDB instance = IgnoredFilesDB._privateConstructor();
 
   // only have a single app-wide reference to the database
-  static Future<Database>? _dbFuture;
+  // lazily instantiate the db the first time it is accessed
+  late final Future<Database> _dbFuture = _initDatabase();
 
-  Future<Database>? get database async {
-    // lazily instantiate the db the first time it is accessed
-    _dbFuture ??= _initDatabase();
-    return _dbFuture!;
+  Future<Database> get database async {
+    return _dbFuture;
   }
 
   // this opens the database (and creates it if it doesn't exist)
@@ -60,13 +59,13 @@ class IgnoredFilesDB {
   }
 
   Future<void> clearTable() async {
-    final db = await instance.database!;
+    final db = await instance.database;
     await db.delete(tableName);
   }
 
   Future<void> insertMultiple(List<IgnoredFile> ignoredFiles) async {
     final startTime = DateTime.now();
-    final db = await instance.database!;
+    final db = await instance.database;
     var batch = db.batch();
     int batchCounter = 0;
     for (IgnoredFile file in ignoredFiles) {
@@ -92,7 +91,7 @@ class IgnoredFilesDB {
   }
 
   Future<List<IgnoredFile>> getAll() async {
-    final db = await instance.database!;
+    final db = await instance.database;
     final rows = await db.query(tableName);
     final result = <IgnoredFile>[];
     for (final row in rows) {

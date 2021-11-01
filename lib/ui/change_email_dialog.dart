@@ -12,7 +12,7 @@ class ChangeEmailDialog extends StatefulWidget {
 }
 
 class _ChangeEmailDialogState extends State<ChangeEmailDialog> {
-  String? _email;
+  String _email = '';
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +64,7 @@ class _ChangeEmailDialogState extends State<ChangeEmailDialog> {
             ),
           ),
           onPressed: () {
-            if (!isValidEmail(_email!)) {
+            if (!isValidEmail(_email)) {
               showErrorDialog(context, "invalid email address",
                   "please enter a valid email address.");
               return;

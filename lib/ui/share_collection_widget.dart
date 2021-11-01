@@ -20,7 +20,7 @@ import 'package:photos/utils/share_util.dart';
 import 'package:photos/utils/toast_util.dart';
 
 class SharingDialog extends StatefulWidget {
-  final Collection? collection;
+  final Collection collection;
 
   SharingDialog(this.collection, {Key? key}) : super(key: key);
 
@@ -36,13 +36,13 @@ class _SharingDialogState extends State<SharingDialog> {
 
   @override
   Widget build(BuildContext context) {
-    _sharees = widget.collection!.sharees;
+    _sharees = widget.collection.sharees;
     final children = <Widget>[];
     if (!_showEntryField && _sharees!.isEmpty) {
       _showEntryField = true;
     } else {
       for (final user in _sharees!) {
-        children.add(EmailItemWidget(widget.collection, user.email));
+        children.add(EmailItemWidget(widget.collection, user.email!));
       }
     }
     if (_showEntryField) {
@@ -160,7 +160,7 @@ class _SharingDialogState extends State<SharingDialog> {
       showErrorDialog(context, AppLocalizations.of(context)!.oops,
           "you cannot share with yourself");
       return;
-    } else if (widget.collection!.sharees!.any((user) => user.email == email)) {
+    } else if (widget.collection.sharees!.any((user) => user.email == email)) {
       showErrorDialog(context, AppLocalizations.of(context)!.oops,
           "you're already sharing this with " + email);
       return;
@@ -208,7 +208,7 @@ class _SharingDialogState extends State<SharingDialog> {
     } else {
       final dialog = createProgressDialog(context, "sharing...");
       await dialog.show();
-      final collection = widget.collection!;
+      final collection = widget.collection;
       try {
         if (collection.type == CollectionType.folder) {
           final path =
@@ -218,7 +218,7 @@ class _SharingDialogState extends State<SharingDialog> {
           }
         }
         await CollectionsService.instance
-            .share(widget.collection!.id, email, publicKey);
+            .share(widget.collection.id!, email, publicKey);
         await dialog.hide();
         showToast("shared successfully!");
         setState(() {
@@ -270,8 +270,8 @@ class _SharingDialogState extends State<SharingDialog> {
 }
 
 class EmailItemWidget extends StatelessWidget {
-  final Collection? collection;
-  final String? email;
+  final Collection collection;
+  final String email;
 
   const EmailItemWidget(
     this.collection,
@@ -287,7 +287,7 @@ class EmailItemWidget extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(8, 0, 0, 0),
           child: Text(
-            email!,
+            email,
             style: TextStyle(fontSize: 16),
           ),
         ),
@@ -299,10 +299,10 @@ class EmailItemWidget extends StatelessWidget {
             final dialog = createProgressDialog(context, "please wait...");
             await dialog.show();
             try {
-              await CollectionsService.instance.unshare(collection!.id, email);
-              collection!.sharees!.removeWhere((user) => user.email == email);
+              await CollectionsService.instance.unshare(collection.id!, email);
+              collection.sharees!.removeWhere((user) => user.email == email);
               await dialog.hide();
-              showToast("stopped sharing with " + email! + ".");
+              showToast("stopped sharing with " + email + ".");
               Navigator.of(context).pop();
             } catch (e, s) {
               Logger("EmailItemWidget").severe(e, s);

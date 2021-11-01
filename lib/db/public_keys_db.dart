@@ -18,11 +18,10 @@ class PublicKeysDB {
   PublicKeysDB._privateConstructor();
   static final PublicKeysDB instance = PublicKeysDB._privateConstructor();
 
-  static Future<Database>? _dbFuture;
-
-  Future<Database>? get database async {
-    _dbFuture ??= _initDatabase();
-    return _dbFuture!;
+  // lazily instantiate the db the first time it is accessed
+  late final Future<Database> _dbFuture = _initDatabase();
+  Future<Database> get database async {
+    return _dbFuture;
   }
 
   Future<Database> _initDatabase() async {
@@ -45,18 +44,18 @@ class PublicKeysDB {
   }
 
   Future<void> clearTable() async {
-    final db = await instance.database!;
+    final db = await instance.database;
     await db.delete(table);
   }
 
   Future<int> setKey(PublicKey key) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     return db.insert(table, _getRow(key),
         conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<List<PublicKey>> searchByEmail(String? email) async {
-    final db = await instance.database!;
+    final db = await instance.database;
     return _convertRows(await db.query(
       table,
       where: '$columnEmail LIKE ?',

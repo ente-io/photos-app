@@ -49,7 +49,7 @@ Future<io.File?>? getFile(
       );
       // do not cache origin file for IOS as they are immediately deleted
       // after usage
-      if (!(isOrigin && Platform.isIOS)) {
+      if (!(isOrigin && Platform.isIOS) && diskFile != null) {
         FileLruCache.put(key, diskFile);
       }
       return diskFile;

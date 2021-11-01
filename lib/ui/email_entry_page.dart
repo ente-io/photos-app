@@ -31,10 +31,10 @@ class _EmailEntryPageState extends State<EmailEntryPage> {
   final _passwordController1 = TextEditingController(),
       _passwordController2 = TextEditingController();
 
-  String? _email;
+  late String _email;
   double _passwordStrength = 0;
-  bool? _hasAgreedToTOS = true;
-  bool? _hasAgreedToE2E = false;
+  bool _hasAgreedToTOS = true;
+  bool _hasAgreedToE2E = false;
   bool _password1Visible = false;
   bool _password2Visible = false;
   final _password1FocusNode = FocusNode();
@@ -44,7 +44,7 @@ class _EmailEntryPageState extends State<EmailEntryPage> {
 
   @override
   void initState() {
-    _email = _config.getEmail();
+    _email = _config.getEmail() ?? '';
     _password1FocusNode.addListener(() {
       setState(() {
         _password1InFocus = _password1FocusNode.hasFocus;
@@ -204,7 +204,7 @@ class _EmailEntryPageState extends State<EmailEntryPage> {
                   AppLocalizations.of(context)!.sign_up,
                   onPressed: _isFormValid()
                       ? () {
-                          if (!isValidEmail(_email!)) {
+                          if (!isValidEmail(_email)) {
                             showErrorDialog(context, "invalid email",
                                 "please enter a valid email address.");
                           } else if (_passwordController1.text !=
@@ -218,7 +218,7 @@ class _EmailEntryPageState extends State<EmailEntryPage> {
                           } else {
                             _config
                                 .setVolatilePassword(_passwordController1.text);
-                            _config.setEmail(_email!);
+                            _config.setEmail(_email);
                             UserService.instance.getOtt(context, _email);
                           }
                         }
@@ -249,7 +249,7 @@ class _EmailEntryPageState extends State<EmailEntryPage> {
     return GestureDetector(
       onTap: () {
         setState(() {
-          _hasAgreedToTOS = !_hasAgreedToTOS!;
+          _hasAgreedToTOS = !_hasAgreedToTOS;
         });
       },
       behavior: HitTestBehavior.translucent,
@@ -259,7 +259,7 @@ class _EmailEntryPageState extends State<EmailEntryPage> {
               value: _hasAgreedToTOS,
               onChanged: (value) {
                 setState(() {
-                  _hasAgreedToTOS = value;
+                  _hasAgreedToTOS = value ?? false;
                 });
               }),
           Expanded(
@@ -325,7 +325,7 @@ class _EmailEntryPageState extends State<EmailEntryPage> {
     return GestureDetector(
       onTap: () {
         setState(() {
-          _hasAgreedToE2E = !_hasAgreedToE2E!;
+          _hasAgreedToE2E = !_hasAgreedToE2E;
         });
       },
       behavior: HitTestBehavior.translucent,
@@ -335,7 +335,7 @@ class _EmailEntryPageState extends State<EmailEntryPage> {
               value: _hasAgreedToE2E,
               onChanged: (value) {
                 setState(() {
-                  _hasAgreedToE2E = value;
+                  _hasAgreedToE2E = value ?? false;
                 });
               }),
           Expanded(
@@ -382,12 +382,11 @@ class _EmailEntryPageState extends State<EmailEntryPage> {
   }
 
   bool _isFormValid() {
-    return _email != null &&
-        _email!.isNotEmpty &&
+    return _email.isNotEmpty &&
         _passwordController1.text.isNotEmpty &&
         _passwordController2.text.isNotEmpty &&
-        _hasAgreedToTOS! &&
-        _hasAgreedToE2E!;
+        _hasAgreedToTOS &&
+        _hasAgreedToE2E;
   }
 }
 

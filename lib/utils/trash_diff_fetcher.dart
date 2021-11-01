@@ -31,7 +31,7 @@ class TrashDiffFetcher {
       final restoredFiles = <TrashFile>[];
       if (response != null) {
         final diff = response.data["diff"] as List;
-        final bool? hasMore = response.data["hasMore"] as bool?;
+        final bool hasMore = response.data["hasMore"] as bool;
         final startTime = DateTime.now();
         for (final item in diff) {
           final trash = TrashFile();
@@ -113,7 +113,7 @@ class Diff {
   final List<TrashFile> trashedFiles;
   final List<TrashFile> restoredFiles;
   final List<TrashFile> deletedFiles;
-  final bool? hasMore;
+  final bool hasMore;
   final int lastSyncedTimeStamp;
 
   Diff(this.trashedFiles, this.restoredFiles, this.deletedFiles, this.hasMore,

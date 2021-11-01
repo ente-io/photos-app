@@ -41,7 +41,7 @@ class UserService {
 
   Future<void> getOtt(
     BuildContext context,
-    String? email, {
+    String email, {
     bool isChangeEmail = false,
   }) async {
     final dialog = createProgressDialog(context, "please wait...");

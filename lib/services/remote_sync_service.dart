@@ -142,7 +142,7 @@ class RemoteSyncService {
       await _collectionsService.setCollectionSyncTime(
           collectionID, diff.latestUpdatedAtTime);
     }
-    if (diff.hasMore!) {
+    if (diff.hasMore) {
       return await _syncCollectionDiff(collectionID,
           _collectionsService.getCollectionSyncTime(collectionID));
     }
@@ -190,7 +190,8 @@ class RemoteSyncService {
     }
     final List<Future> futures = [];
     for (final uploadedFileID in updatedFileIDs) {
-      final file = await (_db.getUploadedFileInAnyCollection(uploadedFileID) as FutureOr<File>);
+      final file = await (_db.getUploadedFileInAnyCollection(uploadedFileID)
+          as FutureOr<File>);
       final future = _uploader
           .upload(file, file.collectionID)
           .then((uploadedFile) => _onFileUploaded(uploadedFile));
@@ -281,8 +282,8 @@ class RemoteSyncService {
         // Note: The file.generatedID might be already set inside
         // [DiffFetcher.getEncryptedFilesDiff]
 
-        final fileWithLocalID = existingFiles
-            .firstWhereOrNull((e) => e.localID != null);
+        final fileWithLocalID =
+            existingFiles.firstWhereOrNull((e) => e.localID != null);
         if (fileWithLocalID != null) {
           // File should ideally have the same localID
           if (file.localID != null && file.localID != fileWithLocalID.localID) {

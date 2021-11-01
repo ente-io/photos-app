@@ -35,7 +35,7 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          widget.latestVersionInfo!.name!,
+          widget.latestVersionInfo!.name,
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -105,7 +105,7 @@ class _ApkDownloaderDialogState extends State<ApkDownloaderDialog> {
     super.initState();
     _saveUrl = Configuration.instance.getTempDirectory() +
         "ente-" +
-        widget.versionInfo!.name! +
+        widget.versionInfo!.name +
         ".apk";
     _downloadApk();
   }
@@ -134,9 +134,9 @@ class _ApkDownloaderDialogState extends State<ApkDownloaderDialog> {
   Future<void> _downloadApk() async {
     try {
       await Network.instance.getDio().download(
-          widget.versionInfo!.url!, _saveUrl, onReceiveProgress: (count, _) {
+          widget.versionInfo!.url, _saveUrl, onReceiveProgress: (count, _) {
         setState(() {
-          _downloadProgress = count / widget.versionInfo!.size!;
+          _downloadProgress = count / widget.versionInfo!.size;
         });
       });
       Navigator.of(context, rootNavigator: true).pop('dialog');

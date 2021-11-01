@@ -19,11 +19,11 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _config = Configuration.instance;
-  String? _email;
+  late String _email;
 
   @override
   void initState() {
-    _email = _config.getEmail();
+    _email = _config.getEmail() ?? '';
     super.initState();
   }
 
@@ -139,14 +139,14 @@ class _LoginPageState extends State<LoginPage> {
           padding: const EdgeInsets.fromLTRB(80, 0, 80, 0),
           child: button(
             AppLocalizations.of(context)!.log_in,
-            onPressed: _email != null && _email!.isNotEmpty
+            onPressed: _email.isNotEmpty
                 ? () {
-                    if (!isValidEmail(_email!)) {
+                    if (!isValidEmail(_email)) {
                       showErrorDialog(context, "invalid email address",
                           "please enter a valid email address.");
                       return;
                     }
-                    _config.setEmail(_email!);
+                    _config.setEmail(_email);
                     UserService.instance.getOtt(context, _email);
                   }
                 : null,

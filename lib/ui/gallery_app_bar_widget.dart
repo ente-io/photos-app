@@ -226,6 +226,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
             _logger.severe(e, s);
             await dialog.hide();
             showGenericErrorDialog(context);
+            return;
           }
         }
       } else {
@@ -241,7 +242,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
     return showDialog<void>(
       context: context,
       builder: (BuildContext context) {
-        return SharingDialog(collection);
+        return SharingDialog(collection!);
       },
     );
   }

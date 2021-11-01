@@ -54,7 +54,7 @@ class TrashSyncService {
     if (diff.lastSyncedTimeStamp != 0) {
       await _setSyncTime(diff.lastSyncedTimeStamp);
     }
-    if (diff.hasMore!) {
+    if (diff.hasMore) {
       return await syncTrash();
     }
   }
