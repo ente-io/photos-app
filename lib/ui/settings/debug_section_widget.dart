@@ -24,7 +24,7 @@ class DebugSectionWidget extends StatelessWidget {
       GestureDetector(
         behavior: HitTestBehavior.translucent,
         onTap: () async {
-          Network.instance.getAlice()!.showInspector();
+          Network.instance.getAlice().showInspector();
         },
         child: SettingsTextItem(
             text: "network requests", icon: Icons.navigate_next),

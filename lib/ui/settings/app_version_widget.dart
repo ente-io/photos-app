@@ -36,7 +36,7 @@ class _AppVersionWidgetState extends State<AppVersionWidget> {
             await Future.delayed(
                 Duration(milliseconds: kDummyDelayDurationInMilliseconds));
             await dialog.hide();
-            Network.instance.getAlice()!.showInspector();
+            Network.instance.getAlice().showInspector();
           }
         } else {
           _consecutiveTaps = 1;

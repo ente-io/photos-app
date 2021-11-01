@@ -249,7 +249,7 @@ class _EnteAppState extends State<EnteApp> with WidgetsBindingObserver {
       theme: themeData,
       home: EnteApp._homeWidget,
       debugShowCheckedModeBanner: false,
-      navigatorKey: Network.instance.getAlice()!.getNavigatorKey(),
+      navigatorKey: Network.instance.getAlice().getNavigatorKey(),
       builder: EasyLoading.init(),
       supportedLocales: L10n.all,
       localizationsDelegates: [
