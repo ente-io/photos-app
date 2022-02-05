@@ -47,6 +47,26 @@ class SupportSectionWidget extends StatelessWidget {
                   final isLoggedIn = Configuration.instance.getToken() != null;
                   final url = isLoggedIn
                       ? endpoint + "?token=" + Configuration.instance.getToken()
+                      : kFeatureRequestURL;
+                  return WebPage("feature request", url);
+                },
+              ),
+            );
+          },
+          child: SettingsTextItem(text: "roadmap", icon: Icons.navigate_next),
+        ),
+        Divider(height: 4),
+        GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (BuildContext context) {
+                  final endpoint = Configuration.instance.getHttpEndpoint() +
+                      "/users/roadmap";
+                  final isLoggedIn = Configuration.instance.getToken() != null;
+                  final url = isLoggedIn
+                      ? endpoint + "?token=" + Configuration.instance.getToken()
                       : kRoadmapURL;
                   return WebPage("roadmap", url);
                 },
