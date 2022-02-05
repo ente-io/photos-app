@@ -7,7 +7,8 @@ const String kSentryDSN =
     "https://2235e5c99219488ea93da34b9ac1cb68@sentry.ente.io/4";
 const String kSentryDebugDSN =
     "https://ca5e686dd7f149d9bf94e620564cceba@sentry.ente.io/3";
-const String kRoadmapURL = "https://roadmap.ente.io";
+const String kRoadmapURL = "https://roadmap.ente.io/roadmap";
+const String kFeatureRequestURL = "https://roadmap.ente.io";
 const int kMicroSecondsInDay = 86400000000;
 const int kAndroid11SDKINT = 30;
 const int kGalleryLoadStartTime = -8000000000000000; // Wednesday, March 6, 1748
