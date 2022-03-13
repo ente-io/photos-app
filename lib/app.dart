@@ -2,11 +2,11 @@ import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:background_fetch/background_fetch.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:i18n_extension/i18n_widget.dart';
 import 'package:logging/logging.dart';
 import 'package:photos/core/network.dart';
-import 'package:photos/l10n/l10n.dart';
+import 'package:photos/l10n.dart';
 import 'package:photos/services/app_lifecycle_service.dart';
 import 'package:photos/services/sync_service.dart';
 import 'package:photos/ui/home_widget.dart';
@@ -148,13 +148,12 @@ class _EnteAppState extends State<EnteApp> with WidgetsBindingObserver {
               title: "ente",
               theme: lightTheme,
               darkTheme: dartTheme,
-              home: EnteApp._homeWidget,
+              home: I18n(child: EnteApp._homeWidget),
               debugShowCheckedModeBanner: false,
               navigatorKey: Network.instance.getAlice().getNavigatorKey(),
               builder: EasyLoading.init(),
               supportedLocales: L10n.all,
               localizationsDelegates: const [
-                AppLocalizations.delegate,
                 GlobalMaterialLocalizations.delegate,
                 GlobalCupertinoLocalizations.delegate,
                 GlobalWidgetsLocalizations.delegate,

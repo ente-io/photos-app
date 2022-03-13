@@ -62,6 +62,7 @@ dependencies:
   fluttercontactpicker: ^4.4.0
   fluttertoast: ^8.0.6
   google_nav_bar: ^5.0.5
+  i18n_extension: ^4.2.1
   image: ^3.0.2
   image_editor: ^1.0.0
   implicitly_animated_reorderable_list: ^0.4.0
@@ -113,7 +114,7 @@ dependency_overrides:
   flutter_local_notifications: ^8.1.1
 
 dev_dependencies:
-  flutter_launcher_icons: "0.9.0"
+  flutter_launcher_icons: "0.9.2"
   flutter_native_splash: ^1.1.8+4
   flutter_test:
     sdk: flutter

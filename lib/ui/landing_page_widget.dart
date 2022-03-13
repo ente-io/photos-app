@@ -2,6 +2,7 @@ import 'package:dots_indicator/dots_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:photos/core/configuration.dart';
+import "package:photos/i18n.dart";
 import 'package:photos/ui/email_entry_page.dart';
 import 'package:photos/ui/login_page.dart';
 import 'package:photos/ui/password_entry_page.dart';
@@ -152,7 +153,7 @@ class _LandingPageWidgetState extends State<LandingPageWidget> {
           child: Material(
             type: MaterialType.transparency,
             child: Text(
-              "sign up",
+              "sign up".i18n,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
