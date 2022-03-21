@@ -338,6 +338,11 @@ class _LazyLoadingGridViewState extends State<LazyLoadingGridView> {
   Widget _buildFile(BuildContext context, File file) {
     return GestureDetector(
       onTap: () {
+        if (widget.selectedFiles.files.isEmpty) {
+          _routeToDetailPage(file, context);
+        }
+      },
+      onDoubleTap: () {
         _routeToDetailPage(file, context);
       },
       onLongPress: () {
