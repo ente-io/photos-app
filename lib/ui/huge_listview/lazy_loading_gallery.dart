@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
 import 'package:photos/core/constants.dart';
@@ -196,6 +198,12 @@ class LazyLoadingGridView extends StatefulWidget {
 
 class _LazyLoadingGridViewState extends State<LazyLoadingGridView> {
   bool _shouldRender;
+  final key = GlobalKey();
+  final Map<int, int> selectedItemWithTimestamp = HashMap();
+  final Set<int> selectedIndexes = <int>{};
+  // This delay is to avoid accidently select->unselect while user is gradding
+  // across items
+  final int delayBetweenTapEventsInMilliSeconds = 1000;
 
   @override
   void initState() {
@@ -267,12 +275,16 @@ class _LazyLoadingGridViewState extends State<LazyLoadingGridView> {
   }
 
   Widget _getGridView() {
-    return GridView.builder(
+    Widget gridView = GridView.builder(
+      key: key,
       shrinkWrap: true,
       physics:
           NeverScrollableScrollPhysics(), // to disable GridView's scrolling
       itemBuilder: (context, index) {
-        return _buildFile(context, widget.files[index]);
+        return Foo(
+          index: index,
+          child: _buildFile(context, widget.files[index]),
+        );
       },
       itemCount: widget.files.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -280,20 +292,62 @@ class _LazyLoadingGridViewState extends State<LazyLoadingGridView> {
       ),
       padding: EdgeInsets.all(0),
     );
+
+    return Listener(
+        onPointerDown: _detectTapedItem,
+        onPointerMove: _detectTapedItem,
+        onPointerUp: _clearSelectionTracking,
+        child: gridView);
+  }
+
+  _detectTapedItem(PointerEvent event) {
+    final RenderBox box = key.currentContext.findRenderObject();
+    final result = BoxHitTestResult();
+    Offset local = box.globalToLocal(event.position);
+    if (box.hitTest(result, position: local)) {
+      for (final hit in result.path) {
+        /// temporary variable so that the [is] allows access of [index]
+        final target = hit.target;
+        // print('hit target $target and ${target is _Foo}');
+        if (target is _Foo && widget.selectedFiles.files.isNotEmpty) {
+          // print('hit target inside $target');
+          _selectIndex(target.index);
+        }
+      }
+    }
+  }
+
+  _selectIndex(int index) {
+    setState(() {
+      var file = widget.files[index];
+      if (!selectedItemWithTimestamp.containsKey(file.generatedID) ||
+          (DateTime.now().millisecondsSinceEpoch -
+                  selectedItemWithTimestamp[file.generatedID]) >
+              delayBetweenTapEventsInMilliSeconds) {
+        selectedItemWithTimestamp[file.generatedID] =
+            DateTime.now().millisecondsSinceEpoch;
+        _selectFile(file);
+      }
+    });
+  }
+
+  void _clearSelectionTracking(PointerUpEvent event) {
+    selectedItemWithTimestamp.clear();
   }
 
   Widget _buildFile(BuildContext context, File file) {
     return GestureDetector(
       onTap: () {
-        if (widget.selectedFiles.files.isNotEmpty) {
-          _selectFile(file);
-        } else {
-          _routeToDetailPage(file, context);
-        }
+        _routeToDetailPage(file, context);
       },
       onLongPress: () {
         HapticFeedback.lightImpact();
-        _selectFile(file);
+        if (widget.selectedFiles.files.isEmpty) {
+          _selectFile(file);
+          selectedItemWithTimestamp[file.generatedID] =
+              DateTime.now().millisecondsSinceEpoch +
+                  (delayBetweenTapEventsInMilliSeconds * 2);
+        }
       },
       child: Container(
         margin: const EdgeInsets.all(2.0),
@@ -332,4 +386,25 @@ class _LazyLoadingGridViewState extends State<LazyLoadingGridView> {
     ));
     routeToPage(context, page);
   }
+}
+
+// https://stackoverflow.com/a/52625182
+class Foo extends SingleChildRenderObjectWidget {
+  final int index;
+
+  Foo({Widget child, this.index, Key key}) : super(child: child, key: key);
+
+  @override
+  _Foo createRenderObject(BuildContext context) {
+    return _Foo()..index = index;
+  }
+
+  @override
+  void updateRenderObject(BuildContext context, _Foo renderObject) {
+    renderObject.index = index;
+  }
+}
+
+class _Foo extends RenderProxyBox {
+  int index;
 }
