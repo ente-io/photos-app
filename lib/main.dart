@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:background_fetch/background_fetch.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+// import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:in_app_purchase/in_app_purchase.dart';
+// import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:photos/app.dart';
@@ -20,7 +20,7 @@ import 'package:photos/services/feature_flag_service.dart';
 import 'package:photos/services/local_sync_service.dart';
 import 'package:photos/services/memories_service.dart';
 import 'package:photos/services/notification_service.dart';
-import 'package:photos/services/push_service.dart';
+// import 'package:photos/services/push_service.dart';
 import 'package:photos/services/remote_sync_service.dart';
 import 'package:photos/services/sync_service.dart';
 import 'package:photos/services/trash_sync_service.dart';
@@ -115,7 +115,7 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
   } else {
     AppLifecycleService.instance.onAppInForeground('init via: $via');
   }
-  InAppPurchaseConnection.enablePendingPurchases();
+  // InAppPurchaseConnection.enablePendingPurchases();
   CryptoUtil.init();
   await NotificationService.instance.init();
   await Network.instance.init();
@@ -130,12 +130,12 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
   await SyncService.instance.init();
   await MemoriesService.instance.init();
   await LocalSettings.instance.init();
-  if (Platform.isIOS) {
-    PushService.instance.init().then((_) {
-      FirebaseMessaging.onBackgroundMessage(
-          _firebaseMessagingBackgroundHandler);
-    });
-  }
+  // if (Platform.isIOS) {
+  //   PushService.instance.init().then((_) {
+  //     FirebaseMessaging.onBackgroundMessage(
+  //         _firebaseMessagingBackgroundHandler);
+  //   });
+  // }
   FeatureFlagService.instance.init();
   _logger.info("Initialization done");
 }
@@ -210,29 +210,29 @@ Future<void> _killBGTask([String taskId]) async {
   }
 }
 
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  bool isRunningInFG = await _isRunningInForeground(); // hb
-  bool isInForeground = AppLifecycleService.instance.isForeground;
-  if (_isProcessRunning) {
-    _logger.info(
-        "Background push received when app is alive and runningInFS: $isRunningInFG inForeground: $isInForeground");
-    if (PushService.shouldSync(message)) {
-      await _sync('firebaseBgSyncActiveProcess');
-    }
-  } else {
-    // App is dead
-    _runWithLogs(() async {
-      _logger.info("Background push received");
-      if (Platform.isIOS) {
-        _scheduleSuicide(kBGPushTimeout); // To prevent OS from punishing us
-      }
-      await _init(true, via: 'firebasePush');
-      if (PushService.shouldSync(message)) {
-        await _sync('firebaseBgSyncNoActiveProcess');
-      }
-    }, prefix: "[fbg]");
-  }
-}
+// Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+//   bool isRunningInFG = await _isRunningInForeground(); // hb
+//   bool isInForeground = AppLifecycleService.instance.isForeground;
+//   if (_isProcessRunning) {
+//     _logger.info(
+//         "Background push received when app is alive and runningInFS: $isRunningInFG inForeground: $isInForeground");
+//     if (PushService.shouldSync(message)) {
+//       await _sync('firebaseBgSyncActiveProcess');
+//     }
+//   } else {
+//     // App is dead
+//     _runWithLogs(() async {
+//       _logger.info("Background push received");
+//       if (Platform.isIOS) {
+//         _scheduleSuicide(kBGPushTimeout); // To prevent OS from punishing us
+//       }
+//       await _init(true, via: 'firebasePush');
+//       if (PushService.shouldSync(message)) {
+//         await _sync('firebaseBgSyncNoActiveProcess');
+//       }
+//     }, prefix: "[fbg]");
+//   }
+// }
 
 Future<void> _logFGHeartBeatInfo() async {
   bool isRunningInFG = await _isRunningInForeground();

@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 // import 'package:flutter/foundation.dart';
 // import 'package:flutter_inapp_purchase/flutter_inapp_purchase.dart';
-import 'package:in_app_purchase/in_app_purchase.dart';
+// import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:logging/logging.dart';
 import 'package:photos/core/configuration.dart';
 import 'package:photos/core/network.dart';
@@ -31,29 +31,29 @@ class BillingService {
   Future<BillingPlans> _future;
 
   Future<void> init() async {
-    InAppPurchaseConnection.enablePendingPurchases();
-    // if (Platform.isIOS && kDebugMode) {
-    //   await FlutterInappPurchase.instance.initConnection;
-    //   FlutterInappPurchase.instance.clearTransactionIOS();
-    // }
-    InAppPurchaseConnection.instance.purchaseUpdatedStream.listen((purchases) {
-      if (_isOnSubscriptionPage) {
-        return;
-      }
-      for (final purchase in purchases) {
-        if (purchase.status == PurchaseStatus.purchased) {
-          verifySubscription(purchase.productID,
-                  purchase.verificationData.serverVerificationData)
-              .then((response) {
-            if (response != null) {
-              InAppPurchaseConnection.instance.completePurchase(purchase);
-            }
-          });
-        } else if (Platform.isIOS && purchase.pendingCompletePurchase) {
-          InAppPurchaseConnection.instance.completePurchase(purchase);
-        }
-      }
-    });
+    // InAppPurchaseConnection.enablePendingPurchases();
+    // // if (Platform.isIOS && kDebugMode) {
+    // //   await FlutterInappPurchase.instance.initConnection;
+    // //   FlutterInappPurchase.instance.clearTransactionIOS();
+    // // }
+    // InAppPurchaseConnection.instance.purchaseUpdatedStream.listen((purchases) {
+    //   if (_isOnSubscriptionPage) {
+    //     return;
+    //   }
+    //   for (final purchase in purchases) {
+    //     if (purchase.status == PurchaseStatus.purchased) {
+    //       verifySubscription(purchase.productID,
+    //               purchase.verificationData.serverVerificationData)
+    //           .then((response) {
+    //         if (response != null) {
+    //           InAppPurchaseConnection.instance.completePurchase(purchase);
+    //         }
+    //       });
+    //     } else if (Platform.isIOS && purchase.pendingCompletePurchase) {
+    //       InAppPurchaseConnection.instance.completePurchase(purchase);
+    //     }
+    //   }
+    // });
   }
 
   void clearCache() {

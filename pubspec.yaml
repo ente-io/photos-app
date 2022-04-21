@@ -38,8 +38,8 @@ dependencies:
   expansion_tile_card: ^2.0.0
   extended_image: ^6.0.1
   fast_base58: ^0.2.1
-  firebase_core: ^1.10.0
-  firebase_messaging: ^11.1.0
+#  firebase_core: ^1.10.0 #f-droid
+#  firebase_messaging: ^11.1.0 #f-droid
   flutter:
     sdk: flutter
   flutter_localizations:
@@ -63,7 +63,7 @@ dependencies:
   image: ^3.0.2
   image_editor: ^1.0.0
   implicitly_animated_reorderable_list: ^0.4.0
-  in_app_purchase: ^0.5.2
+#  in_app_purchase: ^0.5.2 #f-droid
   intl: ^0.17.0
   like_button: ^2.0.2
   loading_animations: ^2.1.0
