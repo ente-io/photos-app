@@ -2,15 +2,12 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:background_fetch/background_fetch.dart';
-// import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 // import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:photos/app.dart';
 import 'package:photos/core/configuration.dart';
-import 'package:photos/core/constants.dart';
 import 'package:photos/core/network.dart';
 import 'package:photos/db/upload_locks_db.dart';
 import 'package:photos/services/app_lifecycle_service.dart';
@@ -158,7 +155,7 @@ Future _runWithLogs(Function() function, {String prefix = ""}) async {
     body: function,
     logDirPath: (await getTemporaryDirectory()).path + "/logs",
     maxLogFiles: 5,
-    sentryDsn: kDebugMode ? kSentryDebugDSN : kSentryDSN,
+    sentryDsn: null,
     enableInDebugMode: true,
     prefix: prefix,
   ));
