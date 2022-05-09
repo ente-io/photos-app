@@ -170,7 +170,7 @@ class SuperLogging {
 
     if (config.body == null) return;
 
-    if (enable) {
+    if (enable && sentryIsEnabled) {
       await SentryFlutter.init(
         (options) {
           options.dsn = config!.sentryDsn;
