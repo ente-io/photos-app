@@ -3,11 +3,11 @@ import 'dart:io';
 
 import 'package:background_fetch/background_fetch.dart';
 import 'package:flutter/material.dart';
-// import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:photos/app.dart';
 import 'package:photos/core/configuration.dart';
+import 'package:photos/core/error-reporting/super_logging.dart';
 import 'package:photos/core/network.dart';
 import 'package:photos/db/upload_locks_db.dart';
 import 'package:photos/services/app_lifecycle_service.dart';
@@ -17,7 +17,6 @@ import 'package:photos/services/feature_flag_service.dart';
 import 'package:photos/services/local_sync_service.dart';
 import 'package:photos/services/memories_service.dart';
 import 'package:photos/services/notification_service.dart';
-// import 'package:photos/services/push_service.dart';
 import 'package:photos/services/remote_sync_service.dart';
 import 'package:photos/services/sync_service.dart';
 import 'package:photos/services/trash_sync_service.dart';
@@ -28,7 +27,6 @@ import 'package:photos/utils/crypto_util.dart';
 import 'package:photos/utils/file_uploader.dart';
 import 'package:photos/utils/local_settings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:super_logging/super_logging.dart';
 
 final _logger = Logger("main");
 
@@ -156,6 +154,7 @@ Future _runWithLogs(Function() function, {String prefix = ""}) async {
     logDirPath: (await getTemporaryDirectory()).path + "/logs",
     maxLogFiles: 5,
     sentryDsn: null,
+    tunnel: kSentryTunnel,
     enableInDebugMode: true,
     prefix: prefix,
   ));

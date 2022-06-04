@@ -7,6 +7,7 @@ const String kSentryDSN =
     "https://2235e5c99219488ea93da34b9ac1cb68@sentry.ente.io/4";
 const String kSentryDebugDSN =
     "https://ca5e686dd7f149d9bf94e620564cceba@sentry.ente.io/3";
+const String kSentryTunnel = "https://sentry-reporter.ente.io";
 const String kRoadmapURL = "https://roadmap.ente.io";
 const int kMicroSecondsInDay = 86400000000;
 const int kAndroid11SDKINT = 30;
@@ -27,3 +28,5 @@ const kMnemonicKeyWordCount = 24;
 
 // https://stackoverflow.com/a/61162219
 const kDragSensitivity = 8;
+
+const kSupportEmail = 'support@ente.io';
