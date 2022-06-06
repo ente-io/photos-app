@@ -1,0 +1,3 @@
+- Fixed crash while swiping through memories
+- Optimized trash sync performance
+- Fix bug in deleting files from device
