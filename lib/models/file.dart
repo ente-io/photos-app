@@ -65,7 +65,8 @@ class File {
     file.localID = asset.id;
     file.title = asset.title;
     file.deviceFolder = pathName;
-    file.location = Location(asset.latitude, asset.longitude);
+    var latLng = await asset.latlngAsync();
+    file.location = Location(latLng.longitude, latLng.latitude);
     file.fileType = _fileTypeFromAsset(asset);
     file.creationTime = asset.createDateTime.microsecondsSinceEpoch;
     if (file.creationTime == 0) {
