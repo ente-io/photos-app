@@ -30,3 +30,11 @@ const kMnemonicKeyWordCount = 24;
 const kDragSensitivity = 8;
 
 const kSupportEmail = 'support@ente.io';
+
+// Default values for various feature flags
+class FFDefault {
+  static const bool enableStripe = true;
+  static const bool disableUrlSharing = false;
+  static const bool disableCFWorker = false;
+  static const bool enableMissingLocationMigration = false;
+}
