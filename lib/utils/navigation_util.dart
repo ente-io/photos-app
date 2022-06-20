@@ -1,9 +1,21 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 Future<T> routeToPage<T extends Object>(BuildContext context, Widget page) {
-  return Navigator.of(context).push(
-    _buildPageRoute(page),
-  );
+  if (Platform.isAndroid) {
+    return Navigator.of(context).push(
+      _buildPageRoute(page),
+    );
+  } else {
+    return Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (BuildContext context) {
+          return page;
+        },
+      ),
+    );
+  }
 }
 
 void replacePage(BuildContext context, Widget page) {
@@ -14,12 +26,19 @@ void replacePage(BuildContext context, Widget page) {
 
 PageRouteBuilder<T> _buildPageRoute<T extends Object>(Widget page) {
   return PageRouteBuilder(
-    pageBuilder: (BuildContext context, Animation<double> animation,
-        Animation<double> secondaryAnimation) {
+    pageBuilder: (
+      BuildContext context,
+      Animation<double> animation,
+      Animation<double> secondaryAnimation,
+    ) {
       return page;
     },
-    transitionsBuilder: (BuildContext context, Animation<double> animation,
-        Animation<double> secondaryAnimation, Widget child) {
+    transitionsBuilder: (
+      BuildContext context,
+      Animation<double> animation,
+      Animation<double> secondaryAnimation,
+      Widget child,
+    ) {
       return Align(
         child: FadeTransition(
           opacity: animation,

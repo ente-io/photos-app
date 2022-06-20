@@ -22,6 +22,7 @@ import 'package:photos/events/subscription_purchased_event.dart';
 import 'package:photos/main.dart';
 import 'package:photos/models/encryption_result.dart';
 import 'package:photos/models/file.dart';
+import 'package:photos/models/file_type.dart';
 import 'package:photos/models/upload_url.dart';
 import 'package:photos/services/collections_service.dart';
 import 'package:photos/services/local_sync_service.dart';
@@ -33,6 +34,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class FileUploader {
   static const kMaximumConcurrentUploads = 4;
+  static const kMaximumConcurrentVideoUploads = 2;
   static const kMaximumThumbnailCompressionAttempts = 2;
   static const kMaximumUploadAttempts = 4;
   static const kBlockedUploadsPollFrequency = Duration(seconds: 2);
@@ -49,7 +51,9 @@ class FileUploader {
   // Maintains the count of files in the current upload session.
   // Upload session is the period between the first entry into the _queue and last entry out of the _queue
   int _totalCountInUploadSession = 0;
-  int _currentlyUploading = 0;
+  // _uploadCounter indicates number of uploads which are currently in progress
+  int _uploadCounter = 0;
+  int _videoUploadCounter = 0;
   ProcessType _processType;
   bool _isBackground;
   SharedPreferences _prefs;
@@ -68,7 +72,9 @@ class FileUploader {
         isBackground ? ProcessType.background : ProcessType.foreground;
     final currentTime = DateTime.now().microsecondsSinceEpoch;
     await _uploadLocks.releaseLocksAcquiredByOwnerBefore(
-        _processType.toString(), currentTime);
+      _processType.toString(),
+      currentTime,
+    );
     await _uploadLocks
         .releaseAllLocksAcquiredBefore(currentTime - kSafeBufferForLockExpiry);
     if (!isBackground) {
@@ -77,7 +83,9 @@ class FileUploader {
           (currentTime - kBGTaskDeathTimeout);
       if (isBGTaskDead) {
         await _uploadLocks.releaseLocksAcquiredByOwnerBefore(
-            ProcessType.background.toString(), currentTime);
+          ProcessType.background.toString(),
+          currentTime,
+        );
         _logger.info("BG task was found dead, cleared all locks");
       }
       _pollBackgroundUploadStatus();
@@ -85,14 +93,17 @@ class FileUploader {
     Bus.instance.on<LocalPhotosUpdatedEvent>().listen((event) {
       if (event.type == EventType.deletedFromDevice ||
           event.type == EventType.deletedFromEverywhere) {
-        removeFromQueueWhere((file) {
-          for (final updatedFile in event.updatedFiles) {
-            if (file.generatedID == updatedFile.generatedID) {
-              return true;
+        removeFromQueueWhere(
+          (file) {
+            for (final updatedFile in event.updatedFiles) {
+              if (file.generatedID == updatedFile.generatedID) {
+                return true;
+              }
             }
-          }
-          return false;
-        }, InvalidFileError("File already deleted"));
+            return false;
+          },
+          InvalidFileError("File already deleted"),
+        );
       }
     });
   }
@@ -126,10 +137,12 @@ class FileUploader {
   }
 
   Future<File> forceUpload(File file, int collectionID) async {
-    _logger.info("Force uploading " +
-        file.toString() +
-        " into collection " +
-        collectionID.toString());
+    _logger.info(
+      "Force uploading " +
+          file.toString() +
+          " into collection " +
+          collectionID.toString(),
+    );
     _totalCountInUploadSession++;
     // If the file hasn't been queued yet, ez.
     if (!_queue.containsKey(file.localID)) {
@@ -164,8 +177,10 @@ class FileUploader {
       item = _queue[file.localID];
       item.status = UploadStatus.in_progress;
       final uploadedFile = await _encryptAndUploadFileToCollection(
-          file, collectionID,
-          forcedUpload: true);
+        file,
+        collectionID,
+        forcedUpload: true,
+      );
       if (item.collectionID == collectionID) {
         return uploadedFile;
       } else {
@@ -217,30 +232,57 @@ class FileUploader {
       _totalCountInUploadSession = 0;
       return;
     }
-    if (_currentlyUploading < kMaximumConcurrentUploads) {
-      final firstPendingEntry = _queue.entries
-          .firstWhere((entry) => entry.value.status == UploadStatus.not_started,
-              orElse: () => null)
+    if (_uploadCounter < kMaximumConcurrentUploads) {
+      var pendingEntry = _queue.entries
+          .firstWhere(
+            (entry) => entry.value.status == UploadStatus.not_started,
+            orElse: () => null,
+          )
           ?.value;
-      if (firstPendingEntry != null) {
-        firstPendingEntry.status = UploadStatus.in_progress;
+
+      if (pendingEntry != null &&
+          pendingEntry.file.fileType == FileType.video &&
+          _videoUploadCounter >= kMaximumConcurrentVideoUploads) {
+        // check if there's any non-video entry which can be queued for upload
+        pendingEntry = _queue.entries
+            .firstWhere(
+              (entry) =>
+                  entry.value.status == UploadStatus.not_started &&
+                  entry.value.file.fileType != FileType.video,
+              orElse: () => null,
+            )
+            ?.value;
+      }
+      if (pendingEntry != null) {
+        pendingEntry.status = UploadStatus.in_progress;
         _encryptAndUploadFileToCollection(
-            firstPendingEntry.file, firstPendingEntry.collectionID);
+          pendingEntry.file,
+          pendingEntry.collectionID,
+        );
       }
     }
   }
 
-  Future<File> _encryptAndUploadFileToCollection(File file, int collectionID,
-      {bool forcedUpload = false}) async {
-    _currentlyUploading++;
+  Future<File> _encryptAndUploadFileToCollection(
+    File file,
+    int collectionID, {
+    bool forcedUpload = false,
+  }) async {
+    _uploadCounter++;
+    if (file.fileType == FileType.video) {
+      _videoUploadCounter++;
+    }
     final localID = file.localID;
     try {
-      final uploadedFile = await _tryToUpload(file, collectionID, forcedUpload)
-          .timeout(kFileUploadTimeout, onTimeout: () {
-        final message = "Upload timed out for file " + file.toString();
-        _logger.severe(message);
-        throw TimeoutException(message);
-      });
+      final uploadedFile =
+          await _tryToUpload(file, collectionID, forcedUpload).timeout(
+        kFileUploadTimeout,
+        onTimeout: () {
+          final message = "Upload timed out for file " + file.toString();
+          _logger.severe(message);
+          throw TimeoutException(message);
+        },
+      );
       _queue.remove(localID).completer.complete(uploadedFile);
       return uploadedFile;
     } catch (e) {
@@ -252,13 +294,19 @@ class FileUploader {
         return null;
       }
     } finally {
-      _currentlyUploading--;
+      _uploadCounter--;
+      if (file.fileType == FileType.video) {
+        _videoUploadCounter--;
+      }
       _pollQueue();
     }
   }
 
   Future<File> _tryToUpload(
-      File file, int collectionID, bool forcedUpload) async {
+    File file,
+    int collectionID,
+    bool forcedUpload,
+  ) async {
     final connectivityResult = await (Connectivity().checkConnectivity());
     var canUploadUnderCurrentNetworkConditions =
         (connectivityResult == ConnectivityResult.wifi ||
@@ -298,10 +346,12 @@ class FileUploader {
     MediaUploadData mediaUploadData;
 
     try {
-      _logger.info("Trying to upload " +
-          file.toString() +
-          ", isForced: " +
-          forcedUpload.toString());
+      _logger.info(
+        "Trying to upload " +
+            file.toString() +
+            ", isForced: " +
+            forcedUpload.toString(),
+      );
       try {
         mediaUploadData = await getUploadDataFromEnteFile(file);
       } catch (e) {
@@ -351,7 +401,9 @@ class FileUploader {
       final metadata =
           await file.getMetadataForUpload(mediaUploadData.sourceFile);
       final encryptedMetadataData = await CryptoUtil.encryptChaCha(
-          utf8.encode(jsonEncode(metadata)), fileAttributes.key);
+        utf8.encode(jsonEncode(metadata)),
+        fileAttributes.key,
+      );
       final fileDecryptionHeader = Sodium.bin2base64(fileAttributes.header);
       final thumbnailDecryptionHeader =
           Sodium.bin2base64(encryptedThumbnailData.header);
@@ -438,7 +490,9 @@ class FileUploader {
   Future _onInvalidFileError(File file, InvalidFileError e) async {
     String ext = file.title == null ? "no title" : extension(file.title);
     _logger.severe(
-        "Invalid file: (ext: $ext) encountered: " + file.toString(), e);
+      "Invalid file: (ext: $ext) encountered: " + file.toString(),
+      e,
+    );
     await FilesDB.instance.deleteLocalFile(file);
     await LocalSyncService.instance.trackInvalidFile(file);
     throw e;
@@ -483,7 +537,8 @@ class FileUploader {
       final response = await _dio.post(
         Configuration.instance.getHttpEndpoint() + "/files",
         options: Options(
-            headers: {"X-Auth-Token": Configuration.instance.getToken()}),
+          headers: {"X-Auth-Token": Configuration.instance.getToken()},
+        ),
         data: request,
       );
       final data = response.data;
@@ -559,7 +614,8 @@ class FileUploader {
       final response = await _dio.put(
         Configuration.instance.getHttpEndpoint() + "/files/update",
         options: Options(
-            headers: {"X-Auth-Token": Configuration.instance.getToken()}),
+          headers: {"X-Auth-Token": Configuration.instance.getToken()},
+        ),
         data: request,
       );
       final data = response.data;
@@ -610,7 +666,8 @@ class FileUploader {
             "count": min(42, 2 * _queue.length), // m4gic number
           },
           options: Options(
-              headers: {"X-Auth-Token": Configuration.instance.getToken()}),
+            headers: {"X-Auth-Token": Configuration.instance.getToken()},
+          ),
         );
         final urls = (response.data["urls"] as List)
             .map((e) => UploadURL.fromMap(e))
@@ -650,10 +707,12 @@ class FileUploader {
     int attempt = 1,
   }) async {
     final fileSize = contentLength ?? await file.length();
-    _logger.info("Putting object for " +
-        file.toString() +
-        " of size: " +
-        fileSize.toString());
+    _logger.info(
+      "Putting object for " +
+          file.toString() +
+          " of size: " +
+          fileSize.toString(),
+    );
     final startTime = DateTime.now().millisecondsSinceEpoch;
     try {
       await _dio.put(
@@ -665,26 +724,38 @@ class FileUploader {
           },
         ),
       );
-      _logger.info("Upload speed : " +
-          (fileSize / (DateTime.now().millisecondsSinceEpoch - startTime))
-              .toString() +
-          " kilo bytes per second");
+      _logger.info(
+        "Upload speed : " +
+            (fileSize / (DateTime.now().millisecondsSinceEpoch - startTime))
+                .toString() +
+            " kilo bytes per second",
+      );
 
       return uploadURL.objectKey;
     } on DioError catch (e) {
       if (e.message.startsWith(
-              "HttpException: Content size exceeds specified contentLength.") &&
+            "HttpException: Content size exceeds specified contentLength.",
+          ) &&
           attempt == 1) {
-        return _putFile(uploadURL, file,
-            contentLength: (await file.readAsBytes()).length, attempt: 2);
+        return _putFile(
+          uploadURL,
+          file,
+          contentLength: (await file.readAsBytes()).length,
+          attempt: 2,
+        );
       } else if (attempt < kMaximumUploadAttempts) {
         final newUploadURL = await _getUploadURL();
-        return _putFile(newUploadURL, file,
-            contentLength: (await file.readAsBytes()).length,
-            attempt: attempt + 1);
+        return _putFile(
+          newUploadURL,
+          file,
+          contentLength: (await file.readAsBytes()).length,
+          attempt: attempt + 1,
+        );
       } else {
         _logger.info(
-            "Upload failed for file with size " + fileSize.toString(), e);
+          "Upload failed for file with size " + fileSize.toString(),
+          e,
+        );
         rethrow;
       }
     }
@@ -697,7 +768,9 @@ class FileUploader {
     for (final upload in blockedUploads) {
       final file = upload.value.file;
       final isStillLocked = await _uploadLocks.isLocked(
-          file.localID, ProcessType.background.toString());
+        file.localID,
+        ProcessType.background.toString(),
+      );
       if (!isStillLocked) {
         final completer = _queue.remove(upload.key).completer;
         final dbFile =

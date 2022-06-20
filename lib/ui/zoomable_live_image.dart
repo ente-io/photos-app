@@ -72,15 +72,18 @@ class _ZoomableLiveImageState extends State<ZoomableLiveImage>
     if (_showVideo && _videoPlayerController != null) {
       content = _getVideoPlayer();
     } else {
-      content = ZoomableImage(_file,
-          tagPrefix: widget.tagPrefix,
-          shouldDisableScroll: widget.shouldDisableScroll,
-          backgroundDecoration: widget.backgroundDecoration);
+      content = ZoomableImage(
+        _file,
+        tagPrefix: widget.tagPrefix,
+        shouldDisableScroll: widget.shouldDisableScroll,
+        backgroundDecoration: widget.backgroundDecoration,
+      );
     }
     return GestureDetector(
-        onLongPressStart: (_) => {_onLongPressEvent(true)},
-        onLongPressEnd: (_) => {_onLongPressEvent(false)},
-        child: content);
+      onLongPressStart: (_) => {_onLongPressEvent(true)},
+      onLongPressEnd: (_) => {_onLongPressEvent(false)},
+      child: content,
+    );
   }
 
   @override
@@ -98,14 +101,18 @@ class _ZoomableLiveImageState extends State<ZoomableLiveImage>
   Widget _getVideoPlayer() {
     _videoPlayerController.seekTo(Duration.zero);
     _chewieController = ChewieController(
-        videoPlayerController: _videoPlayerController,
-        aspectRatio: _videoPlayerController.value.aspectRatio,
-        autoPlay: true,
-        autoInitialize: true,
-        looping: true,
-        allowFullScreen: false,
-        showControls: false);
-    return Chewie(controller: _chewieController);
+      videoPlayerController: _videoPlayerController,
+      aspectRatio: _videoPlayerController.value.aspectRatio,
+      autoPlay: true,
+      autoInitialize: true,
+      looping: true,
+      allowFullScreen: false,
+      showControls: false,
+    );
+    return Container(
+      child: Chewie(controller: _chewieController),
+      color: Colors.black, // same for both theme
+    );
   }
 
   Future<void> _loadLiveVideo() async {
@@ -115,7 +122,7 @@ class _ZoomableLiveImageState extends State<ZoomableLiveImage>
     }
     _isLoadingVideoPlayer = true;
     if (_file.isRemoteFile() && !(await isFileCached(_file, liveVideo: true))) {
-      showToast("downloading...", toastLength: Toast.LENGTH_LONG);
+      showToast(context, "Downloading...", toastLength: Toast.LENGTH_LONG);
     }
 
     var videoFile = await getFile(widget.file, liveVideo: true)
@@ -138,7 +145,7 @@ class _ZoomableLiveImageState extends State<ZoomableLiveImage>
     if (videoFile != null && videoFile.existsSync()) {
       _setVideoPlayerController(file: videoFile);
     } else {
-      showShortToast("download failed");
+      showShortToast(context, "Download failed");
     }
     _isLoadingVideoPlayer = false;
   }
@@ -159,7 +166,7 @@ class _ZoomableLiveImageState extends State<ZoomableLiveImage>
     var _preferences = await SharedPreferences.getInstance();
     int promptTillNow = _preferences.getInt(kLivePhotoToastCounterKey) ?? 0;
     if (promptTillNow < kMaxLivePhotoToastCount) {
-      showToast("press and hold to play video");
+      showToast(context, "Press and hold to play video");
       _preferences.setInt(kLivePhotoToastCounterKey, promptTillNow + 1);
     }
   }

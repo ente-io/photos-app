@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:background_fetch/background_fetch.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
@@ -33,6 +35,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 final _logger = Logger("main");
 
 bool _isProcessRunning = false;
+AdaptiveThemeMode _savedThemeMode;
 const kLastBGTaskHeartBeatTime = "bg_task_hb_time";
 const kLastFGTaskHeartBeatTime = "fg_task_hb_time";
 const kHeartBeatFrequency = Duration(seconds: 1);
@@ -52,12 +55,15 @@ Future<void> _runInForeground() async {
     _logger.info("Starting app in foreground");
     await _init(false, via: 'mainMethod');
     _scheduleFGSync('appStart in FG');
-    runApp(AppLock(
-      builder: (args) => EnteApp(_runBackgroundTask, _killBGTask),
-      lockScreen: LockScreen(),
-      enabled: Configuration.instance.shouldShowLockScreen(),
-      themeData: themeData,
-    ));
+    runApp(
+      AppLock(
+        builder: (args) => EnteApp(_runBackgroundTask, _killBGTask),
+        lockScreen: LockScreen(),
+        enabled: Configuration.instance.shouldShowLockScreen(),
+        lightTheme: lightThemeData,
+        darkTheme: darkThemeData,
+      ),
+    );
   });
 }
 
@@ -67,10 +73,13 @@ Future<void> _runBackgroundTask(String taskId) async {
     await _sync('bgTaskActiveProcess');
     BackgroundFetch.finish(taskId);
   } else {
-    _runWithLogs(() async {
-      _logger.info("run background task");
-      _runInBackground(taskId);
-    }, prefix: "[bg]");
+    _runWithLogs(
+      () async {
+        _logger.info("run background task");
+        _runInBackground(taskId);
+      },
+      prefix: "[bg]",
+    );
   }
 }
 
@@ -106,6 +115,7 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
   _isProcessRunning = true;
   _logger.info("Initializing...  inBG =$isBackground via: $via");
   await _logFGHeartBeatInfo();
+  _savedThemeMode = await AdaptiveTheme.getThemeMode();
   _scheduleHeartBeat(isBackground);
   if (isBackground) {
     AppLifecycleService.instance.onAppInBackground('init via: $via');
@@ -127,12 +137,6 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
   await SyncService.instance.init();
   await MemoriesService.instance.init();
   await LocalSettings.instance.init();
-  // if (Platform.isIOS) {
-  //   PushService.instance.init().then((_) {
-  //     FirebaseMessaging.onBackgroundMessage(
-  //         _firebaseMessagingBackgroundHandler);
-  //   });
-  // }
   await FileMigrationService.instance.init();
   FeatureFlagService.instance.init();
   _logger.info("Initialization done");
@@ -152,22 +156,25 @@ Future<void> _sync(String caller) async {
 }
 
 Future _runWithLogs(Function() function, {String prefix = ""}) async {
-  await SuperLogging.main(LogConfig(
-    body: function,
-    logDirPath: (await getTemporaryDirectory()).path + "/logs",
-    maxLogFiles: 5,
-    sentryDsn: null,
-    tunnel: kSentryTunnel,
-    enableInDebugMode: true,
-    prefix: prefix,
-  ));
+  await SuperLogging.main(
+    LogConfig(
+      body: function,
+      logDirPath: (await getTemporaryDirectory()).path + "/logs",
+      maxLogFiles: 5,
+      sentryDsn: kDebugMode ? kSentryDebugDSN : kSentryDSN,
+      tunnel: kSentryTunnel,
+      enableInDebugMode: true,
+      prefix: prefix,
+    ),
+  );
 }
 
 Future<void> _scheduleHeartBeat(bool isBackground) async {
   final prefs = await SharedPreferences.getInstance();
   await prefs.setInt(
-      isBackground ? kLastBGTaskHeartBeatTime : kLastFGTaskHeartBeatTime,
-      DateTime.now().microsecondsSinceEpoch);
+    isBackground ? kLastBGTaskHeartBeatTime : kLastFGTaskHeartBeatTime,
+    DateTime.now().microsecondsSinceEpoch,
+  );
   Future.delayed(kHeartBeatFrequency, () async {
     _scheduleHeartBeat(isBackground);
   });
@@ -201,37 +208,15 @@ Future<bool> _isRunningInForeground() async {
 
 Future<void> _killBGTask([String taskId]) async {
   await UploadLocksDB.instance.releaseLocksAcquiredByOwnerBefore(
-      ProcessType.background.toString(), DateTime.now().microsecondsSinceEpoch);
+    ProcessType.background.toString(),
+    DateTime.now().microsecondsSinceEpoch,
+  );
   final prefs = await SharedPreferences.getInstance();
   prefs.remove(kLastBGTaskHeartBeatTime);
   if (taskId != null) {
     BackgroundFetch.finish(taskId);
   }
 }
-
-// Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-//   bool isRunningInFG = await _isRunningInForeground(); // hb
-//   bool isInForeground = AppLifecycleService.instance.isForeground;
-//   if (_isProcessRunning) {
-//     _logger.info(
-//         "Background push received when app is alive and runningInFS: $isRunningInFG inForeground: $isInForeground");
-//     if (PushService.shouldSync(message)) {
-//       await _sync('firebaseBgSyncActiveProcess');
-//     }
-//   } else {
-//     // App is dead
-//     _runWithLogs(() async {
-//       _logger.info("Background push received");
-//       if (Platform.isIOS) {
-//         _scheduleSuicide(kBGPushTimeout); // To prevent OS from punishing us
-//       }
-//       await _init(true, via: 'firebasePush');
-//       if (PushService.shouldSync(message)) {
-//         await _sync('firebaseBgSyncNoActiveProcess');
-//       }
-//     }, prefix: "[fbg]");
-//   }
-// }
 
 Future<void> _logFGHeartBeatInfo() async {
   bool isRunningInFG = await _isRunningInForeground();

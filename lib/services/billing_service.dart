@@ -11,11 +11,15 @@ import 'package:photos/models/billing_plan.dart';
 import 'package:photos/models/subscription.dart';
 
 const kWebPaymentRedirectUrl = "https://payments.ente.io/frameRedirect";
-const kWebPaymentBaseEndpoint = String.fromEnvironment("web-payment",
-    defaultValue: "https://payments.ente.io");
+const kWebPaymentBaseEndpoint = String.fromEnvironment(
+  "web-payment",
+  defaultValue: "https://payments.ente.io",
+);
 
-const kFamilyPlanManagementUrl = String.fromEnvironment("web-family",
-    defaultValue: "https://family.ente.io");
+const kFamilyPlanManagementUrl = String.fromEnvironment(
+  "web-family",
+  defaultValue: "https://family.ente.io",
+);
 
 class BillingService {
   BillingService._privateConstructor();
@@ -31,29 +35,7 @@ class BillingService {
   Future<BillingPlans> _future;
 
   Future<void> init() async {
-    // InAppPurchaseConnection.enablePendingPurchases();
-    // // if (Platform.isIOS && kDebugMode) {
-    // //   await FlutterInappPurchase.instance.initConnection;
-    // //   FlutterInappPurchase.instance.clearTransactionIOS();
-    // // }
-    // InAppPurchaseConnection.instance.purchaseUpdatedStream.listen((purchases) {
-    //   if (_isOnSubscriptionPage) {
-    //     return;
-    //   }
-    //   for (final purchase in purchases) {
-    //     if (purchase.status == PurchaseStatus.purchased) {
-    //       verifySubscription(purchase.productID,
-    //               purchase.verificationData.serverVerificationData)
-    //           .then((response) {
-    //         if (response != null) {
-    //           InAppPurchaseConnection.instance.completePurchase(purchase);
-    //         }
-    //       });
-    //     } else if (Platform.isIOS && purchase.pendingCompletePurchase) {
-    //       InAppPurchaseConnection.instance.completePurchase(purchase);
-    //     }
-    //   }
-    // });
+    // Do nothing
   }
 
   void clearCache() {
@@ -166,8 +148,9 @@ class BillingService {
     }
   }
 
-  Future<String> getStripeCustomerPortalUrl(
-      {String endpoint = kWebPaymentRedirectUrl}) async {
+  Future<String> getStripeCustomerPortalUrl({
+    String endpoint = kWebPaymentRedirectUrl,
+  }) async {
     try {
       final response = await _dio.get(
         _config.getHttpEndpoint() + "/billing/stripe/customer-portal",

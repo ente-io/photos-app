@@ -26,22 +26,26 @@ class BillingQuestionsWidget extends StatelessWidget {
       builder: (BuildContext context, AsyncSnapshot snapshot) {
         if (snapshot.hasData) {
           final faqs = <Widget>[];
-          faqs.add(Padding(
-            padding: const EdgeInsets.all(24),
-            child: Text(
-              "faqs",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+          faqs.add(
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                "FAQs",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ));
+          );
           for (final faq in snapshot.data) {
             faqs.add(FaqWidget(faq: faq));
           }
-          faqs.add(Padding(
-            padding: EdgeInsets.all(16),
-          ));
+          faqs.add(
+            Padding(
+              padding: EdgeInsets.all(16),
+            ),
+          );
           return SingleChildScrollView(
             child: Column(
               children: faqs,
@@ -65,21 +69,29 @@ class FaqWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ExpansionTileCard(
-      title: Text(faq.q),
-      expandedTextColor: Theme.of(context).buttonColor,
-      baseColor: Theme.of(context).cardColor,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 16, right: 16),
-          child: Text(
-            faq.a,
-            style: TextStyle(
-              height: 1.5,
+    return Padding(
+      padding: EdgeInsets.all(2),
+      child: ExpansionTileCard(
+        elevation: 0,
+        title: Text(faq.q),
+        expandedTextColor: Theme.of(context).buttonColor,
+        baseColor: Theme.of(context).cardColor,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(
+              left: 16,
+              right: 16,
+              bottom: 12,
             ),
-          ),
-        )
-      ],
+            child: Text(
+              faq.a,
+              style: TextStyle(
+                height: 1.5,
+              ),
+            ),
+          )
+        ],
+      ),
     );
   }
 }
