@@ -173,7 +173,7 @@ class Configuration {
     final encryptedKeyData =
         CryptoUtil.encryptSync(masterKey, derivedKeyResult.key);
 
-    // Generate a puoblic-private keypair and encrypt the latter
+    // Generate a public-private keypair and encrypt the latter
     final keyPair = await CryptoUtil.generateKeyPair();
     final encryptedSecretKeyData =
         CryptoUtil.encryptSync(keyPair.sk, masterKey);
