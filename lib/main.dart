@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:adaptive_theme/adaptive_theme.dart';
@@ -137,12 +136,6 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
   await SyncService.instance.init();
   await MemoriesService.instance.init();
   await LocalSettings.instance.init();
-  // if (Platform.isIOS) {
-  //   PushService.instance.init().then((_) {
-  //     FirebaseMessaging.onBackgroundMessage(
-  //         _firebaseMessagingBackgroundHandler);
-  //   });
-  // }
   await FileMigrationService.instance.init();
   FeatureFlagService.instance.init();
   _logger.info("Initialization done");
