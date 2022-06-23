@@ -1,6 +1,8 @@
+import 'package:expandable/expandable.dart';
 import 'package:flutter/material.dart';
 import 'package:photos/services/update_service.dart';
 import 'package:photos/ui/app_update_dialog.dart';
+import 'package:photos/ui/settings/common_settings.dart';
 import 'package:photos/ui/settings/settings_section_title.dart';
 import 'package:photos/ui/settings/settings_text_item.dart';
 import 'package:photos/ui/web_page.dart';
@@ -13,24 +15,31 @@ class InfoSectionWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return ExpandablePanel(
+      header: SettingsSectionTitle("About"),
+      collapsed: Container(),
+      expanded: _getSectionOptions(context),
+      theme: getExpandableTheme(context),
+    );
+  }
+
+  Widget _getSectionOptions(BuildContext context) {
     return Column(
       children: [
-        SettingsSectionTitle("about"),
-        Padding(padding: EdgeInsets.all(4)),
         GestureDetector(
           behavior: HitTestBehavior.translucent,
           onTap: () async {
             Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (BuildContext context) {
-                  return WebPage("faq", "https://ente.io/faq");
+                  return WebPage("FAQ", "https://ente.io/faq");
                 },
               ),
             );
           },
-          child: SettingsTextItem(text: "faq", icon: Icons.navigate_next),
+          child: SettingsTextItem(text: "FAQ", icon: Icons.navigate_next),
         ),
-        Divider(height: 4),
+        sectionOptionDivider,
         GestureDetector(
           behavior: HitTestBehavior.translucent,
           onTap: () {
@@ -42,9 +51,9 @@ class InfoSectionWidget extends StatelessWidget {
               ),
             );
           },
-          child: SettingsTextItem(text: "terms", icon: Icons.navigate_next),
+          child: SettingsTextItem(text: "Terms", icon: Icons.navigate_next),
         ),
-        Divider(height: 4),
+        sectionOptionDivider,
         GestureDetector(
           behavior: HitTestBehavior.translucent,
           onTap: () {
@@ -56,26 +65,26 @@ class InfoSectionWidget extends StatelessWidget {
               ),
             );
           },
-          child: SettingsTextItem(text: "privacy", icon: Icons.navigate_next),
+          child: SettingsTextItem(text: "Privacy", icon: Icons.navigate_next),
         ),
-        Divider(height: 4),
+        sectionOptionDivider,
         GestureDetector(
           behavior: HitTestBehavior.translucent,
           onTap: () async {
-            launch("https://github.com/ente-io/frame");
+            launchUrl(Uri.parse("https://github.com/ente-io/frame"));
           },
           child:
-              SettingsTextItem(text: "source code", icon: Icons.navigate_next),
+              SettingsTextItem(text: "Source code", icon: Icons.navigate_next),
         ),
+        sectionOptionDivider,
         UpdateService.instance.isIndependent()
             ? Column(
                 children: [
-                  Divider(height: 4),
                   GestureDetector(
                     behavior: HitTestBehavior.translucent,
                     onTap: () async {
                       final dialog =
-                          createProgressDialog(context, "checking...");
+                          createProgressDialog(context, "Checking...");
                       await dialog.show();
                       final shouldUpdate =
                           await UpdateService.instance.shouldUpdate();
@@ -85,20 +94,23 @@ class InfoSectionWidget extends StatelessWidget {
                           context: context,
                           builder: (BuildContext context) {
                             return AppUpdateDialog(
-                                UpdateService.instance.getLatestVersionInfo());
+                              UpdateService.instance.getLatestVersionInfo(),
+                            );
                           },
                           barrierColor: Colors.black.withOpacity(0.85),
                         );
                       } else {
-                        showToast("you are on the latest version");
+                        showToast(context, "You are on the latest version");
                       }
                     },
                     child: SettingsTextItem(
-                        text: "check for updates", icon: Icons.navigate_next),
+                      text: "Check for updates",
+                      icon: Icons.navigate_next,
+                    ),
                   ),
                 ],
               )
-            : Container(),
+            : const SizedBox.shrink(),
       ],
     );
   }

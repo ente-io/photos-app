@@ -4,11 +4,12 @@ import 'package:archive/archive_io.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:photos/core/configuration.dart';
 import 'package:photos/core/error-reporting/super_logging.dart';
+import 'package:photos/ente_theme_data.dart';
 import 'package:photos/ui/common/dialogs.dart';
 import 'package:photos/ui/log_file_viewer.dart';
 import 'package:photos/utils/dialog_util.dart';
@@ -35,19 +36,21 @@ Future<void> sendLogs(
         children: [
           Icon(
             Icons.feed_outlined,
-            color: Colors.white.withOpacity(0.85),
+            color: Theme.of(context).iconTheme.color.withOpacity(0.85),
           ),
           Padding(padding: EdgeInsets.all(4)),
           Text(
-            "view logs",
+            "View logs",
             style: TextStyle(
-              color: Colors.white.withOpacity(0.85),
+              color: Theme.of(context)
+                  .colorScheme
+                  .defaultTextColor
+                  .withOpacity(0.85),
             ),
           ),
         ],
       ),
       onPressed: () async {
-        // routeToPage(context, LogFileViewer(SuperLogging.logFile));
         showDialog(
           context: context,
           builder: (BuildContext context) {
@@ -78,10 +81,9 @@ Future<void> sendLogs(
   content.addAll(
     [
       Text(
-        "this will send across logs and metrics that will help us debug your issue better",
+        "This will send across logs to help us debug your issue. Please note that file names will be included to help track issues with specific files.",
         style: TextStyle(
           height: 1.5,
-          fontFamily: 'Ubuntu',
           fontSize: 16,
         ),
       ),
@@ -114,7 +116,11 @@ Future<void> sendLogs(
 }
 
 Future<void> _sendLogs(
-    BuildContext context, String toEmail, String subject, String body) async {
+  BuildContext context,
+  String toEmail,
+  String subject,
+  String body,
+) async {
   String zipFilePath = await getZippedLogsFile(context);
   final Email email = Email(
     recipients: [toEmail],
@@ -132,11 +138,13 @@ Future<void> _sendLogs(
 }
 
 Future<String> getZippedLogsFile(BuildContext context) async {
-  final dialog = createProgressDialog(context, "preparing logs...");
+  final dialog = createProgressDialog(context, "Preparing logs...");
   await dialog.show();
+  final logsPath = (await getApplicationSupportDirectory()).path;
+  final logsDirectory = Directory(logsPath + "/logs");
   final tempPath = (await getTemporaryDirectory()).path;
-  final zipFilePath = tempPath + "/logs.zip";
-  final logsDirectory = Directory(tempPath + "/logs");
+  final zipFilePath =
+      tempPath + "/logs-${Configuration.instance.getUserID() ?? 0}.zip";
   var encoder = ZipFileEncoder();
   encoder.create(zipFilePath);
   encoder.addDirectory(logsDirectory);
@@ -146,14 +154,23 @@ Future<String> getZippedLogsFile(BuildContext context) async {
 }
 
 Future<void> shareLogs(
-    BuildContext context, String toEmail, String zipFilePath) async {
+  BuildContext context,
+  String toEmail,
+  String zipFilePath,
+) async {
   final result = await showChoiceDialog(
-      context, "email logs", "please send the logs to $toEmail",
-      firstAction: "copy email", secondAction: "send");
+    context,
+    "Email logs",
+    "Please send the logs to $toEmail",
+    firstAction: "Copy email",
+    secondAction: "Send",
+  );
   if (result != null && result == DialogUserChoice.firstChoice) {
     await Clipboard.setData(ClipboardData(text: toEmail));
   }
   final Size size = MediaQuery.of(context).size;
-  await Share.shareFiles([zipFilePath],
-      sharePositionOrigin: Rect.fromLTWH(0, 0, size.width, size.height / 2));
+  await Share.shareFiles(
+    [zipFilePath],
+    sharePositionOrigin: Rect.fromLTWH(0, 0, size.width, size.height / 2),
+  );
 }

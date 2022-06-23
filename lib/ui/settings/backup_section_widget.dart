@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:expandable/expandable.dart';
 import 'package:flutter/material.dart';
 import 'package:photos/core/configuration.dart';
 import 'package:photos/models/backup_status.dart';
@@ -7,8 +8,10 @@ import 'package:photos/models/duplicate_files.dart';
 import 'package:photos/services/deduplication_service.dart';
 import 'package:photos/services/sync_service.dart';
 import 'package:photos/ui/backup_folder_selection_page.dart';
+import 'package:photos/ui/common/dialogs.dart';
 import 'package:photos/ui/deduplicate_page.dart';
 import 'package:photos/ui/free_space_page.dart';
+import 'package:photos/ui/settings/common_settings.dart';
 import 'package:photos/ui/settings/settings_section_title.dart';
 import 'package:photos/ui/settings/settings_text_item.dart';
 import 'package:photos/utils/data_util.dart';
@@ -27,82 +30,115 @@ class BackupSectionWidget extends StatefulWidget {
 class BackupSectionWidgetState extends State<BackupSectionWidget> {
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        SettingsSectionTitle("backup"),
-        Padding(
-          padding: EdgeInsets.all(4),
+    return ExpandablePanel(
+      header: SettingsSectionTitle("Backup"),
+      collapsed: Container(),
+      expanded: _getSectionOptions(context),
+      theme: getExpandableTheme(context),
+    );
+  }
+
+  Widget _getSectionOptions(BuildContext context) {
+    final List<Widget> sectionOptions = [
+      GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () async {
+          routeToPage(
+            context,
+            BackupFolderSelectionPage(
+              buttonText: "Backup",
+            ),
+          );
+        },
+        child: SettingsTextItem(
+          text: "Backed up folders",
+          icon: Icons.navigate_next,
         ),
-        GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onTap: () async {
-            routeToPage(
-              context,
-              BackupFolderSelectionPage(
-                buttonText: "backup",
-              ),
-            );
-          },
-          child: SettingsTextItem(
-              text: "backed up folders", icon: Icons.navigate_next),
+      ),
+      sectionOptionDivider,
+      SizedBox(
+        height: 48,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              "Backup over mobile data",
+              style: Theme.of(context).textTheme.subtitle1,
+            ),
+            Switch.adaptive(
+              value: Configuration.instance.shouldBackupOverMobileData(),
+              onChanged: (value) async {
+                Configuration.instance.setBackupOverMobileData(value);
+                setState(() {});
+              },
+            ),
+          ],
         ),
-        Platform.isIOS
-            ? Padding(padding: EdgeInsets.all(2))
-            : Padding(padding: EdgeInsets.all(0)),
-        Divider(height: 4),
-        Platform.isIOS
-            ? Padding(padding: EdgeInsets.all(2))
-            : Padding(padding: EdgeInsets.all(4)),
+      ),
+      sectionOptionDivider,
+      SizedBox(
+        height: 48,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              "Backup videos",
+              style: Theme.of(context).textTheme.subtitle1,
+            ),
+            Switch.adaptive(
+              value: Configuration.instance.shouldBackupVideos(),
+              onChanged: (value) async {
+                Configuration.instance.setShouldBackupVideos(value);
+                setState(() {});
+              },
+            ),
+          ],
+        ),
+      ),
+    ];
+    if (Platform.isIOS) {
+      sectionOptions.addAll([
+        sectionOptionDivider,
         SizedBox(
-          height: 36,
+          height: 48,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("backup over mobile data"),
-              Switch(
-                value: Configuration.instance.shouldBackupOverMobileData(),
+              Text(
+                "Disable auto lock",
+                style: Theme.of(context).textTheme.subtitle1,
+              ),
+              Switch.adaptive(
+                value: Configuration.instance.shouldKeepDeviceAwake(),
                 onChanged: (value) async {
-                  Configuration.instance.setBackupOverMobileData(value);
+                  if (value) {
+                    var choice = await showChoiceDialog(
+                      context,
+                      "Disable automatic screen lock when ente is running?",
+                      "This will ensure faster uploads by ensuring your device does not sleep when uploads are in progress.",
+                      firstAction: "No",
+                      secondAction: "Yes",
+                    );
+                    if (choice != DialogUserChoice.secondChoice) {
+                      return;
+                    }
+                  }
+                  await Configuration.instance.setShouldKeepDeviceAwake(value);
                   setState(() {});
                 },
               ),
             ],
           ),
         ),
-        Platform.isIOS
-            ? Padding(padding: EdgeInsets.all(2))
-            : Padding(padding: EdgeInsets.all(4)),
-        Divider(height: 4),
-        Platform.isIOS
-            ? Padding(padding: EdgeInsets.all(2))
-            : Padding(padding: EdgeInsets.all(4)),
-        SizedBox(
-          height: 36,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text("backup videos"),
-              Switch(
-                value: Configuration.instance.shouldBackupVideos(),
-                onChanged: (value) async {
-                  Configuration.instance.setShouldBackupVideos(value);
-                  setState(() {});
-                },
-              ),
-            ],
-          ),
-        ),
-        Platform.isIOS
-            ? Padding(padding: EdgeInsets.all(4))
-            : Padding(padding: EdgeInsets.all(2)),
-        Divider(height: 4),
-        Platform.isIOS
-            ? Padding(padding: EdgeInsets.all(2))
-            : Padding(padding: EdgeInsets.all(2)),
+      ]);
+    }
+    sectionOptions.addAll(
+      [
+        sectionOptionDivider,
         GestureDetector(
           behavior: HitTestBehavior.translucent,
           onTap: () async {
-            final dialog = createProgressDialog(context, "calculating...");
+            final dialog = createProgressDialog(context, "Calculating...");
             await dialog.show();
             BackupStatus status;
             try {
@@ -115,8 +151,11 @@ class BackupSectionWidgetState extends State<BackupSectionWidget> {
 
             await dialog.hide();
             if (status.localIDs.isEmpty) {
-              showErrorDialog(context, "✨ all clear",
-                  "you've no files on this device that can be deleted");
+              showErrorDialog(
+                context,
+                "✨ All clear",
+                "You've no files on this device that can be deleted",
+              );
             } else {
               bool result = await routeToPage(context, FreeSpacePage(status));
               if (result == true) {
@@ -125,21 +164,15 @@ class BackupSectionWidgetState extends State<BackupSectionWidget> {
             }
           },
           child: SettingsTextItem(
-            text: "free up space",
+            text: "Free up space",
             icon: Icons.navigate_next,
           ),
         ),
-        Platform.isIOS
-            ? Padding(padding: EdgeInsets.all(4))
-            : Padding(padding: EdgeInsets.all(2)),
-        Divider(height: 4),
-        Platform.isIOS
-            ? Padding(padding: EdgeInsets.all(2))
-            : Padding(padding: EdgeInsets.all(2)),
+        sectionOptionDivider,
         GestureDetector(
           behavior: HitTestBehavior.translucent,
           onTap: () async {
-            final dialog = createProgressDialog(context, "calculating...");
+            final dialog = createProgressDialog(context, "Calculating...");
             await dialog.show();
             List<DuplicateFiles> duplicates;
             try {
@@ -153,8 +186,11 @@ class BackupSectionWidgetState extends State<BackupSectionWidget> {
 
             await dialog.hide();
             if (duplicates.isEmpty) {
-              showErrorDialog(context, "✨ no duplicates",
-                  "you've no duplicate files that can be cleared");
+              showErrorDialog(
+                context,
+                "✨ No duplicates",
+                "You've no duplicate files that can be cleared",
+              );
             } else {
               DeduplicationResult result =
                   await routeToPage(context, DeduplicatePage(duplicates));
@@ -164,23 +200,27 @@ class BackupSectionWidgetState extends State<BackupSectionWidget> {
             }
           },
           child: SettingsTextItem(
-            text: "deduplicate files",
+            text: "Deduplicate files",
             icon: Icons.navigate_next,
           ),
         ),
       ],
     );
+    return Column(
+      children: sectionOptions,
+    );
   }
 
   void _showSpaceFreedDialog(BackupStatus status) {
     AlertDialog alert = AlertDialog(
-      title: Text("success"),
+      title: Text("Success"),
       content: Text(
-          "you have successfully freed up " + formatBytes(status.size) + "!"),
+        "You have successfully freed up " + formatBytes(status.size) + "!",
+      ),
       actions: [
         TextButton(
           child: Text(
-            "rate us",
+            "Rate us",
             style: TextStyle(
               color: Theme.of(context).buttonColor,
             ),
@@ -190,7 +230,8 @@ class BackupSectionWidgetState extends State<BackupSectionWidget> {
             // TODO: Replace with https://pub.dev/packages/in_app_review
             if (Platform.isAndroid) {
               launch(
-                  "https://play.google.com/store/apps/details?id=io.ente.photos");
+                "https://play.google.com/store/apps/details?id=io.ente.photos",
+              );
             } else {
               launch("https://apps.apple.com/in/app/ente-photos/id1542026904");
             }
@@ -198,15 +239,14 @@ class BackupSectionWidgetState extends State<BackupSectionWidget> {
         ),
         TextButton(
           child: Text(
-            "ok",
-            style: TextStyle(
-              color: Colors.white,
-            ),
+            "Ok",
           ),
           onPressed: () {
             if (Platform.isIOS) {
               showToast(
-                  "also empty \"Recently Deleted\" from \"Settings\" -> \"Storage\" to claim the freed space");
+                context,
+                "Also empty \"Recently Deleted\" from \"Settings\" -> \"Storage\" to claim the freed space",
+              );
             }
             Navigator.of(context, rootNavigator: true).pop('dialog');
           },
@@ -229,16 +269,18 @@ class BackupSectionWidgetState extends State<BackupSectionWidget> {
         " duplicate file" +
         (result.count == 1 ? "" : "s");
     AlertDialog alert = AlertDialog(
-      title: Text("✨ success"),
-      content: Text("you have cleaned up " +
-          countText +
-          ", saving " +
-          formatBytes(result.size) +
-          "!"),
+      title: Text("✨ Success"),
+      content: Text(
+        "You have cleaned up " +
+            countText +
+            ", saving " +
+            formatBytes(result.size) +
+            "!",
+      ),
       actions: [
         TextButton(
           child: Text(
-            "rate us",
+            "Rate us",
             style: TextStyle(
               color: Theme.of(context).buttonColor,
             ),
@@ -248,7 +290,8 @@ class BackupSectionWidgetState extends State<BackupSectionWidget> {
             // TODO: Replace with https://pub.dev/packages/in_app_review
             if (Platform.isAndroid) {
               launch(
-                  "https://play.google.com/store/apps/details?id=io.ente.photos");
+                "https://play.google.com/store/apps/details?id=io.ente.photos",
+              );
             } else {
               launch("https://apps.apple.com/in/app/ente-photos/id1542026904");
             }
@@ -256,13 +299,16 @@ class BackupSectionWidgetState extends State<BackupSectionWidget> {
         ),
         TextButton(
           child: Text(
-            "ok",
+            "Ok",
             style: TextStyle(
               color: Colors.white,
             ),
           ),
           onPressed: () {
-            showToast("also empty your \"Trash\" to claim the freed up space");
+            showToast(
+              context,
+              "Also empty your \"Trash\" to claim the freed up space",
+            );
             Navigator.of(context, rootNavigator: true).pop('dialog');
           },
         ),

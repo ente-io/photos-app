@@ -105,7 +105,6 @@ class RemoteSyncService {
         _existingSync = null;
       }
     } catch (e, s) {
-      _logger.severe("Error executing remote sync ", e, s);
       _existingSync.complete();
       _existingSync = null;
       // rethrow whitelisted error so that UI status can be updated correctly.
@@ -114,7 +113,10 @@ class RemoteSyncService {
           e is WiFiUnavailableError ||
           e is StorageLimitExceededError ||
           e is SyncStopRequestedError) {
+        _logger.warning("Error executing remote sync", e);
         rethrow;
+      } else {
+        _logger.severe("Error executing remote sync ", e, s);
       }
     }
   }
@@ -147,7 +149,9 @@ class RemoteSyncService {
     }
     for (final c in updatedCollections) {
       await _syncCollectionDiff(
-          c.id, _collectionsService.getCollectionSyncTime(c.id));
+        c.id,
+        _collectionsService.getCollectionSyncTime(c.id),
+      );
       await _collectionsService.setCollectionSyncTime(c.id, c.updationTime);
     }
   }
@@ -156,8 +160,10 @@ class RemoteSyncService {
     _logger.info('re-sync collections sinceTime: $sinceTime');
     final collections = _collectionsService.getActiveCollections();
     for (final c in collections) {
-      await _syncCollectionDiff(c.id,
-          min(_collectionsService.getCollectionSyncTime(c.id), sinceTime));
+      await _syncCollectionDiff(
+        c.id,
+        min(_collectionsService.getCollectionSyncTime(c.id), sinceTime),
+      );
       await _collectionsService.setCollectionSyncTime(c.id, c.updationTime);
     }
   }
@@ -170,17 +176,28 @@ class RemoteSyncService {
       final deletedFiles =
           (await FilesDB.instance.getFilesFromIDs(fileIDs)).values.toList();
       await FilesDB.instance.deleteFilesFromCollection(collectionID, fileIDs);
-      Bus.instance.fire(CollectionUpdatedEvent(collectionID, deletedFiles,
-          type: EventType.deletedFromRemote));
-      Bus.instance.fire(LocalPhotosUpdatedEvent(deletedFiles,
-          type: EventType.deletedFromRemote));
+      Bus.instance.fire(
+        CollectionUpdatedEvent(
+          collectionID,
+          deletedFiles,
+          type: EventType.deletedFromRemote,
+        ),
+      );
+      Bus.instance.fire(
+        LocalPhotosUpdatedEvent(
+          deletedFiles,
+          type: EventType.deletedFromRemote,
+        ),
+      );
     }
     if (diff.updatedFiles.isNotEmpty) {
       await _storeDiff(diff.updatedFiles, collectionID);
-      _logger.info("Updated " +
-          diff.updatedFiles.length.toString() +
-          " files in collection " +
-          collectionID.toString());
+      _logger.info(
+        "Updated " +
+            diff.updatedFiles.length.toString() +
+            " files in collection " +
+            collectionID.toString(),
+      );
       Bus.instance.fire(LocalPhotosUpdatedEvent(diff.updatedFiles));
       Bus.instance
           .fire(CollectionUpdatedEvent(collectionID, diff.updatedFiles));
@@ -188,11 +205,15 @@ class RemoteSyncService {
 
     if (diff.latestUpdatedAtTime > 0) {
       await _collectionsService.setCollectionSyncTime(
-          collectionID, diff.latestUpdatedAtTime);
+        collectionID,
+        diff.latestUpdatedAtTime,
+      );
     }
     if (diff.hasMore) {
-      return await _syncCollectionDiff(collectionID,
-          _collectionsService.getCollectionSyncTime(collectionID));
+      return await _syncCollectionDiff(
+        collectionID,
+        _collectionsService.getCollectionSyncTime(collectionID),
+      );
     }
   }
 
@@ -213,11 +234,15 @@ class RemoteSyncService {
     if (filesToBeUploaded.isNotEmpty) {
       final int prevCount = filesToBeUploaded.length;
       final ignoredIDs = await IgnoredFilesService.instance.ignoredIDs;
-      filesToBeUploaded.removeWhere((file) =>
-          IgnoredFilesService.instance.shouldSkipUpload(ignoredIDs, file));
+      filesToBeUploaded.removeWhere(
+        (file) =>
+            IgnoredFilesService.instance.shouldSkipUpload(ignoredIDs, file),
+      );
       if (prevCount != filesToBeUploaded.length) {
-        _logger.info((prevCount - filesToBeUploaded.length).toString() +
-            " files were ignored for upload");
+        _logger.info(
+          (prevCount - filesToBeUploaded.length).toString() +
+              " files were ignored for upload",
+        );
       }
     }
     if (filesToBeUploaded.isEmpty) {
@@ -227,7 +252,8 @@ class RemoteSyncService {
     }
     _sortByTimeAndType(filesToBeUploaded);
     _logger.info(
-        filesToBeUploaded.length.toString() + " new files to be uploaded.");
+      filesToBeUploaded.length.toString() + " new files to be uploaded.",
+    );
     return filesToBeUploaded;
   }
 
@@ -244,6 +270,10 @@ class RemoteSyncService {
 
     if (toBeUploaded > 0) {
       Bus.instance.fire(SyncStatusUpdate(SyncStatus.preparing_for_upload));
+      // verify if files upload is allowed based on their subscription plan and
+      // storage limit. To avoid creating new endpoint, we are using
+      // fetchUploadUrls as alternative method.
+      await _uploader.fetchUploadURLs(toBeUploaded);
     }
     final List<Future> futures = [];
     for (final uploadedFileID in updatedFileIDs) {
@@ -320,13 +350,21 @@ class RemoteSyncService {
         _completedUploads < 0 ||
         toBeUploadedInThisSession < 0) {
       _logger.info(
-          "Incorrect sync status",
-          InvalidSyncStatusError("Tried to report $_completedUploads as "
-              "uploaded out of $toBeUploadedInThisSession"));
+        "Incorrect sync status",
+        InvalidSyncStatusError(
+          "Tried to report $_completedUploads as "
+          "uploaded out of $toBeUploadedInThisSession",
+        ),
+      );
       return;
     }
-    Bus.instance.fire(SyncStatusUpdate(SyncStatus.in_progress,
-        completed: _completedUploads, total: toBeUploadedInThisSession));
+    Bus.instance.fire(
+      SyncStatusUpdate(
+        SyncStatus.in_progress,
+        completed: _completedUploads,
+        total: toBeUploadedInThisSession,
+      ),
+    );
   }
 
   Future _storeDiff(List<File> diff, int collectionID) async {
@@ -337,12 +375,15 @@ class RemoteSyncService {
         localButAddedToNewCollectionOnRemote = 0;
     bool hasAnyCreationTimeChanged = false;
     List<File> toBeInserted = [];
+    int userID = Configuration.instance.getUserID();
     for (File file in diff) {
       final existingFiles = file.deviceFolder == null
           ? null
           : await _db.getMatchingFiles(file.title, file.deviceFolder);
-      if (existingFiles == null || existingFiles.isEmpty) {
-        // File uploaded from a different device.
+      if (existingFiles == null ||
+          existingFiles.isEmpty ||
+          userID != file.ownerID) {
+        // File uploaded from a different device or uploaded by different user
         // Other rare possibilities : The local file is present on
         // device but it's not imported in local db due to missing permission
         // after reinstall (iOS selected file permissions or user revoking
@@ -359,17 +400,21 @@ class RemoteSyncService {
         // case when localID for a file changes and the file is uploaded again in
         // the same collection
         final fileWithLocalID = existingFiles.firstWhere(
-            (e) =>
-                file.localID != null &&
-                e.localID != null &&
-                e.localID == file.localID,
-            orElse: () => existingFiles.firstWhere((e) => e.localID != null,
-                orElse: () => null));
+          (e) =>
+              file.localID != null &&
+              e.localID != null &&
+              e.localID == file.localID,
+          orElse: () => existingFiles.firstWhere(
+            (e) => e.localID != null,
+            orElse: () => null,
+          ),
+        );
         if (fileWithLocalID != null) {
           // File should ideally have the same localID
           if (file.localID != null && file.localID != fileWithLocalID.localID) {
             _logger.severe(
-                "unexpected mismatch in localIDs remote: ${file.toString()} and existing: ${fileWithLocalID.toString()}");
+              "unexpected mismatch in localIDs remote: ${file.toString()} and existing: ${fileWithLocalID.toString()}",
+            );
           }
           file.localID = fileWithLocalID.localID;
         } else {
@@ -381,8 +426,10 @@ class RemoteSyncService {
           file.generatedID = existingFiles[0].generatedID;
           if (file.modificationTime != existingFiles[0].modificationTime) {
             // File was updated since the app was uninstalled
-            _logger.info("Updated since last installation: " +
-                file.uploadedFileID.toString());
+            _logger.info(
+              "Updated since last installation: " +
+                  file.uploadedFileID.toString(),
+            );
             file.modificationTime = existingFiles[0].modificationTime;
             file.updationTime = null;
             updated++;
