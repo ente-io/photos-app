@@ -16,7 +16,8 @@ import 'package:photos/ui/settings/support_section_widget.dart';
 import 'package:photos/ui/settings/theme_switch_widget.dart';
 
 class SettingsPage extends StatelessWidget {
-  const SettingsPage({Key key}) : super(key: key);
+  final ValueNotifier<String> emailNotifier;
+  const SettingsPage({Key key, @required this.emailNotifier}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -27,24 +28,33 @@ class SettingsPage extends StatelessWidget {
 
   Widget _getBody(BuildContext context) {
     final hasLoggedIn = Configuration.instance.getToken() != null;
-    final String email = Configuration.instance.getEmail();
     final List<Widget> contents = [];
     contents.add(
       Container(
-        padding: EdgeInsets.symmetric(horizontal: 2, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(
-              email,
-              style: Theme.of(context)
-                  .textTheme
-                  .subtitle1
-                  .copyWith(overflow: TextOverflow.ellipsis),
+            // // Thanks to the [AnimatedBuilder], only the widget displaying the
+            // // current email is rebuilt when `emailNotifier` notifies its
+            // // listeners.
+            AnimatedBuilder(
+              // [AnimatedBuilder] accepts any [Listenable] subtype.
+              animation: emailNotifier,
+              builder: (BuildContext context, Widget child) {
+                return Text(
+                  emailNotifier.value,
+                  style: Theme.of(context)
+                      .textTheme
+                      .subtitle1
+                      .copyWith(overflow: TextOverflow.ellipsis),
+                );
+              },
             ),
+
             (Platform.isAndroid)
-                ? ThemeSwitchWidget()
+                ? const ThemeSwitchWidget()
                 : const SizedBox.shrink(),
           ],
         ),
@@ -54,54 +64,55 @@ class SettingsPage extends StatelessWidget {
       height: 20,
       color: Theme.of(context).colorScheme.onSurface.withOpacity(0.12),
     );
-    contents.add(Padding(padding: EdgeInsets.all(4)));
+    contents.add(const Padding(padding: EdgeInsets.all(4)));
     if (hasLoggedIn) {
       contents.addAll([
-        DetailsSectionWidget(),
-        Padding(padding: EdgeInsets.only(bottom: 24)),
-        BackupSectionWidget(),
+        const DetailsSectionWidget(),
+        const Padding(padding: EdgeInsets.only(bottom: 24)),
+        const BackupSectionWidget(),
         sectionDivider,
-        AccountSectionWidget(),
+        const AccountSectionWidget(),
         sectionDivider,
       ]);
     }
     contents.addAll([
-      SecuritySectionWidget(),
+      const SecuritySectionWidget(),
       sectionDivider,
-      SupportSectionWidget(),
+      const SupportSectionWidget(),
       sectionDivider,
-      SocialSectionWidget(),
+      const SocialSectionWidget(),
       sectionDivider,
-      InfoSectionWidget(),
+      const InfoSectionWidget(),
     ]);
     if (hasLoggedIn) {
       contents.addAll([
         sectionDivider,
-        DangerSectionWidget(),
+        const DangerSectionWidget(),
       ]);
     }
 
     if (kDebugMode && hasLoggedIn) {
-      contents.addAll([sectionDivider, DebugSectionWidget()]);
+      contents.addAll([sectionDivider, const DebugSectionWidget()]);
     }
-    contents.add(AppVersionWidget());
+    contents.add(const AppVersionWidget());
     contents.add(
-      Padding(
+      const Padding(
         padding: EdgeInsets.only(bottom: 60),
       ),
     );
 
     return SingleChildScrollView(
       child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 20),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: 350),
-              child: Column(
-                children: contents,
-              ),
+        padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 20),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 350),
+            child: Column(
+              children: contents,
             ),
-          )),
+          ),
+        ),
+      ),
     );
   }
 }

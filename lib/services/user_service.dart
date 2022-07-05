@@ -17,13 +17,13 @@ import 'package:photos/models/sessions.dart';
 import 'package:photos/models/set_keys_request.dart';
 import 'package:photos/models/set_recovery_key_request.dart';
 import 'package:photos/models/user_details.dart';
-import 'package:photos/ui/login_page.dart';
-import 'package:photos/ui/ott_verification_page.dart';
-import 'package:photos/ui/password_entry_page.dart';
-import 'package:photos/ui/password_reentry_page.dart';
-import 'package:photos/ui/two_factor_authentication_page.dart';
-import 'package:photos/ui/two_factor_recovery_page.dart';
-import 'package:photos/ui/two_factor_setup_page.dart';
+import 'package:photos/ui/account/login_page.dart';
+import 'package:photos/ui/account/ott_verification_page.dart';
+import 'package:photos/ui/account/password_entry_page.dart';
+import 'package:photos/ui/account/password_reentry_page.dart';
+import 'package:photos/ui/account/two_factor_authentication_page.dart';
+import 'package:photos/ui/account/two_factor_recovery_page.dart';
+import 'package:photos/ui/account/two_factor_setup_page.dart';
 import 'package:photos/utils/crypto_util.dart';
 import 'package:photos/utils/dialog_util.dart';
 import 'package:photos/utils/navigation_util.dart';
@@ -33,16 +33,21 @@ class UserService {
   final _dio = Network.instance.getDio();
   final _logger = Logger((UserService).toString());
   final _config = Configuration.instance;
+  ValueNotifier<String> emailValueNotifier;
 
   UserService._privateConstructor();
-
   static final UserService instance = UserService._privateConstructor();
+
+  Future<void> init() async {
+    emailValueNotifier =
+        ValueNotifier<String>(Configuration.instance.getEmail());
+  }
 
   Future<void> getOtt(
     BuildContext context,
     String email, {
     bool isChangeEmail = false,
-    bool isCreateAccountScreen,
+    bool isCreateAccountScreen = false,
   }) async {
     final dialog = createProgressDialog(context, "Please wait...");
     await dialog.show();
@@ -225,9 +230,9 @@ class UserService {
         } else {
           await _saveConfiguration(response);
           if (Configuration.instance.getEncryptedToken() != null) {
-            page = PasswordReentryPage();
+            page = const PasswordReentryPage();
           } else {
-            page = PasswordEntryPage();
+            page = const PasswordEntryPage();
           }
         }
         Navigator.of(context).pushAndRemoveUntil(
@@ -266,6 +271,11 @@ class UserService {
     }
   }
 
+  Future<void> setEmail(String email) async {
+    await _config.setEmail(email);
+    emailValueNotifier.value = email ?? "";
+  }
+
   Future<void> changeEmail(
     BuildContext context,
     String email,
@@ -289,7 +299,7 @@ class UserService {
       await dialog.hide();
       if (response != null && response.statusCode == 200) {
         showToast(context, "Email changed to " + email);
-        _config.setEmail(email);
+        await setEmail(email);
         Navigator.of(context).popUntil((route) => route.isFirst);
         Bus.instance.fire(UserDetailsChangedEvent());
         return;
@@ -408,7 +418,7 @@ class UserService {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
             builder: (BuildContext context) {
-              return PasswordReentryPage();
+              return const PasswordReentryPage();
             },
           ),
           (route) => route.isFirst,
@@ -422,7 +432,7 @@ class UserService {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
             builder: (BuildContext context) {
-              return LoginPage();
+              return const LoginPage();
             },
           ),
           (route) => route.isFirst,
@@ -476,7 +486,7 @@ class UserService {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
             builder: (BuildContext context) {
-              return LoginPage();
+              return const LoginPage();
             },
           ),
           (route) => route.isFirst,
@@ -541,7 +551,7 @@ class UserService {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
             builder: (BuildContext context) {
-              return PasswordReentryPage();
+              return const PasswordReentryPage();
             },
           ),
           (route) => route.isFirst,
@@ -554,7 +564,7 @@ class UserService {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
             builder: (BuildContext context) {
-              return LoginPage();
+              return const LoginPage();
             },
           ),
           (route) => route.isFirst,
@@ -730,7 +740,7 @@ class UserService {
   Future<String> getPaymentToken() async {
     try {
       var response = await _dio.get(
-        _config.getHttpEndpoint() + "/users/payment-token",
+        "${_config.getHttpEndpoint()}/users/payment-token",
         options: Options(
           headers: {
             "X-Auth-Token": _config.getToken(),
@@ -751,7 +761,7 @@ class UserService {
   Future<String> getFamiliesToken() async {
     try {
       var response = await _dio.get(
-        _config.getHttpEndpoint() + "/users/families-token",
+        "${_config.getHttpEndpoint()}/users/families-token",
         options: Options(
           headers: {
             "X-Auth-Token": _config.getToken(),

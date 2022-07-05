@@ -1,12 +1,14 @@
+import 'dart:io';
+
 import 'package:expandable/expandable.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:photos/core/configuration.dart';
 import 'package:photos/core/constants.dart';
+import 'package:photos/ui/common/web_page.dart';
 import 'package:photos/ui/settings/common_settings.dart';
 import 'package:photos/ui/settings/settings_section_title.dart';
 import 'package:photos/ui/settings/settings_text_item.dart';
-import 'package:photos/ui/web_page.dart';
 import 'package:photos/utils/dialog_util.dart';
 import 'package:photos/utils/email_util.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -17,7 +19,7 @@ class SupportSectionWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ExpandablePanel(
-      header: SettingsSectionTitle("Support"),
+      header: const SettingsSectionTitle("Support"),
       collapsed: Container(),
       expanded: _getSectionOptions(context),
       theme: getExpandableTheme(context),
@@ -25,6 +27,8 @@ class SupportSectionWidget extends StatelessWidget {
   }
 
   Widget _getSectionOptions(BuildContext context) {
+    final String bugsEmail =
+        Platform.isAndroid ? "android-bugs@ente.io" : "ios-bugs@ente.io";
     return Column(
       children: [
         GestureDetector(
@@ -41,7 +45,8 @@ class SupportSectionWidget extends StatelessWidget {
               showErrorDialog(context, "", "Please email us at $kSupportEmail");
             }
           },
-          child: SettingsTextItem(text: "Email", icon: Icons.navigate_next),
+          child:
+              const SettingsTextItem(text: "Email", icon: Icons.navigate_next),
         ),
         sectionOptionDivider,
         GestureDetector(
@@ -61,19 +66,22 @@ class SupportSectionWidget extends StatelessWidget {
               ),
             );
           },
-          child: SettingsTextItem(text: "Roadmap", icon: Icons.navigate_next),
+          child: const SettingsTextItem(
+            text: "Roadmap",
+            icon: Icons.navigate_next,
+          ),
         ),
         sectionOptionDivider,
         GestureDetector(
           behavior: HitTestBehavior.translucent,
           onTap: () async {
-            await sendLogs(context, "Report bug", "bug@ente.io");
+            await sendLogs(context, "Report bug", bugsEmail);
           },
           onDoubleTap: () async {
             final zipFilePath = await getZippedLogsFile(context);
-            await shareLogs(context, "bug@ente.io", zipFilePath);
+            await shareLogs(context, bugsEmail, zipFilePath);
           },
-          child: SettingsTextItem(
+          child: const SettingsTextItem(
             text: "Report bug 🐞",
             icon: Icons.navigate_next,
           ),

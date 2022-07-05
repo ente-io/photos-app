@@ -2,8 +2,12 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
-Future<T> routeToPage<T extends Object>(BuildContext context, Widget page) {
-  if (Platform.isAndroid) {
+Future<T> routeToPage<T extends Object>(
+  BuildContext context,
+  Widget page, {
+  bool forceCustomPageRoute = false,
+}) {
+  if (Platform.isAndroid || forceCustomPageRoute) {
     return Navigator.of(context).push(
       _buildPageRoute(page),
     );
@@ -46,7 +50,7 @@ PageRouteBuilder<T> _buildPageRoute<T extends Object>(Widget page) {
         ),
       );
     },
-    transitionDuration: Duration(milliseconds: 200),
+    transitionDuration: const Duration(milliseconds: 200),
     opaque: false,
   );
 }

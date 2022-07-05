@@ -26,15 +26,22 @@ class GrantPermissionsWidget extends StatelessWidget {
                       children: [
                         isLightMode
                             ? Image.asset(
-                                'assets/loading_photos_light.png',
+                                'assets/loading_photos_background.png',
                                 color: Colors.white.withOpacity(0.4),
                                 colorBlendMode: BlendMode.modulate,
                               )
-                            : Image.asset('assets/loading_photos_dark.png'),
+                            : Image.asset(
+                                'assets/loading_photos_background_dark.png',
+                              ),
                         Center(
-                          child: Image.asset(
-                            "assets/gallery.png",
-                            height: 160,
+                          child: Column(
+                            children: [
+                              const SizedBox(height: 42),
+                              Image.asset(
+                                "assets/gallery_locked.png",
+                                height: 160,
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -42,7 +49,7 @@ class GrantPermissionsWidget extends StatelessWidget {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 40),
+                  padding: const EdgeInsets.fromLTRB(40, 0, 40, 105),
                   child: RichText(
                     text: TextSpan(
                       style: Theme.of(context)
@@ -50,7 +57,7 @@ class GrantPermissionsWidget extends StatelessWidget {
                           .headline5
                           .copyWith(fontWeight: FontWeight.w700),
                       children: [
-                        TextSpan(text: 'ente '),
+                        const TextSpan(text: 'ente '),
                         TextSpan(
                           text: "needs permission to ",
                           style: Theme.of(context)
@@ -58,7 +65,7 @@ class GrantPermissionsWidget extends StatelessWidget {
                               .headline5
                               .copyWith(fontWeight: FontWeight.w400),
                         ),
-                        TextSpan(text: 'preserve your photos'),
+                        const TextSpan(text: 'preserve your photos'),
                       ],
                     ),
                   ),
@@ -73,9 +80,9 @@ class GrantPermissionsWidget extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: Theme.of(context).backgroundColor,
-              spreadRadius: 200,
-              blurRadius: 100,
-              offset: Offset(0, 160),
+              spreadRadius: 190,
+              blurRadius: 30,
+              offset: const Offset(0, 170),
             )
           ],
         ),
@@ -86,7 +93,7 @@ class GrantPermissionsWidget extends StatelessWidget {
           bottom: Platform.isIOS ? 40 : 16,
         ),
         child: OutlinedButton(
-          child: Text("Grant permission"),
+          child: const Text("Grant permission"),
           onPressed: () async {
             final state = await PhotoManager.requestPermissionExtend();
             if (state == PermissionState.authorized ||
@@ -94,8 +101,8 @@ class GrantPermissionsWidget extends StatelessWidget {
               await SyncService.instance.onPermissionGranted(state);
             } else if (state == PermissionState.denied) {
               AlertDialog alert = AlertDialog(
-                title: Text("Please grant permissions"),
-                content: Text(
+                title: const Text("Please grant permissions"),
+                content: const Text(
                   "ente can encrypt and preserve files only if you grant access to them",
                 ),
                 actions: [

@@ -27,10 +27,10 @@ class LocalSyncService {
   static const kPermissionStateKey = "permission_state";
   static const kEditedFileIDsKey = "edited_file_ids";
   static const kDownloadedFileIDsKey = "downloaded_file_ids";
+
   // Adding `_2` as a suffic to pull files that were earlier ignored due to permission errors
   // See https://github.com/CaiJingLong/flutter_photo_manager/issues/589
   static const kInvalidFileIDsKey = "invalid_file_ids_2";
-
   LocalSyncService._privateConstructor();
 
   static final LocalSyncService instance =
@@ -86,8 +86,7 @@ class LocalSyncService {
       );
     } else {
       // Load from 0 - 01.01.2010
-      Bus.instance
-          .fire(SyncStatusUpdate(SyncStatus.started_first_gallery_import));
+      Bus.instance.fire(SyncStatusUpdate(SyncStatus.startedFirstGalleryImport));
       var startTime = 0;
       var toYear = 2010;
       var toTime = DateTime(toYear).microsecondsSinceEpoch;
@@ -116,7 +115,7 @@ class LocalSyncService {
       await _prefs.setBool(kHasCompletedFirstImportKey, true);
       _logger.fine("first gallery import finished");
       Bus.instance
-          .fire(SyncStatusUpdate(SyncStatus.completed_first_gallery_import));
+          .fire(SyncStatusUpdate(SyncStatus.completedFirstGalleryImport));
     }
     final endTime = DateTime.now().microsecondsSinceEpoch;
     final duration = Duration(microseconds: endTime - startTime);
@@ -245,6 +244,7 @@ class LocalSyncService {
         );
       }
       for (final file in updatedFiles) {
+        await captureUpdateLogs(file);
         await _db.updateUploadedFile(
           file.localID,
           file.title,
@@ -263,6 +263,32 @@ class LocalSyncService {
       Bus.instance.fire(LocalPhotosUpdatedEvent(allFiles));
     }
     await _prefs.setInt(kDbUpdationTimeKey, toTime);
+  }
+
+  // _captureUpdateLogs is a helper method to log details
+  // about the file which is being marked for re-upload
+  Future<void> captureUpdateLogs(File file) async {
+    _logger.info(
+      're-upload locally updated file ${file.toString()}',
+    );
+    try {
+      if (Platform.isIOS) {
+        var assetEntity = await AssetEntity.fromId(file.localID);
+        if (assetEntity != null) {
+          var isLocallyAvailable =
+              await assetEntity.isLocallyAvailable(isOrigin: true);
+          _logger.info(
+            're-upload asset ${file.toString()} with localAvailableFlag '
+            '$isLocallyAvailable and fav ${assetEntity.isFavorite}',
+          );
+        } else {
+          _logger
+              .info('re-upload failed to fetch assetInfo ${file.toString()}');
+        }
+      }
+    } catch (ignore) {
+      //ignore
+    }
   }
 
   void _updatePathsToBackup(List<File> files) {
