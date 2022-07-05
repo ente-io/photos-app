@@ -160,7 +160,7 @@ Future _runWithLogs(Function() function, {String prefix = ""}) async {
       logDirPath: (await getApplicationSupportDirectory()).path + "/logs",
       maxLogFiles: 5,
       sentryDsn: null,
-      tunnel: kSentryTunnel,
+      tunnel: null,
       enableInDebugMode: true,
       prefix: prefix,
     ),
