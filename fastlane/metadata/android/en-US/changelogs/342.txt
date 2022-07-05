@@ -1,0 +1,2 @@
+- Improves pinch-to-zoom
+- Minor bug fixes for the change-email flow
