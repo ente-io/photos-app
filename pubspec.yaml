@@ -12,7 +12,7 @@ description: ente photos application
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 
-version: 0.6.17+347
+version: 0.6.19+349
 
 environment:
   sdk: ">=2.10.0 <3.0.0"
@@ -22,7 +22,6 @@ dependencies:
   alice:
     git: "https://github.com/jhomlala/alice.git"
   animate_do: ^2.0.0
-  animated_toggle_switch: ^0.5.2
   archive: ^3.1.2
   background_fetch: ^1.0.1
   bip39: ^1.0.6
@@ -47,8 +46,6 @@ dependencies:
   fast_base58: ^0.2.1
 #  firebase_core: ^1.10.0 #f-droid
 #  firebase_messaging: ^11.1.0 #f-droid
-  firebase_core: ^1.10.0
-  firebase_messaging: ^11.1.0
   fk_user_agent: ^2.0.1
   flutter:
     sdk: flutter

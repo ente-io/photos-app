@@ -290,7 +290,6 @@ class UserService {
       );
       await dialog.hide();
       if (response != null && response.statusCode == 200) {
-        showShortToast(context, "Email verification successful!");
         Widget page;
         final String twoFASessionID = response.data["twoFactorSessionID"];
         if (twoFASessionID != null && twoFASessionID.isNotEmpty) {
@@ -676,9 +675,9 @@ class UserService {
           response.data["qrCode"],
         ),
       );
-    } catch (e, s) {
+    } catch (e) {
       await dialog.hide();
-      _logger.severe(e, s);
+      _logger.severe("Failed to setup tfa", e);
       rethrow;
     }
   }
@@ -757,9 +756,9 @@ class UserService {
       Bus.instance.fire(TwoFactorStatusChangeEvent(false));
       await dialog.hide();
       showToast(context, "Two-factor authentication has been disabled");
-    } catch (e, s) {
+    } catch (e) {
       await dialog.hide();
-      _logger.severe(e, s);
+      _logger.severe("Failed to disabled 2FA", e);
       showErrorDialog(
         context,
         "Something went wrong",
@@ -779,8 +778,8 @@ class UserService {
         ),
       );
       return response.data["status"];
-    } catch (e, s) {
-      _logger.severe(e, s);
+    } catch (e) {
+      _logger.severe("Failed to fetch 2FA status", e);
       rethrow;
     }
   }
@@ -820,8 +819,8 @@ class UserService {
       } else {
         throw Exception("non 200 ok response");
       }
-    } catch (e, s) {
-      _logger.severe(e, s);
+    } catch (e) {
+      _logger.severe("Failed to get payment token", e);
       return null;
     }
   }
