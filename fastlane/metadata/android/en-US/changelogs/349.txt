@@ -1,0 +1,4 @@
+Hey there, another round of improvements on their way!
+- Fixed backup to ente flow for files shared to ente
+- Support for following System theme mode.
+- Improved Auto-fill support for passwords.
