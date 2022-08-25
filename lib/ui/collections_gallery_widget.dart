@@ -105,7 +105,7 @@ class _CollectionsGalleryWidgetState extends State<CollectionsGalleryWidget>
         await collectionsService.getLatestCollectionFiles();
     for (final file in latestCollectionFiles) {
       final c = collectionsService.getCollectionByID(file.collectionID);
-      if (c.owner.id == userID) {
+      if (c.owner.id == userID && !c.isArchived()) {
         collectionsWithThumbnail.add(CollectionWithThumbnail(c, file));
       }
     }
