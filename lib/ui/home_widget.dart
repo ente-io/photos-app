@@ -733,9 +733,12 @@ class HeaderWidget extends StatelessWidget {
       _statusBarWidget,
       _memoriesWidget,
     ];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: list,
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: list,
+      ),
     );
   }
 }
