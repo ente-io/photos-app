@@ -8,7 +8,7 @@ import 'package:photos/models/collection_items.dart';
 import 'package:photos/services/collections_service.dart';
 import 'package:photos/ui/collections/hidden_collections_list_view_widget.dart';
 import 'package:photos/ui/common/loading_widget.dart';
-import 'package:photos/ui/viewer/gallery/empte_state.dart';
+import 'package:photos/ui/viewer/gallery/hidden_collections_empty_state.dart';
 
 class HiddenCollectionsWidget extends StatefulWidget {
   const HiddenCollectionsWidget({Key key}) : super(key: key);
@@ -43,7 +43,7 @@ class _HiddenCollectionsWidgetState extends State<HiddenCollectionsWidget> {
         hiddenCollectionIds.isEmpty
             ? const Padding(
                 padding: EdgeInsets.all(22),
-                child: EmptyState(),
+                child: HiddenCollectionsEmptyState(),
               )
             : FutureBuilder(
                 future: hiddenCollectionsWithThumbnail,
@@ -52,7 +52,7 @@ class _HiddenCollectionsWidgetState extends State<HiddenCollectionsWidget> {
                     return HiddenCollectionsListViewWidget(snapshot.data);
                   } else if (snapshot.hasError) {
                     Logger('HiddenCollections').info(snapshot.error);
-                    return const EmptyState();
+                    return const HiddenCollectionsEmptyState();
                   } else {
                     return const EnteLoadingWidget();
                   }

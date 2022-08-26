@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:photos/models/device_folder.dart';
 import 'package:photos/ui/collections/device_folder_icon_widget.dart';
-import 'package:photos/ui/viewer/gallery/empte_state.dart';
+import 'package:photos/ui/viewer/gallery/empty_state.dart';
 
 class DeviceFoldersListViewWidget extends StatelessWidget {
   final List<DeviceFolder> folders;
