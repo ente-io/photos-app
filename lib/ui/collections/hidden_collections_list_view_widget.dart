@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photos/models/collection_items.dart';
-import 'package:photos/ui/collections/collection_item_widget.dart';
+import 'package:photos/ui/collections/hidden_collection_item_widget.dart';
 import 'package:photos/ui/viewer/gallery/empte_state.dart';
 
 class HiddenCollectionsListViewWidget extends StatelessWidget {
@@ -28,7 +28,7 @@ class HiddenCollectionsListViewWidget extends StatelessWidget {
                   physics: const ScrollPhysics(),
                   // to disable GridView's scrolling
                   itemBuilder: (context, index) {
-                    return CollectionItem(hiddenCollections[index]);
+                    return HiddenCollectionItem(hiddenCollections[index]);
                   },
                   itemCount: hiddenCollections.length,
                 ),
