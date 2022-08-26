@@ -6,7 +6,7 @@ import 'package:photos/core/event_bus.dart';
 import 'package:photos/events/collection_updated_event.dart';
 import 'package:photos/models/collection_items.dart';
 import 'package:photos/services/collections_service.dart';
-import 'package:photos/ui/collections/hidden_collections_list_view_widget.dart';
+import 'package:photos/ui/collections/hidden_collection_item_widget.dart';
 import 'package:photos/ui/common/loading_widget.dart';
 import 'package:photos/ui/viewer/gallery/hidden_collections_empty_state.dart';
 
@@ -84,4 +84,37 @@ Future<List<CollectionWithThumbnail>> getCollectionsWithThumbnail(
     }
   }
   return collectionsWithThumbnail;
+}
+
+class HiddenCollectionsListViewWidget extends StatelessWidget {
+  final List<CollectionWithThumbnail> hiddenCollections;
+
+  const HiddenCollectionsListViewWidget(
+    this.hiddenCollections, {
+    Key key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: SizedBox(
+        height: 155,
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: ListView.builder(
+            shrinkWrap: true,
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.fromLTRB(6, 0, 6, 0),
+            physics: const ScrollPhysics(),
+            // to disable GridView's scrolling
+            itemBuilder: (context, index) {
+              return HiddenCollectionItem(hiddenCollections[index]);
+            },
+            itemCount: hiddenCollections.length,
+          ),
+        ),
+      ),
+    );
+  }
 }
