@@ -3,10 +3,10 @@ import 'package:photos/models/device_folder.dart';
 import 'package:photos/ui/collections/device_folder_icon_widget.dart';
 import 'package:photos/ui/viewer/gallery/empte_state.dart';
 
-class DeviceFoldersGridViewWidget extends StatelessWidget {
+class DeviceFoldersListViewWidget extends StatelessWidget {
   final List<DeviceFolder> folders;
 
-  const DeviceFoldersGridViewWidget(
+  const DeviceFoldersListViewWidget(
     this.folders, {
     Key key,
   }) : super(key: key);

@@ -10,7 +10,6 @@ import 'package:photos/models/magic_metadata.dart';
 import 'package:photos/models/selected_files.dart';
 import 'package:photos/services/collections_service.dart';
 import 'package:photos/ui/collections/hidden_collections_list_view_widget.dart';
-import 'package:photos/ui/collections/section_title.dart';
 import 'package:photos/ui/common/loading_widget.dart';
 import 'package:photos/ui/viewer/gallery/empte_state.dart';
 import 'package:photos/ui/viewer/gallery/gallery.dart';
@@ -102,7 +101,6 @@ class HiddenCollections extends StatelessWidget {
         getCollectionsWithThumbnail(hiddenCollectionIds);
     return Column(
       children: [
-        const SectionTitle('Albums'),
         const SizedBox(height: 12),
         hiddenCollectionIds.isEmpty
             ? const Padding(
@@ -122,7 +120,6 @@ class HiddenCollections extends StatelessWidget {
                   }
                 },
               ),
-        const Padding(padding: EdgeInsets.all(4)),
         const Divider(),
       ],
     );

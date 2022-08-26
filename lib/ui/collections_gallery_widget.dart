@@ -13,7 +13,7 @@ import 'package:photos/events/user_logged_out_event.dart';
 import 'package:photos/models/collection_items.dart';
 import 'package:photos/models/device_folder.dart';
 import 'package:photos/services/collections_service.dart';
-import 'package:photos/ui/collections/device_folders_grid_view_widget.dart';
+import 'package:photos/ui/collections/device_folders_list_view_widget.dart';
 import 'package:photos/ui/collections/ente_section_title.dart';
 import 'package:photos/ui/collections/hidden_collections_button_widget.dart';
 import 'package:photos/ui/collections/remote_collections_grid_view_widget.dart';
@@ -162,7 +162,7 @@ class _CollectionsGalleryWidgetState extends State<CollectionsGalleryWidget>
                     padding: EdgeInsets.all(22),
                     child: EmptyState(),
                   )
-                : DeviceFoldersGridViewWidget(items.folders),
+                : DeviceFoldersListViewWidget(items.folders),
             const Padding(padding: EdgeInsets.all(4)),
             const Divider(),
             Row(

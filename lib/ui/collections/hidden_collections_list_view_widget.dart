@@ -16,7 +16,7 @@ class HiddenCollectionsListViewWidget extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: SizedBox(
-        height: 170,
+        height: 155,
         child: Align(
           alignment: Alignment.centerLeft,
           child: hiddenCollections.isEmpty
