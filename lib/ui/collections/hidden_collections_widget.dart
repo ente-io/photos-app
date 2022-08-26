@@ -8,7 +8,6 @@ import 'package:photos/models/collection_items.dart';
 import 'package:photos/services/collections_service.dart';
 import 'package:photos/ui/collections/hidden_collection_item_widget.dart';
 import 'package:photos/ui/common/loading_widget.dart';
-import 'package:photos/ui/viewer/gallery/hidden_collections_empty_state.dart';
 
 class HiddenCollectionsWidget extends StatefulWidget {
   const HiddenCollectionsWidget({Key key}) : super(key: key);
@@ -37,28 +36,31 @@ class _HiddenCollectionsWidgetState extends State<HiddenCollectionsWidget> {
 
     final hiddenCollectionsWithThumbnail =
         getCollectionsWithThumbnail(hiddenCollectionIds);
+    final isHiddenCollectionsEmpty = hiddenCollectionIds.isEmpty;
     return Column(
       children: [
-        const SizedBox(height: 12),
-        hiddenCollectionIds.isEmpty
-            ? const Padding(
-                padding: EdgeInsets.all(22),
-                child: HiddenCollectionsEmptyState(),
-              )
+        isHiddenCollectionsEmpty
+            ? const SizedBox.shrink()
             : FutureBuilder(
                 future: hiddenCollectionsWithThumbnail,
                 builder: (context, snapshot) {
                   if (snapshot.hasData) {
-                    return HiddenCollectionsListViewWidget(snapshot.data);
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: HiddenCollectionsListViewWidget(snapshot.data),
+                    );
                   } else if (snapshot.hasError) {
                     Logger('HiddenCollections').info(snapshot.error);
-                    return const HiddenCollectionsEmptyState();
+                    return const SizedBox.shrink();
                   } else {
-                    return const EnteLoadingWidget();
+                    return const Padding(
+                      padding: EdgeInsets.only(top: 12),
+                      child: EnteLoadingWidget(),
+                    );
                   }
                 },
               ),
-        const Divider(),
+        isHiddenCollectionsEmpty ? const SizedBox.shrink() : const Divider(),
       ],
     );
   }
