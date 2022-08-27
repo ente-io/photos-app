@@ -47,6 +47,10 @@ class Collection {
     return mMdVersion > 0 && magicMetadata.visibility == kVisibilityArchive;
   }
 
+  bool isShared() {
+    return sharees.isNotEmpty || publicURLs.isNotEmpty;
+  }
+
   static CollectionType typeFromString(String type) {
     switch (type) {
       case "folder":

@@ -69,7 +69,7 @@ class _SharedCollectionGalleryState extends State<SharedCollectionGallery>
           final c =
               CollectionsService.instance.getCollectionByID(file.collectionID);
           if (c.owner.id == Configuration.instance.getUserID()) {
-            if (c.sharees.isNotEmpty || c.publicURLs.isNotEmpty) {
+            if (c.isShared() && !c.isArchived()) {
               outgoing.add(
                 CollectionWithThumbnail(
                   c,
