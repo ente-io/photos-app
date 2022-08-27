@@ -8,6 +8,7 @@ import 'package:photos/models/collection_items.dart';
 import 'package:photos/services/collections_service.dart';
 import 'package:photos/ui/collections/hidden_collection_item_widget.dart';
 import 'package:photos/ui/common/loading_widget.dart';
+import 'package:photos/ui/viewer/gallery/sharing_hidden_album_warning_widget.dart';
 
 class HiddenCollectionsWidget extends StatefulWidget {
   const HiddenCollectionsWidget({Key key}) : super(key: key);
@@ -45,9 +46,23 @@ class _HiddenCollectionsWidgetState extends State<HiddenCollectionsWidget> {
                 future: hiddenCollectionsWithThumbnail,
                 builder: (context, snapshot) {
                   if (snapshot.hasData) {
+                    final List<CollectionWithThumbnail> hiddenCollections =
+                        snapshot.data;
+
                     return Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: HiddenCollectionsListViewWidget(snapshot.data),
+                      padding: const EdgeInsets.only(top: 0),
+                      child: Column(
+                        children: [
+                          _hasSharedCollection(hiddenCollections)
+                              ? const SharingHiddenAlbumWarning()
+                              : const SizedBox.shrink(),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child:
+                                HiddenCollectionsListViewWidget(snapshot.data),
+                          ),
+                        ],
+                      ),
                     );
                   } else if (snapshot.hasError) {
                     Logger('HiddenCollections').info(snapshot.error);
@@ -63,6 +78,19 @@ class _HiddenCollectionsWidgetState extends State<HiddenCollectionsWidget> {
         isHiddenCollectionsEmpty ? const SizedBox.shrink() : const Divider(),
       ],
     );
+  }
+
+  bool _hasSharedCollection(
+    List<CollectionWithThumbnail> hiddenCollecitons,
+  ) {
+    bool hasSharedCollection = false;
+    for (var collection in hiddenCollecitons) {
+      if (collection.collection.isShared()) {
+        hasSharedCollection = true;
+        break;
+      }
+    }
+    return hasSharedCollection;
   }
 
   @override

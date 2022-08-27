@@ -361,6 +361,18 @@ extension CustomColorScheme on ColorScheme {
   Color get searchResultsBackgroundColor => brightness == Brightness.light
       ? Colors.black.withOpacity(0.32)
       : Colors.black.withOpacity(0.64);
+
+  Color get stroke2 => brightness == Brightness.light
+      ? Colors.black.withOpacity(0.24)
+      : Colors.white.withOpacity(0.24);
+
+  Color get text3 => brightness == Brightness.light
+      ? Colors.black.withOpacity(0.5)
+      : Colors.white.withOpacity(0.5);
+
+  Color get text2 => brightness == Brightness.light
+      ? Colors.black.withOpacity(0.6)
+      : Colors.white.withOpacity(0.6);
 }
 
 OutlinedButtonThemeData buildOutlinedButtonThemeData({
