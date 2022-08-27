@@ -177,45 +177,13 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
               await _renameAlbum(context);
             }
             if (value == 2) {
-              _isNotHiddenAndIsShared(widget.collection)
-                  ? showDialog(
-                      barrierDismissible: true,
-                      context: context,
-                      builder: (BuildContext context) {
-                        return AlertDialog(
-                          title: const Text("Hide shared album?"),
-                          content: const Text(
-                            "Looks like you're trying to hide a shared album. The album will be hidden on your device, but it can still be seen by the people you have shared it with.",
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                              },
-                              child: const Text('Cancel'),
-                            ),
-                            TextButton(
-                              onPressed: () async {
-                                Navigator.pop(context);
-                                await changeCollectionVisibility(
-                                  context,
-                                  widget.collection,
-                                  kVisibilityArchive,
-                                );
-                              },
-                              child: const Text('Hide'),
-                            )
-                          ],
-                        );
-                      },
-                    )
-                  : await changeCollectionVisibility(
-                      context,
-                      widget.collection,
-                      widget.collection.isArchived()
-                          ? kVisibilityVisible
-                          : kVisibilityArchive,
-                    );
+              await changeCollectionVisibility(
+                context,
+                widget.collection,
+                widget.collection.isArchived()
+                    ? kVisibilityVisible
+                    : kVisibilityArchive,
+              );
             }
           },
         ),
@@ -256,7 +224,4 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
       showGenericErrorDialog(context);
     }
   }
-
-  bool _isNotHiddenAndIsShared(Collection c) =>
-      (c.sharees.isNotEmpty || c.publicURLs.isNotEmpty) && !c.isArchived();
 }
