@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
+import 'package:photos/core/configuration.dart';
 import 'package:photos/core/constants.dart';
 import 'package:photos/core/network.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -83,6 +84,20 @@ class FeatureFlagService {
     }
   }
 
+  bool enableSearch() {
+    try {
+      return _isInternalUserOrDebugBuild() || _getFeatureFlags().enableSearch;
+    } catch (e) {
+      _logger.severe("failed to getSearchFeatureFlag", e);
+      return FFDefault.enableSearch;
+    }
+  }
+
+  bool _isInternalUserOrDebugBuild() {
+    String email = Configuration.instance.getEmail();
+    return (email != null && email.endsWith("@ente.io")) || kDebugMode;
+  }
+
   Future<void> fetchFeatureFlags() async {
     try {
       final response = await Network.instance
@@ -105,18 +120,21 @@ class FeatureFlags {
     disableUrlSharing: FFDefault.disableUrlSharing,
     enableStripe: FFDefault.enableStripe,
     enableMissingLocationMigration: FFDefault.enableMissingLocationMigration,
+    enableSearch: FFDefault.enableSearch,
   );
 
   final bool disableCFWorker;
   final bool disableUrlSharing;
   final bool enableStripe;
   final bool enableMissingLocationMigration;
+  final bool enableSearch;
 
   FeatureFlags({
     @required this.disableCFWorker,
     @required this.disableUrlSharing,
     @required this.enableStripe,
     @required this.enableMissingLocationMigration,
+    @required this.enableSearch,
   });
 
   Map<String, dynamic> toMap() {
@@ -125,6 +143,7 @@ class FeatureFlags {
       "disableUrlSharing": disableUrlSharing,
       "enableStripe": enableStripe,
       "enableMissingLocationMigration": enableMissingLocationMigration,
+      "enableSearch": enableSearch,
     };
   }
 
@@ -141,6 +160,7 @@ class FeatureFlags {
       enableStripe: json["enableStripe"] ?? FFDefault.enableStripe,
       enableMissingLocationMigration: json["enableMissingLocationMigration"] ??
           FFDefault.enableMissingLocationMigration,
+      enableSearch: json["enableSearch"] ?? FFDefault.enableSearch,
     );
   }
 

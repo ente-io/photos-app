@@ -20,6 +20,7 @@ import 'package:photos/services/local_sync_service.dart';
 import 'package:photos/services/memories_service.dart';
 import 'package:photos/services/notification_service.dart';
 import 'package:photos/services/remote_sync_service.dart';
+import 'package:photos/services/search_service.dart';
 import 'package:photos/services/sync_service.dart';
 import 'package:photos/services/trash_sync_service.dart';
 import 'package:photos/services/update_service.dart';
@@ -136,6 +137,15 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
   await MemoriesService.instance.init();
   await LocalSettings.instance.init();
   await FileMigrationService.instance.init();
+  await SearchService.instance.init();
+  if (Platform.isIOS) {
+    // PushService.instance.init().then((_) {
+    //   FirebaseMessaging.onBackgroundMessage(
+    //     _firebaseMessagingBackgroundHandler,
+    //   );
+    // });
+  }
+
   FeatureFlagService.instance.init();
   _logger.info("Initialization done");
 }

@@ -14,14 +14,12 @@ class CollectionPage extends StatelessWidget {
   final CollectionWithThumbnail c;
   final String tagPrefix;
   final GalleryType appBarType;
-  final GalleryType overlayType;
   final _selectedFiles = SelectedFiles();
 
   CollectionPage(
     this.c, {
     this.tagPrefix = "collection",
     this.appBarType = GalleryType.ownedCollection,
-    this.overlayType = GalleryType.ownedCollection,
     Key key,
   }) : super(key: key);
 
@@ -50,7 +48,6 @@ class CollectionPage extends StatelessWidget {
       initialFiles: initialFiles,
       smallerTodayFont: true,
       albumName: c.collection.name,
-      footer: const SizedBox(height: 120),
     );
     return Scaffold(
       appBar: PreferredSize(
@@ -67,7 +64,7 @@ class CollectionPage extends StatelessWidget {
         children: [
           gallery,
           GalleryOverlayWidget(
-            overlayType,
+            appBarType,
             _selectedFiles,
             collection: c.collection,
           ),

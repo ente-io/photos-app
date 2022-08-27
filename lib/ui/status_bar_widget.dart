@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:photos/core/event_bus.dart';
 import 'package:photos/ente_theme_data.dart';
 import 'package:photos/events/sync_status_update_event.dart';
+import 'package:photos/services/feature_flag_service.dart';
 import 'package:photos/services/sync_service.dart';
 import 'package:photos/ui/header_error_widget.dart';
+import 'package:photos/ui/viewer/search/search_widget.dart';
 
 const double kContainerHeight = 36;
 
@@ -19,10 +21,20 @@ class StatusBarWidget extends StatefulWidget {
 class _StatusBarWidgetState extends State<StatusBarWidget> {
   StreamSubscription<SyncStatusUpdate> _subscription;
   bool _showStatus = false;
+  bool _showErrorBanner = false;
 
   @override
   void initState() {
     _subscription = Bus.instance.on<SyncStatusUpdate>().listen((event) {
+      if (event.status == SyncStatus.error) {
+        setState(() {
+          _showErrorBanner = true;
+        });
+      } else {
+        setState(() {
+          _showErrorBanner = false;
+        });
+      }
       if (event.status == SyncStatus.completedFirstGalleryImport ||
           event.status == SyncStatus.completedBackup) {
         Future.delayed(const Duration(milliseconds: 2000), () {
@@ -49,31 +61,44 @@ class _StatusBarWidgetState extends State<StatusBarWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 0),
-      child: Column(
-        children: [
-          Stack(
-            children: [
-              AnimatedOpacity(
-                opacity: _showStatus ? 0 : 1,
-                duration: const Duration(milliseconds: 1000),
-                child: const StatusBarBrandingWidget(),
-              ),
-              AnimatedOpacity(
-                opacity: _showStatus ? 1 : 0,
-                duration: const Duration(milliseconds: 1000),
-                child: const SyncStatusWidget(),
-              ),
-            ],
-          ),
-          AnimatedOpacity(
-            opacity: _showStatus ? 1 : 0,
-            duration: const Duration(milliseconds: 1000),
-            child: const Divider(),
-          ),
-        ],
-      ),
+    return Column(
+      children: [
+        Stack(
+          children: [
+            AnimatedOpacity(
+              opacity: _showStatus
+                  ? _showErrorBanner
+                      ? 1
+                      : 0
+                  : 1,
+              duration: const Duration(milliseconds: 1000),
+              child: const BrandingWidget(),
+            ),
+            AnimatedOpacity(
+              opacity: _showStatus ? 1 : 0,
+              duration: const Duration(milliseconds: 1000),
+              child: const SyncStatusWidget(),
+            ),
+            Positioned(
+              right: 0,
+              top: 0,
+              child: FeatureFlagService.instance.enableSearch()
+                  ? Container(
+                      color:
+                          Theme.of(context).colorScheme.defaultBackgroundColor,
+                      height: kContainerHeight,
+                      child: const SearchIconWidget(),
+                    )
+                  : const SizedBox(height: 36, width: 48),
+            ),
+          ],
+        ),
+        AnimatedOpacity(
+          opacity: _showStatus ? 1 : 0,
+          duration: const Duration(milliseconds: 1000),
+          child: const Divider(),
+        ),
+      ],
     );
   }
 }
@@ -116,10 +141,13 @@ class _SyncStatusWidgetState extends State<SyncStatusWidget> {
         (DateTime.now().microsecondsSinceEpoch - _event.timestamp >
             kSleepDuration.inMicroseconds);
     if (_event == null || isNotOutdatedEvent) {
-      return Container();
+      return const SizedBox.shrink();
     }
     if (_event.status == SyncStatus.error) {
-      return HeaderErrorWidget(error: _event.error);
+      return Padding(
+        padding: const EdgeInsets.only(top: kContainerHeight + 8),
+        child: HeaderErrorWidget(error: _event.error),
+      );
     }
     if (_event.status == SyncStatus.completedBackup) {
       return const SyncStatusCompletedWidget();
@@ -204,26 +232,30 @@ class RefreshIndicatorWidget extends StatelessWidget {
   }
 }
 
-class StatusBarBrandingWidget extends StatelessWidget {
-  const StatusBarBrandingWidget({Key key}) : super(key: key);
+class BrandingWidget extends StatelessWidget {
+  const BrandingWidget({Key key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: kContainerHeight,
-      padding: const EdgeInsets.only(left: 12),
-      child: const Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          "ente",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontFamily: 'Montserrat',
-            fontSize: 24,
-            height: 1,
+    return Row(
+      children: [
+        Container(
+          height: kContainerHeight,
+          padding: const EdgeInsets.only(left: 12, top: 4),
+          child: const Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              "ente",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Montserrat',
+                fontSize: 24,
+                height: 1,
+              ),
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -233,7 +265,8 @@ class SyncStatusCompletedWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return Container(
+      color: Theme.of(context).colorScheme.defaultBackgroundColor,
       height: kContainerHeight,
       child: Align(
         alignment: Alignment.center,
