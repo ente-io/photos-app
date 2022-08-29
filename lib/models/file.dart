@@ -60,6 +60,10 @@ class File extends EnteFile {
 
   File();
 
+  bool isHidden() {
+    return mMdVersion > 0 && magicMetadata.visibility == kVisibilityArchive;
+  }
+
   static Future<File> fromAsset(String pathName, AssetEntity asset) async {
     File file = File();
     file.localID = asset.id;

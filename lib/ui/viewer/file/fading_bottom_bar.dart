@@ -4,11 +4,15 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:photos/core/configuration.dart';
+import 'package:photos/ente_theme_data.dart';
 import 'package:photos/models/file.dart';
 import 'package:photos/models/file_type.dart';
 import 'package:photos/models/magic_metadata.dart';
 import 'package:photos/models/selected_files.dart';
 import 'package:photos/models/trash_file.dart';
+import 'package:photos/services/collections_service.dart';
+import 'package:photos/services/feature_flag_service.dart';
+import 'package:photos/ui/common/dialogs.dart';
 import 'package:photos/ui/create_collection_page.dart';
 import 'package:photos/ui/viewer/file/file_info_dialog.dart';
 import 'package:photos/utils/delete_file_util.dart';
@@ -118,12 +122,36 @@ class FadingBottomBarState extends State<FadingBottomBar> {
                   color: Colors.white,
                 ),
                 onPressed: () async {
-                  await changeVisibility(
-                    context,
-                    [widget.file],
-                    isArchived ? kVisibilityVisible : kVisibilityArchive,
-                  );
-                  safeRefresh();
+                  if (FeatureFlagService.instance
+                          .isInternalUserOrDebugBuild() &&
+                      _isCollectionSharedAndFileNotHidden(widget.file)) {
+                    final choice = await showChoiceDialog(
+                      context,
+                      'Hide shared items?',
+                      "Looks like you're trying to hide some items in a shared album.\n\nThese items will be hidden on your device, but they can be still be seen by the recipient.",
+                      firstAction: "Cancel",
+                      secondAction: "That's fine, hide them",
+                      secondActionColor:
+                          Theme.of(context).colorScheme.defaultTextColor,
+                    );
+                    if (choice != DialogUserChoice.secondChoice) {
+                      return;
+                    } else {
+                      await changeVisibility(
+                        context,
+                        [widget.file],
+                        isArchived ? kVisibilityVisible : kVisibilityArchive,
+                      );
+                      safeRefresh();
+                    }
+                  } else {
+                    await changeVisibility(
+                      context,
+                      [widget.file],
+                      isArchived ? kVisibilityVisible : kVisibilityArchive,
+                    );
+                    safeRefresh();
+                  }
                 },
               ),
             ),
@@ -247,5 +275,12 @@ class FadingBottomBarState extends State<FadingBottomBar> {
         return FileInfoWidget(file);
       },
     );
+  }
+
+  bool _isCollectionSharedAndFileNotHidden(File file) {
+    final collection =
+        CollectionsService.instance.getCollectionByID(file.collectionID);
+
+    return collection.isShared() && !file.isHidden();
   }
 }
