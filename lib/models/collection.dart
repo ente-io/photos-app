@@ -89,7 +89,7 @@ class Collection {
     String mMdEncodedJson,
     int mMdVersion,
   }) {
-    Collection result = Collection(
+    final Collection result = Collection(
       id ?? this.id,
       owner ?? this.owner,
       encryptedKey ?? this.encryptedKey,
