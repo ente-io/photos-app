@@ -195,8 +195,8 @@ class _CreateCollectionPageState extends State<CreateCollectionPage> {
       }
     }
     collectionsWithThumbnail.sort((first, second) {
-      return (first.collection.name ?? "")
-          .compareTo((second.collection.name ?? ""));
+      return (first.collection.name.toLowerCase() ?? "")
+          .compareTo((second.collection.name.toLowerCase() ?? ""));
     });
     return collectionsWithThumbnail;
   }
@@ -284,7 +284,8 @@ class _CreateCollectionPageState extends State<CreateCollectionPage> {
     final dialog = createProgressDialog(context, "Moving files to album...");
     await dialog.show();
     try {
-      final int fromCollectionID = widget.selectedFiles.files?.first?.collectionID;
+      final int fromCollectionID =
+          widget.selectedFiles.files?.first?.collectionID;
       await CollectionsService.instance.move(
         toCollectionID,
         fromCollectionID,
