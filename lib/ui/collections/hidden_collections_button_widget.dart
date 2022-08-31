@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:photos/core/configuration.dart';
 import 'package:photos/db/files_db.dart';
 import 'package:photos/models/magic_metadata.dart';
-import 'package:photos/ui/viewer/gallery/archive_page.dart';
+import 'package:photos/ui/viewer/gallery/hidden_page.dart';
 import 'package:photos/utils/navigation_util.dart';
 
 class HiddenCollectionsButtonWidget extends StatelessWidget {
@@ -94,7 +94,7 @@ class HiddenCollectionsButtonWidget extends StatelessWidget {
       onPressed: () async {
         routeToPage(
           context,
-          ArchivePage(),
+          HiddenPage(),
         );
       },
     );
