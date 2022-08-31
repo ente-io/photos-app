@@ -131,12 +131,19 @@ class CollectionsService {
     return updatedCollections;
   }
 
-  Set<int> getArchivedCollections() {
+  Set<int> getHiddenCollectionIDs() {
     return _collectionIDToCollections.values
         .toList()
-        .where((element) => element.isArchived())
+        .where((element) => element.isHidden())
         .map((e) => e.id)
         .toSet();
+  }
+
+  List<Collection> getHiddenCollections() {
+    return _collectionIDToCollections.values
+        .toList()
+        .where((element) => element.isHidden())
+        .toList();
   }
 
   int getCollectionSyncTime(int collectionID) {
@@ -740,6 +747,16 @@ class CollectionsService {
     );
     await _filesDB.insertMultiple(files);
     Bus.instance.fire(CollectionUpdatedEvent(toCollectionID, files));
+  }
+
+  Set<int> getSharedCollectionIDs() {
+    final Set<int> sharedCollectionIDs = {};
+    _collectionIDToCollections.forEach((key, value) {
+      if (value.isShared()) {
+        sharedCollectionIDs.add(key);
+      }
+    });
+    return sharedCollectionIDs;
   }
 
   void _validateMoveRequest(

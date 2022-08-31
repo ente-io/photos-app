@@ -137,7 +137,7 @@ class SearchService {
       }
       final Collection collection =
           CollectionsService.instance.getCollectionByID(file.collectionID);
-      if (!collection.isArchived() &&
+      if (!collection.isHidden() &&
           collection.name.contains(nonCaseSensitiveRegexForQuery)) {
         collectionSearchResults
             .add(AlbumSearchResult(CollectionWithThumbnail(collection, file)));

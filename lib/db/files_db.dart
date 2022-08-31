@@ -434,7 +434,7 @@ class FilesDB {
 
   Future<Set<int>> getCollectionIDsOfHiddenFiles(
     int ownerID, {
-    int visibility = kVisibilityArchive,
+    int visibility = kVisibilityHidden,
   }) async {
     final db = await instance.database;
     final results = await db.query(

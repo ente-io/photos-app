@@ -379,7 +379,7 @@ class _HomeWidgetState extends State<HomeWidget> {
         final importantPaths = Configuration.instance.getPathsToBackUp();
         final ownerID = Configuration.instance.getUserID();
         final archivedCollectionIds =
-            CollectionsService.instance.getArchivedCollections();
+            CollectionsService.instance.getHiddenCollectionIDs();
         FileLoadResult result;
         if (importantPaths.isNotEmpty) {
           result = await FilesDB.instance.getImportantFiles(

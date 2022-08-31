@@ -43,8 +43,8 @@ class Collection {
     this.isDeleted = false,
   });
 
-  bool isArchived() {
-    return mMdVersion > 0 && magicMetadata.visibility == kVisibilityArchive;
+  bool isHidden() {
+    return mMdVersion > 0 && magicMetadata.visibility == kVisibilityHidden;
   }
 
   bool isShared() {

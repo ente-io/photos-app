@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/src/foundation/key.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:logging/logging.dart';
+import 'package:photos/core/configuration.dart';
 import 'package:photos/core/event_bus.dart';
+import 'package:photos/db/files_db.dart';
 import 'package:photos/events/collection_updated_event.dart';
 import 'package:photos/models/collection_items.dart';
 import 'package:photos/services/collections_service.dart';
@@ -83,23 +85,31 @@ class _HiddenHeaderWidgetState extends State<HiddenHeaderWidget> {
   }
 
   Future<bool> _showBanner() async {
-    final hiddenCollectionsWithThumbnail =
-        await _getHiddenCollectionsWithThumbnail();
-
-    bool hasSharedCollection = false;
-    for (var collectionWithThumbnail in hiddenCollectionsWithThumbnail) {
-      if (collectionWithThumbnail.collection.isShared()) {
-        hasSharedCollection = true;
+    final hiddenCollections =
+        CollectionsService.instance.getHiddenCollections();
+    bool hasHiddenFilesInSharedCollection = false;
+    bool hasSharedHiddenCollection = false;
+    for (var hiddenCollection in hiddenCollections) {
+      if (hiddenCollection.isShared()) {
+        hasSharedHiddenCollection = true;
         break;
       }
     }
-    return hasSharedCollection;
+
+    final sharedCollectionIDs =
+        CollectionsService.instance.getSharedCollectionIDs();
+    final collectionIDsOfHiddenFiles = await FilesDB.instance
+        .getCollectionIDsOfHiddenFiles(Configuration.instance.getUserID());
+    collectionIDsOfHiddenFiles.intersection(sharedCollectionIDs).isNotEmpty
+        ? hasHiddenFilesInSharedCollection = true
+        : {};
+    return hasSharedHiddenCollection || hasHiddenFilesInSharedCollection;
   }
 
   Future<List<CollectionWithThumbnail>>
       _getHiddenCollectionsWithThumbnail() async {
     final hiddenCollectionIDs =
-        CollectionsService.instance.getArchivedCollections();
+        CollectionsService.instance.getHiddenCollectionIDs();
     final collectionService = CollectionsService.instance;
     final List<CollectionWithThumbnail> hiddenCollectionsWithThumbnail = [];
     final latestCollectionFiles =

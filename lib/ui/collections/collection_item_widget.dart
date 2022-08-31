@@ -40,7 +40,7 @@ class CollectionItem extends StatelessWidget {
                 tag: "collection" + c.thumbnail.tag(),
                 child: ThumbnailWidget(
                   c.thumbnail,
-                  shouldShowArchiveStatus: c.collection.isArchived(),
+                  shouldShowArchiveStatus: c.collection.isHidden(),
                   key: Key(
                     "collection" + c.thumbnail.tag(),
                   ),

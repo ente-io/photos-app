@@ -32,7 +32,7 @@ class HiddenPage extends StatelessWidget {
           creationStartTime,
           creationEndTime,
           Configuration.instance.getUserID(),
-          visibility: kVisibilityArchive,
+          visibility: kVisibilityHidden,
           limit: limit,
           asc: asc,
         );

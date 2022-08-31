@@ -384,7 +384,7 @@ class _OverlayWidgetState extends State<OverlayWidget> {
             onPressed: () {
               _handleVisibilityChangeRequest(
                 context,
-                showArchive ? kVisibilityArchive : kVisibilityVisible,
+                showArchive ? kVisibilityHidden : kVisibilityVisible,
               );
             },
           ),

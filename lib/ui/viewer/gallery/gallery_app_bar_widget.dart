@@ -175,7 +175,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
                 ),
               );
             }
-            final bool isArchived = widget.collection.isArchived();
+            final bool isArchived = widget.collection.isHidden();
             items.add(
               PopupMenuItem(
                 value: 2,
@@ -200,9 +200,9 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
               await changeCollectionVisibility(
                 context,
                 widget.collection,
-                widget.collection.isArchived()
+                widget.collection.isHidden()
                     ? kVisibilityVisible
-                    : kVisibilityArchive,
+                    : kVisibilityHidden,
               );
             }
           },

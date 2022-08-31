@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 const kVisibilityVisible = 0;
-const kVisibilityArchive = 1;
+const kVisibilityHidden = 1;
 
 const kMagicKeyVisibility = 'visibility';
 
