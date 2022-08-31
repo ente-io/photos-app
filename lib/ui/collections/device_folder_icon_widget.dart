@@ -69,7 +69,9 @@ class DeviceFolderIcon extends StatelessWidget {
                                 folder.thumbnail.tag(),
                           ),
                         ),
-                        isBackedUp ? Container() : kUnsyncedIconOverlay,
+                        isBackedUp
+                            ? const SizedBox.shrink()
+                            : kUnsyncedIconOverlay,
                       ],
                     ),
                   ),
