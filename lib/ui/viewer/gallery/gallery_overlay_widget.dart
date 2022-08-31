@@ -8,6 +8,7 @@ import 'package:logging/logging.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:photos/core/configuration.dart';
 import 'package:photos/core/event_bus.dart';
+import 'package:photos/db/files_db.dart';
 import 'package:photos/ente_theme_data.dart';
 import 'package:photos/events/subscription_purchased_event.dart';
 import 'package:photos/models/collection.dart';
@@ -15,6 +16,8 @@ import 'package:photos/models/gallery_type.dart';
 import 'package:photos/models/magic_metadata.dart';
 import 'package:photos/models/selected_files.dart';
 import 'package:photos/services/collections_service.dart';
+import 'package:photos/services/feature_flag_service.dart';
+import 'package:photos/ui/common/dialogs.dart';
 import 'package:photos/ui/create_collection_page.dart';
 import 'package:photos/utils/delete_file_util.dart';
 import 'package:photos/utils/dialog_util.dart';
@@ -372,19 +375,19 @@ class _OverlayWidgetState extends State<OverlayWidget> {
 
     if (widget.type == GalleryType.homepage ||
         widget.type == GalleryType.archive) {
-      final bool showArchive = widget.type == GalleryType.homepage;
+      final bool showHidden = widget.type == GalleryType.homepage;
       actions.add(
         Tooltip(
-          message: showArchive ? "Hide" : "Unhide",
+          message: showHidden ? "Hide" : "Unhide",
           child: IconButton(
             color: Theme.of(context).colorScheme.iconColor,
             icon: Icon(
-              showArchive ? Icons.visibility_off : Icons.visibility,
+              showHidden ? Icons.visibility_off : Icons.visibility,
             ),
             onPressed: () {
               _handleVisibilityChangeRequest(
                 context,
-                showArchive ? kVisibilityHidden : kVisibilityVisible,
+                showHidden ? kVisibilityHidden : kVisibilityVisible,
               );
             },
           ),
@@ -445,11 +448,39 @@ class _OverlayWidgetState extends State<OverlayWidget> {
     int newVisibility,
   ) async {
     try {
-      await changeVisibility(
-        context,
-        widget.selectedFiles.files.toList(),
-        newVisibility,
-      );
+      final selectedFiles = widget.selectedFiles.files.toList();
+      bool hasSharedFile = false;
+      for (var file in selectedFiles) {
+        hasSharedFile =
+            await _doesFileBelongToSharedCollection(file.uploadedFileID);
+        if (hasSharedFile) {
+          break;
+        }
+      }
+      if (FeatureFlagService.instance.isInternalUserOrDebugBuild() &&
+          hasSharedFile) {
+        final choice = await showChoiceDialog(
+          context,
+          'Hide shared items?',
+          "Looks like you're trying to hide some items in a shared album.\n\nThese items will be hidden on your device, but they can be still be seen by the recipient.",
+          firstAction: "Cancel",
+          secondAction: "That's fine, hide them",
+          secondActionColor: Theme.of(context).colorScheme.defaultTextColor,
+        );
+        if (choice == DialogUserChoice.secondChoice) {
+          await changeVisibility(
+            context,
+            widget.selectedFiles.files.toList(),
+            newVisibility,
+          );
+        }
+      } else {
+        await changeVisibility(
+          context,
+          widget.selectedFiles.files.toList(),
+          newVisibility,
+        );
+      }
     } catch (e, s) {
       _logger.severe("failed to update file visibility", e, s);
       await showGenericErrorDialog(context);
@@ -605,5 +636,16 @@ class _OverlayWidgetState extends State<OverlayWidget> {
       ),
     );
     showCupertinoModalPopup(context: context, builder: (_) => action);
+  }
+
+  Future<bool> _doesFileBelongToSharedCollection(int uploadedFileID) async {
+    final collectionIDsOfFile =
+        await FilesDB.instance.getAllCollectionIDsOfFile(
+      uploadedFileID,
+      Configuration.instance.getUserID(),
+    );
+    final hiddenCollectionIDs =
+        CollectionsService.instance.getSharedCollectionIDs();
+    return hiddenCollectionIDs.intersection(collectionIDsOfFile).isNotEmpty;
   }
 }

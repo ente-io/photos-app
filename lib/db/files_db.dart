@@ -452,6 +452,27 @@ class FilesDB {
     return collectionIDsOfHiddenFiles;
   }
 
+  Future<Set<int>> getAllCollectionIDsOfFile(
+    int uploadedFileID,
+    int ownerID, {
+    int visibility = kVisibilityVisible,
+  }) async {
+    final db = await instance.database;
+    final results = await db.query(
+      table,
+      where:
+          '$columnUploadedFileID = ? AND $columnOwnerID = ? AND $columnMMdVisibility = ? AND $columnCollectionID != -1',
+      columns: [columnCollectionID],
+      whereArgs: [uploadedFileID, ownerID, visibility],
+      distinct: true,
+    );
+    Set<int> collectionIDsOfFile = {};
+    for (var result in results) {
+      collectionIDsOfFile.add(result['collection_id']);
+    }
+    return collectionIDsOfFile;
+  }
+
   Future<FileLoadResult> getAllLocalAndUploadedFiles(
     int startTime,
     int endTime,

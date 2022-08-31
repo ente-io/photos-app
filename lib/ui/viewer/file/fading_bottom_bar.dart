@@ -107,16 +107,16 @@ class FadingBottomBarState extends State<FadingBottomBar> {
       }
       if (widget.file.uploadedFileID != null &&
           widget.file.ownerID == Configuration.instance.getUserID()) {
-        final bool isArchived =
+        final bool isHidden =
             widget.file.magicMetadata.visibility == kVisibilityHidden;
         children.add(
           Tooltip(
-            message: isArchived ? "Unhide" : "Hide",
+            message: isHidden ? "Unhide" : "Hide",
             child: Padding(
               padding: const EdgeInsets.only(top: 12, bottom: 12),
               child: IconButton(
                 icon: Icon(
-                  isArchived
+                  isHidden
                       ? Icons.visibility_outlined
                       : Icons.visibility_off_outlined,
                   color: Colors.white,
@@ -134,13 +134,11 @@ class FadingBottomBarState extends State<FadingBottomBar> {
                       secondActionColor:
                           Theme.of(context).colorScheme.defaultTextColor,
                     );
-                    if (choice != DialogUserChoice.secondChoice) {
-                      return;
-                    } else {
+                    if (choice == DialogUserChoice.secondChoice) {
                       await changeVisibility(
                         context,
                         [widget.file],
-                        isArchived ? kVisibilityVisible : kVisibilityHidden,
+                        isHidden ? kVisibilityVisible : kVisibilityHidden,
                       );
                       safeRefresh();
                     }
@@ -148,7 +146,7 @@ class FadingBottomBarState extends State<FadingBottomBar> {
                     await changeVisibility(
                       context,
                       [widget.file],
-                      isArchived ? kVisibilityVisible : kVisibilityHidden,
+                      isHidden ? kVisibilityVisible : kVisibilityHidden,
                     );
                     safeRefresh();
                   }
