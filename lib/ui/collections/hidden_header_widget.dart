@@ -50,7 +50,7 @@ class _HiddenHeaderWidgetState extends State<HiddenHeaderWidget> {
           builder: (context, snapshot) {
             if (snapshot.hasData) {
               if (snapshot.data) {
-                return const SharingHiddenAlbumWarning();
+                return const SharingHiddenItemsBanner();
               }
               return const SizedBox.shrink();
             } else if (snapshot.hasError) {

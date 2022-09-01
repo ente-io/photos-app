@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:photos/ente_theme_data.dart';
 
-class SharingHiddenAlbumWarning extends StatelessWidget {
-  const SharingHiddenAlbumWarning({Key key}) : super(key: key);
+class SharingHiddenItemsBanner extends StatelessWidget {
+  const SharingHiddenItemsBanner({Key key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
