@@ -48,8 +48,7 @@ class Collection {
   }
 
   bool isShared() {
-    return (sharees != null && sharees.isNotEmpty) ||
-        (publicURLs != null && publicURLs.isNotEmpty);
+    return sharees.isNotEmpty || publicURLs.isNotEmpty;
   }
 
   static CollectionType typeFromString(String type) {
