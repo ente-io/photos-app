@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:photos/ente_theme_data.dart';
 
-class SharingHiddenItemsBanner extends StatelessWidget {
-  const SharingHiddenItemsBanner({Key key}) : super(key: key);
+class CustomBanner extends StatelessWidget {
+  final String title;
+  final String content;
+  final IconData icon;
+  const CustomBanner({
+    Key key,
+    this.title = "Note",
+    this.content,
+    this.icon = Icons.info,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +26,7 @@ class SharingHiddenItemsBanner extends StatelessWidget {
           child: Row(
             children: [
               Icon(
-                Icons.info,
+                icon,
                 size: 36,
                 color: Theme.of(context).colorScheme.stroke2,
               ),
@@ -27,7 +35,7 @@ class SharingHiddenItemsBanner extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Note',
+                    title,
                     style: TextStyle(
                       fontSize: 12,
                       color: Theme.of(context).colorScheme.text3,
@@ -35,7 +43,7 @@ class SharingHiddenItemsBanner extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'You are sharing some hidden items.',
+                    content,
                     style: TextStyle(
                       fontSize: 14,
                       color: Theme.of(context).colorScheme.text2,

@@ -11,8 +11,8 @@ import 'package:photos/events/collection_updated_event.dart';
 import 'package:photos/models/collection_items.dart';
 import 'package:photos/services/collections_service.dart';
 import 'package:photos/ui/collections/hidden_collections_list_view_widget.dart';
+import 'package:photos/ui/common/custom_banner.dart';
 import 'package:photos/ui/common/loading_widget.dart';
-import 'package:photos/ui/viewer/gallery/sharing_hidden_album_warning_widget.dart';
 
 class HiddenHeaderWidget extends StatefulWidget {
   const HiddenHeaderWidget({Key key}) : super(key: key);
@@ -50,7 +50,9 @@ class _HiddenHeaderWidgetState extends State<HiddenHeaderWidget> {
           builder: (context, snapshot) {
             if (snapshot.hasData) {
               if (snapshot.data) {
-                return const SharingHiddenItemsBanner();
+                return const CustomBanner(
+                  content: 'You are sharing some hidden items.',
+                );
               }
               return const SizedBox.shrink();
             } else if (snapshot.hasError) {
