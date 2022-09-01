@@ -104,7 +104,7 @@ class _HiddenHeaderWidgetState extends State<HiddenHeaderWidget> {
         .getCollectionIDsOfHiddenFiles(Configuration.instance.getUserID());
     collectionIDsOfHiddenFiles.intersection(sharedCollectionIDs).isNotEmpty
         ? hasHiddenFilesInSharedCollection = true
-        : {};
+        : null;
     return hasSharedHiddenCollection || hasHiddenFilesInSharedCollection;
   }
 

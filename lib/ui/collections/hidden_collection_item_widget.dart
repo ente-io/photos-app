@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photos/models/collection_items.dart';
+import 'package:photos/ui/common/sharing_icon_overlay.dart';
 import 'package:photos/ui/viewer/file/thumbnail_widget.dart';
 import 'package:photos/ui/viewer/gallery/collection_page.dart';
 import 'package:photos/utils/navigation_util.dart';
@@ -37,6 +38,15 @@ class HiddenCollectionItem extends StatelessWidget {
                             "collection" + c.thumbnail.tag(),
                           ),
                         ),
+                        c.collection.isShared()
+                            ? const SharingIconOverlay(
+                                iconPadding: EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 4.5,
+                                ),
+                                gradientStops: [0.69, 0.96],
+                              )
+                            : const SizedBox.shrink(),
                       ],
                     ),
                   ),

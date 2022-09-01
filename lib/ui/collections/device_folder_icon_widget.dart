@@ -11,7 +11,7 @@ class DeviceFolderIcon extends StatelessWidget {
     Key key,
   }) : super(key: key);
 
-  static final kUnsyncedIconOverlay = Container(
+  static final unsyncedIconOverlay = Container(
     decoration: BoxDecoration(
       gradient: LinearGradient(
         begin: Alignment.topCenter,
@@ -71,7 +71,7 @@ class DeviceFolderIcon extends StatelessWidget {
                         ),
                         isBackedUp
                             ? const SizedBox.shrink()
-                            : kUnsyncedIconOverlay,
+                            : unsyncedIconOverlay,
                       ],
                     ),
                   ),
