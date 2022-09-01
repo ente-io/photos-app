@@ -8,7 +8,6 @@ import 'package:logging/logging.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:photos/core/configuration.dart';
 import 'package:photos/core/event_bus.dart';
-import 'package:photos/db/files_db.dart';
 import 'package:photos/ente_theme_data.dart';
 import 'package:photos/events/subscription_purchased_event.dart';
 import 'package:photos/models/collection.dart';
@@ -17,6 +16,7 @@ import 'package:photos/models/magic_metadata.dart';
 import 'package:photos/models/selected_files.dart';
 import 'package:photos/services/collections_service.dart';
 import 'package:photos/services/feature_flag_service.dart';
+import 'package:photos/services/files_service.dart';
 import 'package:photos/ui/common/dialogs.dart';
 import 'package:photos/ui/create_collection_page.dart';
 import 'package:photos/utils/delete_file_util.dart';
@@ -387,7 +387,7 @@ class _OverlayWidgetState extends State<OverlayWidget> {
             onPressed: () {
               _handleVisibilityChangeRequest(
                 context,
-                showHidden ? kVisibilityHidden : kVisibilityVisible,
+                showHidden ? visibilityHidden : visibilityVisible,
               );
             },
           ),
@@ -451,8 +451,8 @@ class _OverlayWidgetState extends State<OverlayWidget> {
       final selectedFiles = widget.selectedFiles.files.toList();
       bool hasSharedFile = false;
       for (var file in selectedFiles) {
-        hasSharedFile =
-            await _doesFileBelongToSharedCollection(file.uploadedFileID);
+        hasSharedFile = await FilesService.instance
+            .doesFileBelongToSharedCollection(file.uploadedFileID);
         if (hasSharedFile) {
           break;
         }
@@ -636,16 +636,5 @@ class _OverlayWidgetState extends State<OverlayWidget> {
       ),
     );
     showCupertinoModalPopup(context: context, builder: (_) => action);
-  }
-
-  Future<bool> _doesFileBelongToSharedCollection(int uploadedFileID) async {
-    final collectionIDsOfFile =
-        await FilesDB.instance.getAllCollectionIDsOfFile(
-      uploadedFileID,
-      Configuration.instance.getUserID(),
-    );
-    final hiddenCollectionIDs =
-        CollectionsService.instance.getSharedCollectionIDs();
-    return hiddenCollectionIDs.intersection(collectionIDsOfFile).isNotEmpty;
   }
 }

@@ -21,14 +21,14 @@ Future<void> changeVisibility(
 ) async {
   final dialog = createProgressDialog(
     context,
-    newVisibility == kVisibilityHidden ? "Hiding..." : "Unhiding...",
+    newVisibility == visibilityHidden ? "Hiding..." : "Unhiding...",
   );
   await dialog.show();
   try {
     await FileMagicService.instance.changeVisibility(files, newVisibility);
     showShortToast(
       context,
-      newVisibility == kVisibilityHidden
+      newVisibility == visibilityHidden
           ? "Successfully hidden"
           : "Successfully unhidden",
     );
@@ -48,7 +48,7 @@ Future<void> changeCollectionVisibility(
 ) async {
   final dialog = createProgressDialog(
     context,
-    newVisibility == kVisibilityHidden ? "Hiding..." : "Unhiding...",
+    newVisibility == visibilityHidden ? "Hiding..." : "Unhiding...",
   );
   await dialog.show();
   try {
@@ -58,7 +58,7 @@ Future<void> changeCollectionVisibility(
     Bus.instance.fire(ForceReloadHomeGalleryEvent());
     showShortToast(
       context,
-      newVisibility == kVisibilityHidden
+      newVisibility == visibilityHidden
           ? "Successfully hidden"
           : "Successfully unhidden",
     );

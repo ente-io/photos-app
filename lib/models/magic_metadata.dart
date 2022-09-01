@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-const kVisibilityVisible = 0;
-const kVisibilityHidden = 1;
+const visibilityVisible = 0;
+const visibilityHidden = 1;
 
 const kMagicKeyVisibility = 'visibility';
 
@@ -30,7 +30,7 @@ class MagicMetadata {
   factory MagicMetadata.fromMap(Map<String, dynamic> map) {
     if (map == null) return null;
     return MagicMetadata(
-      visibility: map[kMagicKeyVisibility] ?? kVisibilityVisible,
+      visibility: map[kMagicKeyVisibility] ?? visibilityVisible,
     );
   }
 }
@@ -86,7 +86,7 @@ class CollectionMagicMetadata {
   factory CollectionMagicMetadata.fromMap(Map<String, dynamic> map) {
     if (map == null) return null;
     return CollectionMagicMetadata(
-      visibility: map[kMagicKeyVisibility] ?? kVisibilityVisible,
+      visibility: map[kMagicKeyVisibility] ?? visibilityVisible,
     );
   }
 }

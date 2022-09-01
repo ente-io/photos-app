@@ -11,6 +11,8 @@ import 'package:photos/events/local_photos_updated_event.dart';
 import 'package:photos/models/file.dart';
 import 'package:photos/models/file_type.dart';
 import 'package:photos/models/trash_file.dart';
+import 'package:photos/services/files_service.dart';
+import 'package:photos/ui/common/sharing_icon_overlay.dart';
 import 'package:photos/ui/viewer/file/file_icons_widget.dart';
 import 'package:photos/utils/file_util.dart';
 import 'package:photos/utils/thumbnail_util.dart';
@@ -21,6 +23,7 @@ class ThumbnailWidget extends StatefulWidget {
   final bool shouldShowSyncStatus;
   final bool shouldShowArchiveStatus;
   final bool shouldShowLivePhotoOverlay;
+  final bool indicateIfFileIsShared;
   final Duration diskLoadDeferDuration;
   final Duration serverLoadDeferDuration;
 
@@ -33,6 +36,7 @@ class ThumbnailWidget extends StatefulWidget {
     this.shouldShowArchiveStatus = false,
     this.diskLoadDeferDuration,
     this.serverLoadDeferDuration,
+    this.indicateIfFileIsShared = false,
   }) : super(key: key ?? Key(file.tag()));
 
   @override
@@ -124,6 +128,26 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
       viewChildren.add(const ArchiveOverlayIcon());
     }
 
+    if (widget.indicateIfFileIsShared) {
+      viewChildren.add(
+        FutureBuilder(
+          future: FilesService.instance
+              .doesFileBelongToSharedCollection(widget.file.uploadedFileID),
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              if (snapshot.data) {
+                return const SharingIconOverlay();
+              }
+              return const SizedBox.shrink();
+            } else if (snapshot.hasError) {
+              Logger('ThumbnailWidget').info(snapshot.error);
+            }
+            return const SizedBox.shrink();
+          },
+        ),
+      );
+    }
+// child: const SharingIconOverlay()
     return Stack(
       fit: StackFit.expand,
       children: viewChildren,

@@ -44,7 +44,7 @@ class Collection {
   });
 
   bool isHidden() {
-    return mMdVersion > 0 && magicMetadata.visibility == kVisibilityHidden;
+    return mMdVersion > 0 && magicMetadata.visibility == visibilityHidden;
   }
 
   bool isShared() {

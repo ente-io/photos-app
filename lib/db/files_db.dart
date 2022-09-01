@@ -256,7 +256,7 @@ class FilesDB {
         ALTER TABLE $table ADD COLUMN $columnMMdVersion INTEGER DEFAULT 0;
       ''',
       '''
-        ALTER TABLE $table ADD COLUMN $columnMMdVisibility INTEGER DEFAULT $kVisibilityVisible;
+        ALTER TABLE $table ADD COLUMN $columnMMdVisibility INTEGER DEFAULT $visibilityVisible;
       '''
     ];
   }
@@ -411,7 +411,7 @@ class FilesDB {
     int ownerID, {
     int limit,
     bool asc,
-    int visibility = kVisibilityVisible,
+    int visibility = visibilityVisible,
     Set<int> ignoredCollectionIDs,
   }) async {
     final db = await instance.database;
@@ -434,7 +434,7 @@ class FilesDB {
 
   Future<Set<int>> getCollectionIDsOfHiddenFiles(
     int ownerID, {
-    int visibility = kVisibilityHidden,
+    int visibility = visibilityHidden,
   }) async {
     final db = await instance.database;
     final results = await db.query(
@@ -455,7 +455,7 @@ class FilesDB {
   Future<Set<int>> getAllCollectionIDsOfFile(
     int uploadedFileID,
     int ownerID, {
-    int visibility = kVisibilityVisible,
+    int visibility = visibilityVisible,
   }) async {
     final db = await instance.database;
     final results = await db.query(
@@ -488,7 +488,7 @@ class FilesDB {
       where:
           '$columnCreationTime >= ? AND $columnCreationTime <= ? AND ($columnOwnerID IS NULL OR $columnOwnerID = ?)  AND ($columnMMdVisibility IS NULL OR $columnMMdVisibility = ?)'
           ' AND ($columnLocalID IS NOT NULL OR ($columnCollectionID IS NOT NULL AND $columnCollectionID IS NOT -1))',
-      whereArgs: [startTime, endTime, ownerID, kVisibilityVisible],
+      whereArgs: [startTime, endTime, ownerID, visibilityVisible],
       orderBy:
           '$columnCreationTime ' + order + ', $columnModificationTime ' + order,
       limit: limit,
@@ -520,7 +520,7 @@ class FilesDB {
       where:
           '$columnCreationTime >= ? AND $columnCreationTime <= ? AND ($columnOwnerID IS NULL OR $columnOwnerID = ?) AND ($columnMMdVisibility IS NULL OR $columnMMdVisibility = ?)'
           'AND (($columnLocalID IS NOT NULL AND $columnDeviceFolder IN ($inParam)) OR ($columnCollectionID IS NOT NULL AND $columnCollectionID IS NOT -1))',
-      whereArgs: [startTime, endTime, ownerID, kVisibilityVisible],
+      whereArgs: [startTime, endTime, ownerID, visibilityVisible],
       orderBy:
           '$columnCreationTime ' + order + ', $columnModificationTime ' + order,
       limit: limit,
@@ -572,7 +572,7 @@ class FilesDB {
     int endTime, {
     int limit,
     bool asc,
-    int visibility = kVisibilityVisible,
+    int visibility = visibilityVisible,
   }) async {
     final db = await instance.database;
     final order = (asc ?? false ? 'ASC' : 'DESC');
@@ -685,7 +685,7 @@ class FilesDB {
         whereClause += " OR ";
       }
     }
-    whereClause += ") AND $columnMMdVisibility = $kVisibilityVisible";
+    whereClause += ") AND $columnMMdVisibility = $visibilityVisible";
     final results = await db.query(
       table,
       where: whereClause,
@@ -1070,7 +1070,7 @@ class FilesDB {
         (
           SELECT $columnCollectionID, MAX($columnCreationTime) AS max_creation_time
           FROM $table
-          WHERE ($columnCollectionID IS NOT NULL AND $columnCollectionID IS NOT -1 AND $columnMMdVisibility = $kVisibilityVisible)
+          WHERE ($columnCollectionID IS NOT NULL AND $columnCollectionID IS NOT -1 AND $columnMMdVisibility = $visibilityVisible)
           GROUP BY $columnCollectionID
         ) latest_files
         ON $table.$columnCollectionID = latest_files.$columnCollectionID
@@ -1265,7 +1265,7 @@ class FilesDB {
     row[columnMMdVersion] = file.mMdVersion ?? 0;
     row[columnMMdEncodedJson] = file.mMdEncodedJson ?? '{}';
     row[columnMMdVisibility] =
-        file.magicMetadata?.visibility ?? kVisibilityVisible;
+        file.magicMetadata?.visibility ?? visibilityVisible;
     row[columnPubMMdVersion] = file.pubMmdVersion ?? 0;
     row[columnPubMMdEncodedJson] = file.pubMmdEncodedJson ?? '{}';
     if (file.pubMagicMetadata != null &&
@@ -1304,7 +1304,7 @@ class FilesDB {
     row[columnMMdVersion] = file.mMdVersion ?? 0;
     row[columnMMdEncodedJson] = file.mMdEncodedJson ?? '{}';
     row[columnMMdVisibility] =
-        file.magicMetadata?.visibility ?? kVisibilityVisible;
+        file.magicMetadata?.visibility ?? visibilityVisible;
 
     row[columnPubMMdVersion] = file.pubMmdVersion ?? 0;
     row[columnPubMMdEncodedJson] = file.pubMmdEncodedJson ?? '{}';

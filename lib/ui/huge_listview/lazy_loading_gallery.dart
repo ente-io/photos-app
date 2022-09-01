@@ -27,6 +27,7 @@ class LazyLoadingGallery extends StatefulWidget {
   final String tag;
   final Stream<int> currentIndexStream;
   final bool smallerTodayFont;
+  final bool indicateIfFileIsShared;
 
   LazyLoadingGallery(
     this.files,
@@ -38,6 +39,7 @@ class LazyLoadingGallery extends StatefulWidget {
     this.tag,
     this.currentIndexStream, {
     this.smallerTodayFont,
+    this.indicateIfFileIsShared = false,
     Key key,
   }) : super(key: key ?? UniqueKey());
 
@@ -176,6 +178,7 @@ class _LazyLoadingGalleryState extends State<LazyLoadingGallery> {
           widget.selectedFiles,
           index == 0,
           _files.length > kRecycleLimit,
+          indicateIfFileIsShared: widget.indicateIfFileIsShared,
         ),
       );
     }
@@ -193,6 +196,7 @@ class LazyLoadingGridView extends StatefulWidget {
   final SelectedFiles selectedFiles;
   final bool shouldRender;
   final bool shouldRecycle;
+  final bool indicateIfFileIsShared;
 
   LazyLoadingGridView(
     this.tag,
@@ -201,6 +205,7 @@ class LazyLoadingGridView extends StatefulWidget {
     this.selectedFiles,
     this.shouldRender,
     this.shouldRecycle, {
+    this.indicateIfFileIsShared = false,
     Key key,
   }) : super(key: key ?? UniqueKey());
 
@@ -332,6 +337,7 @@ class _LazyLoadingGridViewState extends State<LazyLoadingGridView> {
                     diskLoadDeferDuration: kThumbnailDiskLoadDeferDuration,
                     serverLoadDeferDuration: kThumbnailServerLoadDeferDuration,
                     shouldShowLivePhotoOverlay: true,
+                    indicateIfFileIsShared: widget.indicateIfFileIsShared,
                     key: Key(widget.tag + file.tag()),
                   ),
                 ),

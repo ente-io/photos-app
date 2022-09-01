@@ -36,6 +36,7 @@ class Gallery extends StatefulWidget {
   final Widget footer;
   final bool smallerTodayFont;
   final String albumName;
+  final bool indicateIfFileIsShared;
 
   const Gallery({
     @required this.asyncLoader,
@@ -49,6 +50,7 @@ class Gallery extends StatefulWidget {
     this.footer = const SizedBox(height: 120),
     this.smallerTodayFont = false,
     this.albumName = '',
+    this.indicateIfFileIsShared = false,
     Key key,
   }) : super(key: key);
 
@@ -215,6 +217,7 @@ class _GalleryState extends State<Gallery> {
               .where((event) => event.tag == widget.tagPrefix)
               .map((event) => event.index),
           smallerTodayFont: widget.smallerTodayFont,
+          indicateIfFileIsShared: widget.indicateIfFileIsShared,
         );
         if (widget.header != null && index == 0) {
           gallery = Column(children: [widget.header, gallery]);

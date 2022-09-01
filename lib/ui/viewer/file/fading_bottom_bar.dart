@@ -108,7 +108,7 @@ class FadingBottomBarState extends State<FadingBottomBar> {
       if (widget.file.uploadedFileID != null &&
           widget.file.ownerID == Configuration.instance.getUserID()) {
         final bool isHidden =
-            widget.file.magicMetadata.visibility == kVisibilityHidden;
+            widget.file.magicMetadata.visibility == visibilityHidden;
         children.add(
           Tooltip(
             message: isHidden ? "Unhide" : "Hide",
@@ -138,7 +138,7 @@ class FadingBottomBarState extends State<FadingBottomBar> {
                       await changeVisibility(
                         context,
                         [widget.file],
-                        isHidden ? kVisibilityVisible : kVisibilityHidden,
+                        isHidden ? visibilityVisible : visibilityHidden,
                       );
                       safeRefresh();
                     }
@@ -146,7 +146,7 @@ class FadingBottomBarState extends State<FadingBottomBar> {
                     await changeVisibility(
                       context,
                       [widget.file],
-                      isHidden ? kVisibilityVisible : kVisibilityHidden,
+                      isHidden ? visibilityVisible : visibilityHidden,
                     );
                     safeRefresh();
                   }

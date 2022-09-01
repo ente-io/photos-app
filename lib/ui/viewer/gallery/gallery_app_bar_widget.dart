@@ -201,8 +201,8 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
                 context,
                 widget.collection,
                 widget.collection.isHidden()
-                    ? kVisibilityVisible
-                    : kVisibilityHidden,
+                    ? visibilityVisible
+                    : visibilityHidden,
               );
             }
           },

@@ -32,7 +32,7 @@ class HiddenPage extends StatelessWidget {
           creationStartTime,
           creationEndTime,
           Configuration.instance.getUserID(),
-          visibility: kVisibilityHidden,
+          visibility: visibilityHidden,
           limit: limit,
           asc: asc,
         );
@@ -45,7 +45,7 @@ class HiddenPage extends StatelessWidget {
                 ) !=
                 null,
           ),
-      removalEventTypes: const {EventType.unarchived},
+      removalEventTypes: const {EventType.unhide},
       forceReloadEvents: [
         Bus.instance.on<FilesUpdatedEvent>().where(
               (event) =>
@@ -60,6 +60,7 @@ class HiddenPage extends StatelessWidget {
       selectedFiles: _selectedFiles,
       initialFiles: null,
       header: const HiddenHeaderWidget(),
+      indicateIfFileIsShared: true,
     );
     return Scaffold(
       appBar: PreferredSize(
