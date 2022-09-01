@@ -451,6 +451,9 @@ class _OverlayWidgetState extends State<OverlayWidget> {
       final selectedFiles = widget.selectedFiles.files.toList();
       bool hasSharedFile = false;
       for (var file in selectedFiles) {
+        if (file.isHidden()) {
+          continue;
+        }
         hasSharedFile = await FilesService.instance
             .doesFileBelongToSharedCollection(file.uploadedFileID);
         if (hasSharedFile) {
