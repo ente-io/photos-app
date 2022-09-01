@@ -994,7 +994,7 @@ class FilesDB {
     final db = await instance.database;
     final count = Sqflite.firstIntValue(
       await db.rawQuery(
-        'SELECT COUNT(*) FROM $table where $columnCollectionID = $collectionID',
+        'SELECT COUNT(*) FROM $table where $columnCollectionID = $collectionID AND $columnMMdVisibility != 1',
       ),
     );
     return count;
