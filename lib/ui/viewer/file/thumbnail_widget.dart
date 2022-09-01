@@ -24,6 +24,7 @@ class ThumbnailWidget extends StatefulWidget {
   final bool shouldShowArchiveStatus;
   final bool shouldShowLivePhotoOverlay;
   final bool indicateIfFileIsShared;
+  final bool isFileSelected;
   final Duration diskLoadDeferDuration;
   final Duration serverLoadDeferDuration;
 
@@ -37,6 +38,7 @@ class ThumbnailWidget extends StatefulWidget {
     this.diskLoadDeferDuration,
     this.serverLoadDeferDuration,
     this.indicateIfFileIsShared = false,
+    this.isFileSelected = false,
   }) : super(key: key ?? Key(file.tag()));
 
   @override
@@ -128,7 +130,7 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
       viewChildren.add(const ArchiveOverlayIcon());
     }
 
-    if (widget.indicateIfFileIsShared) {
+    if (widget.indicateIfFileIsShared && !widget.isFileSelected) {
       viewChildren.add(
         FutureBuilder(
           future: FilesService.instance
@@ -147,7 +149,6 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
         ),
       );
     }
-// child: const SharingIconOverlay()
     return Stack(
       fit: StackFit.expand,
       children: viewChildren,

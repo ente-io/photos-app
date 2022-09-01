@@ -18,7 +18,7 @@ class HiddenPage extends StatelessWidget {
   final _selectedFiles = SelectedFiles();
 
   HiddenPage({
-    this.tagPrefix = "archived_page",
+    this.tagPrefix = "hidden_page",
     this.appBarType = GalleryType.archive,
     this.overlayType = GalleryType.archive,
     Key key,

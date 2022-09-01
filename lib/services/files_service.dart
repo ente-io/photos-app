@@ -13,8 +13,7 @@ class FilesService {
   static final FilesService instance = FilesService._privateConstructor();
 
   Future<bool> doesFileBelongToSharedCollection(int uploadedFileID) async {
-    final collectionIDsOfFile =
-        await FilesDB.instance.getAllCollectionIDsOfFile(
+    final collectionIDsOfFile = await _db.getAllCollectionIDsOfFile(
       uploadedFileID,
       _config.getUserID(),
       visibility: visibilityHidden,
