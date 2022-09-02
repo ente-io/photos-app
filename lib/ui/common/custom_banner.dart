@@ -5,11 +5,13 @@ class CustomBanner extends StatelessWidget {
   final String title;
   final String content;
   final IconData icon;
+  final int contentMaxLines;
   const CustomBanner({
     Key key,
     this.title = "Note",
     this.content,
     this.icon = Icons.info,
+    this.contentMaxLines = 2,
   }) : super(key: key);
 
   @override
@@ -31,25 +33,32 @@ class CustomBanner extends StatelessWidget {
                 color: Theme.of(context).colorScheme.stroke2,
               ),
               const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.text3,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.text3,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    content,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Theme.of(context).colorScheme.text2,
-                    ),
-                  ),
-                ],
+                    const SizedBox(height: 2),
+                    content == null
+                        ? const SizedBox.shrink()
+                        : Text(
+                            content,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: contentMaxLines,
+                            softWrap: false,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Theme.of(context).colorScheme.text2,
+                            ),
+                          ),
+                  ],
+                ),
               )
             ],
           ),

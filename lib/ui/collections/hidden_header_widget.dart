@@ -110,9 +110,8 @@ class _HiddenHeaderWidgetState extends State<HiddenHeaderWidget> {
 
   Future<List<CollectionWithThumbnail>>
       _getHiddenCollectionsWithThumbnail() async {
-    final hiddenCollectionIDs =
-        CollectionsService.instance.getHiddenCollectionIDs();
     final collectionService = CollectionsService.instance;
+    final hiddenCollectionIDs = collectionService.getHiddenCollectionIDs();
     final List<CollectionWithThumbnail> hiddenCollectionsWithThumbnail = [];
     final latestCollectionFiles =
         await collectionService.getLatestCollectionFiles();
