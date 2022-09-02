@@ -132,8 +132,9 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
           child: IconButton(
             icon: Icon(Icons.adaptive.share),
             onPressed: () async {
-              if (FeatureFlagService.instance.isInternalUserOrDebugBuild() &&
-                  await _collectionHasHiddenFiles(widget.collection.id)) {
+              final bool showHiddenWarning =
+                  await _shouldShowHiddenFilesWarning(widget.collection);
+              if (showHiddenWarning) {
                 final choice = await showChoiceDialog(
                   context,
                   'Share hidden items?',
@@ -143,12 +144,11 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
                   secondActionColor:
                       Theme.of(context).colorScheme.defaultTextColor,
                 );
-                if (choice == DialogUserChoice.secondChoice) {
-                  _showShareCollectionDialog();
+                if (choice != DialogUserChoice.secondChoice) {
+                  return;
                 }
-              } else {
-                _showShareCollectionDialog();
               }
+              await _showShareCollectionDialog();
             },
           ),
         ),
@@ -245,11 +245,21 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
     }
   }
 
-  Future<bool> _collectionHasHiddenFiles(int collectionID) async {
+  Future<bool> _shouldShowHiddenFilesWarning(Collection collection) async {
+    // collection can be null for device folders which are not marked for
+    // back up
+    if (!FeatureFlagService.instance.isInternalUserOrDebugBuild() ||
+        collection == null) {
+      return false;
+    }
+    // collection is already shared
+    if (collection.sharees.isNotEmpty || collection.publicURLs.isNotEmpty) {
+      return false;
+    }
     final collectionIDsWithHiddenFiles =
         await FilesDB.instance.getCollectionIDsOfHiddenFiles(
       Configuration.instance.getUserID(),
     );
-    return collectionIDsWithHiddenFiles.contains(collectionID);
+    return collectionIDsWithHiddenFiles.contains(collection.id);
   }
 }
