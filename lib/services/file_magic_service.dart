@@ -37,8 +37,7 @@ class FileMagicService {
       Bus.instance.fire(ForceReloadHomeGalleryEvent());
       Bus.instance.fire(LocalPhotosUpdatedEvent(files, type: EventType.unhide));
     } else {
-      Bus.instance
-          .fire(LocalPhotosUpdatedEvent(files, type: EventType.archived));
+      Bus.instance.fire(LocalPhotosUpdatedEvent(files, type: EventType.hide));
     }
   }
 

@@ -195,8 +195,8 @@ class _CreateCollectionPageState extends State<CreateCollectionPage> {
       }
     }
     collectionsWithThumbnail.sort((first, second) {
-      return (first.collection.name.toLowerCase() ?? "")
-          .compareTo((second.collection.name.toLowerCase() ?? ""));
+      return (first.collection.name?.toLowerCase() ?? "")
+          .compareTo((second.collection.name?.toLowerCase() ?? ""));
     });
     return collectionsWithThumbnail;
   }

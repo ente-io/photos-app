@@ -425,7 +425,7 @@ class _HomeWidgetState extends State<HomeWidget> {
       removalEventTypes: const {
         EventType.deletedFromRemote,
         EventType.deletedFromEverywhere,
-        EventType.archived,
+        EventType.hide,
       },
       forceReloadEvents: [
         Bus.instance.on<BackupFoldersUpdatedEvent>(),

@@ -16,6 +16,6 @@ enum EventType {
   deletedFromDevice,
   deletedFromRemote,
   deletedFromEverywhere,
-  archived,
+  hide,
   unhide,
 }
