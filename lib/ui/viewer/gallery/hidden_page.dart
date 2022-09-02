@@ -6,6 +6,7 @@ import 'package:photos/events/files_updated_event.dart';
 import 'package:photos/models/gallery_type.dart';
 import 'package:photos/models/magic_metadata.dart';
 import 'package:photos/models/selected_files.dart';
+import 'package:photos/services/feature_flag_service.dart';
 import 'package:photos/ui/collections/hidden_header_widget.dart';
 import 'package:photos/ui/viewer/gallery/gallery.dart';
 import 'package:photos/ui/viewer/gallery/gallery_app_bar_widget.dart';
@@ -50,8 +51,13 @@ class HiddenPage extends StatelessWidget {
       tagPrefix: tagPrefix,
       selectedFiles: _selectedFiles,
       initialFiles: null,
-      header: const HiddenHeaderWidget(),
-      indicateIfFileIsShared: true,
+      header: FeatureFlagService.instance.isInternalUserOrDebugBuild()
+          ? const HiddenHeaderWidget()
+          : const SizedBox.shrink(),
+      indicateIfFileIsShared:
+          FeatureFlagService.instance.isInternalUserOrDebugBuild()
+              ? true
+              : false,
     );
     return Scaffold(
       appBar: PreferredSize(

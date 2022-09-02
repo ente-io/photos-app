@@ -13,6 +13,7 @@ import 'package:photos/events/user_logged_out_event.dart';
 import 'package:photos/models/collection_items.dart';
 import 'package:photos/models/device_folder.dart';
 import 'package:photos/services/collections_service.dart';
+import 'package:photos/services/feature_flag_service.dart';
 import 'package:photos/ui/collections/device_folders_list_view_widget.dart';
 import 'package:photos/ui/collections/ente_section_title.dart';
 import 'package:photos/ui/collections/hidden_collections_button_widget.dart';
@@ -105,7 +106,10 @@ class _CollectionsGalleryWidgetState extends State<CollectionsGalleryWidget>
         await collectionsService.getLatestCollectionFiles();
     for (final file in latestCollectionFiles) {
       final c = collectionsService.getCollectionByID(file.collectionID);
-      if (c.owner.id == userID && !c.isHidden()) {
+      if (c.owner.id == userID &&
+          (FeatureFlagService.instance.isInternalUserOrDebugBuild()
+              ? !c.isHidden()
+              : true)) {
         collectionsWithThumbnail.add(CollectionWithThumbnail(c, file));
       }
     }

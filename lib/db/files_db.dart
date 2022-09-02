@@ -1036,9 +1036,12 @@ class FilesDB {
 
   Future<int> collectionFileCount(int collectionID) async {
     final db = await instance.database;
+    final query = FeatureFlagService.instance.isInternalUserOrDebugBuild()
+        ? 'SELECT COUNT(*) FROM $table where $columnCollectionID = $collectionID AND $columnMMdVisibility != 1'
+        : 'SELECT COUNT(*) FROM $table where $columnCollectionID = $collectionID';
     final count = Sqflite.firstIntValue(
       await db.rawQuery(
-        'SELECT COUNT(*) FROM $table where $columnCollectionID = $collectionID AND $columnMMdVisibility != 1',
+        query,
       ),
     );
     return count;

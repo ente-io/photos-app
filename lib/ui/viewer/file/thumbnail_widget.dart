@@ -34,7 +34,8 @@ class ThumbnailWidget extends StatefulWidget {
     this.fit = BoxFit.cover,
     this.shouldShowSyncStatus = true,
     this.shouldShowLivePhotoOverlay = false,
-    this.shouldShowArchiveStatus = false,
+    this.shouldShowArchiveStatus =
+        false, //remove this when removing FF from hidden features
     this.diskLoadDeferDuration,
     this.serverLoadDeferDuration,
     this.indicateIfFileIsShared = false,
@@ -126,6 +127,7 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
       viewChildren.add(TrashedFileOverlayText(widget.file));
     }
     // todo: Move this icon overlay to the collection widget.
+    //remove this when removing FF from hidden features
     if (widget.shouldShowArchiveStatus) {
       viewChildren.add(const ArchiveOverlayIcon());
     }

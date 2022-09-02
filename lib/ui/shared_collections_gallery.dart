@@ -15,6 +15,7 @@ import 'package:photos/events/user_logged_out_event.dart';
 import 'package:photos/models/collection_items.dart';
 import 'package:photos/models/gallery_type.dart';
 import 'package:photos/services/collections_service.dart';
+import 'package:photos/services/feature_flag_service.dart';
 import 'package:photos/ui/collections/section_title.dart';
 import 'package:photos/ui/common/gradient_button.dart';
 import 'package:photos/ui/common/loading_widget.dart';
@@ -69,7 +70,10 @@ class _SharedCollectionGalleryState extends State<SharedCollectionGallery>
           final c =
               CollectionsService.instance.getCollectionByID(file.collectionID);
           if (c.owner.id == Configuration.instance.getUserID()) {
-            if (c.isShared() && !c.isHidden()) {
+            if (c.isShared() &&
+                (FeatureFlagService.instance.isInternalUserOrDebugBuild()
+                    ? !c.isHidden()
+                    : true)) {
               outgoing.add(
                 CollectionWithThumbnail(
                   c,
