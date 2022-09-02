@@ -130,7 +130,7 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
       viewChildren.add(const ArchiveOverlayIcon());
     }
 
-    if (widget.indicateIfFileIsShared && !widget.isFileSelected) {
+    if (widget.indicateIfFileIsShared) {
       viewChildren.add(
         FutureBuilder(
           future: FilesService.instance
@@ -138,7 +138,10 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
           builder: (context, snapshot) {
             if (snapshot.hasData) {
               if (snapshot.data) {
-                return const SharingIconOverlay();
+                return Visibility(
+                  visible: !widget.isFileSelected,
+                  child: const SharingIconOverlay(),
+                );
               }
               return const SizedBox.shrink();
             } else if (snapshot.hasError) {
