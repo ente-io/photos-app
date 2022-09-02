@@ -320,7 +320,7 @@ class _OverlayWidgetState extends State<OverlayWidget> {
       ),
     );
     if (widget.type == GalleryType.homepage ||
-        widget.type == GalleryType.archive ||
+        widget.type == GalleryType.hidden ||
         widget.type == GalleryType.localFolder ||
         widget.type == GalleryType.localAll ||
         widget.type == GalleryType.searchResults) {
@@ -372,7 +372,7 @@ class _OverlayWidgetState extends State<OverlayWidget> {
     }
 
     if (widget.type == GalleryType.homepage ||
-        widget.type == GalleryType.archive) {
+        widget.type == GalleryType.hidden) {
       final bool showHidden = widget.type == GalleryType.homepage;
       actions.add(
         Tooltip(

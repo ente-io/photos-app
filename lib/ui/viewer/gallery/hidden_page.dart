@@ -19,8 +19,8 @@ class HiddenPage extends StatelessWidget {
 
   HiddenPage({
     this.tagPrefix = "hidden_page",
-    this.appBarType = GalleryType.archive,
-    this.overlayType = GalleryType.archive,
+    this.appBarType = GalleryType.hidden,
+    this.overlayType = GalleryType.hidden,
     Key key,
   }) : super(key: key);
 
@@ -46,16 +46,7 @@ class HiddenPage extends StatelessWidget {
                 null,
           ),
       removalEventTypes: const {EventType.unhide},
-      forceReloadEvents: [
-        Bus.instance.on<FilesUpdatedEvent>().where(
-              (event) =>
-                  event.updatedFiles.firstWhere(
-                    (element) => element.uploadedFileID != null,
-                    orElse: () => null,
-                  ) !=
-                  null,
-            ),
-      ],
+      forceReloadEvents: [],
       tagPrefix: tagPrefix,
       selectedFiles: _selectedFiles,
       initialFiles: null,

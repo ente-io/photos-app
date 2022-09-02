@@ -1,6 +1,6 @@
 enum GalleryType {
   homepage,
-  archive,
+  hidden,
   trash,
   localFolder,
   localAll, // used for gallery view displaying all local photos on the device
