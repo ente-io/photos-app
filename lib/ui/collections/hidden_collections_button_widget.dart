@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:photos/core/configuration.dart';
-import 'package:photos/db/files_db.dart';
-import 'package:photos/models/magic_metadata.dart';
 import 'package:photos/ui/viewer/gallery/hidden_page.dart';
 import 'package:photos/utils/navigation_util.dart';
 
@@ -42,44 +39,9 @@ class HiddenCollectionsButtonWidget extends StatelessWidget {
                     color: Theme.of(context).iconTheme.color,
                   ),
                   const Padding(padding: EdgeInsets.all(6)),
-                  FutureBuilder<int>(
-                    future: FilesDB.instance.fileCountWithVisibility(
-                      visibilityHidden,
-                      Configuration.instance.getUserID(),
-                    ),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasData && snapshot.data > 0) {
-                        return RichText(
-                          text: TextSpan(
-                            style: textStyle,
-                            children: [
-                              TextSpan(
-                                text: "Hidden",
-                                style: Theme.of(context).textTheme.subtitle1,
-                              ),
-                              const TextSpan(text: "  \u2022  "),
-                              TextSpan(
-                                text: snapshot.data.toString(),
-                              ),
-                              //need to query in db and bring this value
-                            ],
-                          ),
-                        );
-                      } else {
-                        return RichText(
-                          text: TextSpan(
-                            style: textStyle,
-                            children: [
-                              TextSpan(
-                                text: "Hidden",
-                                style: Theme.of(context).textTheme.subtitle1,
-                              ),
-                              //need to query in db and bring this value
-                            ],
-                          ),
-                        );
-                      }
-                    },
+                  Text(
+                    "Hidden",
+                    style: Theme.of(context).textTheme.subtitle1,
                   ),
                 ],
               ),

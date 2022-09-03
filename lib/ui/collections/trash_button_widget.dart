@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:photos/db/trash_db.dart';
 import 'package:photos/ui/viewer/gallery/trash_page.dart';
 import 'package:photos/utils/navigation_util.dart';
 
@@ -40,41 +39,9 @@ class TrashButtonWidget extends StatelessWidget {
                     color: Theme.of(context).iconTheme.color,
                   ),
                   const Padding(padding: EdgeInsets.all(6)),
-                  FutureBuilder<int>(
-                    future: TrashDB.instance.count(),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasData && snapshot.data > 0) {
-                        return RichText(
-                          text: TextSpan(
-                            style: textStyle,
-                            children: [
-                              TextSpan(
-                                text: "Trash",
-                                style: Theme.of(context).textTheme.subtitle1,
-                              ),
-                              const TextSpan(text: "  \u2022  "),
-                              TextSpan(
-                                text: snapshot.data.toString(),
-                              ),
-                              //need to query in db and bring this value
-                            ],
-                          ),
-                        );
-                      } else {
-                        return RichText(
-                          text: TextSpan(
-                            style: textStyle,
-                            children: [
-                              TextSpan(
-                                text: "Trash",
-                                style: Theme.of(context).textTheme.subtitle1,
-                              ),
-                              //need to query in db and bring this value
-                            ],
-                          ),
-                        );
-                      }
-                    },
+                  Text(
+                    "Trash",
+                    style: Theme.of(context).textTheme.subtitle1,
                   ),
                 ],
               ),

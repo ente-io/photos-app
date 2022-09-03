@@ -1047,16 +1047,6 @@ class FilesDB {
     return count;
   }
 
-  Future<int> fileCountWithVisibility(int visibility, int ownerID) async {
-    final db = await instance.database;
-    final count = Sqflite.firstIntValue(
-      await db.rawQuery(
-        'SELECT COUNT(*) FROM $table where $columnMMdVisibility = $visibility AND $columnOwnerID = $ownerID',
-      ),
-    );
-    return count;
-  }
-
   Future<int> deleteCollection(int collectionID) async {
     final db = await instance.database;
     return db.delete(
