@@ -49,7 +49,7 @@ class _DeduplicatePageState extends State<DeduplicatePage> {
   final Set<File> _selectedFiles = <File>{};
   final Map<int, int> _fileSizeMap = {};
   List<DuplicateFiles> _duplicates;
-  bool _shouldClubByCaptureTime = true;
+  bool _shouldClubByCaptureTime = false;
 
   SortKey sortKey = SortKey.size;
 
