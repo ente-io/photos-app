@@ -1,3 +1,6 @@
+// @dart=2.9
+
+import 'dart:async';
 import 'dart:io';
 
 import 'package:background_fetch/background_fetch.dart';
@@ -6,7 +9,6 @@ import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:photos/app.dart';
 import 'package:photos/core/configuration.dart';
-import 'package:photos/core/constants.dart';
 import 'package:photos/core/error-reporting/super_logging.dart';
 import 'package:photos/core/network.dart';
 import 'package:photos/db/upload_locks_db.dart';
@@ -15,7 +17,7 @@ import 'package:photos/services/app_lifecycle_service.dart';
 import 'package:photos/services/billing_service.dart';
 import 'package:photos/services/collections_service.dart';
 import 'package:photos/services/feature_flag_service.dart';
-import 'package:photos/services/file_migration_service.dart';
+import 'package:photos/services/local_file_update_service.dart';
 import 'package:photos/services/local_sync_service.dart';
 import 'package:photos/services/memories_service.dart';
 import 'package:photos/services/notification_service.dart';
@@ -24,6 +26,7 @@ import 'package:photos/services/search_service.dart';
 import 'package:photos/services/sync_service.dart';
 import 'package:photos/services/trash_sync_service.dart';
 import 'package:photos/services/update_service.dart';
+import 'package:photos/services/user_remote_flag_service.dart';
 import 'package:photos/services/user_service.dart';
 import 'package:photos/ui/tools/app_lock.dart';
 import 'package:photos/ui/tools/lock_screen.dart';
@@ -126,6 +129,7 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
   await Network.instance.init();
   await Configuration.instance.init();
   await UserService.instance.init();
+  await UserRemoteFlagService.instance.init();
   await UpdateService.instance.init();
   await BillingService.instance.init();
   await CollectionsService.instance.init();
@@ -136,7 +140,7 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
   await SyncService.instance.init();
   await MemoriesService.instance.init();
   await LocalSettings.instance.init();
-  await FileMigrationService.instance.init();
+  await LocalFileUpdateService.instance.init();
   await SearchService.instance.init();
   if (Platform.isIOS) {
     // PushService.instance.init().then((_) {
@@ -227,42 +231,46 @@ Future<void> _killBGTask([String taskId]) async {
 }
 
 // Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-//   bool isRunningInFG = await _isRunningInForeground(); // hb
-//   bool isInForeground = AppLifecycleService.instance.isForeground;
+//   final bool isRunningInFG = await _isRunningInForeground(); // hb
+//   final bool isInForeground = AppLifecycleService.instance.isForeground;
 //   if (_isProcessRunning) {
 //     _logger.info(
-//         "Background push received when app is alive and runningInFS: $isRunningInFG inForeground: $isInForeground");
+//       "Background push received when app is alive and runningInFS: $isRunningInFG inForeground: $isInForeground",
+//     );
 //     if (PushService.shouldSync(message)) {
 //       await _sync('firebaseBgSyncActiveProcess');
 //     }
 //   } else {
 //     // App is dead
-//     _runWithLogs(() async {
-//       _logger.info("Background push received");
-//       if (Platform.isIOS) {
-//         _scheduleSuicide(kBGPushTimeout); // To prevent OS from punishing us
-//       }
-//       await _init(true, via: 'firebasePush');
-//       if (PushService.shouldSync(message)) {
-//         await _sync('firebaseBgSyncNoActiveProcess');
-//       }
-//     }, prefix: "[fbg]");
+//     _runWithLogs(
+//       () async {
+//         _logger.info("Background push received");
+//         if (Platform.isIOS) {
+//           _scheduleSuicide(kBGPushTimeout); // To prevent OS from punishing us
+//         }
+//         await _init(true, via: 'firebasePush');
+//         if (PushService.shouldSync(message)) {
+//           await _sync('firebaseBgSyncNoActiveProcess');
+//         }
+//       },
+//       prefix: "[fbg]",
+//     );
 //   }
 // }
 
 Future<void> _logFGHeartBeatInfo() async {
-  bool isRunningInFG = await _isRunningInForeground();
+  final bool isRunningInFG = await _isRunningInForeground();
   final prefs = await SharedPreferences.getInstance();
   await prefs.reload();
-  var lastFGTaskHeartBeatTime = prefs.getInt(kLastFGTaskHeartBeatTime) ?? 0;
-  String lastRun = lastFGTaskHeartBeatTime == 0
+  final lastFGTaskHeartBeatTime = prefs.getInt(kLastFGTaskHeartBeatTime) ?? 0;
+  final String lastRun = lastFGTaskHeartBeatTime == 0
       ? 'never'
       : DateTime.fromMicrosecondsSinceEpoch(lastFGTaskHeartBeatTime).toString();
   _logger.info('isAlreaduunningFG: $isRunningInFG, last Beat: $lastRun');
 }
 
 void _scheduleSuicide(Duration duration, [String taskID]) {
-  var taskIDVal = taskID ?? 'no taskID';
+  final taskIDVal = taskID ?? 'no taskID';
   _logger.warning("Schedule seppuku taskID: $taskIDVal");
   Future.delayed(duration, () {
     _logger.warning("TLE, committing seppuku for taskID: $taskIDVal");

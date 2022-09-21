@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'dart:convert';
 
 const kFreeProductID = "free";
@@ -144,7 +146,7 @@ class Attributes {
   }
 
   Map<String, dynamic> toJson() {
-    var map = <String, dynamic>{};
+    final map = <String, dynamic>{};
     map["isCancelled"] = isCancelled;
     map["customerID"] = customerID;
     return map;

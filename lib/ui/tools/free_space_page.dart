@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:logging/logging.dart';
@@ -53,6 +55,7 @@ class _FreeSpacePageState extends State<FreeSpacePage> {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        const SizedBox(height: 24),
         Stack(
           alignment: Alignment.center,
           children: [
@@ -62,13 +65,20 @@ class _FreeSpacePageState extends State<FreeSpacePage> {
                     color: Colors.white.withOpacity(0.4),
                     colorBlendMode: BlendMode.modulate,
                   )
-                : Image.asset('assets/loading_photos_background_dark.png'),
-            Image.asset(
-              "assets/gallery_locked.png",
-              height: 160,
+                : Image.asset(
+                    'assets/loading_photos_background_dark.png',
+                    color: Colors.white.withOpacity(0.25),
+                  ),
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: Image.asset(
+                "assets/gallery_locked.png",
+                height: 160,
+              ),
             ),
           ],
         ),
+        const SizedBox(height: 24),
         Padding(
           padding: const EdgeInsets.only(left: 36, right: 40),
           child: Row(

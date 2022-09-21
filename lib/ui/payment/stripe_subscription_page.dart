@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -220,6 +222,8 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
           alignment: Alignment.center,
           child: GestureDetector(
             onTap: () async {
+              final String paymentProvider =
+                  _currentSubscription.paymentProvider;
               switch (_currentSubscription.paymentProvider) {
                 case kStripe:
                   await _launchStripePortal();
@@ -235,9 +239,14 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
                   launchUrlString("https://apps.apple.com/account/billing");
                   break;
                 default:
-                  _logger.severe(
-                    "unexpected payment provider ",
-                    _currentSubscription,
+                  final String capitalizedWord = paymentProvider.isNotEmpty
+                      ? '${paymentProvider[0].toUpperCase()}${paymentProvider.substring(1).toLowerCase()}'
+                      : '';
+                  showErrorDialog(
+                    context,
+                    "Sorry",
+                    "Please contact us at support@ente.io to manage your "
+                        "$capitalizedWord subscription.",
                   );
               }
             },
@@ -247,16 +256,12 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
                 children: [
                   RichText(
                     text: TextSpan(
-                      text: !_isStripeSubscriber
-                          ? "visit ${_currentSubscription.paymentProvider} to manage your subscription"
-                          : "Payment details",
+                      text: "Payment details",
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.onSurface,
                         fontFamily: 'Inter-Medium',
                         fontSize: 14,
-                        decoration: _isStripeSubscriber
-                            ? TextDecoration.underline
-                            : TextDecoration.none,
+                        decoration: TextDecoration.underline,
                       ),
                     ),
                     textAlign: TextAlign.center,
@@ -307,7 +312,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
   Future<void> _launchStripePortal() async {
     await _dialog.show();
     try {
-      String url = await _billingService.getStripeCustomerPortalUrl();
+      final String url = await _billingService.getStripeCustomerPortalUrl();
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (BuildContext context) {
@@ -353,9 +358,9 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
   }
 
   Widget _stripeRenewOrCancelButton() {
-    bool isRenewCancelled =
+    final bool isRenewCancelled =
         _currentSubscription.attributes?.isCancelled ?? false;
-    String title =
+    final String title =
         isRenewCancelled ? "Renew subscription" : "Cancel subscription";
     return TextButton(
       child: Text(
@@ -370,7 +375,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
       onPressed: () async {
         bool confirmAction = false;
         if (isRenewCancelled) {
-          var choice = await showChoiceDialog(
+          final choice = await showChoiceDialog(
             context,
             title,
             "Are you sure you want to renew?",
@@ -379,7 +384,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
           );
           confirmAction = choice == DialogUserChoice.secondChoice;
         } else {
-          var choice = await showChoiceDialog(
+          final choice = await showChoiceDialog(
             context,
             title,
             'Are you sure you want to cancel?',
@@ -440,7 +445,8 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
                 showErrorDialog(
                   context,
                   "Sorry",
-                  "please cancel your existing subscription from ${_currentSubscription.paymentProvider} first",
+                  "Please cancel your existing subscription from "
+                      "${_currentSubscription.paymentProvider} first",
                 );
                 return;
               }
@@ -448,14 +454,14 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
                 showErrorDialog(
                   context,
                   "Sorry",
-                  "you cannot downgrade to this plan",
+                  "You cannot downgrade to this plan",
                 );
                 return;
               }
               String stripPurChaseAction = 'buy';
               if (_isStripeSubscriber && _hasActiveSubscription) {
                 // confirm if user wants to change plan or not
-                var result = await showChoiceDialog(
+                final result = await showChoiceDialog(
                   context,
                   "Confirm plan change",
                   "Are you sure you want to change your plan?",

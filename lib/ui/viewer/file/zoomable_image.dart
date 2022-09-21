@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -88,7 +90,7 @@ class _ZoomableImageState extends State<ZoomableImage>
       content = const EnteLoadingWidget();
     }
 
-    GestureDragUpdateCallback verticalDragCallback = _isZooming
+    final GestureDragUpdateCallback verticalDragCallback = _isZooming
         ? null
         : (d) => {
               if (!_isZooming && d.delta.dy > kDragSensitivity)

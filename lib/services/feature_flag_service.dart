@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -86,15 +88,15 @@ class FeatureFlagService {
 
   bool enableSearch() {
     try {
-      return _isInternalUserOrDebugBuild() || _getFeatureFlags().enableSearch;
+      return isInternalUserOrDebugBuild() || _getFeatureFlags().enableSearch;
     } catch (e) {
       _logger.severe("failed to getSearchFeatureFlag", e);
       return FFDefault.enableSearch;
     }
   }
 
-  bool _isInternalUserOrDebugBuild() {
-    String email = Configuration.instance.getEmail();
+  bool isInternalUserOrDebugBuild() {
+    final String email = Configuration.instance.getEmail();
     return (email != null && email.endsWith("@ente.io")) || kDebugMode;
   }
 

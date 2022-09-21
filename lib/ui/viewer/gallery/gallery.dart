@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -183,7 +185,7 @@ class _GalleryState extends State<Gallery> {
         return const EnteLoadingWidget();
       },
       emptyResultBuilder: (_) {
-        List<Widget> children = [];
+        final List<Widget> children = [];
         if (widget.header != null) {
           children.add(widget.header);
         }
@@ -269,8 +271,8 @@ class _GalleryState extends State<Gallery> {
   }
 
   bool _areFromSameDay(int firstCreationTime, int secondCreationTime) {
-    var firstDate = DateTime.fromMicrosecondsSinceEpoch(firstCreationTime);
-    var secondDate = DateTime.fromMicrosecondsSinceEpoch(secondCreationTime);
+    final firstDate = DateTime.fromMicrosecondsSinceEpoch(firstCreationTime);
+    final secondDate = DateTime.fromMicrosecondsSinceEpoch(secondCreationTime);
     return firstDate.year == secondDate.year &&
         firstDate.month == secondDate.month &&
         firstDate.day == secondDate.day;

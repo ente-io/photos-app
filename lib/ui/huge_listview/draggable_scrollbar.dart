@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -175,7 +177,7 @@ class DraggableScrollbarState extends State<DraggableScrollbar>
       if (isDragging && details.delta.dy != 0) {
         thumbOffset += details.delta.dy;
         thumbOffset = thumbOffset.clamp(thumbMin, thumbMax);
-        double position = thumbOffset / (thumbMax - thumbMin);
+        final double position = thumbOffset / (thumbMax - thumbMin);
         widget.onChange?.call(position);
       }
     });

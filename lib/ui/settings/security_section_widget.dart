@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'dart:async';
 import 'dart:io';
 
@@ -8,15 +10,13 @@ import 'package:photos/core/configuration.dart';
 import 'package:photos/core/event_bus.dart';
 import 'package:photos/ente_theme_data.dart';
 import 'package:photos/events/two_factor_status_change_event.dart';
+import 'package:photos/services/local_authentication_service.dart';
 import 'package:photos/services/user_service.dart';
 import 'package:photos/ui/account/sessions_page.dart';
 import 'package:photos/ui/common/loading_widget.dart';
 import 'package:photos/ui/settings/common_settings.dart';
 import 'package:photos/ui/settings/settings_section_title.dart';
 import 'package:photos/ui/settings/settings_text_item.dart';
-import 'package:photos/ui/tools/app_lock.dart';
-import 'package:photos/utils/auth_util.dart';
-import 'package:photos/utils/toast_util.dart';
 
 class SecuritySectionWidget extends StatefulWidget {
   const SecuritySectionWidget({Key key}) : super(key: key);
@@ -26,9 +26,6 @@ class SecuritySectionWidget extends StatefulWidget {
 }
 
 class _SecuritySectionWidgetState extends State<SecuritySectionWidget> {
-  static const kAuthToViewSessions =
-      "Please authenticate to view your active sessions";
-
   final _config = Configuration.instance;
 
   StreamSubscription<TwoFactorStatusChangeEvent> _twoFactorStatusChangeEvent;
@@ -82,21 +79,18 @@ class _SecuritySectionWidgetState extends State<SecuritySectionWidget> {
                       return Switch.adaptive(
                         value: snapshot.data,
                         onChanged: (value) async {
-                          AppLock.of(context).setEnabled(false);
-                          String reason =
-                              "Please authenticate to configure two-factor authentication";
-                          final result = await requestAuthentication(reason);
-                          AppLock.of(context).setEnabled(
-                            Configuration.instance.shouldShowLockScreen(),
+                          final hasAuthenticated =
+                              await LocalAuthenticationService.instance
+                                  .requestLocalAuthentication(
+                            context,
+                            "Please authenticate to configure two-factor authentication",
                           );
-                          if (!result) {
-                            showToast(context, reason);
-                            return;
-                          }
-                          if (value) {
-                            UserService.instance.setupTwoFactor(context);
-                          } else {
-                            _disableTwoFactor();
+                          if (hasAuthenticated) {
+                            if (value) {
+                              UserService.instance.setupTwoFactor(context);
+                            } else {
+                              _disableTwoFactor();
+                            }
                           }
                         },
                       );
@@ -129,17 +123,16 @@ class _SecuritySectionWidgetState extends State<SecuritySectionWidget> {
             Switch.adaptive(
               value: _config.shouldShowLockScreen(),
               onChanged: (value) async {
-                AppLock.of(context).disable();
-                final result = await requestAuthentication(
+                final hasAuthenticated = await LocalAuthenticationService
+                    .instance
+                    .requestLocalAuthForLockScreen(
+                  context,
+                  value,
                   "Please authenticate to change lockscreen setting",
+                  "To enable lockscreen, please setup device passcode or screen lock in your system settings.",
                 );
-                if (result) {
-                  AppLock.of(context).setEnabled(value);
-                  _config.setShouldShowLockScreen(value);
+                if (hasAuthenticated) {
                   setState(() {});
-                } else {
-                  AppLock.of(context)
-                      .setEnabled(_config.shouldShowLockScreen());
                 }
               },
             ),
@@ -164,7 +157,7 @@ class _SecuritySectionWidgetState extends State<SecuritySectionWidget> {
                   value: _config.shouldHideFromRecents(),
                   onChanged: (value) async {
                     if (value) {
-                      AlertDialog alert = AlertDialog(
+                      final AlertDialog alert = AlertDialog(
                         title: const Text("Hide from recents?"),
                         content: SingleChildScrollView(
                           child: Column(
@@ -250,21 +243,20 @@ class _SecuritySectionWidgetState extends State<SecuritySectionWidget> {
       GestureDetector(
         behavior: HitTestBehavior.translucent,
         onTap: () async {
-          AppLock.of(context).setEnabled(false);
-          final result = await requestAuthentication(kAuthToViewSessions);
-          AppLock.of(context)
-              .setEnabled(Configuration.instance.shouldShowLockScreen());
-          if (!result) {
-            showToast(context, kAuthToViewSessions);
-            return;
-          }
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (BuildContext context) {
-                return const SessionsPage();
-              },
-            ),
+          final hasAuthenticated = await LocalAuthenticationService.instance
+              .requestLocalAuthentication(
+            context,
+            "Please authenticate to view your active sessions",
           );
+          if (hasAuthenticated) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (BuildContext context) {
+                  return const SessionsPage();
+                },
+              ),
+            );
+          }
         },
         child: const SettingsTextItem(
           text: "Active sessions",
@@ -278,7 +270,7 @@ class _SecuritySectionWidgetState extends State<SecuritySectionWidget> {
   }
 
   void _disableTwoFactor() {
-    AlertDialog alert = AlertDialog(
+    final AlertDialog alert = AlertDialog(
       title: const Text("Disable two-factor"),
       content: const Text(
         "Are you sure you want to disable two-factor authentication?",

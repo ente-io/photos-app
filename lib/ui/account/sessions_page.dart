@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:photos/core/configuration.dart';
@@ -41,7 +43,7 @@ class _SessionsPageState extends State<SessionsPage> {
     if (_sessions == null) {
       return const Center(child: EnteLoadingWidget());
     }
-    List<Widget> rows = [];
+    final List<Widget> rows = [];
     rows.add(const Padding(padding: EdgeInsets.all(4)));
     for (final session in _sessions.sessions) {
       rows.add(_getSessionWidget(session));
@@ -163,7 +165,7 @@ class _SessionsPageState extends State<SessionsPage> {
         ),
       );
     }
-    AlertDialog alert = AlertDialog(
+    final AlertDialog alert = AlertDialog(
       title: const Text("Terminate session?"),
       content: text,
       actions: [

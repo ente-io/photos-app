@@ -1,9 +1,12 @@
+// @dart=2.9
+
 import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:logging/logging.dart';
+import 'package:photos/core/errors.dart';
 import 'package:photos/core/event_bus.dart';
 import 'package:photos/events/subscription_purchased_event.dart';
 import 'package:photos/models/billing_plan.dart';
@@ -93,6 +96,18 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
             if (widget.isOnboarding) {
               Navigator.of(context).popUntil((route) => route.isFirst);
             }
+          } on SubscriptionAlreadyClaimedError catch (e) {
+            _logger.warning("subscription is already claimed ", e);
+            await _dialog.hide();
+            final String title = "${Platform.isAndroid ? "Play" : "App"}"
+                "Store subscription";
+            final String id =
+                Platform.isAndroid ? "Google Play ID" : "Apple ID";
+            final String message = '''Your $id is already linked to another
+             ente account.\nIf you would like to use your $id with this 
+             account, please contact our support''';
+            showErrorDialog(context, title, message);
+            return;
           } catch (e) {
             _logger.warning("Could not complete payment ", e);
             await _dialog.hide();
@@ -209,17 +224,32 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
           alignment: Alignment.center,
           child: GestureDetector(
             onTap: () {
-              if (_isActiveStripeSubscriber) {
-                return;
-              }
-              if (Platform.isAndroid) {
+              final String paymentProvider =
+                  _currentSubscription.paymentProvider;
+              if (paymentProvider == kAppStore && !Platform.isAndroid) {
+                launchUrlString("https://apps.apple.com/account/billing");
+              } else if (paymentProvider == kPlayStore && Platform.isAndroid) {
                 launchUrlString(
                   "https://play.google.com/store/account/subscriptions?sku=" +
                       _currentSubscription.productID +
                       "&package=io.ente.photos",
                 );
+              } else if (paymentProvider == kStripe) {
+                showErrorDialog(
+                  context,
+                  "Sorry",
+                  "Visit web.ente.io to manage your subscription",
+                );
               } else {
-                launchUrlString("https://apps.apple.com/account/billing");
+                final String capitalizedWord = paymentProvider.isNotEmpty
+                    ? '${paymentProvider[0].toUpperCase()}${paymentProvider.substring(1).toLowerCase()}'
+                    : '';
+                showErrorDialog(
+                  context,
+                  "Sorry",
+                  "Please contact us at support@ente.io to manage your "
+                      "$capitalizedWord subscription.",
+                );
               }
             },
             child: Container(

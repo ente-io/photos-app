@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'dart:convert';
 import 'dart:math';
 
@@ -62,7 +64,7 @@ class TrashDiffFetcher {
             fileDecryptionKey,
             Sodium.base642bin(trash.metadataDecryptionHeader),
           );
-          Map<String, dynamic> metadata =
+          final Map<String, dynamic> metadata =
               jsonDecode(utf8.decode(encodedMetadata));
           trash.applyMetadata(metadata);
           if (item["file"]['magicMetadata'] != null) {

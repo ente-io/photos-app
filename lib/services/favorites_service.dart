@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'dart:convert';
 
 import 'package:flutter_sodium/flutter_sodium.dart';
@@ -53,7 +55,7 @@ class FavoritesService {
 
   Future<void> removeFromFavorites(File file) async {
     final collectionID = await _getOrCreateFavoriteCollectionID();
-    var fileID = file.uploadedFileID;
+    final fileID = file.uploadedFileID;
     if (fileID == null) {
       // Do nothing, ignore
     } else {

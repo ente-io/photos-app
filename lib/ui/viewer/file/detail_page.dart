@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -139,7 +141,7 @@ class _DetailPageState extends State<DetailPage> {
     return PageView.builder(
       itemBuilder: (context, index) {
         final file = _files[index];
-        Widget content = FileWidget(
+        final Widget content = FileWidget(
           file,
           autoPlay: !_hasPageChanged,
           tagPrefix: widget.config.tagPrefix,

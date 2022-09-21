@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'package:flutter/material.dart';
 import 'package:photos/utils/data_util.dart';
 
@@ -16,13 +18,13 @@ class SubscriptionPlanWidget extends StatelessWidget {
   final bool isActive;
 
   String _displayPrice() {
-    var result = price + (period.isNotEmpty ? " / " + period : "");
+    final result = price + (period.isNotEmpty ? " / " + period : "");
     return result.isNotEmpty ? result : "Trial plan";
   }
 
   @override
   Widget build(BuildContext context) {
-    Color textColor = isActive ? Colors.white : Colors.black;
+    final Color textColor = isActive ? Colors.white : Colors.black;
     return Container(
       width: double.infinity,
       color: Theme.of(context).colorScheme.onPrimary,

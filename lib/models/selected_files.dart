@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'package:flutter/foundation.dart';
 import 'package:photos/models/file.dart';
 
@@ -9,7 +11,7 @@ class SelectedFiles extends ChangeNotifier {
     // To handle the cases, where the file might have changed due to upload
     // or any other update, using file.generatedID to track if this file was already
     // selected or not
-    File alreadySelected = files.firstWhere(
+    final File alreadySelected = files.firstWhere(
       (element) => element.generatedID == file.generatedID,
       orElse: () => null,
     );
@@ -24,7 +26,7 @@ class SelectedFiles extends ChangeNotifier {
   }
 
   bool isFileSelected(File file) {
-    File alreadySelected = files.firstWhere(
+    final File alreadySelected = files.firstWhere(
       (element) => element.generatedID == file.generatedID,
       orElse: () => null,
     );
@@ -32,7 +34,7 @@ class SelectedFiles extends ChangeNotifier {
   }
 
   bool isPartOfLastSection(File file) {
-    File alreadySelected = lastSelections.firstWhere(
+    final File alreadySelected = lastSelections.firstWhere(
       (element) => element.generatedID == file.generatedID,
       orElse: () => null,
     );

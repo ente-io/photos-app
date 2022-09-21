@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -103,10 +105,9 @@ class _LoadingPhotosWidgetState extends State<LoadingPhotosWidget> {
                             color: Colors.white.withOpacity(0.25),
                             colorBlendMode: BlendMode.modulate,
                           ),
-                    const SizedBox(height: 20),
                     Column(
                       children: [
-                        const SizedBox(height: 50),
+                        const SizedBox(height: 24),
                         Lottie.asset(
                           'assets/loadingGalleryLottie.json',
                           height: 400,

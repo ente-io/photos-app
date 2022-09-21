@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'dart:math';
 
 double convertBytesToGBs(final int bytes, {int precision = 2}) {
@@ -20,7 +22,7 @@ String convertBytesToReadableFormat(int bytes) {
 String formatBytes(int bytes, [int decimals = 2]) {
   if (bytes == 0) return '0 bytes';
   const k = 1024;
-  int dm = decimals < 0 ? 0 : decimals;
-  int i = (log(bytes) / log(k)).floor();
+  final int dm = decimals < 0 ? 0 : decimals;
+  final int i = (log(bytes) / log(k)).floor();
   return ((bytes / pow(k, i)).toStringAsFixed(dm)) + ' ' + kStorageUnits[i];
 }

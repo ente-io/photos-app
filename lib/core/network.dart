@@ -1,9 +1,8 @@
-import 'dart:io';
+// @dart=2.9
 
-import 'package:alice/alice.dart';
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:fk_user_agent/fk_user_agent.dart';
-import 'package:flutter/foundation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:uuid/uuid.dart';
 
@@ -11,10 +10,8 @@ int kConnectTimeout = 15000;
 
 class Network {
   Dio _dio;
-  Alice _alice;
 
   Future<void> init() async {
-    _alice = Alice(darkTheme: true, showNotification: kDebugMode);
     await FkUserAgent.init();
     final packageInfo = await PackageInfo.fromPlatform();
     _dio = Dio(
@@ -28,7 +25,6 @@ class Network {
       ),
     );
     _dio.interceptors.add(RequestIdInterceptor());
-    _dio.interceptors.add(_alice.getDioInterceptor());
   }
 
   Network._privateConstructor();
@@ -36,8 +32,6 @@ class Network {
   static Network instance = Network._privateConstructor();
 
   Dio getDio() => _dio;
-
-  Alice getAlice() => _alice;
 }
 
 class RequestIdInterceptor extends Interceptor {

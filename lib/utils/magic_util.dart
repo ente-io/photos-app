@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart';
@@ -52,7 +54,7 @@ Future<void> changeCollectionVisibility(
   );
   await dialog.show();
   try {
-    Map<String, dynamic> update = {kMagicKeyVisibility: newVisibility};
+    final Map<String, dynamic> update = {kMagicKeyVisibility: newVisibility};
     await CollectionsService.instance.updateMagicMetadata(collection, update);
     // Force reload home gallery to pull in the now unarchived files
     Bus.instance.fire(ForceReloadHomeGalleryEvent());
@@ -135,7 +137,7 @@ Future<void> _updatePublicMetadata(
   final dialog = createProgressDialog(context, 'please wait...');
   await dialog.show();
   try {
-    Map<String, dynamic> update = {key: value};
+    final Map<String, dynamic> update = {key: value};
     await FileMagicService.instance.updatePublicMagicMetadata(files, update);
     showShortToast(context, 'done');
     await dialog.hide();

@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'dart:async';
 import 'dart:io';
 
@@ -25,8 +27,8 @@ class MemoriesDB {
   }
 
   Future<Database> _initDatabase() async {
-    Directory documentsDirectory = await getApplicationDocumentsDirectory();
-    String path = join(documentsDirectory.path, _databaseName);
+    final Directory documentsDirectory = await getApplicationDocumentsDirectory();
+    final String path = join(documentsDirectory.path, _databaseName);
     return await openDatabase(
       path,
       version: _databaseVersion,
@@ -74,7 +76,7 @@ class MemoriesDB {
   }
 
   Map<String, dynamic> _getRowForSeenMemory(Memory memory, int timestamp) {
-    var row = <String, dynamic>{};
+    final row = <String, dynamic>{};
     row[columnFileID] = memory.file.generatedID;
     row[columnSeenTime] = timestamp;
     return row;

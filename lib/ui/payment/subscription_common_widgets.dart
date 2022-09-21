@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'package:flutter/material.dart';
 import 'package:photos/ente_theme_data.dart';
 import 'package:photos/models/subscription.dart';
@@ -87,7 +89,7 @@ class ValidityWidget extends StatelessWidget {
     if (currentSubscription == null) {
       return Container();
     }
-    var endDate = getDateAndMonthAndYear(
+    final endDate = getDateAndMonthAndYear(
       DateTime.fromMicrosecondsSinceEpoch(currentSubscription.expiryTime),
     );
     var message = "Renews on $endDate";

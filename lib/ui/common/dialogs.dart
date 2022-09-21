@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'package:flutter/material.dart';
 import 'package:photos/ente_theme_data.dart';
 
@@ -19,7 +21,7 @@ Future<DialogUserChoice> showChoiceDialog<T>(
   Color secondActionColor,
   ActionType actionType = ActionType.confirm,
 }) {
-  AlertDialog alert = AlertDialog(
+  final AlertDialog alert = AlertDialog(
     title: Text(
       title,
       style: TextStyle(

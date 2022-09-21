@@ -1,15 +1,21 @@
+// @dart=2.9
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:photos/core/configuration.dart';
 import 'package:photos/core/event_bus.dart';
+import 'package:photos/db/files_db.dart';
+import 'package:photos/ente_theme_data.dart';
 import 'package:photos/events/subscription_purchased_event.dart';
 import 'package:photos/models/collection.dart';
 import 'package:photos/models/gallery_type.dart';
 import 'package:photos/models/magic_metadata.dart';
 import 'package:photos/models/selected_files.dart';
 import 'package:photos/services/collections_service.dart';
+import 'package:photos/services/feature_flag_service.dart';
+import 'package:photos/ui/common/dialogs.dart';
 import 'package:photos/ui/common/rename_dialog.dart';
 import 'package:photos/ui/sharing/share_collection_widget.dart';
 import 'package:photos/utils/dialog_util.dart';
@@ -118,7 +124,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
   }
 
   List<Widget> _getDefaultActions(BuildContext context) {
-    List<Widget> actions = <Widget>[];
+    final List<Widget> actions = <Widget>[];
     if (Configuration.instance.hasConfiguredAccount() &&
         widget.selectedFiles.files.isEmpty &&
         (widget.type == GalleryType.localFolder ||
@@ -128,8 +134,24 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
           message: "Share",
           child: IconButton(
             icon: Icon(Icons.adaptive.share),
-            onPressed: () {
-              _showShareCollectionDialog();
+            onPressed: () async {
+              final bool showHiddenWarning =
+                  await _shouldShowHiddenFilesWarning(widget.collection);
+              if (showHiddenWarning) {
+                final choice = await showChoiceDialog(
+                  context,
+                  'Share hidden items?',
+                  "Looks like you're trying to share an album that has some hidden items.\n\nThese hidden items can be seen by the recipient.",
+                  firstAction: "Cancel",
+                  secondAction: "Share anyway",
+                  secondActionColor:
+                      Theme.of(context).colorScheme.defaultTextColor,
+                );
+                if (choice != DialogUserChoice.secondChoice) {
+                  return;
+                }
+              }
+              await _showShareCollectionDialog();
             },
           ),
         ),
@@ -156,7 +178,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
                 ),
               );
             }
-            bool isArchived = widget.collection.isArchived();
+            final bool isArchived = widget.collection.isArchived();
             items.add(
               PopupMenuItem(
                 value: 2,
@@ -224,5 +246,23 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
       await dialog.hide();
       showGenericErrorDialog(context);
     }
+  }
+
+  Future<bool> _shouldShowHiddenFilesWarning(Collection collection) async {
+    // collection can be null for device folders which are not marked for
+    // back up
+    if (!FeatureFlagService.instance.isInternalUserOrDebugBuild() ||
+        collection == null) {
+      return false;
+    }
+    // collection is already shared
+    if (collection.sharees.isNotEmpty || collection.publicURLs.isNotEmpty) {
+      return false;
+    }
+    final collectionIDsWithHiddenFiles =
+        await FilesDB.instance.getCollectionIDsOfHiddenFiles(
+      Configuration.instance.getUserID(),
+    );
+    return collectionIDsWithHiddenFiles.contains(collection.id);
   }
 }

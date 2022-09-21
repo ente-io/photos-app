@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'package:expandable/expandable.dart';
 import 'package:flutter/material.dart';
 import 'package:photos/ente_theme_data.dart';
@@ -53,7 +55,7 @@ class _DangerSectionWidgetState extends State<DangerSectionWidget> {
   }
 
   Future<void> _onLogoutTapped() async {
-    AlertDialog alert = AlertDialog(
+    final AlertDialog alert = AlertDialog(
       title: const Text(
         "Logout",
         style: TextStyle(

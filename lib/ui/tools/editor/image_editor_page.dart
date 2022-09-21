@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -157,7 +159,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
   }
 
   Widget _buildFlipButton() {
-    TextStyle subtitle2 = Theme.of(context).textTheme.subtitle2;
+    final TextStyle subtitle2 = Theme.of(context).textTheme.subtitle2;
 
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
@@ -191,7 +193,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
   }
 
   Widget _buildRotateLeftButton() {
-    TextStyle subtitle2 = Theme.of(context).textTheme.subtitle2;
+    final TextStyle subtitle2 = Theme.of(context).textTheme.subtitle2;
 
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
@@ -221,7 +223,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
   }
 
   Widget _buildRotateRightButton() {
-    TextStyle subtitle2 = Theme.of(context).textTheme.subtitle2;
+    final TextStyle subtitle2 = Theme.of(context).textTheme.subtitle2;
 
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
@@ -251,7 +253,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
   }
 
   Widget _buildSaveButton() {
-    TextStyle subtitle2 = Theme.of(context).textTheme.subtitle2;
+    final TextStyle subtitle2 = Theme.of(context).textTheme.subtitle2;
 
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
@@ -349,7 +351,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
       newFile.collectionID = widget.originalFile.collectionID;
       newFile.location = widget.originalFile.location;
       if (!newFile.hasLocation() && widget.originalFile.localID != null) {
-        var assetEntity = await widget.originalFile.getAsset();
+        final assetEntity = await widget.originalFile.getAsset();
         if (assetEntity != null) {
           final latLong = await assetEntity.latlngAsync();
           newFile.location = Location(latLong.latitude, latLong.longitude);
@@ -394,7 +396,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
   }
 
   Widget _buildSat() {
-    TextStyle subtitle2 = Theme.of(context).textTheme.subtitle2;
+    final TextStyle subtitle2 = Theme.of(context).textTheme.subtitle2;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
@@ -440,7 +442,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
   }
 
   Widget _buildBrightness() {
-    TextStyle subtitle2 = Theme.of(context).textTheme.subtitle2;
+    final TextStyle subtitle2 = Theme.of(context).textTheme.subtitle2;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
@@ -486,7 +488,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
   }
 
   Future<void> _showExitConfirmationDialog() async {
-    AlertDialog alert = AlertDialog(
+    final AlertDialog alert = AlertDialog(
       title: const Text("Discard edits?"),
       actions: [
         TextButton(

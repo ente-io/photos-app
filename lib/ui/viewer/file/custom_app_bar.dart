@@ -1,6 +1,9 @@
+// @dart=2.9
+
 import 'package:flutter/material.dart';
 
 class CustomAppBar extends PreferredSize {
+  @override
   final Widget child;
   final double height;
 

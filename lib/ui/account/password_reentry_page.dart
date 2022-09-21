@@ -1,12 +1,18 @@
+// @dart=2.9
+
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:photos/core/configuration.dart';
+import 'package:photos/core/errors.dart';
 import 'package:photos/core/event_bus.dart';
 import 'package:photos/events/subscription_purchased_event.dart';
+import 'package:photos/models/key_attributes.dart';
 import 'package:photos/ui/account/recovery_page.dart';
+import 'package:photos/ui/common/dialogs.dart';
 import 'package:photos/ui/common/dynamic_fab.dart';
 import 'package:photos/ui/home_widget.dart';
 import 'package:photos/utils/dialog_util.dart';
+import 'package:photos/utils/email_util.dart';
 
 class PasswordReentryPage extends StatefulWidget {
   const PasswordReentryPage({Key key}) : super(key: key);
@@ -16,6 +22,7 @@ class PasswordReentryPage extends StatefulWidget {
 }
 
 class _PasswordReentryPageState extends State<PasswordReentryPage> {
+  final _logger = Logger((_PasswordReentryPageState).toString());
   final _passwordController = TextEditingController();
   final FocusNode _passwordFocusNode = FocusNode();
   String email;
@@ -71,10 +78,52 @@ class _PasswordReentryPageState extends State<PasswordReentryPage> {
               _passwordController.text,
               Configuration.instance.getKeyAttributes(),
             );
-          } catch (e, s) {
-            Logger("PRP").severe("Password verification failed", e, s);
+          } on KeyDerivationError catch (e, s) {
+            _logger.severe("Password verification failed", e, s);
             await dialog.hide();
-            showErrorDialog(context, "Incorrect password", "Please try again");
+            final dialogUserChoice = await showChoiceDialog(
+              context,
+              "Recreate password",
+              "The current device is not powerful enough to verify your "
+                  "password, so we need to regenerate it once in a way that "
+                  "works with all devices. \n\nPlease login using your "
+                  "recovery key and regenerate your password (you can use the same one again if you wish).",
+              firstAction: "Cancel",
+              firstActionColor: Theme.of(context).colorScheme.primary,
+              secondAction: "Use recovery key",
+              secondActionColor: Theme.of(context).colorScheme.primary,
+            );
+            if (dialogUserChoice == DialogUserChoice.secondChoice) {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (BuildContext context) {
+                    return const RecoveryPage();
+                  },
+                ),
+              );
+            }
+            return;
+          } catch (e, s) {
+            _logger.severe("Password verification failed", e, s);
+            await dialog.hide();
+
+            final dialogUserChoice = await showChoiceDialog(
+              context,
+              "Incorrect password",
+              "Please try again",
+              firstAction: "Contact Support",
+              firstActionColor: Theme.of(context).colorScheme.primary,
+              secondAction: "Ok",
+              secondActionColor: Theme.of(context).colorScheme.primary,
+            );
+            if (dialogUserChoice == DialogUserChoice.firstChoice) {
+              await sendLogs(
+                context,
+                "Contact support",
+                "support@ente.io",
+                postShare: () {},
+              );
+            }
             return;
           }
           await dialog.hide();
@@ -230,5 +279,11 @@ class _PasswordReentryPageState extends State<PasswordReentryPage> {
         ),
       ],
     );
+  }
+
+  void validatePreVerificationState(KeyAttributes keyAttributes) {
+    if (keyAttributes == null) {
+      throw Exception("Key Attributes can not be null");
+    }
   }
 }

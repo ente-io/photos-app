@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'dart:convert';
 import 'dart:io' as io;
 import 'dart:typed_data';
@@ -9,6 +11,7 @@ import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:photos/core/constants.dart';
 import 'package:photos/core/error-reporting/super_logging.dart';
+import 'package:photos/core/errors.dart';
 import 'package:photos/core/event_bus.dart';
 import 'package:photos/db/collections_db.dart';
 import 'package:photos/db/files_db.dart';
@@ -29,6 +32,7 @@ import 'package:photos/services/memories_service.dart';
 import 'package:photos/services/search_service.dart';
 import 'package:photos/services/sync_service.dart';
 import 'package:photos/utils/crypto_util.dart';
+import 'package:photos/utils/validator_util.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wakelock/wakelock.dart';
@@ -111,7 +115,7 @@ class Configuration {
       _logger.warning(e);
     }
     tempDirectory.createSync(recursive: true);
-    var tempDirectoryPath = (await getTemporaryDirectory()).path;
+    final tempDirectoryPath = (await getTemporaryDirectory()).path;
     _thumbnailCacheDirectory = tempDirectoryPath + "/thumbnail-cache";
     io.Directory(_thumbnailCacheDirectory).createSync(recursive: true);
     _sharedTempMediaDirectory = tempDirectoryPath + "/ente-shared-media";
@@ -242,12 +246,24 @@ class Configuration {
     String password,
     KeyAttributes attributes,
   ) async {
+    _logger.info('Start decryptAndSaveSecrets');
+    validatePreVerificationStateCheck(
+      attributes,
+      password,
+      getEncryptedToken(),
+    );
+    _logger.info('state validation done');
     final kek = await CryptoUtil.deriveKey(
       utf8.encode(password),
       Sodium.base642bin(attributes.kekSalt),
       attributes.memLimit,
       attributes.opsLimit,
-    );
+    ).onError((e, s) {
+      _logger.severe('deriveKey failed', e, s);
+      throw KeyDerivationError();
+    });
+
+    _logger.info('user-key done');
     Uint8List key;
     try {
       key = CryptoUtil.decryptSync(
@@ -256,20 +272,24 @@ class Configuration {
         Sodium.base642bin(attributes.keyDecryptionNonce),
       );
     } catch (e) {
+      _logger.severe('master-key failed, incorrect password?', e);
       throw Exception("Incorrect password");
     }
+    _logger.info("master-key done");
     await setKey(Sodium.bin2base64(key));
     final secretKey = CryptoUtil.decryptSync(
       Sodium.base642bin(attributes.encryptedSecretKey),
       key,
       Sodium.base642bin(attributes.secretKeyDecryptionNonce),
     );
+    _logger.info("secret-key done");
     await setSecretKey(Sodium.bin2base64(secretKey));
     final token = CryptoUtil.openSealSync(
       Sodium.base642bin(getEncryptedToken()),
       Sodium.base642bin(attributes.publicKey),
       secretKey,
     );
+    _logger.info('appToken done');
     await setToken(
       Sodium.bin2base64(token, variant: Sodium.base64VariantUrlsafe),
     );

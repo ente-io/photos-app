@@ -1,3 +1,6 @@
+// @dart=2.9
+
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:photos/core/configuration.dart';
@@ -195,14 +198,16 @@ class _CreateCollectionPageState extends State<CreateCollectionPage> {
       }
     }
     collectionsWithThumbnail.sort((first, second) {
-      return (first.collection.name ?? "")
-          .compareTo((second.collection.name ?? ""));
+      return compareAsciiLowerCaseNatural(
+        first.collection.name ?? "",
+        second.collection.name ?? "",
+      );
     });
     return collectionsWithThumbnail;
   }
 
   void _showNameAlbumDialog() async {
-    AlertDialog alert = AlertDialog(
+    final AlertDialog alert = AlertDialog(
       title: const Text("Album title"),
       content: TextFormField(
         decoration: const InputDecoration(
@@ -284,7 +289,8 @@ class _CreateCollectionPageState extends State<CreateCollectionPage> {
     final dialog = createProgressDialog(context, "Moving files to album...");
     await dialog.show();
     try {
-      int fromCollectionID = widget.selectedFiles.files?.first?.collectionID;
+      final int fromCollectionID =
+          widget.selectedFiles.files?.first?.collectionID;
       await CollectionsService.instance.move(
         toCollectionID,
         fromCollectionID,

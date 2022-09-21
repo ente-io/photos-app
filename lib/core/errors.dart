@@ -1,3 +1,5 @@
+// @dart=2.9
+
 class InvalidFileError extends ArgumentError {
   InvalidFileError(String message) : super(message);
 }
@@ -5,6 +7,8 @@ class InvalidFileError extends ArgumentError {
 class InvalidFileUploadState extends AssertionError {
   InvalidFileUploadState(String message) : super(message);
 }
+
+class SubscriptionAlreadyClaimedError extends Error {}
 
 class WiFiUnavailableError extends Error {}
 
@@ -36,3 +40,5 @@ class UnauthorizedEditError extends AssertionError {}
 class InvalidStateError extends AssertionError {
   InvalidStateError(String message) : super(message);
 }
+
+class KeyDerivationError extends Error {}

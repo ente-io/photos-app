@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'dart:math';
 
 import 'package:flutter/widgets.dart';
@@ -70,11 +72,11 @@ class ColorFilterGenerator {
         0,
       ];
     }
-    double cosVal = cos(value);
-    double sinVal = sin(value);
-    double lumR = 0.213;
-    double lumG = 0.715;
-    double lumB = 0.072;
+    final double cosVal = cos(value);
+    final double sinVal = sin(value);
+    const double lumR = 0.213;
+    const double lumG = 0.715;
+    const double lumB = 0.072;
 
     return List<double>.from(<double>[
       (lumR + (cosVal * (1 - lumR))) + (sinVal * (-lumR)),

@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -16,6 +18,9 @@ class GrantPermissionsWidget extends StatelessWidget {
           padding: const EdgeInsets.only(top: 20, bottom: 120),
           child: Column(
             children: [
+              const SizedBox(
+                height: 24,
+              ),
               Center(
                 child: Stack(
                   alignment: Alignment.center,
@@ -43,6 +48,7 @@ class GrantPermissionsWidget extends StatelessWidget {
                   ],
                 ),
               ),
+              const SizedBox(height: 36),
               Padding(
                 padding: const EdgeInsets.fromLTRB(40, 0, 40, 0),
                 child: RichText(
@@ -94,7 +100,7 @@ class GrantPermissionsWidget extends StatelessWidget {
                 state == PermissionState.limited) {
               await SyncService.instance.onPermissionGranted(state);
             } else if (state == PermissionState.denied) {
-              AlertDialog alert = AlertDialog(
+              final AlertDialog alert = AlertDialog(
                 title: const Text("Please grant permissions"),
                 content: const Text(
                   "ente can encrypt and preserve files only if you grant access to them",

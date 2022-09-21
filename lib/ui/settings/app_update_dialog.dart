@@ -1,6 +1,8 @@
+// @dart=2.9
+
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
-import 'package:open_file/open_file.dart';
+// import 'package:open_file/open_file.dart';
 import 'package:photos/core/configuration.dart';
 import 'package:photos/core/network.dart';
 import 'package:photos/ente_theme_data.dart';
@@ -150,10 +152,10 @@ class _ApkDownloaderDialogState extends State<ApkDownloaderDialog> {
         },
       );
       Navigator.of(context, rootNavigator: true).pop('dialog');
-      OpenFile.open(_saveUrl);
+      // OpenFile.open(_saveUrl);
     } catch (e) {
       Logger("ApkDownloader").severe(e);
-      AlertDialog alert = AlertDialog(
+      final AlertDialog alert = AlertDialog(
         title: const Text("Sorry"),
         content: const Text("The download could not be completed"),
         actions: [

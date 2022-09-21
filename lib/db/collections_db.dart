@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -60,8 +62,8 @@ class CollectionsDB {
   }
 
   Future<Database> _initDatabase() async {
-    Directory documentsDirectory = await getApplicationDocumentsDirectory();
-    String path = join(documentsDirectory.path, _databaseName);
+    final Directory documentsDirectory = await getApplicationDocumentsDirectory();
+    final String path = join(documentsDirectory.path, _databaseName);
     return await openDatabaseWithMigration(path, dbConfig);
   }
 
@@ -157,7 +159,7 @@ class CollectionsDB {
 
   Future<List<dynamic>> insert(List<Collection> collections) async {
     final db = await instance.database;
-    var batch = db.batch();
+    final batch = db.batch();
     for (final collection in collections) {
       batch.insert(
         table,
@@ -202,7 +204,7 @@ class CollectionsDB {
   }
 
   Map<String, dynamic> _getRowForCollection(Collection collection) {
-    var row = <String, dynamic>{};
+    final row = <String, dynamic>{};
     row[columnID] = collection.id;
     row[columnOwner] = collection.owner.toJson();
     row[columnEncryptedKey] = collection.encryptedKey;
@@ -230,7 +232,7 @@ class CollectionsDB {
   }
 
   Collection _convertToCollection(Map<String, dynamic> row) {
-    Collection result = Collection(
+    final Collection result = Collection(
       row[columnID],
       User.fromJson(row[columnOwner]),
       row[columnEncryptedKey],

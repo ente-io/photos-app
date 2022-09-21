@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
@@ -66,7 +68,7 @@ class _GalleryOverlayWidgetState extends State<GalleryOverlayWidget> {
 
   @override
   Widget build(BuildContext context) {
-    bool filesAreSelected = widget.selectedFiles.files.isNotEmpty;
+    final bool filesAreSelected = widget.selectedFiles.files.isNotEmpty;
     final bottomPadding = Platform.isAndroid ? 0.0 : 12.0;
     return Padding(
       padding: EdgeInsets.only(bottom: bottomPadding),
@@ -254,7 +256,7 @@ class _OverlayWidgetState extends State<OverlayWidget> {
   }
 
   List<Widget> _getActions(BuildContext context) {
-    List<Widget> actions = <Widget>[];
+    final List<Widget> actions = <Widget>[];
     if (widget.type == GalleryType.trash) {
       _addTrashAction(actions);
       return actions;
@@ -268,9 +270,7 @@ class _OverlayWidgetState extends State<OverlayWidget> {
       if (widget.type == GalleryType.localFolder ||
           widget.type == GalleryType.localAll) {
         msg = "Upload";
-        iconData = Platform.isAndroid
-            ? Icons.cloud_upload
-            : CupertinoIcons.cloud_upload;
+        iconData = Icons.cloud_upload_outlined;
       }
       actions.add(
         Tooltip(
@@ -372,7 +372,7 @@ class _OverlayWidgetState extends State<OverlayWidget> {
 
     if (widget.type == GalleryType.homepage ||
         widget.type == GalleryType.archive) {
-      bool showArchive = widget.type == GalleryType.homepage;
+      final bool showArchive = widget.type == GalleryType.homepage;
       actions.add(
         Tooltip(
           message: showArchive ? "Hide" : "Unhide",

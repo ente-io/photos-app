@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
@@ -308,7 +310,7 @@ class CollectionsService {
       // read the existing magic metadata and apply new updates to existing data
       // current update is simple replace. This will be enhanced in the future,
       // as required.
-      Map<String, dynamic> jsonToUpdate =
+      final Map<String, dynamic> jsonToUpdate =
           jsonDecode(collection.mMdEncodedJson ?? '{}');
       newMetadataUpdate.forEach((key, value) {
         jsonToUpdate[key] = value;
@@ -325,7 +327,7 @@ class CollectionsService {
       );
       // for required field, the json validator on golang doesn't treat 0 as valid
       // value. Instead of changing version to ptr, decided to start version with 1.
-      int currentVersion = max(collection.mMdVersion, 1);
+      final int currentVersion = max(collection.mMdVersion, 1);
       final params = UpdateMagicMetadataRequest(
         id: collection.id,
         magicMetadata: MetadataRequest(
@@ -630,6 +632,51 @@ class CollectionsService {
     }
   }
 
+  Future<File> linkLocalFileToExistingUploadedFileInAnotherCollection(
+    int destCollectionID, {
+    @required File localFileToUpload,
+    @required File existingUploadedFile,
+  }) async {
+    final params = <String, dynamic>{};
+    params["collectionID"] = destCollectionID;
+    params["files"] = [];
+    final int uploadedFileID = existingUploadedFile.uploadedFileID;
+
+    // encrypt the fileKey with destination collection's key
+    final fileKey = decryptFileKey(existingUploadedFile);
+    final encryptedKeyData =
+        CryptoUtil.encryptSync(fileKey, getCollectionKey(destCollectionID));
+
+    localFileToUpload.encryptedKey =
+        Sodium.bin2base64(encryptedKeyData.encryptedData);
+    localFileToUpload.keyDecryptionNonce =
+        Sodium.bin2base64(encryptedKeyData.nonce);
+
+    params["files"].add(
+      CollectionFileItem(
+        uploadedFileID,
+        localFileToUpload.encryptedKey,
+        localFileToUpload.keyDecryptionNonce,
+      ).toMap(),
+    );
+
+    try {
+      await _dio.post(
+        Configuration.instance.getHttpEndpoint() + "/collections/add-files",
+        data: params,
+        options: Options(
+          headers: {"X-Auth-Token": Configuration.instance.getToken()},
+        ),
+      );
+      localFileToUpload.collectionID = destCollectionID;
+      localFileToUpload.uploadedFileID = uploadedFileID;
+      await _filesDB.insertMultiple([localFileToUpload]);
+      return localFileToUpload;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<void> restore(int toCollectionID, List<File> files) async {
     final params = <String, dynamic>{};
     params["collectionID"] = toCollectionID;
@@ -740,6 +787,10 @@ class CollectionsService {
     );
     await _filesDB.insertMultiple(files);
     Bus.instance.fire(CollectionUpdatedEvent(toCollectionID, files));
+  }
+
+  String getCollectionNameByID(int collectionID) {
+    return getCollectionByID(collectionID).name;
   }
 
   void _validateMoveRequest(

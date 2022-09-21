@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'dart:convert';
 import 'dart:core';
 
@@ -85,7 +87,7 @@ class Collection {
     String mMdEncodedJson,
     int mMdVersion,
   }) {
-    Collection result = Collection(
+    final Collection result = Collection(
       id ?? this.id,
       owner ?? this.owner,
       encryptedKey ?? this.encryptedKey,

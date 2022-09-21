@@ -1,13 +1,20 @@
+// @dart=2.9
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:photos/core/event_bus.dart';
 import 'package:photos/ente_theme_data.dart';
+import 'package:photos/events/notification_event.dart';
 import 'package:photos/events/sync_status_update_event.dart';
 import 'package:photos/services/feature_flag_service.dart';
 import 'package:photos/services/sync_service.dart';
+import 'package:photos/services/user_remote_flag_service.dart';
+import 'package:photos/ui/account/verify_recovery_page.dart';
+import 'package:photos/ui/components/notification_warning_widget.dart';
 import 'package:photos/ui/header_error_widget.dart';
 import 'package:photos/ui/viewer/search/search_widget.dart';
+import 'package:photos/utils/navigation_util.dart';
 
 const double kContainerHeight = 36;
 
@@ -20,6 +27,7 @@ class StatusBarWidget extends StatefulWidget {
 
 class _StatusBarWidgetState extends State<StatusBarWidget> {
   StreamSubscription<SyncStatusUpdate> _subscription;
+  StreamSubscription<NotificationEvent> _notificationSubscription;
   bool _showStatus = false;
   bool _showErrorBanner = false;
 
@@ -50,12 +58,19 @@ class _StatusBarWidgetState extends State<StatusBarWidget> {
         });
       }
     });
+    _notificationSubscription =
+        Bus.instance.on<NotificationEvent>().listen((event) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
     super.initState();
   }
 
   @override
   void dispose() {
     _subscription.cancel();
+    _notificationSubscription.cancel();
     super.dispose();
   }
 
@@ -98,6 +113,20 @@ class _StatusBarWidgetState extends State<StatusBarWidget> {
           duration: const Duration(milliseconds: 1000),
           child: const Divider(),
         ),
+        UserRemoteFlagService.instance.shouldShowRecoveryVerification()
+            ? NotificationWarningWidget(
+                warningIcon: Icons.gpp_maybe,
+                actionIcon: Icons.arrow_forward,
+                text: "Please ensure that you have your 24 word recovery key",
+                onTap: () async => {
+                  await routeToPage(
+                    context,
+                    const VerifyRecoveryPage(),
+                    forceCustomPageRoute: true,
+                  )
+                },
+              )
+            : const SizedBox.shrink()
       ],
     );
   }
@@ -135,7 +164,7 @@ class _SyncStatusWidgetState extends State<SyncStatusWidget> {
 
   @override
   Widget build(BuildContext context) {
-    bool isNotOutdatedEvent = _event != null &&
+    final bool isNotOutdatedEvent = _event != null &&
         (_event.status == SyncStatus.completedBackup ||
             _event.status == SyncStatus.completedFirstGalleryImport) &&
         (DateTime.now().microsecondsSinceEpoch - _event.timestamp >

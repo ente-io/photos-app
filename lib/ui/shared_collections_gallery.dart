@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'dart:async';
 import 'dart:math';
 
@@ -112,9 +114,9 @@ class _SharedCollectionGalleryState extends State<SharedCollectionGallery>
   Widget _getSharedCollectionsGallery(SharedCollections collections) {
     const double horizontalPaddingOfGridRow = 16;
     const double crossAxisSpacingOfGrid = 9;
-    Size size = MediaQuery.of(context).size;
-    int albumsCountInOneRow = max(size.width ~/ 220.0, 2);
-    double totalWhiteSpaceOfRow = (horizontalPaddingOfGridRow * 2) +
+    final Size size = MediaQuery.of(context).size;
+    final int albumsCountInOneRow = max(size.width ~/ 220.0, 2);
+    final double totalWhiteSpaceOfRow = (horizontalPaddingOfGridRow * 2) +
         (albumsCountInOneRow - 1) * crossAxisSpacingOfGrid;
     final double sideOfThumbnail = (size.width / albumsCountInOneRow) -
         (totalWhiteSpaceOfRow / albumsCountInOneRow);
@@ -363,11 +365,11 @@ class IncomingCollectionItem extends StatelessWidget {
   Widget build(BuildContext context) {
     const double horizontalPaddingOfGridRow = 16;
     const double crossAxisSpacingOfGrid = 9;
-    TextStyle albumTitleTextStyle =
+    final TextStyle albumTitleTextStyle =
         Theme.of(context).textTheme.subtitle1.copyWith(fontSize: 14);
-    Size size = MediaQuery.of(context).size;
-    int albumsCountInOneRow = max(size.width ~/ 220.0, 2);
-    double totalWhiteSpaceOfRow = (horizontalPaddingOfGridRow * 2) +
+    final Size size = MediaQuery.of(context).size;
+    final int albumsCountInOneRow = max(size.width ~/ 220.0, 2);
+    final double totalWhiteSpaceOfRow = (horizontalPaddingOfGridRow * 2) +
         (albumsCountInOneRow - 1) * crossAxisSpacingOfGrid;
     final double sideOfThumbnail = (size.width / albumsCountInOneRow) -
         (totalWhiteSpaceOfRow / albumsCountInOneRow);

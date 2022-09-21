@@ -1,3 +1,5 @@
+// @dart=2.9
+
 library google_nav_bar;
 
 import 'dart:async';
@@ -321,7 +323,7 @@ class _ButtonState extends State<Button> with TickerProviderStateMixin {
       expandController.forward();
     }
 
-    Widget icon = widget.leading ??
+    final Widget icon = widget.leading ??
         Icon(
           widget.icon,
           color: _expanded ? widget.iconColor : widget.iconActiveColor,

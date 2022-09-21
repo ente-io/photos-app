@@ -1,3 +1,5 @@
+// @dart=2.9
+
 import 'dart:io';
 
 import 'package:archive/archive_io.dart';
@@ -126,7 +128,7 @@ Future<void> _sendLogs(
   String subject,
   String body,
 ) async {
-  String zipFilePath = await getZippedLogsFile(context);
+  final String zipFilePath = await getZippedLogsFile(context);
   final Email email = Email(
     recipients: [toEmail],
     subject: subject,
@@ -150,7 +152,7 @@ Future<String> getZippedLogsFile(BuildContext context) async {
   final tempPath = (await getTemporaryDirectory()).path;
   final zipFilePath =
       tempPath + "/logs-${Configuration.instance.getUserID() ?? 0}.zip";
-  var encoder = ZipFileEncoder();
+  final encoder = ZipFileEncoder();
   encoder.create(zipFilePath);
   encoder.addDirectory(logsDirectory);
   encoder.close();
@@ -187,8 +189,8 @@ Future<void> sendEmail(
   String body,
 }) async {
   try {
-    String clientDebugInfo = await _clientInfo();
-    EmailContent email = EmailContent(
+    final String clientDebugInfo = await _clientInfo();
+    final EmailContent email = EmailContent(
       to: [
         to,
       ],
@@ -210,7 +212,7 @@ Future<void> sendEmail(
         throw Exception('Could not launch ${params.toString()}');
       }
     } else {
-      OpenMailAppResult result = await OpenMailApp.composeNewEmailInMailApp(
+      final OpenMailAppResult result = await OpenMailApp.composeNewEmailInMailApp(
         nativePickerTitle: 'Select email app',
         emailContent: email,
       );
@@ -257,7 +259,7 @@ Future<void> sendEmail(
 
 Future<String> _clientInfo() async {
   final packageInfo = await PackageInfo.fromPlatform();
-  String debugInfo = '\n\n\n\n ------------------- \nFollowing information can '
+  final String debugInfo = '\n\n\n\n ------------------- \nFollowing information can '
       'help us in debugging if you are facing any issue '
       '\nRegistered email: ${Configuration.instance.getEmail()}'
       '\nClient: ${packageInfo.packageName}'
