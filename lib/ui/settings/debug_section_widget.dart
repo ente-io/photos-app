@@ -4,6 +4,7 @@ import 'package:expandable/expandable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_sodium/flutter_sodium.dart';
 import 'package:photos/core/configuration.dart';
+import 'package:photos/core/network.dart';
 import 'package:photos/ui/settings/common_settings.dart';
 import 'package:photos/ui/settings/settings_section_title.dart';
 import 'package:photos/ui/settings/settings_text_item.dart';
@@ -33,6 +34,16 @@ class DebugSectionWidget extends StatelessWidget {
             icon: Icons.navigate_next,
           ),
         ),
+        GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () async {
+            Network.instance.getAlice().showInspector();
+          },
+          child: const SettingsTextItem(
+            text: "Network requests",
+            icon: Icons.navigate_next,
+          ),
+        )
       ],
     );
   }
