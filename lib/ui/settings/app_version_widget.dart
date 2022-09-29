@@ -2,8 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:photos/core/network.dart';
-import 'package:photos/utils/dialog_util.dart';
 
 class AppVersionWidget extends StatefulWidget {
   const AppVersionWidget({
