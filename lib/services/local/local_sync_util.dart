@@ -93,7 +93,7 @@ Future<List<LocalPathAsset>> getAllLocalAssets() async {
   );
   filterOptionGroup.createTimeCond = DateTimeCond.def().copyWith(ignore: true);
   final assetPaths = await PhotoManager.getAssetPathList(
-    hasAll: true,
+    hasAll: !Platform.isAndroid,
     type: RequestType.common,
     filterOption: filterOptionGroup,
   );
@@ -237,9 +237,8 @@ Future<List<AssetPathEntity>> _getGalleryList({
   filterOptionGroup.containsPathModified = containsModifiedPath;
   // on Android, each media asset is already part of one folder. So, skip
   // including all/Recent folder to reduce processing time.
-  final bool includeAll = !Platform.isAndroid;
   final galleryList = await PhotoManager.getAssetPathList(
-    hasAll: includeAll,
+    hasAll: !Platform.isAndroid,
     type: RequestType.common,
     filterOption: filterOptionGroup,
   );
