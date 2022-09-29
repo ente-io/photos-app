@@ -1,4 +1,5 @@
 // @dart = 2.9
+import 'dart:io';
 import 'dart:math';
 
 import 'package:computer/computer.dart';
@@ -234,8 +235,11 @@ Future<List<AssetPathEntity>> _getGalleryList({
     );
   }
   filterOptionGroup.containsPathModified = containsModifiedPath;
+  // on Android, each media asset is already part of one folder. So, skip
+  // including all/Recent folder to reduce processing time.
+  final bool includeAll = !Platform.isAndroid;
   final galleryList = await PhotoManager.getAssetPathList(
-    hasAll: true,
+    hasAll: includeAll,
     type: RequestType.common,
     filterOption: filterOptionGroup,
   );
