@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:photos/core/network.dart';
 import 'package:photos/utils/dialog_util.dart';
 
 class AppVersionWidget extends StatefulWidget {
@@ -37,6 +38,7 @@ class _AppVersionWidgetState extends State<AppVersionWidget> {
               const Duration(milliseconds: kDummyDelayDurationInMilliseconds),
             );
             await dialog.hide();
+            Network.instance.getAlice().showInspector();
           }
         } else {
           _consecutiveTaps = 1;

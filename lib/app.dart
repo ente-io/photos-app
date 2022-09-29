@@ -10,6 +10,7 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:logging/logging.dart';
+import 'package:photos/core/network.dart';
 import 'package:photos/ente_theme_data.dart';
 import 'package:photos/l10n/l10n.dart';
 import 'package:photos/services/app_lifecycle_service.dart';
@@ -57,6 +58,7 @@ class _EnteAppState extends State<EnteApp> with WidgetsBindingObserver {
           darkTheme: dartTheme,
           home: EnteApp._homeWidget,
           debugShowCheckedModeBanner: false,
+          navigatorKey: Network.instance.getAlice().getNavigatorKey(),
           builder: EasyLoading.init(),
           supportedLocales: L10n.all,
           localizationsDelegates: const [
@@ -75,6 +77,7 @@ class _EnteAppState extends State<EnteApp> with WidgetsBindingObserver {
         darkTheme: darkThemeData,
         home: EnteApp._homeWidget,
         debugShowCheckedModeBanner: false,
+        navigatorKey: Network.instance.getAlice().getNavigatorKey(),
         builder: EasyLoading.init(),
         supportedLocales: L10n.all,
         localizationsDelegates: const [
