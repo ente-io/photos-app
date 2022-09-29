@@ -11,7 +11,7 @@ description: ente photos application
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 0.6.35+365
+version: 0.6.38+368
 
 environment:
   sdk: '>=2.12.0 <3.0.0'
@@ -31,7 +31,7 @@ dependencies:
   connectivity: ^3.0.3
   cupertino_icons: ^1.0.0
   device_info: ^2.0.2
-  dio: ^4.0.0
+  dio: ^4.0.6
   dots_indicator: ^2.0.0
   dotted_border: ^2.0.0+2
   email_validator: ^2.0.1
@@ -62,7 +62,6 @@ dependencies:
   flutter_sodium: ^0.2.0
   flutter_typeahead: ^4.0.0
   flutter_windowmanager: ^0.2.0
-  fluttercontactpicker: ^4.7.0
   fluttertoast: ^8.0.6
   google_nav_bar: ^5.0.5
   http: ^0.13.4
@@ -88,7 +87,7 @@ dependencies:
   path: #dart
   path_provider: ^2.0.1
   pedantic: ^1.9.2
-  photo_manager: ^2.0.8
+  photo_manager: 2.1.4
   photo_view: ^0.14.0
   pinput: ^1.2.2
   provider: ^6.0.0
