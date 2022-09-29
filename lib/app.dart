@@ -58,7 +58,6 @@ class _EnteAppState extends State<EnteApp> with WidgetsBindingObserver {
           darkTheme: dartTheme,
           home: EnteApp._homeWidget,
           debugShowCheckedModeBanner: false,
-          navigatorKey: Network.instance.getAlice().getNavigatorKey(),
           builder: EasyLoading.init(),
           supportedLocales: L10n.all,
           localizationsDelegates: const [
@@ -77,7 +76,6 @@ class _EnteAppState extends State<EnteApp> with WidgetsBindingObserver {
         darkTheme: darkThemeData,
         home: EnteApp._homeWidget,
         debugShowCheckedModeBanner: false,
-        navigatorKey: Network.instance.getAlice().getNavigatorKey(),
         builder: EasyLoading.init(),
         supportedLocales: L10n.all,
         localizationsDelegates: const [
