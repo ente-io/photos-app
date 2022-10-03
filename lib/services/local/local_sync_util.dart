@@ -235,6 +235,8 @@ Future<List<AssetPathEntity>> _getGalleryList({
     );
   }
   filterOptionGroup.containsPathModified = containsModifiedPath;
+  // on Android, each media asset is already part of one folder. So, skip
+  // including all/Recent folder to reduce processing time.
   final galleryList = await PhotoManager.getAssetPathList(
     hasAll: !Platform.isAndroid,
     type: RequestType.common,
