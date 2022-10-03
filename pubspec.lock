@@ -730,6 +730,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.0.2"
+  open_file:
+    dependency: "direct main"
+    description:
+      name: open_file
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "3.2.1"
   open_mail_app:
     dependency: "direct main"
     description:
@@ -967,7 +974,7 @@ packages:
       path: "thirdparty/sentry-dart/dart"
       relative: true
     source: path
-    version: "6.5.1"
+    version: "6.11.0"
   sentry_flutter:
     dependency: "direct main"
     description:
