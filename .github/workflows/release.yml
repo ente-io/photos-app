@@ -26,7 +26,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.0.0'
+          flutter-version: '3.3.0'
 
       # Fetch sub modules
       - run: git submodule update --init --recursive
@@ -54,6 +54,16 @@ jobs:
         with:
           name: release-apk
           path: build/app/outputs/flutter-apk/ente.apk
+
+      # Publish hash of the generated artifacts
+      - uses: MCJack123/ghaction-generate-release-hashes@v3
+        with:
+          hash-type: sha256
+          file-name: release-hash.txt
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Release Asset Hashes
+          path: release-hash.txt
 
       # Create a Github release
       - uses: ncipollo/release-action@v1
