@@ -1,0 +1,5 @@
+- Add search! Currently you can search for albums, days & file types, but more to come
+- On device albums better reflect the state of native gallery
+- Add option to delete albums
+- Show all albums a photo is part of (in file info)
+- Bug fixes and performance improvements
