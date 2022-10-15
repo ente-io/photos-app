@@ -1,26 +1,15 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
-Future<T?> routeToPage<T extends Object>(
-  BuildContext context,
-  Widget page, {
-  bool forceCustomPageRoute = false,
-}) {
-  if (Platform.isAndroid || forceCustomPageRoute) {
-    return Navigator.of(context).push(
-      _buildPageRoute(page),
-    );
-  } else {
-    return Navigator.of(context).push(
-      SwipeableRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) {
-          return page;
-        },
-      ),
-    );
-  }
+Future<T?> routeToPage<T extends Object>(BuildContext context, Widget page) {
+  return Navigator.of(context).push(
+    SwipeableRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return page;
+      },
+    ),
+  );
 }
+// }
 
 void replacePage(BuildContext context, Widget page) {
   Navigator.of(context).pushReplacement(
@@ -59,7 +48,6 @@ class SwipeableRouteBuilder<T> extends PageRoute<T> {
   final RoutePageBuilder pageBuilder;
   final PageTransitionsBuilder matchingBuilder =
       const CupertinoPageTransitionsBuilder(); // Default iOS/macOS (to get the swipe right to go back gesture)
-  // final PageTransitionsBuilder matchingBuilder = const FadeUpwardsPageTransitionsBuilder(); // Default Android/Linux/Windows
 
   SwipeableRouteBuilder({required this.pageBuilder});
 

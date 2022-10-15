@@ -107,7 +107,6 @@ class _StatusBarWidgetState extends State<StatusBarWidget> {
                   await routeToPage(
                     context,
                     const VerifyRecoveryPage(),
-                    forceCustomPageRoute: true,
                   )
                 },
               )

@@ -370,6 +370,6 @@ class _LazyLoadingGridViewState extends State<LazyLoadingGridView> {
         widget.tag,
       ),
     );
-    routeToPage(context, page, forceCustomPageRoute: true);
+    routeToPage(context, page);
   }
 }

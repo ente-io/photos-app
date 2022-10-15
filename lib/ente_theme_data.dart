@@ -81,6 +81,9 @@ final lightThemeData = ThemeData(
           : const Color.fromRGBO(0, 0, 0, 1);
     }),
   ),
+  pageTransitionsTheme: const PageTransitionsTheme(
+    builders: {TargetPlatform.android: CupertinoPageTransitionsBuilder()},
+  ),
 );
 
 final darkThemeData = ThemeData(
@@ -156,6 +159,9 @@ final darkThemeData = ThemeData(
         return const Color.fromRGBO(158, 158, 158, 1);
       }
     }),
+  ),
+  pageTransitionsTheme: const PageTransitionsTheme(
+    builders: {TargetPlatform.android: CupertinoPageTransitionsBuilder()},
   ),
 );
 
