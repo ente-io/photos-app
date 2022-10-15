@@ -1,0 +1,7 @@
+- There is now an option to leave shared albums that you might not be interested in.
+
+- We've fixed an issue that could cause background syncing to fail on some Android devices.
+
+- The look of the settings page has changed to improve usability. We have more such improvements planned for the settings (and other screens), so stay tuned.
+
+- You can now use ente to set your photos as the wallpaper.
