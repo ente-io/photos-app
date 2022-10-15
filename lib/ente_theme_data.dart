@@ -293,10 +293,6 @@ extension CustomColorScheme on ColorScheme {
       ? const Color.fromRGBO(196, 196, 196, 0.6)
       : const Color.fromRGBO(255, 255, 255, 0.7);
 
-  Color get gNavBackgroundColor => brightness == Brightness.light
-      ? const Color.fromRGBO(196, 196, 196, 0.6)
-      : const Color.fromRGBO(40, 40, 40, 0.6);
-
   Color get gNavBarActiveColor => brightness == Brightness.light
       ? const Color.fromRGBO(255, 255, 255, 0.6)
       : const Color.fromRGBO(255, 255, 255, 0.9);
@@ -340,10 +336,6 @@ extension CustomColorScheme on ColorScheme {
   Color get subTextColor => brightness == Brightness.light
       ? const Color.fromRGBO(180, 180, 180, 1)
       : const Color.fromRGBO(100, 100, 100, 1);
-
-  Color get themeSwitchInactiveIconColor => brightness == Brightness.light
-      ? const Color.fromRGBO(0, 0, 0, 1).withOpacity(0.5)
-      : const Color.fromRGBO(255, 255, 255, 1).withOpacity(0.5);
 
   Color get searchResultsColor => brightness == Brightness.light
       ? const Color.fromRGBO(245, 245, 245, 1.0)
