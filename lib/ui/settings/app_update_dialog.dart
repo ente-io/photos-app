@@ -36,7 +36,7 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          '${widget.latestVersionInfo.name} - what\'s new',
+          '${widget.latestVersionInfo.name} - What\'s new',
           style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
