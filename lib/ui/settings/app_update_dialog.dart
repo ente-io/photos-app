@@ -3,10 +3,12 @@
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:photos/core/configuration.dart';
 import 'package:photos/core/network.dart';
 import 'package:photos/ente_theme_data.dart';
 import 'package:photos/services/update_service.dart';
+import 'package:photos/utils/toast_util.dart';
 
 class AppUpdateDialog extends StatefulWidget {
   final LatestVersionInfo latestVersionInfo;
@@ -107,10 +109,12 @@ class ApkDownloaderDialog extends StatefulWidget {
 class _ApkDownloaderDialogState extends State<ApkDownloaderDialog> {
   String _saveUrl;
   double _downloadProgress;
+  Logger _logger;
 
   @override
   void initState() {
     super.initState();
+    _logger = Logger((_ApkDownloaderDialogState).toString());
     _saveUrl = Configuration.instance.getTempDirectory() +
         "ente-" +
         widget.versionInfo.name +
@@ -140,6 +144,16 @@ class _ApkDownloaderDialogState extends State<ApkDownloaderDialog> {
     );
   }
 
+  Future<void> openApk() async {
+    try {
+      final result = await OpenFile.open(_saveUrl);
+      _logger.info('Open APK $result');
+    } catch (e) {
+      showToast(context, "Failed to open file");
+      _logger.severe("Failed to open apk", e);
+    }
+  }
+
   Future<void> _downloadApk() async {
     try {
       await Network.instance.getDio().download(
@@ -152,7 +166,7 @@ class _ApkDownloaderDialogState extends State<ApkDownloaderDialog> {
         },
       );
       Navigator.of(context, rootNavigator: true).pop('dialog');
-      OpenFile.open(_saveUrl);
+      await openApk();
     } catch (e) {
       Logger("ApkDownloader").severe(e);
       final AlertDialog alert = AlertDialog(
