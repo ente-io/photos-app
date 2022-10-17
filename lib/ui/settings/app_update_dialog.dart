@@ -7,6 +7,8 @@ import 'package:photos/core/configuration.dart';
 import 'package:photos/core/network.dart';
 import 'package:photos/ente_theme_data.dart';
 import 'package:photos/services/update_service.dart';
+import 'package:photos/utils/toast_util.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
 class AppUpdateDialog extends StatefulWidget {
   final LatestVersionInfo latestVersionInfo;
@@ -34,20 +36,13 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          widget.latestVersionInfo.name,
+          '${widget.latestVersionInfo.name} - What\'s new',
           style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
         ),
         const Padding(padding: EdgeInsets.all(8)),
-        const Text(
-          "Changelog",
-          style: TextStyle(
-            fontSize: 18,
-          ),
-        ),
-        const Padding(padding: EdgeInsets.all(4)),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: changelog,
@@ -79,6 +74,20 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
             ),
           ),
         ),
+        const Padding(padding: EdgeInsets.all(8)),
+        Center(
+          child: InkWell(
+            child: Text(
+              "Install manually",
+              style: Theme.of(context)
+                  .textTheme
+                  .caption
+                  .copyWith(decoration: TextDecoration.underline),
+            ),
+            onTap: () => launchUrlString(widget.latestVersionInfo.url,
+                mode: LaunchMode.externalApplication),
+          ),
+        )
       ],
     );
     final shouldForceUpdate =
@@ -107,10 +116,12 @@ class ApkDownloaderDialog extends StatefulWidget {
 class _ApkDownloaderDialogState extends State<ApkDownloaderDialog> {
   String _saveUrl;
   double _downloadProgress;
+  Logger _logger;
 
   @override
   void initState() {
     super.initState();
+    _logger = Logger((_ApkDownloaderDialogState).toString());
     _saveUrl = Configuration.instance.getTempDirectory() +
         "ente-" +
         widget.versionInfo.name +
@@ -140,6 +151,16 @@ class _ApkDownloaderDialogState extends State<ApkDownloaderDialog> {
     );
   }
 
+  Future<void> openApk() async {
+    try {
+      final result = await OpenFile.open(_saveUrl);
+      _logger.info('Open APK $result');
+    } catch (e) {
+      showToast(context, "Failed to open file");
+      _logger.severe("Failed to open apk", e);
+    }
+  }
+
   Future<void> _downloadApk() async {
     try {
       await Network.instance.getDio().download(
@@ -152,7 +173,7 @@ class _ApkDownloaderDialogState extends State<ApkDownloaderDialog> {
         },
       );
       Navigator.of(context, rootNavigator: true).pop('dialog');
-      OpenFile.open(_saveUrl);
+      await openApk();
     } catch (e) {
       Logger("ApkDownloader").severe(e);
       final AlertDialog alert = AlertDialog(
