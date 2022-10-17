@@ -3,12 +3,12 @@
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:open_file/open_file.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:photos/core/configuration.dart';
 import 'package:photos/core/network.dart';
 import 'package:photos/ente_theme_data.dart';
 import 'package:photos/services/update_service.dart';
 import 'package:photos/utils/toast_util.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
 class AppUpdateDialog extends StatefulWidget {
   final LatestVersionInfo latestVersionInfo;
@@ -36,20 +36,13 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          widget.latestVersionInfo.name,
+          '${widget.latestVersionInfo.name} - what\'s new',
           style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
         ),
         const Padding(padding: EdgeInsets.all(8)),
-        const Text(
-          "Changelog",
-          style: TextStyle(
-            fontSize: 18,
-          ),
-        ),
-        const Padding(padding: EdgeInsets.all(4)),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: changelog,
@@ -81,6 +74,20 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
             ),
           ),
         ),
+        const Padding(padding: EdgeInsets.all(8)),
+        Center(
+          child: InkWell(
+            child: Text(
+              "Install manually",
+              style: Theme.of(context)
+                  .textTheme
+                  .caption
+                  .copyWith(decoration: TextDecoration.underline),
+            ),
+            onTap: () => launchUrlString(widget.latestVersionInfo.url,
+                mode: LaunchMode.externalApplication),
+          ),
+        )
       ],
     );
     final shouldForceUpdate =
