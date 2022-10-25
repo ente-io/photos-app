@@ -129,6 +129,7 @@ class RemoteSyncService {
           // session are not processed now
           sync();
         } else {
+          debugPrint("Fire backup completed event");
           Bus.instance.fire(SyncStatusUpdate(SyncStatus.completedBackup));
         }
       } else {
@@ -259,7 +260,6 @@ class RemoteSyncService {
         await _db.getDevicePathIDToLocalIDMap();
     bool moreFilesMarkedForBackup = false;
     for (final deviceCollection in deviceCollections) {
-      _logger.fine("processing ${deviceCollection.name}");
       final Set<String> localIDsToSync =
           pathIdToLocalIDs[deviceCollection.id] ?? {};
       if (deviceCollection.uploadStrategy == UploadStrategy.ifMissing) {
@@ -400,7 +400,7 @@ class RemoteSyncService {
         if (collectionByID == null || collectionByID.isDeleted) {
           _logger.info(
             "Collection $deviceCollectionID either deleted or missing "
-            "for path ${deviceCollection.name}",
+            "for path ${deviceCollection.id}",
           );
           deviceCollectionID = -1;
         }
@@ -578,6 +578,7 @@ class RemoteSyncService {
         // Case [1] Check and clear local cache when uploadedFile already exist
         existingFile = await _db.getFile(remoteDiff.generatedID);
         if (_shouldClearCache(remoteDiff, existingFile)) {
+          needsGalleryReload = true;
           await clearCache(remoteDiff);
         }
       }
