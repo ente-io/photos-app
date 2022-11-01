@@ -1,0 +1,9 @@
+- Tapping on home icon (when on the home screen) goes back to the top of the timeline.
+
+- Improvements to the quick scroll bar.
+
+- Fixed a crash when deleting photos on Lineage OS.
+
+- Fixed an issue causing old thumbnails to be shown after editing photos.
+
+- Fix build for Android 12
