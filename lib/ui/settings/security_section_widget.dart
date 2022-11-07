@@ -73,8 +73,8 @@ class _SecuritySectionWidgetState extends State<SecuritySectionWidget> {
                 ),
                 trailingSwitch: snapshot.hasData
                     ? ToggleSwitchWidget(
-                        value: snapshot.data,
-                        onChanged: (value) async {
+                        value: () => snapshot.data,
+                        onChanged: () async {
                           final hasAuthenticated =
                               await LocalAuthenticationService.instance
                                   .requestLocalAuthentication(
@@ -82,8 +82,9 @@ class _SecuritySectionWidgetState extends State<SecuritySectionWidget> {
                             "Please authenticate to configure two-factor authentication",
                           );
                           if (hasAuthenticated) {
-                            if (value) {
-                              UserService.instance.setupTwoFactor(context);
+                            if (!snapshot.data) {
+                              await UserService.instance
+                                  .setupTwoFactor(context);
                             } else {
                               _disableTwoFactor();
                             }
@@ -106,18 +107,15 @@ class _SecuritySectionWidgetState extends State<SecuritySectionWidget> {
           title: "Lockscreen",
         ),
         trailingSwitch: ToggleSwitchWidget(
-          value: _config.shouldShowLockScreen(),
-          onChanged: (value) async {
-            final hasAuthenticated = await LocalAuthenticationService.instance
+          value: () => _config.shouldShowLockScreen(),
+          onChanged: () async {
+            await LocalAuthenticationService.instance
                 .requestLocalAuthForLockScreen(
               context,
-              value,
+              !_config.shouldShowLockScreen(),
               "Please authenticate to change lockscreen setting",
               "To enable lockscreen, please setup device passcode or screen lock in your system settings.",
             );
-            if (hasAuthenticated) {
-              setState(() {});
-            }
           },
         ),
       ),
@@ -131,81 +129,8 @@ class _SecuritySectionWidgetState extends State<SecuritySectionWidget> {
               title: "Hide from recents",
             ),
             trailingSwitch: ToggleSwitchWidget(
-              value: _config.shouldHideFromRecents(),
-              onChanged: (value) async {
-                if (value) {
-                  final AlertDialog alert = AlertDialog(
-                    title: const Text("Hide from recents?"),
-                    content: SingleChildScrollView(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            "Hiding from the task switcher will prevent you from taking screenshots in this app.",
-                            style: TextStyle(
-                              height: 1.5,
-                            ),
-                          ),
-                          Padding(padding: EdgeInsets.all(8)),
-                          Text(
-                            "Are you sure?",
-                            style: TextStyle(
-                              height: 1.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    actions: [
-                      TextButton(
-                        child: Text(
-                          "No",
-                          style: TextStyle(
-                            color:
-                                Theme.of(context).colorScheme.defaultTextColor,
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.of(context, rootNavigator: true)
-                              .pop('dialog');
-                        },
-                      ),
-                      TextButton(
-                        child: Text(
-                          "Yes",
-                          style: TextStyle(
-                            color:
-                                Theme.of(context).colorScheme.defaultTextColor,
-                          ),
-                        ),
-                        onPressed: () async {
-                          Navigator.of(context, rootNavigator: true)
-                              .pop('dialog');
-                          await _config.setShouldHideFromRecents(true);
-                          await FlutterWindowManager.addFlags(
-                            FlutterWindowManager.FLAG_SECURE,
-                          );
-                          setState(() {});
-                        },
-                      ),
-                    ],
-                  );
-
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return alert;
-                    },
-                  );
-                } else {
-                  await _config.setShouldHideFromRecents(false);
-                  await FlutterWindowManager.clearFlags(
-                    FlutterWindowManager.FLAG_SECURE,
-                  );
-                  setState(() {});
-                }
-              },
+              value: () => _config.shouldHideFromRecents(),
+              onChanged: _hideFromRecentsOnChanged,
             ),
           ),
           sectionOptionSpacing,
@@ -227,11 +152,13 @@ class _SecuritySectionWidgetState extends State<SecuritySectionWidget> {
             "Please authenticate to view your active sessions",
           );
           if (hasAuthenticated) {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (BuildContext context) {
-                  return const SessionsPage();
-                },
+            unawaited(
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (BuildContext context) {
+                    return const SessionsPage();
+                  },
+                ),
               ),
             );
           }
@@ -283,5 +210,75 @@ class _SecuritySectionWidgetState extends State<SecuritySectionWidget> {
         return alert;
       },
     );
+  }
+
+  Future<void> _hideFromRecentsOnChanged() async {
+    if (!_config.shouldHideFromRecents()) {
+      final AlertDialog alert = AlertDialog(
+        title: const Text("Hide from recents?"),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Text(
+                "Hiding from the task switcher will prevent you from taking screenshots in this app.",
+                style: TextStyle(
+                  height: 1.5,
+                ),
+              ),
+              Padding(padding: EdgeInsets.all(8)),
+              Text(
+                "Are you sure?",
+                style: TextStyle(
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            child: Text(
+              "No",
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.defaultTextColor,
+              ),
+            ),
+            onPressed: () {
+              Navigator.of(context, rootNavigator: true).pop('dialog');
+            },
+          ),
+          TextButton(
+            child: Text(
+              "Yes",
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.defaultTextColor,
+              ),
+            ),
+            onPressed: () async {
+              Navigator.of(context, rootNavigator: true).pop('dialog');
+              await _config.setShouldHideFromRecents(true);
+              await FlutterWindowManager.addFlags(
+                FlutterWindowManager.FLAG_SECURE,
+              );
+              setState(() {});
+            },
+          ),
+        ],
+      );
+
+      await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return alert;
+        },
+      );
+    } else {
+      await _config.setShouldHideFromRecents(false);
+      await FlutterWindowManager.clearFlags(
+        FlutterWindowManager.FLAG_SECURE,
+      );
+    }
   }
 }

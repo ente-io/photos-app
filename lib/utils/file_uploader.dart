@@ -70,8 +70,8 @@ class FileUploader {
   }
   static FileUploader instance = FileUploader._privateConstructor();
 
-  Future<void> init(bool isBackground) async {
-    _prefs = await SharedPreferences.getInstance();
+  Future<void> init(SharedPreferences preferences, bool isBackground) async {
+    _prefs = preferences;
     _isBackground = isBackground;
     _processType =
         isBackground ? ProcessType.background : ProcessType.foreground;
@@ -188,7 +188,8 @@ class FileUploader {
       _queue.remove(id).completer.completeError(reason);
     }
     _logger.info(
-        'number of enteries removed from queue ${uploadsToBeRemoved.length}');
+      'number of enteries removed from queue ${uploadsToBeRemoved.length}',
+    );
     _totalCountInUploadSession -= uploadsToBeRemoved.length;
   }
 

@@ -89,7 +89,8 @@ class _HomeWidgetState extends State<HomeWidget> {
         Bus.instance.on<TabChangedEvent>().listen((event) {
       if (event.source != TabChangedEventSource.pageView) {
         debugPrint(
-            "TabChange going from $_selectedTabIndex to ${event.selectedIndex} souce: ${event.source}");
+          "TabChange going from $_selectedTabIndex to ${event.selectedIndex} souce: ${event.source}",
+        );
         _selectedTabIndex = event.selectedIndex;
         // _pageController.jumpToPage(_selectedTabIndex);
         _pageController.animateToPage(
@@ -249,8 +250,8 @@ class _HomeWidgetState extends State<HomeWidget> {
       child: WillPopScope(
         child: Scaffold(
           drawerScrimColor: getEnteColorScheme(context).strokeFainter,
-          drawerEnableOpenDragGesture:
-              false, //using a hack instead of enabling this as enabling this will create other problems
+          drawerEnableOpenDragGesture: false,
+          //using a hack instead of enabling this as enabling this will create other problems
           drawer: enableDrawer
               ? ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 428),
