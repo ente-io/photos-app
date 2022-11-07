@@ -56,7 +56,7 @@ Future<void> _runInForeground() async {
   return await _runWithLogs(() async {
     _logger.info("Starting app in foreground");
     await _init(false, via: 'mainMethod');
-    _scheduleFGSync('appStart in FG');
+    unawaited(_scheduleFGSync('appStart in FG'));
     runApp(
       AppLock(
         builder: (args) => const EnteApp(_runBackgroundTask, _killBGTask),
@@ -119,8 +119,9 @@ void _headlessTaskHandler(HeadlessTask task) {
 Future<void> _init(bool isBackground, {String via = ''}) async {
   _isProcessRunning = true;
   _logger.info("Initializing...  inBG =$isBackground via: $via");
+  final SharedPreferences preferences = await SharedPreferences.getInstance();
   await _logFGHeartBeatInfo();
-  _scheduleHeartBeat(isBackground);
+  _scheduleHeartBeat(preferences, isBackground);
   if (isBackground) {
     AppLifecycleService.instance.onAppInBackground('init via: $via');
   } else {
@@ -134,17 +135,17 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
   await UserService.instance.init();
   await UserRemoteFlagService.instance.init();
   await UpdateService.instance.init();
-  await BillingService.instance.init();
-  await CollectionsService.instance.init();
-  await FileUploader.instance.init(isBackground);
-  await LocalSyncService.instance.init();
-  await TrashSyncService.instance.init();
-  await RemoteSyncService.instance.init();
-  await SyncService.instance.init();
-  await MemoriesService.instance.init();
-  await LocalSettings.instance.init();
-  await LocalFileUpdateService.instance.init();
-  await SearchService.instance.init();
+  BillingService.instance.init();
+  await CollectionsService.instance.init(preferences);
+  await FileUploader.instance.init(preferences, isBackground);
+  await LocalSyncService.instance.init(preferences);
+  TrashSyncService.instance.init(preferences);
+  RemoteSyncService.instance.init(preferences);
+  await SyncService.instance.init(preferences);
+  MemoriesService.instance.init();
+  LocalSettings.instance.init(preferences);
+  LocalFileUpdateService.instance.init(preferences);
+  SearchService.instance.init();
   if (Platform.isIOS) {
     // PushService.instance.init().then((_) {
     //   FirebaseMessaging.onBackgroundMessage(
@@ -184,21 +185,23 @@ Future _runWithLogs(Function() function, {String prefix = ""}) async {
   );
 }
 
-Future<void> _scheduleHeartBeat(bool isBackground) async {
-  final prefs = await SharedPreferences.getInstance();
+Future<void> _scheduleHeartBeat(
+  SharedPreferences prefs,
+  bool isBackground,
+) async {
   await prefs.setInt(
     isBackground ? kLastBGTaskHeartBeatTime : kLastFGTaskHeartBeatTime,
     DateTime.now().microsecondsSinceEpoch,
   );
   Future.delayed(kHeartBeatFrequency, () async {
-    _scheduleHeartBeat(isBackground);
+    _scheduleHeartBeat(prefs, isBackground);
   });
 }
 
 Future<void> _scheduleFGSync(String caller) async {
   await _sync(caller);
   Future.delayed(kFGSyncFrequency, () async {
-    _scheduleFGSync('fgSyncCron');
+    unawaited(_scheduleFGSync('fgSyncCron'));
   });
 }
 

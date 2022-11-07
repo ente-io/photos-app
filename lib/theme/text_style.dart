@@ -16,11 +16,7 @@ const TextStyle brandStyleMedium = TextStyle(
   fontFamily: 'Montserrat',
   fontSize: 24,
 );
-const TextStyle brandStyleLarge = TextStyle(
-  fontWeight: FontWeight.bold,
-  fontFamily: 'Montserrat',
-  fontSize: 28,
-);
+
 const TextStyle h1 = TextStyle(
   fontSize: 48,
   height: 48 / 28,
@@ -47,7 +43,7 @@ const TextStyle large = TextStyle(
 );
 const TextStyle body = TextStyle(
   fontSize: 16,
-  height: 19.4 / 16.0,
+  height: 20 / 16.0,
   fontWeight: _regularWeight,
   fontFamily: _fontFamily,
 );
@@ -87,6 +83,8 @@ class EnteTextTheme {
   final TextStyle miniBold;
   final TextStyle tiny;
   final TextStyle tinyBold;
+  final TextStyle brandSmall;
+  final TextStyle brandMedium;
 
   const EnteTextTheme({
     required this.h1,
@@ -105,6 +103,8 @@ class EnteTextTheme {
     required this.miniBold,
     required this.tiny,
     required this.tinyBold,
+    required this.brandSmall,
+    required this.brandMedium,
   });
 }
 
@@ -129,5 +129,7 @@ EnteTextTheme _buildEnteTextStyle(Color color) {
     miniBold: mini.copyWith(color: color, fontWeight: _boldWeight),
     tiny: tiny.copyWith(color: color),
     tinyBold: tiny.copyWith(color: color, fontWeight: _boldWeight),
+    brandSmall: brandStyleSmall.copyWith(color: color),
+    brandMedium: brandStyleMedium.copyWith(color: color),
   );
 }
