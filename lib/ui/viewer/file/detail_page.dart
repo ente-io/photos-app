@@ -79,6 +79,12 @@ class _DetailPageState extends State<DetailPage> {
 
   @override
   void initState() {
+    Wakelock.enabled.then(
+      (isEnabled) => isEnabled
+          ? _logger.info("Wakelock state is enabled at init of DetailPageState")
+          : _logger
+              .info("Wakelock state is disabled at init of DetailPageState"),
+    );
     wakeLockEnabledHere = false;
 
     _files = [
@@ -96,9 +102,9 @@ class _DetailPageState extends State<DetailPage> {
       overlays: SystemUiOverlay.values,
     );
     if (wakeLockEnabledHere) {
-      Wakelock.enabled.then((isEnabled) {
-        isEnabled ? Wakelock.disable() : null;
-      });
+      Wakelock.disable();
+      _logger.info("Disabling Wakelock");
+      _logWakelockState();
     }
     super.dispose();
   }
@@ -139,8 +145,6 @@ class _DetailPageState extends State<DetailPage> {
           ],
         ),
       ),
-
-      // backgroundColor: Theme.of(context).colorScheme.onPrimary,
     );
   }
 
@@ -266,14 +270,17 @@ class _DetailPageState extends State<DetailPage> {
       Wakelock.enabled.then((value) {
         if (value == false) {
           Wakelock.enable();
+          _logger.info("Enabling Wakelock");
+          _logWakelockState();
           wakeLockEnabledHere = true;
           //wakeLockEnabledHere will not be set to true if wakeLock is already enabled from settings on iOS.
-          //We shouldn't disable when video is not playing if it was enabled manually by the user from ente settings by user.
         }
       });
     }
     if (wakeLockEnabledHere && !isPlaying) {
       Wakelock.disable();
+      _logger.info("Disabling Wakelock");
+      _logWakelockState();
     }
   }
 
@@ -336,6 +343,14 @@ class _DetailPageState extends State<DetailPage> {
           selectedIndex: _selectedIndex,
         ),
       ),
+    );
+  }
+
+  void _logWakelockState() {
+    Wakelock.enabled.then(
+      (isEnabled) => isEnabled
+          ? Logger("DetailPageState").info("Wakelock state : enabled")
+          : Logger("DetailPageState").info("Wakelock state : disabled"),
     );
   }
 }
