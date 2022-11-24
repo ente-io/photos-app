@@ -11,9 +11,10 @@ const String sentryTunnel = "https://sentry-reporter.ente.io";
 const String roadmapURL = "https://roadmap.ente.io";
 const int microSecondsInDay = 86400000000;
 const int android11SDKINT = 30;
-const int jan011991Time = 31580904000000;
+const int jan011981Time = 347155200000000;
 const int galleryLoadStartTime = -8000000000000000; // Wednesday, March 6, 1748
 const int galleryLoadEndTime = 9223372036854775807; // 2^63 -1
+const int batchSize = 1000;
 
 // used to identify which ente file are available in app cache
 // todo: 6Jun22: delete old media identifier after 3 months
@@ -43,3 +44,5 @@ class FFDefault {
 }
 
 const kDefaultProductionEndpoint = 'https://api.ente.io';
+
+const int intMaxValue = 9223372036854775807;

@@ -93,7 +93,7 @@ class SyncService {
     } on WiFiUnavailableError {
       _logger.warning("Not uploading over mobile data");
       Bus.instance.fire(
-        SyncStatusUpdate(SyncStatus.paused, reason: "waiting for WiFi..."),
+        SyncStatusUpdate(SyncStatus.paused, reason: "Waiting for WiFi..."),
       );
     } on SyncStopRequestedError {
       _syncStopRequested = false;
@@ -127,7 +127,7 @@ class SyncService {
           Bus.instance.fire(
             SyncStatusUpdate(
               SyncStatus.paused,
-              reason: "waiting for network...",
+              reason: "Waiting for network...",
             ),
           );
           _logger.severe("unable to connect", e, StackTrace.current);
@@ -243,8 +243,8 @@ class SyncService {
     if ((now - lastNotificationShownTime) > microSecondsInDay) {
       await _prefs.setInt(kLastStorageLimitExceededNotificationPushTime, now);
       NotificationService.instance.showNotification(
-        "storage limit exceeded",
-        "sorry, we had to pause your backups",
+        "Storage limit exceeded",
+        "Sorry, we had to pause your backups",
       );
     }
   }

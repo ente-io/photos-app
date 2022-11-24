@@ -16,7 +16,7 @@ class UpdateService {
   static final UpdateService instance = UpdateService._privateConstructor();
   static const kUpdateAvailableShownTimeKey = "update_available_shown_time_key";
   static const changeLogVersionKey = "update_change_log_key";
-  static const currentChangeLogVersion = 1;
+  static const currentChangeLogVersion = 2;
 
   LatestVersionInfo _latestVersion;
   final _logger = Logger("UpdateService");
@@ -87,8 +87,8 @@ class UpdateService {
         hasBeen3DaysSinceLastNotification &&
         _latestVersion.shouldNotify) {
       NotificationService.instance.showNotification(
-        "update available",
-        "click to install our best version yet",
+        "Update available",
+        "Click to install our best version yet",
       );
       await _prefs.setInt(kUpdateAvailableShownTimeKey, now);
     } else {

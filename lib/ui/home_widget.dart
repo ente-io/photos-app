@@ -201,6 +201,7 @@ class _HomeWidgetState extends State<HomeWidget> {
           ),
           onPressed: () async {
             Navigator.of(context, rootNavigator: true).pop('dialog');
+            Navigator.of(context).popUntil((route) => route.isFirst);
             final dialog = createProgressDialog(context, "Logging out...");
             await dialog.show();
             await Configuration.instance.logout();
@@ -442,6 +443,7 @@ class _HomeWidgetState extends State<HomeWidget> {
         ),
       ),
       backgroundColor: colorScheme.backgroundElevated,
+      enableDrag: false,
       barrierColor: backdropMutedDark,
       context: context,
       builder: (BuildContext context) {
