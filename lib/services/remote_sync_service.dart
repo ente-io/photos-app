@@ -209,6 +209,7 @@ class RemoteSyncService {
         CollectionUpdatedEvent(
           collectionID,
           deletedFiles,
+          "syncDeleteFromRemote",
           type: EventType.deletedFromRemote,
         ),
       );
@@ -216,6 +217,7 @@ class RemoteSyncService {
         LocalPhotosUpdatedEvent(
           deletedFiles,
           type: EventType.deletedFromRemote,
+          source: "syncDeleteFromRemote",
         ),
       );
     }
@@ -227,9 +229,19 @@ class RemoteSyncService {
             " files in collection " +
             collectionID.toString(),
       );
-      Bus.instance.fire(LocalPhotosUpdatedEvent(diff.updatedFiles));
-      Bus.instance
-          .fire(CollectionUpdatedEvent(collectionID, diff.updatedFiles));
+      Bus.instance.fire(
+        LocalPhotosUpdatedEvent(
+          diff.updatedFiles,
+          source: "syncUpdateFromRemote",
+        ),
+      );
+      Bus.instance.fire(
+        CollectionUpdatedEvent(
+          collectionID,
+          diff.updatedFiles,
+          "syncUpdateFromRemote",
+        ),
+      );
     }
 
     if (diff.latestUpdatedAtTime > 0) {
@@ -255,7 +267,6 @@ class RemoteSyncService {
     // smallest album marked for backup. This is to ensure that photo is
     // first attempted to upload in a non-recent album.
     deviceCollections.sort((a, b) => a.count.compareTo(b.count));
-    await _createCollectionsForDevicePath(deviceCollections);
     final Map<String, Set<String>> pathIdToLocalIDs =
         await _db.getDevicePathIDToLocalIDMap();
     bool moreFilesMarkedForBackup = false;
@@ -268,9 +279,15 @@ class RemoteSyncService {
         localIDsToSync.removeAll(alreadyClaimedLocalIDs);
       }
 
-      if (localIDsToSync.isEmpty || deviceCollection.collectionID == -1) {
+      if (localIDsToSync.isEmpty) {
         continue;
       }
+      await _createCollectionForDevicePath(deviceCollection);
+      if (deviceCollection.collectionID == -1) {
+        _logger.finest('DeviceCollection should not be -1 here');
+        continue;
+      }
+
       moreFilesMarkedForBackup = true;
       await _db.setCollectionIDForUnMappedLocalFiles(
         deviceCollection.collectionID,
@@ -325,8 +342,8 @@ class RemoteSyncService {
       }
     }
     if (moreFilesMarkedForBackup && !_config.hasSelectedAllFoldersForBackup()) {
-      debugPrint("force reload due to display new files");
-      Bus.instance.fire(ForceReloadHomeGalleryEvent());
+      // "force reload due to display new files"
+      Bus.instance.fire(ForceReloadHomeGalleryEvent("newFilesDisplay"));
     }
   }
 
@@ -342,7 +359,12 @@ class RemoteSyncService {
     // remove all collectionIDs which are still marked for backup
     oldCollectionIDsForAutoSync.removeAll(newCollectionIDsForAutoSync);
     await removeFilesQueuedForUpload(oldCollectionIDsForAutoSync.toList());
-    Bus.instance.fire(LocalPhotosUpdatedEvent(<File>[]));
+    if (syncStatusUpdate.values.any((syncStatus) => syncStatus == false)) {
+      Configuration.instance.setSelectAllFoldersForBackup(false).ignore();
+    }
+    Bus.instance.fire(
+      LocalPhotosUpdatedEvent(<File>[], source: "deviceFolderSync"),
+    );
     Bus.instance.fire(BackupFoldersUpdatedEvent());
   }
 
@@ -393,28 +415,26 @@ class RemoteSyncService {
     }
   }
 
-  Future<void> _createCollectionsForDevicePath(
-    List<DeviceCollection> deviceCollections,
+  Future<void> _createCollectionForDevicePath(
+    DeviceCollection deviceCollection,
   ) async {
-    for (var deviceCollection in deviceCollections) {
-      int deviceCollectionID = deviceCollection.collectionID;
-      if (deviceCollectionID != -1) {
-        final collectionByID =
-            _collectionsService.getCollectionByID(deviceCollectionID);
-        if (collectionByID == null || collectionByID.isDeleted) {
-          _logger.info(
-            "Collection $deviceCollectionID either deleted or missing "
-            "for path ${deviceCollection.id}",
-          );
-          deviceCollectionID = -1;
-        }
+    int deviceCollectionID = deviceCollection.collectionID;
+    if (deviceCollectionID != -1) {
+      final collectionByID =
+          _collectionsService.getCollectionByID(deviceCollectionID);
+      if (collectionByID == null || collectionByID.isDeleted) {
+        _logger.info(
+          "Collection $deviceCollectionID either deleted or missing "
+          "for path ${deviceCollection.id}",
+        );
+        deviceCollectionID = -1;
       }
-      if (deviceCollectionID == -1) {
-        final collection =
-            await _collectionsService.getOrCreateForPath(deviceCollection.name);
-        await _db.updateDeviceCollection(deviceCollection.id, collection.id);
-        deviceCollection.collectionID = collection.id;
-      }
+    }
+    if (deviceCollectionID == -1) {
+      final collection =
+          await _collectionsService.getOrCreateForPath(deviceCollection.name);
+      await _db.updateDeviceCollection(deviceCollection.id, collection.id);
+      deviceCollection.collectionID = collection.id;
     }
   }
 
@@ -516,7 +536,9 @@ class RemoteSyncService {
   }
 
   Future<void> _onFileUploaded(File file) async {
-    Bus.instance.fire(CollectionUpdatedEvent(file.collectionID, [file]));
+    Bus.instance.fire(
+      CollectionUpdatedEvent(file.collectionID, [file], "fileUpload"),
+    );
     _completedUploads++;
     final toBeUploadedInThisSession = _uploader.getCurrentSessionUploadCount();
     if (toBeUploadedInThisSession == 0) {
@@ -580,6 +602,8 @@ class RemoteSyncService {
       File existingFile;
       if (remoteDiff.generatedID != null) {
         // Case [1] Check and clear local cache when uploadedFile already exist
+        // Note: Existing file can be null here if it's replaced by the time we
+        // reach here
         existingFile = await _db.getFile(remoteDiff.generatedID);
         if (_shouldClearCache(remoteDiff, existingFile)) {
           needsGalleryReload = true;
@@ -686,16 +710,16 @@ class RemoteSyncService {
           " remoteFiles seen first time",
     );
     if (needsGalleryReload) {
-      _logger.fine('force reload home gallery');
-      Bus.instance.fire(ForceReloadHomeGalleryEvent());
+      // 'force reload home gallery'
+      Bus.instance.fire(ForceReloadHomeGalleryEvent("remoteSync"));
     }
   }
 
   bool _shouldClearCache(File remoteFile, File existingFile) {
-    if (remoteFile.hash != null && existingFile.hash != null) {
+    if (remoteFile.hash != null && existingFile?.hash != null) {
       return remoteFile.hash != existingFile.hash;
     }
-    return remoteFile.updationTime != (existingFile.updationTime ?? 0);
+    return remoteFile.updationTime != (existingFile?.updationTime ?? 0);
   }
 
   bool _shouldReloadHomeGallery(File remoteFile, File existingFile) {

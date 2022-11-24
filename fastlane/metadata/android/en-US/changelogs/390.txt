@@ -1,0 +1,11 @@
+* Select all photos in a day
+
+After you select a photo, you'll now see an option next to the date to select all photos from that day.
+
+* Easier access to favorites
+
+Your favorites now have a special heart icon, and will appear first in the list of albums. Archived albums also get a new indicator.
+
+* Better timestamps for screenshots
+
+Added more cases when deducing photo dates from their file names. ente will also automatically apply these rules to fix existing photos without a valid date.

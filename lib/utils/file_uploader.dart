@@ -316,6 +316,9 @@ class FileUploader {
         ".encrypted";
     MediaUploadData mediaUploadData;
     var uploadCompleted = false;
+    // This flag is used to decide whether to clear the iOS origin file cache
+    // or not.
+    var uploadHardFailure = false;
 
     try {
       _logger.info(
@@ -448,7 +451,12 @@ class FileUploader {
         await FilesDB.instance.update(remoteFile);
       }
       if (!_isBackground) {
-        Bus.instance.fire(LocalPhotosUpdatedEvent([remoteFile]));
+        Bus.instance.fire(
+          LocalPhotosUpdatedEvent(
+            [remoteFile],
+            source: "downloadComplete",
+          ),
+        );
       }
       _logger.info("File upload complete for " + remoteFile.toString());
       uploadCompleted = true;
@@ -461,11 +469,18 @@ class FileUploader {
           e is FileTooLargeForPlanError)) {
         _logger.severe("File upload failed for " + file.toString(), e, s);
       }
+      if ((e is StorageLimitExceededError ||
+          e is FileTooLargeForPlanError ||
+          e is NoActiveSubscriptionError)) {
+        // file upload can be be retried in such cases without user intervention
+        uploadHardFailure = false;
+      }
       rethrow;
     } finally {
       await _onUploadDone(
         mediaUploadData,
         uploadCompleted,
+        uploadHardFailure,
         file,
         encryptedFilePath,
         encryptedThumbnailPath,
@@ -533,7 +548,8 @@ class FileUploader {
       Bus.instance.fire(
         LocalPhotosUpdatedEvent(
           [fileToUpload],
-          type: EventType.deletedFromEverywhere, //
+          type: EventType.deletedFromEverywhere,
+          source: "sameLocalSameCollection", //
         ),
       );
       return Tuple2(true, sameLocalSameCollection);
@@ -562,6 +578,7 @@ class FileUploader {
       Bus.instance.fire(
         LocalPhotosUpdatedEvent(
           [fileToUpload],
+          source: "alreadyUploadedInSameCollection",
           type: EventType.deletedFromEverywhere, //
         ),
       );
@@ -604,15 +621,18 @@ class FileUploader {
   Future<void> _onUploadDone(
     MediaUploadData mediaUploadData,
     bool uploadCompleted,
+    bool uploadHardFailure,
     File file,
     String encryptedFilePath,
     String encryptedThumbnailPath,
   ) async {
     if (mediaUploadData != null && mediaUploadData.sourceFile != null) {
       // delete the file from app's internal cache if it was copied to app
-      // for upload. Shared Media should only be cleared when the upload
+      // for upload. On iOS, only remove the file from photo_manager/app cache
+      // when upload is either completed or there's a tempFailure
+      // Shared Media should only be cleared when the upload
       // succeeds.
-      if (io.Platform.isIOS ||
+      if ((io.Platform.isIOS && (uploadCompleted || uploadHardFailure)) ||
           (uploadCompleted && file.isSharedMediaToAppSandbox)) {
         await mediaUploadData.sourceFile.delete();
       }

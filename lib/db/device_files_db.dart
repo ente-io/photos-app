@@ -138,14 +138,16 @@ extension DeviceFiles on FilesDB {
       final batch = db.batch();
       final Set<String> existingPathIds = await getDevicePathIDs();
       for (LocalPathAsset localPathAsset in localPathAssets) {
-        pathIDToLocalIDsMap[localPathAsset.pathID] = localPathAsset.localIDs;
+        if (localPathAsset.localIDs.isNotEmpty) {
+          pathIDToLocalIDsMap[localPathAsset.pathID] = localPathAsset.localIDs;
+        }
         if (existingPathIds.contains(localPathAsset.pathID)) {
           batch.rawUpdate(
             "UPDATE device_collections SET name = ? where id = "
             "?",
             [localPathAsset.pathName, localPathAsset.pathID],
           );
-        } else {
+        } else if (localPathAsset.localIDs.isNotEmpty) {
           batch.insert(
             "device_collections",
             {
@@ -209,6 +211,7 @@ extension DeviceFiles on FilesDB {
               "cover_id": localID,
               "should_backup": shouldBackup ? _sqlBoolTrue : _sqlBoolFalse
             },
+            conflictAlgorithm: ConflictAlgorithm.ignore,
           );
         }
       }
@@ -389,7 +392,7 @@ extension DeviceFiles on FilesDB {
     final db = await database;
     final fileRows = await db.rawQuery(
       '''SELECT * FROM FILES  f JOIN device_files df on f.local_id = df.id 
-      and df.path_id= ? order by f.modification_time DESC limit 1;
+      and df.path_id= ? order by f.creation_time DESC limit 1;
           ''',
       [pathID],
     );

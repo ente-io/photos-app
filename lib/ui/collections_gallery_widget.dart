@@ -6,10 +6,12 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:photos/core/configuration.dart';
+import 'package:photos/core/constants.dart';
 import 'package:photos/core/event_bus.dart';
 import 'package:photos/events/collection_updated_event.dart';
 import 'package:photos/events/local_photos_updated_event.dart';
 import 'package:photos/events/user_logged_out_event.dart';
+import 'package:photos/extensions/list.dart';
 import 'package:photos/models/collection.dart';
 import 'package:photos/models/collection_items.dart';
 import 'package:photos/services/collections_service.dart';
@@ -33,7 +35,7 @@ class CollectionsGalleryWidget extends StatefulWidget {
 
 class _CollectionsGalleryWidgetState extends State<CollectionsGalleryWidget>
     with AutomaticKeepAliveClientMixin {
-  final _logger = Logger("CollectionsGallery");
+  final _logger = Logger((_CollectionsGalleryWidgetState).toString());
   StreamSubscription<LocalPhotosUpdatedEvent> _localFilesSubscription;
   StreamSubscription<CollectionUpdatedEvent> _collectionUpdatesSubscription;
   StreamSubscription<UserLoggedOutEvent> _loggedOutEvent;
@@ -44,16 +46,16 @@ class _CollectionsGalleryWidgetState extends State<CollectionsGalleryWidget>
   void initState() {
     _localFilesSubscription =
         Bus.instance.on<LocalPhotosUpdatedEvent>().listen((event) {
-      _loadReason = (LocalPhotosUpdatedEvent).toString();
+      _loadReason = event.reason;
       setState(() {});
     });
     _collectionUpdatesSubscription =
         Bus.instance.on<CollectionUpdatedEvent>().listen((event) {
-      _loadReason = (CollectionUpdatedEvent).toString();
+      _loadReason = event.reason;
       setState(() {});
     });
     _loggedOutEvent = Bus.instance.on<UserLoggedOutEvent>().listen((event) {
-      _loadReason = (UserLoggedOutEvent).toString();
+      _loadReason = event.reason;
       setState(() {});
     });
     sortKey = LocalSettings.instance.albumSortKey();
@@ -79,41 +81,33 @@ class _CollectionsGalleryWidgetState extends State<CollectionsGalleryWidget>
   }
 
   Future<List<CollectionWithThumbnail>> _getCollections() async {
-    final collectionsService = CollectionsService.instance;
-    final userID = Configuration.instance.getUserID();
-    final List<CollectionWithThumbnail> collectionsWithThumbnail = [];
-    final latestCollectionFiles =
-        await collectionsService.getLatestCollectionFiles();
-    for (final file in latestCollectionFiles) {
-      final c = collectionsService.getCollectionByID(file.collectionID);
-      if (c.owner.id == userID && !c.isHidden()) {
-        collectionsWithThumbnail.add(CollectionWithThumbnail(c, file));
-      }
-    }
-    collectionsWithThumbnail.sort(
+    final List<CollectionWithThumbnail> collectionsWithThumbnail =
+        await CollectionsService.instance.getCollectionsWithThumbnails();
+    final result = collectionsWithThumbnail.splitMatch(
+      (element) => element.collection.type == CollectionType.favorites,
+    );
+    result.unmatched.sort(
       (first, second) {
-        if (second.collection.type == CollectionType.favorites &&
-            first.collection.type != CollectionType.favorites) {
-          return 1;
-        } else if (first.collection.type == CollectionType.favorites &&
-            second.collection.type != CollectionType.favorites) {
-          return 0;
-        }
         if (sortKey == AlbumSortKey.albumName) {
           return compareAsciiLowerCaseNatural(
             first.collection.name,
             second.collection.name,
           );
         } else if (sortKey == AlbumSortKey.newestPhoto) {
-          return second.thumbnail.creationTime
-              .compareTo(first.thumbnail.creationTime);
+          return (second.thumbnail?.creationTime ?? -1 * intMaxValue)
+              .compareTo(first.thumbnail?.creationTime ?? -1 * intMaxValue);
         } else {
           return second.collection.updationTime
               .compareTo(first.collection.updationTime);
         }
       },
     );
-    return collectionsWithThumbnail;
+    result.matched.removeWhere(
+      (element) =>
+          element.thumbnail == null ||
+          (element.collection.publicURLs?.isNotEmpty ?? false),
+    );
+    return result.matched + result.unmatched;
   }
 
   Widget _getCollectionsGalleryWidget(

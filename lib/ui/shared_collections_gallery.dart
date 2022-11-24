@@ -45,11 +45,12 @@ class _SharedCollectionGalleryState extends State<SharedCollectionGallery>
   void initState() {
     _localFilesSubscription =
         Bus.instance.on<LocalPhotosUpdatedEvent>().listen((event) {
-      _logger.info("Files updated");
+      debugPrint("SetState Shared Collections on ${event.reason}");
       setState(() {});
     });
     _collectionUpdatesSubscription =
         Bus.instance.on<CollectionUpdatedEvent>().listen((event) {
+      debugPrint("SetState Shared Collections on ${event.reason}");
       setState(() {});
     });
     _loggedOutEvent = Bus.instance.on<UserLoggedOutEvent>().listen((event) {
@@ -287,7 +288,7 @@ class OutgoingCollectionItem extends StatelessWidget {
         child: Row(
           children: <Widget>[
             ClipRRect(
-              borderRadius: BorderRadius.circular(3),
+              borderRadius: BorderRadius.circular(1),
               child: SizedBox(
                 height: 60,
                 width: 60,
@@ -376,7 +377,7 @@ class IncomingCollectionItem extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(1),
             child: SizedBox(
               height: sideOfThumbnail,
               width: sideOfThumbnail,

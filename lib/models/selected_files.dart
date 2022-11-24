@@ -1,5 +1,7 @@
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:flutter/foundation.dart';
+import 'package:photos/core/event_bus.dart';
+import 'package:photos/events/clear_selections_event.dart';
 import 'package:photos/models/file.dart';
 
 class SelectedFiles extends ChangeNotifier {
@@ -23,6 +25,19 @@ class SelectedFiles extends ChangeNotifier {
     notifyListeners();
   }
 
+  void selectAll(Set<File> selectedFiles) {
+    files.addAll(selectedFiles);
+    lastSelections.clear();
+    lastSelections.addAll(selectedFiles);
+    notifyListeners();
+  }
+
+  void unSelectAll(Set<File> selectedFiles) {
+    files.removeAll(selectedFiles);
+    lastSelections.clear();
+    notifyListeners();
+  }
+
   bool isFileSelected(File file) {
     final File? alreadySelected = files.firstWhereOrNull(
       (element) => element.generatedID == file.generatedID,
@@ -30,14 +45,15 @@ class SelectedFiles extends ChangeNotifier {
     return alreadySelected != null;
   }
 
-  bool isPartOfLastSection(File file) {
-    final File? alreadySelected = lastSelections.firstWhereOrNull(
+  bool isPartOfLastSelected(File file) {
+    final File? matchedFile = lastSelections.firstWhereOrNull(
       (element) => element.generatedID == file.generatedID,
     );
-    return alreadySelected != null;
+    return matchedFile != null;
   }
 
   void clearAll() {
+    Bus.instance.fire(ClearSelectionsEvent());
     lastSelections.addAll(files);
     files.clear();
     notifyListeners();

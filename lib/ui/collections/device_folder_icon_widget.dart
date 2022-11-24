@@ -1,7 +1,9 @@
 // @dart=2.9
 
 import 'package:flutter/material.dart';
+import 'package:photos/ente_theme_data.dart';
 import 'package:photos/models/device_collection.dart';
+import 'package:photos/ui/viewer/file/file_icons_widget.dart';
 import 'package:photos/ui/viewer/file/thumbnail_widget.dart';
 import 'package:photos/ui/viewer/gallery/device_folder_page.dart';
 import 'package:photos/utils/navigation_util.dart';
@@ -13,31 +15,6 @@ class DeviceFolderIcon extends StatelessWidget {
     Key key,
   }) : super(key: key);
 
-  static final kUnsyncedIconOverlay = Container(
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          Colors.transparent,
-          Colors.black.withOpacity(0.6),
-        ],
-        stops: const [0.7, 1],
-      ),
-    ),
-    child: Align(
-      alignment: Alignment.bottomRight,
-      child: Padding(
-        padding: const EdgeInsets.only(right: 8, bottom: 8),
-        child: Icon(
-          Icons.cloud_off_outlined,
-          size: 18,
-          color: Colors.white.withOpacity(0.9),
-        ),
-      ),
-    ),
-  );
-
   @override
   Widget build(BuildContext context) {
     final isBackedUp = deviceCollection.shouldBackup;
@@ -48,9 +25,10 @@ class DeviceFolderIcon extends StatelessWidget {
           height: 140,
           width: 120,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               ClipRRect(
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(1),
                 child: SizedBox(
                   height: 120,
                   width: 120,
@@ -69,22 +47,20 @@ class DeviceFolderIcon extends StatelessWidget {
                                 deviceCollection.thumbnail.tag,
                           ),
                         ),
-                        isBackedUp ? Container() : kUnsyncedIconOverlay,
+                        isBackedUp ? Container() : const UnSyncedIcon(),
                       ],
                     ),
                   ),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(top: 10),
-                child: Text(
-                  deviceCollection.name,
-                  style: Theme.of(context)
-                      .textTheme
-                      .subtitle1
-                      .copyWith(fontSize: 12),
-                  overflow: TextOverflow.ellipsis,
-                ),
+              const SizedBox(
+                height: 2,
+              ),
+              Text(
+                deviceCollection.name,
+                textAlign: TextAlign.left,
+                style: Theme.of(context).colorScheme.enteTheme.textTheme.small,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

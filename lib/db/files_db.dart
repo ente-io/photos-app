@@ -505,26 +505,6 @@ class FilesDB {
     return FileLoadResult(deduplicatedFiles, files.length == limit);
   }
 
-  Future<Set<int>> getCollectionIDsOfHiddenFiles(
-    int ownerID, {
-    int visibility = visibilityArchive,
-  }) async {
-    final db = await instance.database;
-    final results = await db.query(
-      filesTable,
-      where:
-          '$columnOwnerID = ? AND $columnMMdVisibility = ? AND $columnCollectionID != -1',
-      columns: [columnCollectionID],
-      whereArgs: [ownerID, visibility],
-      distinct: true,
-    );
-    final Set<int> collectionIDsOfHiddenFiles = {};
-    for (var result in results) {
-      collectionIDsOfHiddenFiles.add(result['collection_id']);
-    }
-    return collectionIDsOfHiddenFiles;
-  }
-
   Future<FileLoadResult> getAllLocalAndUploadedFiles(
     int startTime,
     int endTime,
@@ -623,7 +603,6 @@ class FilesDB {
       limit: limit,
     );
     final files = convertToFiles(results);
-    _logger.info("Fetched " + files.length.toString() + " files");
     return FileLoadResult(files, files.length == limit);
   }
 
@@ -1098,7 +1077,8 @@ class FilesDB {
     final db = await instance.database;
     final count = Sqflite.firstIntValue(
       await db.rawQuery(
-        'SELECT COUNT(*) FROM $filesTable where $columnCollectionID = $collectionID',
+        'SELECT COUNT(*) FROM $filesTable where $columnCollectionID = '
+        '$collectionID AND $columnUploadedFileID IS NOT -1',
       ),
     );
     return count;
@@ -1180,7 +1160,10 @@ class FilesDB {
         (
           SELECT $columnCollectionID, MAX($columnCreationTime) AS max_creation_time
           FROM $filesTable
-          WHERE ($columnCollectionID IS NOT NULL AND $columnCollectionID IS NOT -1)
+          WHERE 
+          ($columnCollectionID IS NOT NULL AND $columnCollectionID IS NOT -1
+           AND $columnUploadedFileID IS NOT NULL AND $columnUploadedFileID IS 
+           NOT -1)
           GROUP BY $columnCollectionID
         ) latest_files
         ON $filesTable.$columnCollectionID = latest_files.$columnCollectionID
@@ -1260,6 +1243,28 @@ class FilesDB {
     return result;
   }
 
+  Future<Map<int, File>> getFilesFromGeneratedIDs(List<int> ids) async {
+    final result = <int, File>{};
+    if (ids.isEmpty) {
+      return result;
+    }
+    String inParam = "";
+    for (final id in ids) {
+      inParam += "'" + id.toString() + "',";
+    }
+    inParam = inParam.substring(0, inParam.length - 1);
+    final db = await instance.database;
+    final results = await db.query(
+      filesTable,
+      where: '$columnGeneratedID IN ($inParam)',
+    );
+    final files = convertToFiles(results);
+    for (final file in files) {
+      result[file.generatedID] = file;
+    }
+    return result;
+  }
+
   Future<Map<int, List<File>>> getAllFilesGroupByCollectionID(
     List<int> ids,
   ) async {
@@ -1311,6 +1316,26 @@ class FilesDB {
       files.add(_getFileFromRow(result));
     }
     return files;
+  }
+
+  Future<List<String>> getGeneratedIDForFilesOlderThan(
+    int cutOffTime,
+    int ownerID,
+  ) async {
+    final db = await instance.database;
+    final rows = await db.query(
+      filesTable,
+      columns: [columnGeneratedID],
+      distinct: true,
+      where:
+          '$columnCreationTime <= ? AND  ($columnOwnerID IS NULL OR $columnOwnerID = ?)',
+      whereArgs: [cutOffTime, ownerID],
+    );
+    final result = <String>[];
+    for (final row in rows) {
+      result.add(row[columnGeneratedID].toString());
+    }
+    return result;
   }
 
   Future<List<File>> getAllFilesFromDB(Set<int> collectionsToIgnore) async {

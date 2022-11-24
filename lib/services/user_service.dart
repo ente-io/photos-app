@@ -3,11 +3,13 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:bip39/bip39.dart' as bip39;
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_sodium/flutter_sodium.dart';
 import 'package:logging/logging.dart';
 import 'package:photos/core/configuration.dart';
+import 'package:photos/core/constants.dart';
 import 'package:photos/core/event_bus.dart';
 import 'package:photos/core/network.dart';
 import 'package:photos/db/public_keys_db.dart';
@@ -32,12 +34,16 @@ import 'package:photos/utils/crypto_util.dart';
 import 'package:photos/utils/dialog_util.dart';
 import 'package:photos/utils/navigation_util.dart';
 import 'package:photos/utils/toast_util.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UserService {
+  static const keyHasEnabledTwoFactor = "has_enabled_two_factor";
   final _dio = Network.instance.getDio();
   final _enteDio = Network.instance.enteDio;
   final _logger = Logger((UserService).toString());
   final _config = Configuration.instance;
+  SharedPreferences _preferences;
+
   ValueNotifier<String> emailValueNotifier;
 
   UserService._privateConstructor();
@@ -47,6 +53,17 @@ class UserService {
   Future<void> init() async {
     emailValueNotifier =
         ValueNotifier<String>(Configuration.instance.getEmail());
+    _preferences = await SharedPreferences.getInstance();
+    if (Configuration.instance.isLoggedIn()) {
+      // add artificial delay in refreshing 2FA status
+      Future.delayed(
+        const Duration(seconds: 5),
+        () => {setTwoFactor(fetchTwoFactorStatus: true).ignore()},
+      );
+    }
+    Bus.instance.on<TwoFactorStatusChangeEvent>().listen((event) {
+      setTwoFactor(value: event.status);
+    });
   }
 
   Future<void> sendOtt(
@@ -532,6 +549,14 @@ class UserService {
     await dialog.show();
     String secret;
     try {
+      if (recoveryKey.contains(' ')) {
+        if (recoveryKey.split(' ').length != mnemonicKeyWordCount) {
+          throw AssertionError(
+            'recovery code should have $mnemonicKeyWordCount words',
+          );
+        }
+        recoveryKey = bip39.mnemonicToEntropy(recoveryKey);
+      }
       secret = Sodium.bin2base64(
         await CryptoUtil.decrypt(
           Sodium.base642bin(encryptedSecret),
@@ -599,7 +624,7 @@ class UserService {
     }
   }
 
-  Future<void> setupTwoFactor(BuildContext context) async {
+  Future<void> setupTwoFactor(BuildContext context, Completer completer) async {
     final dialog = createProgressDialog(context, "Please wait...");
     await dialog.show();
     try {
@@ -611,12 +636,14 @@ class UserService {
           TwoFactorSetupPage(
             response.data["secretCode"],
             response.data["qrCode"],
+            completer,
           ),
         ),
       );
     } catch (e) {
       await dialog.hide();
       _logger.severe("Failed to setup tfa", e);
+      completer.complete();
       rethrow;
     }
   }
@@ -682,8 +709,8 @@ class UserService {
       await _enteDio.post(
         "/users/two-factor/disable",
       );
-      Bus.instance.fire(TwoFactorStatusChangeEvent(false));
       await dialog.hide();
+      Bus.instance.fire(TwoFactorStatusChangeEvent(false));
       unawaited(
         showToast(
           context,
@@ -704,6 +731,7 @@ class UserService {
   Future<bool> fetchTwoFactorStatus() async {
     try {
       final response = await _enteDio.get("/users/two-factor/status");
+      setTwoFactor(value: response.data["status"]);
       return response.data["status"];
     } catch (e) {
       _logger.severe("Failed to fetch 2FA status", e);
@@ -770,5 +798,19 @@ class UserService {
     } else {
       await Configuration.instance.setToken(response.data["token"]);
     }
+  }
+
+  Future<void> setTwoFactor({
+    bool value = false,
+    bool fetchTwoFactorStatus = false,
+  }) async {
+    if (fetchTwoFactorStatus) {
+      value = await UserService.instance.fetchTwoFactorStatus();
+    }
+    _preferences.setBool(keyHasEnabledTwoFactor, value);
+  }
+
+  bool hasEnabledTwoFactor() {
+    return _preferences.getBool(keyHasEnabledTwoFactor);
   }
 }
