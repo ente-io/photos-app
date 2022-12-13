@@ -95,5 +95,6 @@ class InheritedUserDetails extends InheritedWidget {
 
   @override
   bool updateShouldNotify(covariant InheritedUserDetails oldWidget) =>
-      userDetails != oldWidget.userDetails;
+      userDetails != oldWidget.userDetails &&
+      numberOfUploadedFiles != oldWidget.numberOfUploadedFiles;
 }
