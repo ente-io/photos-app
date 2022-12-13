@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:logging/logging.dart';
-import 'package:photos/models/user_details.dart';
-import 'package:photos/states/user_details_state.dart';
+import 'package:photos/core/configuration.dart';
+import 'package:photos/db/files_db.dart';
 import 'package:photos/theme/ente_theme.dart';
 import 'package:photos/ui/common/loading_widget.dart';
 
@@ -27,24 +27,19 @@ class SettingsTitleBarWidget extends StatelessWidget {
               icon: const Icon(Icons.keyboard_double_arrow_left_outlined),
             ),
             FutureBuilder(
-              future: InheritedUserDetails.of(context)?.userDetails,
+              future: FilesDB.instance
+                  .getNumberOfUploadedFiles(Configuration.instance.getUserID()),
               builder: (context, snapshot) {
-                if (InheritedUserDetails.of(context) == null) {
-                  logger.severe(
-                    (InheritedUserDetails).toString() +
-                        ' not found before ' +
-                        (SettingsTitleBarWidget).toString() +
-                        ' on tree',
-                  );
-                  throw Error();
-                } else if (snapshot.hasData) {
-                  final userDetails = snapshot.data as UserDetails;
+                if (snapshot.hasData) {
+                  final numberOfUploadedFiles = snapshot.data as int;
                   return Text(
-                    "${NumberFormat().format(userDetails.fileCount)} memories",
+                    "${NumberFormat().format(numberOfUploadedFiles)} memories",
                     style: getEnteTextTheme(context).largeBold,
                   );
                 } else if (snapshot.hasError) {
-                  logger.severe('failed to load user details');
+                  logger.severe(
+                    "failed to fetch number of uploaded files from local DB",
+                  );
                   return const EnteLoadingWidget();
                 } else {
                   return const EnteLoadingWidget();
