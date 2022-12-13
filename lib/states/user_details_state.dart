@@ -40,7 +40,7 @@ class UserDetailsStateWidgetState extends State<UserDetailsStateWidget> {
         Bus.instance.on<OpenedSettingsEvent>().listen((event) {
       Future.delayed(
         const Duration(
-          seconds: 1,
+          milliseconds: 750,
         ),
         _fetchUserDetails,
       );
