@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:logging/logging.dart';
 import 'package:photos/core/configuration.dart';
 import 'package:photos/core/event_bus.dart';
 import 'package:photos/db/files_db.dart';
@@ -22,19 +23,20 @@ class UserDetailsStateWidget extends StatefulWidget {
 }
 
 class UserDetailsStateWidgetState extends State<UserDetailsStateWidget> {
-  late Future<UserDetails?> userDetails;
-  late Future<int?> numberOfUploadedFiles;
+  late UserDetails? userDetails;
+  late int? numberOfUploadedFiles;
   late StreamSubscription<UserDetailsChangedEvent> _userDetailsChangedEvent;
   late StreamSubscription<OpenedSettingsEvent> _openedSettingsEventSubscription;
+  final logger = Logger((UserDetailsStateWidget).toString());
 
   @override
   void initState() {
     if (Configuration.instance.hasConfiguredAccount()) {
       _fetchUserDetails();
-    } else {
-      userDetails = Future.value(null);
-      numberOfUploadedFiles = Future.value(null);
     }
+    userDetails = null;
+    numberOfUploadedFiles = null;
+
     _userDetailsChangedEvent =
         Bus.instance.on<UserDetailsChangedEvent>().listen((event) {
       _fetchUserDetails();
@@ -66,21 +68,19 @@ class UserDetailsStateWidgetState extends State<UserDetailsStateWidget> {
         child: widget.child,
       );
 
-  void _fetchUserDetails() {
-    if (mounted) {
-      setState(() {
-        userDetails = UserService.instance.getUserDetailsV2(memoryCount: false);
-        numberOfUploadedFiles = FilesDB.instance
-            .getNumberOfUploadedFiles(Configuration.instance.getUserID());
-      });
-    }
+  void _fetchUserDetails() async {
+    userDetails =
+        await UserService.instance.getUserDetailsV2(memoryCount: false);
+    numberOfUploadedFiles = await FilesDB.instance
+        .getNumberOfUploadedFiles(Configuration.instance.getUserID());
+    setState(() {});
   }
 }
 
 class InheritedUserDetails extends InheritedWidget {
   final UserDetailsStateWidgetState userDetailsState;
-  final Future<UserDetails?> userDetails;
-  final Future<int?> numberOfUploadedFiles;
+  final UserDetails? userDetails;
+  final int? numberOfUploadedFiles;
 
   const InheritedUserDetails({
     Key? key,

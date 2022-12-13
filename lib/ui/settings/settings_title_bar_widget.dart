@@ -32,25 +32,12 @@ class SettingsTitleBarWidget extends StatelessWidget {
                 },
                 icon: const Icon(Icons.keyboard_double_arrow_left_outlined),
               ),
-              FutureBuilder(
-                future: inheritedUserDetails.numberOfUploadedFiles,
-                builder: (context, snapshot) {
-                  if (snapshot.hasData) {
-                    final numberOfUploadedFiles = snapshot.data as int;
-                    return Text(
-                      "${NumberFormat().format(numberOfUploadedFiles)} memories",
+              inheritedUserDetails.numberOfUploadedFiles is int
+                  ? Text(
+                      "${NumberFormat().format(inheritedUserDetails.numberOfUploadedFiles)} memories",
                       style: getEnteTextTheme(context).largeBold,
-                    );
-                  } else if (snapshot.hasError) {
-                    logger.severe(
-                      "failed to fetch number of uploaded files from local DB",
-                    );
-                    return const EnteLoadingWidget();
-                  } else {
-                    return const EnteLoadingWidget();
-                  }
-                },
-              )
+                    )
+                  : const EnteLoadingWidget()
             ],
           ),
         ),
