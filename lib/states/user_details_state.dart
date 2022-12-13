@@ -63,7 +63,7 @@ class UserDetailsStateWidgetState extends State<UserDetailsStateWidget> {
       );
 
   void _fetchUserDetails() {
-    userDetails = UserService.instance.getUserDetailsV2(memoryCount: true);
+    userDetails = UserService.instance.getUserDetailsV2(memoryCount: false);
     if (mounted) {
       setState(() {});
     }
