@@ -15,6 +15,7 @@ import 'package:photos/ui/components/icon_button_widget.dart';
 import 'package:photos/ui/components/title_bar_widget.dart';
 import 'package:photos/ui/viewer/file/collections_list_of_file_widget.dart';
 import 'package:photos/ui/viewer/file/device_folders_list_of_file_widget.dart';
+import 'package:photos/ui/viewer/file/faces_carousel_widget.dart';
 import 'package:photos/ui/viewer/file/file_caption_widget.dart';
 import 'package:photos/ui/viewer/file/raw_exif_list_tile_widget.dart';
 import "package:photos/utils/date_time_util.dart";
@@ -225,6 +226,14 @@ class _FileInfoWidgetState extends State<FileInfoWidget> {
           title: fileIsBackedup
               ? CollectionsListOfFileWidget(allCollectionIDsOfFile)
               : DeviceFoldersListOfFileWidget(allDeviceFoldersOfFile),
+        ),
+      ),
+      SizedBox(
+        height: 68,
+        child: ListTile(
+          horizontalTitleGap: 2,
+          leading: const Icon(Icons.face),
+          title: FacesCarouselWidget(file),
         ),
       ),
       (file.uploadedFileID != null && file.updationTime != null)
