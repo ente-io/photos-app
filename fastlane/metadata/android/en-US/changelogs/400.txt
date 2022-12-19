@@ -1,0 +1,11 @@
+* Collect photos from anyone! Enable "Allow adding photos" in shared link settings to allow anyone with access to the link to add photos to that shared album
+
+* You can now change the number of photos that are shown in a row (Settings > General > Advanced)
+
+* You can now select multiple items and hide all of them in one go
+
+* New photo selector with expanded look & clearly marked actions
+
+* You can now free up space per device album
+
+* Support for longer photo descriptions
