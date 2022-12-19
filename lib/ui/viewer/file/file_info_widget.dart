@@ -9,6 +9,7 @@ import 'package:photos/db/files_db.dart';
 import "package:photos/ente_theme_data.dart";
 import "package:photos/models/file.dart";
 import "package:photos/models/file_type.dart";
+import 'package:photos/services/feature_flag_service.dart';
 import 'package:photos/theme/ente_theme.dart';
 import 'package:photos/ui/components/divider_widget.dart';
 import 'package:photos/ui/components/icon_button_widget.dart';
@@ -228,14 +229,16 @@ class _FileInfoWidgetState extends State<FileInfoWidget> {
               : DeviceFoldersListOfFileWidget(allDeviceFoldersOfFile),
         ),
       ),
-      SizedBox(
-        height: 68,
-        child: ListTile(
-          horizontalTitleGap: 2,
-          leading: const Icon(Icons.face),
-          title: FacesCarouselWidget(file),
-        ),
-      ),
+      FeatureFlagService.instance.isInternalUserOrDebugBuild()
+          ? SizedBox(
+              height: 68,
+              child: ListTile(
+                horizontalTitleGap: 2,
+                leading: const Icon(Icons.face),
+                title: FacesCarouselWidget(file),
+              ),
+            )
+          : const SizedBox.shrink(),
       (file.uploadedFileID != null && file.updationTime != null)
           ? ListTile(
               horizontalTitleGap: 2,
