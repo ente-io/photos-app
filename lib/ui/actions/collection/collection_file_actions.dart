@@ -8,6 +8,9 @@ import 'package:photos/services/favorites_service.dart';
 import 'package:photos/theme/ente_theme.dart';
 import 'package:photos/ui/actions/collection/collection_sharing_actions.dart';
 import 'package:photos/ui/common/progress_dialog.dart';
+import 'package:photos/ui/components/action_sheet_widget.dart';
+import 'package:photos/ui/components/button_widget.dart';
+import 'package:photos/ui/components/models/button_type.dart';
 import 'package:photos/utils/dialog_util.dart';
 import 'package:photos/utils/toast_util.dart';
 
@@ -24,60 +27,90 @@ extension CollectionFileActions on CollectionActions {
     final String title =
         showDeletePrompt ? "Delete items?" : "Remove from album?";
     final String message1 = showDeletePrompt
-        ? "Some of the selected items are present only in this album and will be deleted."
+        ? "Items that are also in other albums will be removed from this album but will remain in the other albums."
         : "Selected items will be removed from this album.";
 
-    final String message2 = showDeletePrompt
-        ? "\n\nItems which are also "
-            "present in other albums will be removed from this album but will remain elsewhere."
-        : "";
+    final String? subTitle = showDeletePrompt
+        ? "Items that are only in this album will be deleted."
+        : null;
 
-    final action = CupertinoActionSheet(
-      title: Text(
-        title,
-        style: textTheme.h3Bold,
-        textAlign: TextAlign.left,
+    // final String message2 = showDeletePrompt
+    //     ? "\n\nItems which are also "
+    //         "present in other albums will be removed from this album but will remain elsewhere."
+    //     : "";
+
+    final List<ButtonWidget> buttons = [
+      ButtonWidget(
+        buttonType: ButtonType.neutral,
+        buttonSize: ButtonSize.large,
+        labelText: showDeletePrompt ? "Yes, delete" : "Yes, remove",
+        isInAlert: true,
       ),
-      message: RichText(
-        text: TextSpan(
-          children: [
-            TextSpan(text: message1, style: textTheme.body),
-            TextSpan(text: message2, style: textTheme.body)
-          ],
-        ),
+      ButtonWidget(
+        buttonType: ButtonType.secondary,
+        buttonSize: ButtonSize.large,
+        labelText: "Cancel",
+        isInAlert: true,
+        buttonAction: ButtonAction.cancel,
       ),
-      actions: <Widget>[
-        CupertinoActionSheetAction(
-          isDestructiveAction: true,
-          onPressed: () async {
-            Navigator.of(context, rootNavigator: true).pop();
-            final dialog = createProgressDialog(context,
-                showDeletePrompt ? "Deleting files..." : "Removing files...",);
-            await dialog.show();
-            try {
-              await collectionsService.removeFromCollection(
-                collection.id,
-                selectedFiles.files.toList(),
-              );
-              await dialog.hide();
-              selectedFiles.clearAll();
-            } catch (e, s) {
-              logger.severe(e, s);
-              await dialog.hide();
-              showGenericErrorDialog(context);
-            }
-          },
-          child: Text(showDeletePrompt ? "Yes, delete" : "Yes, remove"),
-        ),
-      ],
-      cancelButton: CupertinoActionSheetAction(
-        child: const Text("Cancel"),
-        onPressed: () {
-          Navigator.of(context, rootNavigator: true).pop();
-        },
-      ),
+    ];
+
+    showActionSheet(
+      context: context,
+      buttons: buttons,
+      actionSheetType: ActionSheetType.defaultActionSheet,
+      title: title,
+      body: message1,
     );
-    await showCupertinoModalPopup(context: context, builder: (_) => action);
+
+    // final action = CupertinoActionSheet(
+    //   title: Text(
+    //     title,
+    //     style: textTheme.h3Bold,
+    //     textAlign: TextAlign.left,
+    //   ),
+    //   message: RichText(
+    //     text: TextSpan(
+    //       children: [
+    //         TextSpan(text: message1, style: textTheme.body),
+    //         TextSpan(text: message2, style: textTheme.body)
+    //       ],
+    //     ),
+    //   ),
+    //   actions: <Widget>[
+    //     CupertinoActionSheetAction(
+    //       isDestructiveAction: true,
+    //       onPressed: () async {
+    //         Navigator.of(context, rootNavigator: true).pop();
+    //         final dialog = createProgressDialog(
+    //           context,
+    //           showDeletePrompt ? "Deleting files..." : "Removing files...",
+    //         );
+    //         await dialog.show();
+    //         try {
+    //           await collectionsService.removeFromCollection(
+    //             collection.id,
+    //             selectedFiles.files.toList(),
+    //           );
+    //           await dialog.hide();
+    //           selectedFiles.clearAll();
+    //         } catch (e, s) {
+    //           logger.severe(e, s);
+    //           await dialog.hide();
+    //           showGenericErrorDialog(context);
+    //         }
+    //       },
+    //       child: Text(showDeletePrompt ? "Yes, delete" : "Yes, remove"),
+    //     ),
+    //   ],
+    //   cancelButton: CupertinoActionSheetAction(
+    //     child: const Text("Cancel"),
+    //     onPressed: () {
+    //       Navigator.of(context, rootNavigator: true).pop();
+    //     },
+    //   ),
+    // );
+    // await showCupertinoModalPopup(context: context, builder: (_) => action);
   }
 
   // check if any of the file only belongs in the given collection id.
