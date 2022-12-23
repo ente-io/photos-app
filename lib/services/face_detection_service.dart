@@ -3,10 +3,11 @@ import 'dart:io';
 import 'package:flutter_native_image/flutter_native_image.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:logging/logging.dart';
+import 'package:tflite/tflite.dart';
 
 class FaceDetectionService {
   final _logger = Logger("FaceDetectionService");
-  
+
   FaceDetectionService._privateConstructor();
 
   static FaceDetectionService instance =
@@ -32,5 +33,20 @@ class FaceDetectionService {
       }
     }
     return faceCrops;
+  }
+
+  Future<List<File>> getFaceCropsBF(File file) async {
+    await Tflite.loadModel(
+      model: "assets/blazeface/model.json",
+    );
+    // Run BlazeFace on the image to detect faces
+    final results = await Tflite.runModelOnImage(
+      path: file.path,
+      threshold: 0.5,
+      imageMean: 127.5,
+      imageStd: 127.5,
+    );
+    Tflite.close();
+    return [];
   }
 }
