@@ -37,7 +37,7 @@ class FaceDetectionService {
 
   Future<List<File>> getFaceCropsBF(File file) async {
     await Tflite.loadModel(
-      model: "assets/blazeface/model.json",
+      model: "assets/blazeface/face_detection_front.tflite",
     );
     // Run BlazeFace on the image to detect faces
     final results = await Tflite.runModelOnImage(
