@@ -5,7 +5,7 @@ import 'package:flutter_native_image/flutter_native_image.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image/image.dart' as img;
 import 'package:logging/logging.dart';
-import 'package:matrix2d/matrix2d.dart';
+import 'package:ml_linalg/vector.dart';
 import 'package:photos/models/ml/faces/anchor_options.dart';
 import 'package:photos/models/ml/faces/face_detection.dart';
 import 'package:photos/models/ml/faces/face_options.dart';
@@ -84,7 +84,7 @@ class FaceDetectionService {
     );
 
     final interpreter = await Interpreter.fromAsset(
-      "models/face_detection_front.tflite",
+      "models/face_detection_back.tflite",
     );
     final inputShape = interpreter.getInputTensor(0).shape;
     final normalizeInput = NormalizeOp(127.5, 127.5);
@@ -117,16 +117,14 @@ class FaceDetectionService {
 
     interpreter.runForMultipleInputs([inputImage.buffer], outputs);
 
-    final regression = output0.getDoubleList();
-    final classificators = output1.getDoubleList();
-
     final detections = _process(
       options: faceOptions,
-      rawScores: classificators,
-      rawBoxes: regression,
+      rawScores: output1.getDoubleList(),
+      rawBoxes: output0.getDoubleList(),
       anchors: _getAnchors(anchorOptions),
     );
-    _logger.info(detections.length.toString() + " faces detected");
+    final newDetections = origNms(detections, 0.75);
+    _logger.info(newDetections.length.toString() + " faces detected");
     return [];
   }
 
@@ -229,8 +227,7 @@ class FaceDetectionService {
   }) {
     final detectionScores = <double>[];
     final detectionClasses = <int>[];
-    final boxes = options.numBoxes;
-    for (int i = 0; i < boxes; i++) {
+    for (int i = 0; i < options.numBoxes; i++) {
       int classId = -1;
       double maxScore = double.minPositive;
       for (int scoreIdx = 0; scoreIdx < options.numClasses; scoreIdx++) {
@@ -379,7 +376,6 @@ class FaceDetectionService {
   }
 
   List<Detection> origNms(List<Detection> detections, double threshold) {
-    const m2d = Matrix2d();
     if (detections.isEmpty) {
       return [];
     }
@@ -397,17 +393,14 @@ class FaceDetectionService {
       s.add(detection.score);
     });
 
-    final List<double> x1Copy = List.from(x1);
-    final List<double> x2Copy = List.from(x2);
-    final List<double> y1Copy = List.from(y1);
-    final List<double> y2Copy = List.from(y2);
+    final x1Copy = Vector.fromList(x1);
+    final x2Copy = Vector.fromList(x2);
+    final y1Copy = Vector.fromList(y1);
+    final y2Copy = Vector.fromList(y2);
 
-    final area = List<double>.from(
-      m2d.dot(
-        m2d.subtraction(x2Copy, x1Copy),
-        m2d.subtraction(y2Copy, y1Copy),
-      ),
-    );
+    final area = (x2Copy - x1Copy) * (y2Copy - y1Copy);
+    final areaList = area.toList();
+
     List<double> I = _quickSort(s);
     final positions = <int>[];
     I.forEach((element) {
@@ -423,19 +416,15 @@ class FaceDetectionService {
       final yy1 = _maximum(_itemIndex(y1, ind0)[0], _itemIndex(y1, ind1));
       final xx2 = _maximum(_itemIndex(x2, ind0)[0], _itemIndex(x2, ind1));
       final yy2 = _maximum(_itemIndex(y2, ind0)[0], _itemIndex(y2, ind1));
-      final List<double> xDiff = List<double>.from(m2d.subtraction(xx2, xx2));
-      final List<double> yDiff = List<double>.from(m2d.subtraction(yy2, yy1));
+      final List<double> xDiff = List<double>.from(xx2 - xx1);
+      final List<double> yDiff = List<double>.from(yy2 - yy1);
       final w = _maximum(0.0, xDiff);
       final h = _maximum(0.0, yDiff);
-      final inter = m2d.dot(w, h);
+      final inter = w * h;
       final o = List<double>.from(
-        m2d.division(
-          inter,
-          m2d.subtraction(
-            (_sum(_itemIndex(area, ind0)[0], _itemIndex(area, ind1))),
-            inter,
-          ),
-        ),
+        inter /
+            (_sum(_itemIndex(areaList, ind0)[0], _itemIndex(areaList, ind1)) -
+                inter),
       );
       pick.add(ind0[0]);
       I = o.where((element) => element <= threshold).toList();
@@ -443,15 +432,15 @@ class FaceDetectionService {
     return [detections[pick[0]]];
   }
 
-  List<double> _sum(double a, List<double> b) {
+  Vector _sum(double a, List<double> b) {
     final temp = <double>[];
     b.forEach((element) {
       temp.add(a + element);
     });
-    return List.from(temp);
+    return Vector.fromList(temp);
   }
 
-  List<double> _maximum(double value, List<double> itemIndex) {
+  Vector _maximum(double value, List<double> itemIndex) {
     final temp = <double>[];
     itemIndex.forEach((element) {
       if (value > element) {
@@ -460,7 +449,7 @@ class FaceDetectionService {
         temp.add(element);
       }
     });
-    return List.from(temp);
+    return Vector.fromList(temp);
   }
 
   List<double> _itemIndex(List<double> item, List<int> positions) {

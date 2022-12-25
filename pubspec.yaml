@@ -81,9 +81,9 @@ dependencies:
   local_auth: ^1.1.5
   logging: ^1.0.1
   lottie: ^1.2.2
-  matrix2d: ^1.0.3
   media_extension:
     git: "https://github.com/ente-io/media_extension.git"
+  ml_linalg: ^13.11.7
   modal_bottom_sheet: ^2.1.2
   motionphoto:
     git: "https://github.com/ente-io/motionphoto.git"

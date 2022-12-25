@@ -840,13 +840,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.1.5"
-  matrix2d:
-    dependency: "direct main"
-    description:
-      name: matrix2d
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "1.0.3"
   media_extension:
     dependency: "direct main"
     description:
@@ -870,6 +863,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.0.2"
+  ml_linalg:
+    dependency: "direct main"
+    description:
+      name: ml_linalg
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "13.11.7"
   modal_bottom_sheet:
     dependency: "direct main"
     description:
