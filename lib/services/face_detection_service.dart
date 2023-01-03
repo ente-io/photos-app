@@ -9,6 +9,7 @@ import 'package:ml_linalg/vector.dart';
 import 'package:photos/models/ml/faces/anchor_options.dart';
 import 'package:photos/models/ml/faces/face_detection.dart';
 import 'package:photos/models/ml/faces/face_options.dart';
+import 'package:photos/services/face_detection/face_detection_service.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 import 'package:tflite_flutter_helper/tflite_flutter_helper.dart';
 
@@ -22,7 +23,7 @@ class FaceDetectionService {
 
   Future<List<File>> getFaceCrops(File file) async {
     try {
-      await getFaceCropsBF(file);
+      return await getFaceCropsNewV2(file);
     } catch (e, s) {
       _logger.severe(e, s);
     }
@@ -45,6 +46,50 @@ class FaceDetectionService {
       }
     }
     return faceCrops;
+  }
+
+  bool isRunning = false;
+
+  Future<List<File>> getFaceCropsNewV2(File file) async {
+    // if (isRunning) {
+    //   return [];
+    // }
+
+    isRunning = true;
+    final image = img.decodeImage(file.readAsBytesSync())!;
+    final faceDetection = FaceDetection();
+    _logger.info("loading model");
+    await faceDetection.loadModel();
+    _logger.info("model loaded");
+    try {
+      final faces = faceDetection.predict(image);
+      if (faces != null) {
+        _logger.info(faces.length.toString() + " faces detected");
+
+        final List<File> faceCrops = [];
+
+        // for (final face in faces.values) {
+        final face = faces["bbox"];
+        try {
+          final croppedFace = await FlutterNativeImage.cropImage(
+            file.path,
+            face.left.toInt(),
+            face.top.toInt(),
+            face.width.toInt(),
+            face.height.toInt(),
+          );
+          faceCrops.add(croppedFace);
+        } catch (e, s) {
+          _logger.severe(e, s);
+        }
+        // }
+        return faceCrops;
+      }
+    } catch (e, s) {
+      _logger.severe(e, s);
+    }
+    isRunning = false;
+    return [];
   }
 
   Future<List<File>> getFaceCropsBF(File file) async {
