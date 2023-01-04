@@ -324,9 +324,8 @@ class Configuration {
     );
     //Fetching 2fa status from web api and storing it in shared pref here
     //as the only other time we are fetching it is on app init and it
-    //fetches on app init only if account has been configured or when log in
-    //is complete. Hence this separate call should be made when logging in
-    //after password verification.
+    //fetches on app init only if user is already logged in. Hence this separate
+    //call should be made when logging in after password verification.
     UserService.instance.setTwoFactor(fetchTwoFactorStatus: true)
       ..ignore()
       ..onError((error, stackTrace) => null);
