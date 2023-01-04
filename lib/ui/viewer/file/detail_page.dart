@@ -128,8 +128,6 @@ class _DetailPageState extends State<DetailPage> {
           ],
         ),
       ),
-
-      // backgroundColor: Theme.of(context).colorScheme.onPrimary,
     );
   }
 

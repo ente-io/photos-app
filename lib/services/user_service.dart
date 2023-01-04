@@ -735,7 +735,7 @@ class UserService {
 
   Future<bool> fetchTwoFactorStatus() async {
     try {
-      _logger.info("Fetching two factor status");
+      _logger.info("Fetching 2FA status");
       final response = await _enteDio.get("/users/two-factor/status");
       setTwoFactor(value: response.data["status"]);
       return response.data["status"];

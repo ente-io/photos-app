@@ -40,6 +40,7 @@ import 'package:photos/services/memories_service.dart';
 import 'package:photos/services/search_service.dart';
 // ignore: import_of_legacy_library_into_null_safe
 import 'package:photos/services/sync_service.dart';
+import 'package:photos/services/user_service.dart';
 import 'package:photos/utils/crypto_util.dart';
 import 'package:photos/utils/validator_util.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -321,6 +322,14 @@ class Configuration {
     await setToken(
       Sodium.bin2base64(token, variant: Sodium.base64VariantUrlsafe),
     );
+    //Fetching 2fa status from web api and storing it in shared pref here
+    //as the only other time we are fetching it is on app init and it
+    //fetches on app init only if account has been configured or when log in
+    //is complete. Hence this separate call should be made when logging in
+    //after password verification.
+    UserService.instance.setTwoFactor(fetchTwoFactorStatus: true)
+      ..ignore()
+      ..onError((error, stackTrace) => null);
   }
 
   Future<void> verifyPassword(String password) async {
