@@ -1,5 +1,3 @@
-// @dart=2.9
-
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:open_file/open_file.dart';
@@ -12,9 +10,9 @@ import 'package:photos/utils/toast_util.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 class AppUpdateDialog extends StatefulWidget {
-  final LatestVersionInfo latestVersionInfo;
+  final LatestVersionInfo? latestVersionInfo;
 
-  const AppUpdateDialog(this.latestVersionInfo, {Key key}) : super(key: key);
+  const AppUpdateDialog(this.latestVersionInfo, {Key? key}) : super(key: key);
 
   @override
   State<AppUpdateDialog> createState() => _AppUpdateDialogState();
@@ -26,7 +24,7 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
     final List<Widget> changelog = [];
     final enteTextTheme = getEnteTextTheme(context);
     final enteColor = getEnteColorScheme(context);
-    for (final log in widget.latestVersionInfo.changelog) {
+    for (final log in widget.latestVersionInfo!.changelog) {
       changelog.add(
         Padding(
           padding: const EdgeInsets.fromLTRB(0, 4, 0, 4),
@@ -69,7 +67,7 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
           width: double.infinity,
           height: 56,
           child: OutlinedButton(
-            style: Theme.of(context).outlinedButtonTheme.style.copyWith(
+            style: Theme.of(context).outlinedButtonTheme.style!.copyWith(
               textStyle: MaterialStateProperty.resolveWith<TextStyle>(
                 (Set<MaterialState> states) {
                   return enteTextTheme.bodyBold;
@@ -98,11 +96,11 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
               "Install manually",
               style: Theme.of(context)
                   .textTheme
-                  .caption
+                  .caption!
                   .copyWith(decoration: TextDecoration.underline),
             ),
             onTap: () => launchUrlString(
-              widget.latestVersionInfo.url,
+              widget.latestVersionInfo!.url,
               mode: LaunchMode.externalApplication,
             ),
           ),
@@ -110,7 +108,7 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
       ],
     );
     final shouldForceUpdate =
-        UpdateService.instance.shouldForceUpdate(widget.latestVersionInfo);
+        UpdateService.instance.shouldForceUpdate(widget.latestVersionInfo!);
     return WillPopScope(
       onWillPop: () async => !shouldForceUpdate,
       child: AlertDialog(
@@ -140,18 +138,18 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
 }
 
 class ApkDownloaderDialog extends StatefulWidget {
-  final LatestVersionInfo versionInfo;
+  final LatestVersionInfo? versionInfo;
 
-  const ApkDownloaderDialog(this.versionInfo, {Key key}) : super(key: key);
+  const ApkDownloaderDialog(this.versionInfo, {Key? key}) : super(key: key);
 
   @override
   State<ApkDownloaderDialog> createState() => _ApkDownloaderDialogState();
 }
 
 class _ApkDownloaderDialogState extends State<ApkDownloaderDialog> {
-  String _saveUrl;
-  double _downloadProgress;
-  Logger _logger;
+  String? _saveUrl;
+  double? _downloadProgress;
+  late Logger _logger;
 
   @override
   void initState() {
@@ -159,7 +157,7 @@ class _ApkDownloaderDialogState extends State<ApkDownloaderDialog> {
     _logger = Logger((_ApkDownloaderDialogState).toString());
     _saveUrl = Configuration.instance.getTempDirectory() +
         "ente-" +
-        widget.versionInfo.name +
+        widget.versionInfo!.name +
         ".apk";
     _downloadApk();
   }
@@ -199,11 +197,11 @@ class _ApkDownloaderDialogState extends State<ApkDownloaderDialog> {
   Future<void> _downloadApk() async {
     try {
       await Network.instance.getDio().download(
-        widget.versionInfo.url,
+        widget.versionInfo!.url,
         _saveUrl,
         onReceiveProgress: (count, _) {
           setState(() {
-            _downloadProgress = count / widget.versionInfo.size;
+            _downloadProgress = count / widget.versionInfo!.size;
           });
         },
       );

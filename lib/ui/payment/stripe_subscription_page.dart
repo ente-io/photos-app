@@ -1,5 +1,3 @@
-// @dart=2.9
-
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -9,6 +7,7 @@ import 'package:photos/models/subscription.dart';
 import 'package:photos/models/user_details.dart';
 import 'package:photos/services/billing_service.dart';
 import 'package:photos/services/user_service.dart';
+import 'package:photos/theme/ente_theme.dart';
 import 'package:photos/ui/common/bottom_shadow.dart';
 import 'package:photos/ui/common/dialogs.dart';
 import 'package:photos/ui/common/loading_widget.dart';
@@ -29,7 +28,7 @@ class StripeSubscriptionPage extends StatefulWidget {
 
   const StripeSubscriptionPage({
     this.isOnboarding = false,
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override
@@ -39,13 +38,13 @@ class StripeSubscriptionPage extends StatefulWidget {
 class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
   final _billingService = BillingService.instance;
   final _userService = UserService.instance;
-  Subscription _currentSubscription;
-  ProgressDialog _dialog;
-  UserDetails _userDetails;
+  Subscription? _currentSubscription;
+  late ProgressDialog _dialog;
+  late UserDetails _userDetails;
 
   // indicates if user's subscription plan is still active
-  bool _hasActiveSubscription;
-  FreePlan _freePlan;
+  late bool _hasActiveSubscription;
+  late FreePlan _freePlan;
   List<BillingPlan> _plans = [];
   bool _hasLoadedData = false;
   bool _isLoading = false;
@@ -63,9 +62,9 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
         .then((userDetails) async {
       _userDetails = userDetails;
       _currentSubscription = userDetails.subscription;
-      _showYearlyPlan = _currentSubscription.isYearlyPlan();
-      _hasActiveSubscription = _currentSubscription.isValid();
-      _isStripeSubscriber = _currentSubscription.paymentProvider == stripe;
+      _showYearlyPlan = _currentSubscription!.isYearlyPlan();
+      _hasActiveSubscription = _currentSubscription!.isValid();
+      _isStripeSubscriber = _currentSubscription!.paymentProvider == stripe;
       return _filterStripeForUI().then((value) {
         _hasLoadedData = true;
         setState(() {});
@@ -78,7 +77,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
     final billingPlans = await _billingService.getBillingPlans();
     _freePlan = billingPlans.freePlan;
     _plans = billingPlans.plans.where((plan) {
-      if (plan.stripeID == null || plan.stripeID.isEmpty) {
+      if (plan.stripeID.isEmpty) {
         return false;
       }
       final isYearlyPlan = plan.period == 'year';
@@ -100,8 +99,8 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
     // verify user has subscribed before redirecting to main page
     if (widget.isOnboarding &&
         _currentSubscription != null &&
-        _currentSubscription.isValid() &&
-        _currentSubscription.productID != freeProductID) {
+        _currentSubscription!.isValid() &&
+        _currentSubscription!.productID != freeProductID) {
       Navigator.of(context).popUntil((route) => route.isFirst);
     }
   }
@@ -202,7 +201,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
       widgets.add(ValidityWidget(currentSubscription: _currentSubscription));
     }
 
-    if (_currentSubscription.productID == freeProductID) {
+    if (_currentSubscription!.productID == freeProductID) {
       if (widget.isOnboarding) {
         widgets.add(SkipSubscriptionWidget(freePlan: _freePlan));
       }
@@ -214,22 +213,22 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
       widgets.add(_stripeRenewOrCancelButton());
     }
 
-    if (_currentSubscription.productID != freeProductID) {
+    if (_currentSubscription!.productID != freeProductID) {
       widgets.addAll([
         Align(
           alignment: Alignment.center,
           child: GestureDetector(
             onTap: () async {
               final String paymentProvider =
-                  _currentSubscription.paymentProvider;
-              switch (_currentSubscription.paymentProvider) {
+                  _currentSubscription!.paymentProvider;
+              switch (_currentSubscription!.paymentProvider) {
                 case stripe:
                   await _launchStripePortal();
                   break;
                 case playStore:
                   launchUrlString(
                     "https://play.google.com/store/account/subscriptions?sku=" +
-                        _currentSubscription.productID +
+                        _currentSubscription!.productID +
                         "&package=io.ente.photos",
                   );
                   break;
@@ -287,7 +286,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
                   RichText(
                     text: TextSpan(
                       text: "Manage family",
-                      style: Theme.of(context).textTheme.bodyMedium.copyWith(
+                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                             decoration: TextDecoration.underline,
                           ),
                     ),
@@ -322,14 +321,14 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
       ).then((value) => onWebPaymentGoBack);
     } catch (e) {
       await _dialog.hide();
-      showGenericErrorDialog(context);
+      showGenericErrorDialog(context: context);
     }
     await _dialog.hide();
   }
 
   Widget _stripeRenewOrCancelButton() {
     final bool isRenewCancelled =
-        _currentSubscription.attributes?.isCancelled ?? false;
+        _currentSubscription!.attributes?.isCancelled ?? false;
     final String title =
         isRenewCancelled ? "Renew subscription" : "Cancel subscription";
     return TextButton(
@@ -379,7 +378,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
           : await _billingService.cancelStripeSubscription();
       await _fetchSub();
     } catch (e) {
-      showToast(
+      showShortToast(
         context,
         isRenewCancelled ? 'failed to renew' : 'failed to cancel',
       );
@@ -392,11 +391,11 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
     bool foundActivePlan = false;
     for (final plan in _plans) {
       final productID = plan.stripeID;
-      if (productID == null || productID.isEmpty) {
+      if (productID.isEmpty) {
         continue;
       }
-      final isActive =
-          _hasActiveSubscription && _currentSubscription.productID == productID;
+      final isActive = _hasActiveSubscription &&
+          _currentSubscription!.productID == productID;
       if (isActive) {
         foundActivePlan = true;
       }
@@ -411,12 +410,12 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
               // payment providers
               if (!_isStripeSubscriber &&
                   _hasActiveSubscription &&
-                  _currentSubscription.productID != freeProductID) {
+                  _currentSubscription!.productID != freeProductID) {
                 showErrorDialog(
                   context,
                   "Sorry",
                   "Please cancel your existing subscription from "
-                      "${_currentSubscription.paymentProvider} first",
+                      "${_currentSubscription!.paymentProvider} first",
                 );
                 return;
               }
@@ -499,6 +498,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
             value: _showYearlyPlan,
             activeColor: Colors.white,
             inactiveThumbColor: Colors.white,
+            activeTrackColor: getEnteColorScheme(context).strokeMuted,
             onChanged: (value) async {
               _showYearlyPlan = value;
               await _filterStripeForUI();
@@ -513,13 +513,13 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
   void _addCurrentPlanWidget(List<Widget> planWidgets) {
     // don't add current plan if it's monthly plan but UI is showing yearly plans
     // and vice versa.
-    if (_showYearlyPlan != _currentSubscription.isYearlyPlan() &&
-        _currentSubscription.productID != freeProductID) {
+    if (_showYearlyPlan != _currentSubscription!.isYearlyPlan() &&
+        _currentSubscription!.productID != freeProductID) {
       return;
     }
     int activePlanIndex = 0;
     for (; activePlanIndex < _plans.length; activePlanIndex++) {
-      if (_plans[activePlanIndex].storage > _currentSubscription.storage) {
+      if (_plans[activePlanIndex].storage > _currentSubscription!.storage) {
         break;
       }
     }
@@ -529,9 +529,9 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
         child: InkWell(
           onTap: () {},
           child: SubscriptionPlanWidget(
-            storage: _currentSubscription.storage,
-            price: _currentSubscription.price,
-            period: _currentSubscription.period,
+            storage: _currentSubscription!.storage,
+            price: _currentSubscription!.price,
+            period: _currentSubscription!.period,
             isActive: true,
           ),
         ),

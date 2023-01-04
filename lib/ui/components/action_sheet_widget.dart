@@ -14,10 +14,13 @@ enum ActionSheetType {
   iconOnly,
 }
 
-Future<dynamic> showActionSheet({
+///Returns null if dismissed
+Future<ButtonAction?> showActionSheet({
   required BuildContext context,
   required List<ButtonWidget> buttons,
   required ActionSheetType actionSheetType,
+  bool enableDrag = true,
+  bool isDismissible = true,
   bool isCheckIconGreen = false,
   String? title,
   String? body,
@@ -27,6 +30,8 @@ Future<dynamic> showActionSheet({
     barrierColor: backdropFaintDark,
     useRootNavigator: true,
     context: context,
+    isDismissible: isDismissible,
+    enableDrag: enableDrag,
     builder: (_) {
       return ActionSheetWidget(
         title: title,
@@ -36,8 +41,6 @@ Future<dynamic> showActionSheet({
         isCheckIconGreen: isCheckIconGreen,
       );
     },
-    isDismissible: false,
-    enableDrag: false,
   );
 }
 
