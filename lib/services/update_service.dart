@@ -1,5 +1,3 @@
-// @dart=2.9
-
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -10,6 +8,7 @@ import 'package:photos/core/network.dart';
 import 'package:photos/services/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tuple/tuple.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
 class UpdateService {
   UpdateService._privateConstructor();
@@ -17,12 +16,12 @@ class UpdateService {
   static final UpdateService instance = UpdateService._privateConstructor();
   static const kUpdateAvailableShownTimeKey = "update_available_shown_time_key";
   static const changeLogVersionKey = "update_change_log_key";
-  static const currentChangeLogVersion = 3;
+  static const currentChangeLogVersion = 4;
 
-  LatestVersionInfo _latestVersion;
+  LatestVersionInfo? _latestVersion;
   final _logger = Logger("UpdateService");
-  PackageInfo _packageInfo;
-  SharedPreferences _prefs;
+  late PackageInfo _packageInfo;
+  late SharedPreferences _prefs;
 
   Future<void> init() async {
     _packageInfo = await PackageInfo.fromPlatform();
@@ -51,7 +50,7 @@ class UpdateService {
     try {
       _latestVersion = await _getLatestVersionInfo();
       final currentVersionCode = int.parse(_packageInfo.buildNumber);
-      return currentVersionCode < _latestVersion.code;
+      return currentVersionCode < _latestVersion!.code;
     } catch (e) {
       _logger.severe(e);
       return false;
@@ -71,7 +70,7 @@ class UpdateService {
     }
   }
 
-  LatestVersionInfo getLatestVersionInfo() {
+  LatestVersionInfo? getLatestVersionInfo() {
     return _latestVersion;
   }
 
@@ -87,7 +86,7 @@ class UpdateService {
         (now - lastNotificationShownTime) > (3 * microSecondsInDay);
     if (shouldUpdate &&
         hasBeen3DaysSinceLastNotification &&
-        _latestVersion.shouldNotify) {
+        _latestVersion!.shouldNotify) {
       NotificationService.instance.showNotification(
         "Update available",
         "Click to install our best version yet",
@@ -139,14 +138,29 @@ class UpdateService {
       );
     }
     return Platform.isAndroid
-        ? const Tuple2(
-            "play store",
-            "https://play.google.com/store/apps/details?id=io.ente.photos",
-          )
+        ? const Tuple2("play store", "market://details?id=io.ente.photos")
         : const Tuple2(
             "app store",
             "https://apps.apple.com/in/app/ente-photos/id1542026904",
           );
+  }
+
+  Future<void> launchReviewUrl() async {
+    // TODO: Replace with https://pub.dev/packages/in_app_review
+    final String url = getRateDetails().item2;
+    try {
+      await launchUrlString(url, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      _logger.severe("Failed top open launch url $url", e);
+      // Fall back if we fail to open play-store market app on android
+      if (Platform.isAndroid && url.startsWith("market://")) {
+        launchUrlString(
+                "https://play.google.com/store/apps/details?id=io"
+                ".ente.photos",
+                mode: LaunchMode.externalApplication)
+            .ignore();
+      }
+    }
   }
 }
 

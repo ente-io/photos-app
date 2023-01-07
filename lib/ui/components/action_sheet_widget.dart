@@ -14,36 +14,42 @@ enum ActionSheetType {
   iconOnly,
 }
 
-Future<dynamic> showActionSheet({
+///Returns null if dismissed
+Future<ButtonAction?> showActionSheet({
   required BuildContext context,
   required List<ButtonWidget> buttons,
   required ActionSheetType actionSheetType,
+  bool enableDrag = true,
+  bool isDismissible = true,
   bool isCheckIconGreen = false,
   String? title,
   String? body,
+  String? bodyHighlight,
 }) {
   return showMaterialModalBottomSheet(
     backgroundColor: Colors.transparent,
     barrierColor: backdropFaintDark,
     useRootNavigator: true,
     context: context,
+    isDismissible: isDismissible,
+    enableDrag: enableDrag,
     builder: (_) {
       return ActionSheetWidget(
         title: title,
         body: body,
+        bodyHighlight: bodyHighlight,
         actionButtons: buttons,
         actionSheetType: actionSheetType,
         isCheckIconGreen: isCheckIconGreen,
       );
     },
-    isDismissible: false,
-    enableDrag: false,
   );
 }
 
 class ActionSheetWidget extends StatelessWidget {
   final String? title;
   final String? body;
+  final String? bodyHighlight;
   final List<ButtonWidget> actionButtons;
   final ActionSheetType actionSheetType;
   final bool isCheckIconGreen;
@@ -54,6 +60,7 @@ class ActionSheetWidget extends StatelessWidget {
     required this.isCheckIconGreen,
     this.title,
     this.body,
+    this.bodyHighlight,
     super.key,
   });
 
@@ -97,6 +104,7 @@ class ActionSheetWidget extends StatelessWidget {
                             child: ContentContainerWidget(
                               title: title,
                               body: body,
+                              bodyHighlight: bodyHighlight,
                               actionSheetType: actionSheetType,
                               isCheckIconGreen: isCheckIconGreen,
                             ),
@@ -118,6 +126,7 @@ class ActionSheetWidget extends StatelessWidget {
 class ContentContainerWidget extends StatelessWidget {
   final String? title;
   final String? body;
+  final String? bodyHighlight;
   final ActionSheetType actionSheetType;
   final bool isCheckIconGreen;
   const ContentContainerWidget({
@@ -125,6 +134,7 @@ class ContentContainerWidget extends StatelessWidget {
     required this.isCheckIconGreen,
     this.title,
     this.body,
+    this.bodyHighlight,
     super.key,
   });
 
@@ -162,7 +172,18 @@ class ContentContainerWidget extends StatelessWidget {
                 color: isCheckIconGreen
                     ? getEnteColorScheme(context).primary700
                     : strokeBaseDark,
+              ),
+        actionSheetType == ActionSheetType.defaultActionSheet &&
+                bodyHighlight != null
+            ? Padding(
+                padding: const EdgeInsets.only(top: 19.0),
+                child: Text(
+                  bodyHighlight!,
+                  style: textTheme.body
+                      .copyWith(color: textBaseDark), //constant color
+                ),
               )
+            : const SizedBox.shrink(),
       ],
     );
   }

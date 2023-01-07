@@ -1,5 +1,3 @@
-// @dart=2.9
-
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart';
@@ -91,7 +89,7 @@ Future<bool> editTime(
     );
     return true;
   } catch (e) {
-    showToast(context, 'something went wrong');
+    showShortToast(context, 'something went wrong');
     return false;
   }
 }
@@ -124,13 +122,13 @@ Future<bool> editFilename(
     );
     return true;
   } catch (e) {
-    showToast(context, 'Something went wrong');
+    showShortToast(context, 'Something went wrong');
     return false;
   }
 }
 
 Future<bool> editFileCaption(
-  BuildContext context,
+  BuildContext? context,
   File file,
   String caption,
 ) async {
@@ -145,14 +143,14 @@ Future<bool> editFileCaption(
     return true;
   } catch (e) {
     if (context != null) {
-      showToast(context, "Something went wrong");
+      showShortToast(context, "Something went wrong");
     }
     return false;
   }
 }
 
 Future<void> _updatePublicMetadata(
-  BuildContext context,
+  BuildContext? context,
   List<File> files,
   String key,
   dynamic value, {
@@ -161,7 +159,7 @@ Future<void> _updatePublicMetadata(
   if (files.isEmpty) {
     return;
   }
-  ProgressDialog dialog;
+  ProgressDialog? dialog;
   if (context != null) {
     dialog = createProgressDialog(context, 'Please wait...');
     await dialog.show();
@@ -173,7 +171,7 @@ Future<void> _updatePublicMetadata(
       if (showDoneToast) {
         showShortToast(context, 'Done');
       }
-      await dialog.hide();
+      await dialog?.hide();
     }
 
     if (_shouldReloadGallery(key)) {
@@ -182,7 +180,7 @@ Future<void> _updatePublicMetadata(
   } catch (e, s) {
     _logger.severe("failed to update $key = $value", e, s);
     if (context != null) {
-      await dialog.hide();
+      await dialog?.hide();
     }
     rethrow;
   }

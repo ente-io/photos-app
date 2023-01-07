@@ -9,7 +9,9 @@ import 'package:photos/ui/components/icon_button_widget.dart';
 import 'package:photos/ui/components/menu_item_widget.dart';
 import 'package:photos/ui/components/title_bar_title_widget.dart';
 import 'package:photos/ui/components/title_bar_widget.dart';
+import 'package:photos/ui/tools/debug/app_storage_viewer.dart';
 import 'package:photos/utils/local_settings.dart';
+import 'package:photos/utils/navigation_util.dart';
 
 class AdvancedSettingsScreen extends StatefulWidget {
   const AdvancedSettingsScreen({super.key});
@@ -52,7 +54,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
           ),
           SliverList(
             delegate: SliverChildBuilderDelegate(
-              (context, index) {
+              (delegateBuildContext, index) {
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Padding(
@@ -64,7 +66,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                           children: [
                             GestureDetector(
                               onTap: () {
-                                _showPhotoGridSizePicker();
+                                _showPhotoGridSizePicker(delegateBuildContext);
                               },
                               child: MenuItemWidget(
                                 captionedTextWidget: CaptionedTextWidget(
@@ -73,14 +75,32 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                                 ),
                                 menuItemColor: colorScheme.fillFaint,
                                 trailingWidget: Icon(
-                                  Icons.chevron_right,
-                                  color: colorScheme.strokeMuted,
+                                  Icons.chevron_right_outlined,
+                                  color: colorScheme.strokeBase,
                                 ),
                                 borderRadius: 8,
                                 alignCaptionedTextToLeft: true,
                                 // isBottomBorderRadiusRemoved: true,
                                 isGestureDetectorDisabled: true,
                               ),
+                            ),
+                            const SizedBox(
+                              height: 24,
+                            ),
+                            MenuItemWidget(
+                              captionedTextWidget: const CaptionedTextWidget(
+                                title: "Manage device storage",
+                              ),
+                              menuItemColor: colorScheme.fillFaint,
+                              trailingWidget: Icon(
+                                Icons.chevron_right_outlined,
+                                color: colorScheme.strokeBase,
+                              ),
+                              borderRadius: 8,
+                              alignCaptionedTextToLeft: true,
+                              onTap: () {
+                                routeToPage(context, const AppStorageViewer());
+                              },
                             ),
                           ],
                         ),
@@ -97,8 +117,8 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
     );
   }
 
-  Future<void> _showPhotoGridSizePicker() async {
-    final textTheme = getEnteTextTheme(context);
+  Future<void> _showPhotoGridSizePicker(BuildContext buildContext) async {
+    final textTheme = getEnteTextTheme(buildContext);
     final List<Text> options = [];
     for (int gridSize = photoGridSizeMin;
         gridSize <= photoGridSizeMax;
@@ -118,7 +138,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
           children: <Widget>[
             Container(
               decoration: BoxDecoration(
-                color: getEnteColorScheme(context).backgroundElevated2,
+                color: getEnteColorScheme(buildContext).backgroundElevated2,
                 border: const Border(
                   bottom: BorderSide(
                     color: Color(0xff999999),
@@ -169,7 +189,8 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
               height: 220.0,
               color: const Color(0xfff7f7f7),
               child: CupertinoPicker(
-                backgroundColor: getEnteColorScheme(context).backgroundElevated,
+                backgroundColor:
+                    getEnteColorScheme(buildContext).backgroundElevated,
                 onSelectedItemChanged: (index) {
                   _chosenGridSize = _getPhotoGridSizeFromIndex(index);
                   setState(() {});
