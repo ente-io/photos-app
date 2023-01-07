@@ -1,10 +1,7 @@
-// @dart=2.9
-
 import 'package:collection/collection.dart';
 import 'package:fast_base58/fast_base58.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:logging/logging.dart';
 import 'package:photos/models/collection.dart';
 import 'package:photos/services/collections_service.dart';
 import 'package:photos/theme/ente_theme.dart';
@@ -12,6 +9,7 @@ import 'package:photos/ui/actions/collection/collection_sharing_actions.dart';
 import 'package:photos/ui/components/captioned_text_widget.dart';
 import 'package:photos/ui/components/divider_widget.dart';
 import 'package:photos/ui/components/menu_item_widget.dart';
+import 'package:photos/ui/components/menu_section_description_widget.dart';
 import 'package:photos/ui/components/menu_section_title.dart';
 import 'package:photos/ui/sharing/add_partipant_page.dart';
 import 'package:photos/ui/sharing/album_participants_page.dart';
@@ -24,20 +22,19 @@ import 'package:photos/utils/toast_util.dart';
 class ShareCollectionPage extends StatefulWidget {
   final Collection collection;
 
-  const ShareCollectionPage(this.collection, {Key key}) : super(key: key);
+  const ShareCollectionPage(this.collection, {Key? key}) : super(key: key);
 
   @override
   State<ShareCollectionPage> createState() => _ShareCollectionPageState();
 }
 
 class _ShareCollectionPageState extends State<ShareCollectionPage> {
-  List<User> _sharees;
-  final Logger _logger = Logger("SharingDialogState");
+  late List<User?> _sharees;
   final CollectionActions collectionActions =
       CollectionActions(CollectionsService.instance);
 
   Future<void> _navigateToManageUser() async {
-    final result = await routeToPage(
+    await routeToPage(
       context,
       AlbumParticipantsPage(widget.collection),
     );
@@ -49,6 +46,7 @@ class _ShareCollectionPageState extends State<ShareCollectionPage> {
   @override
   Widget build(BuildContext context) {
     _sharees = widget.collection.sharees ?? [];
+    final bool hasUrl = widget.collection.publicURLs?.isNotEmpty ?? false;
     final children = <Widget>[];
     children.add(
       MenuSectionTitle(
@@ -86,16 +84,26 @@ class _ShareCollectionPageState extends State<ShareCollectionPage> {
         },
       ),
     );
+    if (_sharees.isEmpty && !hasUrl) {
+      children.add(
+        const MenuSectionDescriptionWidget(
+          content:
+              "Create shared and collaborative albums with other ente users, "
+              "including users on free plans.",
+        ),
+      );
+    }
 
-    final bool hasUrl = widget.collection.publicURLs?.isNotEmpty ?? false;
     final bool hasExpired =
-        widget.collection?.publicURLs?.firstOrNull?.isExpired ?? false;
+        widget.collection.publicURLs?.firstOrNull?.isExpired ?? false;
     children.addAll([
       const SizedBox(
         height: 24,
       ),
       MenuSectionTitle(
-        title: hasUrl ? "Public link enabled" : "Share a public link",
+        title: hasUrl
+            ? "Public link enabled"
+            : (_sharees.isEmpty ? "Or share a link" : "Share a link"),
         iconData: Icons.public,
       ),
     ]);
@@ -120,7 +128,7 @@ class _ShareCollectionPageState extends State<ShareCollectionPage> {
           CollectionsService.instance.getCollectionKey(widget.collection.id),
         );
         final String url =
-            "${widget.collection.publicURLs.first.url}#$collectionKey";
+            "${widget.collection.publicURLs!.first!.url}#$collectionKey";
         children.addAll(
           [
             MenuItemWidget(
@@ -133,7 +141,7 @@ class _ShareCollectionPageState extends State<ShareCollectionPage> {
               pressedColor: getEnteColorScheme(context).fillFaint,
               onTap: () async {
                 await Clipboard.setData(ClipboardData(text: url));
-                showToast(context, "Link copied to clipboard");
+                showShortToast(context, "Link copied to clipboard");
               },
               isBottomBorderRadiusRemoved: true,
             ),
@@ -210,10 +218,25 @@ class _ShareCollectionPageState extends State<ShareCollectionPage> {
           },
         ),
       );
+      if (_sharees.isEmpty && !hasUrl) {
+        children.add(
+          const MenuSectionDescriptionWidget(
+            content:
+                "Links allow people without an ente account to view and add photos to your shared albums.",
+          ),
+        );
+      }
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Sharing")),
+      appBar: AppBar(
+        title: Text(
+          widget.collection.name ?? "Unnamed",
+          style: Theme.of(context).textTheme.headline5?.copyWith(fontSize: 16),
+        ),
+        elevation: 0,
+        centerTitle: false,
+      ),
       body: SingleChildScrollView(
         child: ListBody(
           children: <Widget>[
@@ -233,12 +256,12 @@ class _ShareCollectionPageState extends State<ShareCollectionPage> {
 
 class EmailItemWidget extends StatelessWidget {
   final Collection collection;
-  final Function onTap;
+  final Function? onTap;
 
   const EmailItemWidget(
     this.collection, {
     this.onTap,
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override
@@ -253,7 +276,10 @@ class EmailItemWidget extends StatelessWidget {
             captionedTextWidget: CaptionedTextWidget(
               title: collection.getSharees().firstOrNull?.email ?? '',
             ),
-            leadingIconWidget: UserAvatarWidget(collection.getSharees().first),
+            leadingIconWidget: UserAvatarWidget(
+              collection.getSharees().first,
+              thumbnailView: true,
+            ),
             leadingIconSize: 24,
             menuItemColor: getEnteColorScheme(context).fillFaint,
             pressedColor: getEnteColorScheme(context).fillFaint,
@@ -261,7 +287,7 @@ class EmailItemWidget extends StatelessWidget {
             trailingIcon: Icons.chevron_right,
             onTap: () async {
               if (onTap != null) {
-                onTap();
+                onTap!();
               }
             },
             isBottomBorderRadiusRemoved: true,
@@ -287,7 +313,7 @@ class EmailItemWidget extends StatelessWidget {
             trailingIcon: Icons.chevron_right,
             onTap: () async {
               if (onTap != null) {
-                onTap();
+                onTap!();
               }
             },
             isBottomBorderRadiusRemoved: true,

@@ -1,4 +1,4 @@
-// @dart=2.9
+
 
 import 'package:flutter/material.dart';
 
@@ -7,8 +7,8 @@ class ScrollBarThumb extends StatelessWidget {
   final Color drawColor;
   final double height;
   final String title;
-  final Animation labelAnimation;
-  final Animation thumbAnimation;
+  final Animation? labelAnimation;
+  final Animation? thumbAnimation;
   final Function(DragStartDetails details) onDragStart;
   final Function(DragUpdateDetails details) onDragUpdate;
   final Function(DragEndDetails details) onDragEnd;
@@ -23,7 +23,7 @@ class ScrollBarThumb extends StatelessWidget {
     this.onDragStart,
     this.onDragUpdate,
     this.onDragEnd, {
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override
@@ -31,21 +31,23 @@ class ScrollBarThumb extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        FadeTransition(
-          opacity: labelAnimation,
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              color: backgroundColor,
-            ),
-            child: Text(
-              title,
-              style: TextStyle(
-                color: drawColor,
-                fontWeight: FontWeight.bold,
-                backgroundColor: Colors.transparent,
-                fontSize: 14,
+        IgnorePointer(
+          child: FadeTransition(
+            opacity: labelAnimation as Animation<double>,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                color: backgroundColor,
+              ),
+              child: Text(
+                title,
+                style: TextStyle(
+                  color: drawColor,
+                  fontWeight: FontWeight.bold,
+                  backgroundColor: Colors.transparent,
+                  fontSize: 14,
+                ),
               ),
             ),
           ),
@@ -58,7 +60,7 @@ class ScrollBarThumb extends StatelessWidget {
           onVerticalDragUpdate: onDragUpdate,
           onVerticalDragEnd: onDragEnd,
           child: SlideFadeTransition(
-            animation: thumbAnimation,
+            animation: thumbAnimation as Animation<double>?,
             child: CustomPaint(
               foregroundPainter: _ArrowCustomPainter(drawColor),
               child: Material(
@@ -129,27 +131,27 @@ class _ArrowCustomPainter extends CustomPainter {
 }
 
 class SlideFadeTransition extends StatelessWidget {
-  final Animation<double> animation;
+  final Animation<double>? animation;
   final Widget child;
 
   const SlideFadeTransition({
-    Key key,
-    @required this.animation,
-    @required this.child,
+    Key? key,
+    required this.animation,
+    required this.child,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: animation,
-      builder: (context, child) => animation.value == 0.0 ? Container() : child,
+      animation: animation!,
+      builder: (context, child) => animation!.value == 0.0 ? Container() : child!,
       child: SlideTransition(
         position: Tween(
           begin: const Offset(0.3, 0.0),
           end: const Offset(0.0, 0.0),
-        ).animate(animation),
+        ).animate(animation!),
         child: FadeTransition(
-          opacity: animation,
+          opacity: animation!,
           child: child,
         ),
       ),

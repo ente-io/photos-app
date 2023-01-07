@@ -1,5 +1,3 @@
-// @dart=2.9
-
 import 'dart:async';
 import 'dart:ui';
 
@@ -24,7 +22,7 @@ class TwoFactorSetupPage extends StatefulWidget {
     this.secretCode,
     this.qrCode,
     this.completer, {
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override
@@ -33,15 +31,15 @@ class TwoFactorSetupPage extends StatefulWidget {
 
 class _TwoFactorSetupPageState extends State<TwoFactorSetupPage>
     with SingleTickerProviderStateMixin {
-  TabController _tabController;
+  late TabController _tabController;
   final _pinController = TextEditingController();
   final _pinPutDecoration = BoxDecoration(
     border: Border.all(color: const Color.fromRGBO(45, 194, 98, 1.0)),
     borderRadius: BorderRadius.circular(15.0),
   );
   String _code = "";
-  ImageProvider _imageProvider;
-  LifecycleEventHandler _lifecycleEventHandler;
+  late ImageProvider _imageProvider;
+  late LifecycleEventHandler _lifecycleEventHandler;
 
   @override
   void initState() {
@@ -55,8 +53,8 @@ class _TwoFactorSetupPageState extends State<TwoFactorSetupPage>
       resumeCallBack: () async {
         if (mounted) {
           final data = await Clipboard.getData(Clipboard.kTextPlain);
-          if (data != null && data.text != null && data.text.length == 6) {
-            _pinController.text = data.text;
+          if (data != null && data.text != null && data.text!.length == 6) {
+            _pinController.text = data.text!;
           }
         }
       },
@@ -68,6 +66,7 @@ class _TwoFactorSetupPageState extends State<TwoFactorSetupPage>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(_lifecycleEventHandler);
+    widget.completer.isCompleted ? null : widget.completer.complete();
     super.dispose();
   }
 
@@ -138,7 +137,7 @@ class _TwoFactorSetupPageState extends State<TwoFactorSetupPage>
     return GestureDetector(
       onTap: () async {
         await Clipboard.setData(ClipboardData(text: widget.secretCode));
-        showToast(context, "Code copied to clipboard");
+        showShortToast(context, "Code copied to clipboard");
       },
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -266,7 +265,6 @@ class _TwoFactorSetupPageState extends State<TwoFactorSetupPage>
         .enableTwoFactor(context, widget.secretCode, code);
     if (success) {
       _showSuccessPage();
-      widget.completer.complete();
     }
   }
 

@@ -18,7 +18,6 @@ class BottomActionBarWidget extends StatelessWidget {
   final VoidCallback? onCancel;
   final bool hasSmallerBottomPadding;
   final GalleryType type;
-  final bool isCollaborator;
 
   BottomActionBarWidget({
     required this.expandedMenu,
@@ -28,7 +27,6 @@ class BottomActionBarWidget extends StatelessWidget {
     this.text,
     this.iconButtons,
     this.onCancel,
-    this.isCollaborator = false,
     super.key,
   });
 
@@ -70,7 +68,6 @@ class BottomActionBarWidget extends StatelessWidget {
                       galleryType: type,
                       text: text,
                       iconButtons: _iconButtons(context),
-                      isCollaborator: isCollaborator,
                     ),
                   ),
                   expanded: expandedMenu,
@@ -78,17 +75,17 @@ class BottomActionBarWidget extends StatelessWidget {
                   controller: _expandableController,
                 ),
               ),
-              GestureDetector(
-                onTap: () {
-                  onCancel?.call();
-                  _expandableController.value = false;
-                },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    onCancel?.call();
+                    _expandableController.value = false;
+                  },
                   child: Center(
                     child: Text(
                       "Cancel",
@@ -106,12 +103,11 @@ class BottomActionBarWidget extends StatelessWidget {
   }
 
   List<Widget> _iconButtons(BuildContext context) {
-    final iconButtonsWithExpansionIcon = <Widget?>[
+    final iconButtonsWithExpansionIcon = <Widget>[
       ...?iconButtons,
       ExpansionIconWidget(expandableController: _expandableController)
     ];
-    iconButtonsWithExpansionIcon.removeWhere((element) => element == null);
-    return iconButtonsWithExpansionIcon as List<Widget>;
+    return iconButtonsWithExpansionIcon;
   }
 
   ExpandableThemeData _getExpandableTheme() {

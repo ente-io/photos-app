@@ -1,5 +1,3 @@
-// @dart=2.9
-
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
@@ -15,9 +13,11 @@ import 'package:photos/db/files_db.dart';
 import 'package:photos/events/local_photos_updated_event.dart';
 import 'package:photos/models/file.dart' as ente;
 import 'package:photos/models/location.dart';
-import 'package:photos/services/local_sync_service.dart';
 import 'package:photos/services/sync_service.dart';
 import 'package:photos/ui/common/loading_widget.dart';
+import 'package:photos/ui/components/action_sheet_widget.dart';
+import 'package:photos/ui/components/button_widget.dart';
+import 'package:photos/ui/components/models/button_type.dart';
 import 'package:photos/ui/tools/editor/filtered_image.dart';
 import 'package:photos/ui/viewer/file/detail_page.dart';
 import 'package:photos/utils/dialog_util.dart';
@@ -35,7 +35,7 @@ class ImageEditorPage extends StatefulWidget {
     this.imageProvider,
     this.originalFile,
     this.detailPageConfig, {
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override
@@ -54,8 +54,8 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
   final GlobalKey<ExtendedImageEditorState> editorKey =
       GlobalKey<ExtendedImageEditorState>();
 
-  double _brightness = kBrightnessDefault;
-  double _saturation = kSaturationDefault;
+  double? _brightness = kBrightnessDefault;
+  double? _saturation = kSaturationDefault;
   bool _hasEdited = false;
 
   @override
@@ -78,7 +78,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
                   IconButton(
                     padding: const EdgeInsets.only(right: 16, left: 16),
                     onPressed: () {
-                      editorKey.currentState.reset();
+                      editorKey.currentState!.reset();
                       setState(() {
                         _brightness = kBrightnessDefault;
                         _saturation = kSaturationDefault;
@@ -160,7 +160,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
   }
 
   Widget _buildFlipButton() {
-    final TextStyle subtitle2 = Theme.of(context).textTheme.subtitle2;
+    final TextStyle subtitle2 = Theme.of(context).textTheme.subtitle2!;
 
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
@@ -175,7 +175,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
               padding: const EdgeInsets.only(bottom: 2),
               child: Icon(
                 Icons.flip,
-                color: Theme.of(context).iconTheme.color.withOpacity(0.8),
+                color: Theme.of(context).iconTheme.color!.withOpacity(0.8),
                 size: 20,
               ),
             ),
@@ -183,7 +183,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
             Text(
               "Flip",
               style: subtitle2.copyWith(
-                color: subtitle2.color.withOpacity(0.8),
+                color: subtitle2.color!.withOpacity(0.8),
               ),
               textAlign: TextAlign.center,
             ),
@@ -194,7 +194,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
   }
 
   Widget _buildRotateLeftButton() {
-    final TextStyle subtitle2 = Theme.of(context).textTheme.subtitle2;
+    final TextStyle subtitle2 = Theme.of(context).textTheme.subtitle2!;
 
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
@@ -207,13 +207,13 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
           children: [
             Icon(
               Icons.rotate_left,
-              color: Theme.of(context).iconTheme.color.withOpacity(0.8),
+              color: Theme.of(context).iconTheme.color!.withOpacity(0.8),
             ),
             const Padding(padding: EdgeInsets.all(2)),
             Text(
               "Rotate left",
               style: subtitle2.copyWith(
-                color: subtitle2.color.withOpacity(0.8),
+                color: subtitle2.color!.withOpacity(0.8),
               ),
               textAlign: TextAlign.center,
             ),
@@ -224,7 +224,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
   }
 
   Widget _buildRotateRightButton() {
-    final TextStyle subtitle2 = Theme.of(context).textTheme.subtitle2;
+    final TextStyle subtitle2 = Theme.of(context).textTheme.subtitle2!;
 
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
@@ -237,13 +237,13 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
           children: [
             Icon(
               Icons.rotate_right,
-              color: Theme.of(context).iconTheme.color.withOpacity(0.8),
+              color: Theme.of(context).iconTheme.color!.withOpacity(0.8),
             ),
             const Padding(padding: EdgeInsets.all(2)),
             Text(
               "Rotate right",
               style: subtitle2.copyWith(
-                color: subtitle2.color.withOpacity(0.8),
+                color: subtitle2.color!.withOpacity(0.8),
               ),
               textAlign: TextAlign.center,
             ),
@@ -254,7 +254,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
   }
 
   Widget _buildSaveButton() {
-    final TextStyle subtitle2 = Theme.of(context).textTheme.subtitle2;
+    final TextStyle subtitle2 = Theme.of(context).textTheme.subtitle2!;
 
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
@@ -267,13 +267,13 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
           children: [
             Icon(
               Icons.save_alt_outlined,
-              color: Theme.of(context).iconTheme.color.withOpacity(0.8),
+              color: Theme.of(context).iconTheme.color!.withOpacity(0.8),
             ),
             const Padding(padding: EdgeInsets.all(2)),
             Text(
               "Save copy",
               style: subtitle2.copyWith(
-                color: subtitle2.color.withOpacity(0.8),
+                color: subtitle2.color!.withOpacity(0.8),
               ),
               textAlign: TextAlign.center,
             ),
@@ -286,15 +286,15 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
   Future<void> _saveEdits() async {
     final dialog = createProgressDialog(context, "Saving...");
     await dialog.show();
-    final ExtendedImageEditorState state = editorKey.currentState;
+    final ExtendedImageEditorState? state = editorKey.currentState;
     if (state == null) {
       return;
     }
-    final Rect rect = state.getCropRect();
+    final Rect? rect = state.getCropRect();
     if (rect == null) {
       return;
     }
-    final EditActionDetails action = state.editAction;
+    final EditActionDetails action = state.editAction!;
     final double radian = action.rotateAngle;
 
     final bool flipHorizontal = action.flipY;
@@ -317,13 +317,13 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
       option.addOption(RotateOption(radian.toInt()));
     }
 
-    option.addOption(ColorOption.saturation(_saturation));
-    option.addOption(ColorOption.brightness(_brightness));
+    option.addOption(ColorOption.saturation(_saturation!));
+    option.addOption(ColorOption.brightness(_brightness!));
 
     option.outputFormat = const OutputFormat.png(88);
 
     final DateTime start = DateTime.now();
-    final Uint8List result = await ImageEditor.editImage(
+    final Uint8List? result = await ImageEditor.editImage(
       image: img,
       imageEditorOption: option,
     );
@@ -338,16 +338,20 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
     }
     try {
       final fileName =
-          path.basenameWithoutExtension(widget.originalFile.title) +
+          path.basenameWithoutExtension(widget.originalFile.title!) +
               "_edited_" +
               DateTime.now().microsecondsSinceEpoch.toString() +
-              path.extension(widget.originalFile.title);
-      final newAsset = await PhotoManager.editor.saveImage(
-        result,
-        title: fileName,
+              path.extension(widget.originalFile.title!);
+      //Disabling notifications for assets changing to insert the file into
+      //files db before triggering a sync.
+      PhotoManager.stopChangeNotify();
+      final AssetEntity? newAsset =
+          await (PhotoManager.editor.saveImage(result, title: fileName));
+      final newFile = await ente.File.fromAsset(
+        widget.originalFile.deviceFolder!,
+        newAsset!,
       );
-      final newFile =
-          await ente.File.fromAsset(widget.originalFile.deviceFolder, newAsset);
+
       newFile.creationTime = widget.originalFile.creationTime;
       newFile.collectionID = widget.originalFile.collectionID;
       newFile.location = widget.originalFile.location;
@@ -359,24 +363,24 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
         }
       }
       newFile.generatedID = await FilesDB.instance.insert(newFile);
-      await LocalSyncService.instance.trackEditedFile(newFile);
       Bus.instance.fire(LocalPhotosUpdatedEvent([newFile], source: "editSave"));
       SyncService.instance.sync();
-      showToast(context, "Edits saved");
+      showShortToast(context, "Edits saved");
       _logger.info("Original file " + widget.originalFile.toString());
       _logger.info("Saved edits to file " + newFile.toString());
       final existingFiles = widget.detailPageConfig.files;
-      final files = (await widget.detailPageConfig.asyncLoader(
-        existingFiles[existingFiles.length - 1].creationTime,
-        existingFiles[0].creationTime,
+      final files = (await widget.detailPageConfig.asyncLoader!(
+        existingFiles[existingFiles.length - 1].creationTime!,
+        existingFiles[0].creationTime!,
       ))
           .files;
       // the index could be -1 if the files fetched doesn't contain the newly
       // edited files
-      final selectionIndex =
+      int selectionIndex =
           files.indexWhere((file) => file.generatedID == newFile.generatedID);
       if (selectionIndex == -1) {
         files.add(newFile);
+        selectionIndex = files.length - 1;
       }
       replacePage(
         context,
@@ -390,6 +394,8 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
     } catch (e, s) {
       showToast(context, "Oops, could not save edits");
       _logger.severe(e, s);
+    } finally {
+      PhotoManager.startChangeNotify();
     }
     await dialog.hide();
   }
@@ -403,7 +409,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
   }
 
   Widget _buildSat() {
-    final TextStyle subtitle2 = Theme.of(context).textTheme.subtitle2;
+    final TextStyle subtitle2 = Theme.of(context).textTheme.subtitle2!;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
@@ -414,7 +420,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
             child: Text(
               "Color",
               style: subtitle2.copyWith(
-                color: subtitle2.color.withOpacity(0.8),
+                color: subtitle2.color!.withOpacity(0.8),
               ),
             ),
           ),
@@ -449,7 +455,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
   }
 
   Widget _buildBrightness() {
-    final TextStyle subtitle2 = Theme.of(context).textTheme.subtitle2;
+    final TextStyle subtitle2 = Theme.of(context).textTheme.subtitle2!;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
@@ -460,7 +466,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
             child: Text(
               "Light",
               style: subtitle2.copyWith(
-                color: subtitle2.color.withOpacity(0.8),
+                color: subtitle2.color!.withOpacity(0.8),
               ),
             ),
           ),
@@ -495,31 +501,31 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
   }
 
   Future<void> _showExitConfirmationDialog() async {
-    final AlertDialog alert = AlertDialog(
-      title: const Text("Discard edits?"),
-      actions: [
-        TextButton(
-          child: const Text("Yes", style: TextStyle(color: Colors.red)),
-          onPressed: () {
-            Navigator.of(context, rootNavigator: true).pop('dialog');
-            replacePage(context, DetailPage(widget.detailPageConfig));
-          },
+    final actionResult = await showActionSheet(
+      context: context,
+      buttons: [
+        const ButtonWidget(
+          labelText: "Yes, discard changes",
+          buttonType: ButtonType.critical,
+          buttonSize: ButtonSize.large,
+          shouldStickToDarkTheme: true,
+          buttonAction: ButtonAction.first,
+          isInAlert: true,
         ),
-        TextButton(
-          child: const Text("No", style: TextStyle(color: Colors.white)),
-          onPressed: () {
-            Navigator.of(context, rootNavigator: true).pop('dialog');
-          },
+        const ButtonWidget(
+          labelText: "No",
+          buttonType: ButtonType.secondary,
+          buttonSize: ButtonSize.large,
+          buttonAction: ButtonAction.second,
+          shouldStickToDarkTheme: true,
+          isInAlert: true,
         ),
       ],
+      body: "Do you want to discard the edits you have made?",
+      actionSheetType: ActionSheetType.defaultActionSheet,
     );
-
-    await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return alert;
-      },
-      barrierColor: Colors.black87,
-    );
+    if (actionResult != null && actionResult == ButtonAction.first) {
+      replacePage(context, DetailPage(widget.detailPageConfig));
+    }
   }
 }

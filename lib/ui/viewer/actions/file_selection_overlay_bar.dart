@@ -1,7 +1,5 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:page_transition/page_transition.dart';
-import 'package:photos/core/configuration.dart';
 import 'package:photos/models/collection.dart';
 import 'package:photos/models/device_collection.dart';
 import 'package:photos/models/gallery_type.dart';
@@ -42,9 +40,7 @@ class _FileSelectionOverlayBarState extends State<FileSelectionOverlayBar> {
 
   @override
   void initState() {
-    showDeleteOption = (widget.galleryType == GalleryType.homepage ||
-        widget.galleryType == GalleryType.ownedCollection ||
-        widget.galleryType == GalleryType.favorite);
+    showDeleteOption = widget.galleryType.showDeleteIconOption();
     widget.selectedFiles.addListener(_selectedFilesListener);
     super.initState();
   }
@@ -58,7 +54,8 @@ class _FileSelectionOverlayBarState extends State<FileSelectionOverlayBar> {
   @override
   Widget build(BuildContext context) {
     debugPrint(
-        '$runtimeType building with ${widget.selectedFiles.files.length}');
+      '$runtimeType building with ${widget.selectedFiles.files.length}',
+    );
     final List<IconButtonWidget> iconsButton = [];
     final iconColor = getEnteColorScheme(context).blurStrokeBase;
     if (showDeleteOption) {
@@ -96,7 +93,7 @@ class _FileSelectionOverlayBarState extends State<FileSelectionOverlayBar> {
     }
     iconsButton.add(
       IconButtonWidget(
-        icon: Icons.ios_share_outlined,
+        icon: Icons.adaptive.share_outlined,
         iconButtonType: IconButtonType.primary,
         iconColor: getEnteColorScheme(context).blurStrokeBase,
         onTap: () => shareSelected(
@@ -119,7 +116,6 @@ class _FileSelectionOverlayBarState extends State<FileSelectionOverlayBar> {
             selectedFiles: widget.selectedFiles,
             hasSmallerBottomPadding: true,
             type: widget.galleryType,
-            isCollaborator: _isCollaborator(),
             expandedMenu: FileSelectionActionWidget(
               widget.galleryType,
               widget.selectedFiles,
@@ -167,21 +163,5 @@ class _FileSelectionOverlayBarState extends State<FileSelectionOverlayBar> {
     widget.selectedFiles.files.isNotEmpty
         ? _bottomPosition.value = 0.0
         : _bottomPosition.value = -150.0;
-  }
-
-  bool _isCollaborator() {
-    if (widget.collection == null) {
-      return false;
-    }
-    if (widget.galleryType == GalleryType.ownedCollection) {
-      return false;
-    }
-    final userID = Configuration.instance.getUserID();
-    for (final user in widget.collection!.getSharees()) {
-      if (user.id == userID) {
-        return user.isCollaborator;
-      }
-    }
-    return false;
   }
 }

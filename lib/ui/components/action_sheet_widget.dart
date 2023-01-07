@@ -6,6 +6,7 @@ import 'package:photos/core/constants.dart';
 import 'package:photos/theme/colors.dart';
 import 'package:photos/theme/effects.dart';
 import 'package:photos/theme/ente_theme.dart';
+import 'package:photos/ui/components/button_widget.dart';
 import 'package:photos/utils/separators_util.dart';
 
 enum ActionSheetType {
@@ -13,23 +14,30 @@ enum ActionSheetType {
   iconOnly,
 }
 
-void showActionSheet({
+///Returns null if dismissed
+Future<ButtonAction?> showActionSheet({
   required BuildContext context,
-  required List<Widget> buttons,
+  required List<ButtonWidget> buttons,
   required ActionSheetType actionSheetType,
+  bool enableDrag = true,
+  bool isDismissible = true,
   bool isCheckIconGreen = false,
   String? title,
   String? body,
+  String? bodyHighlight,
 }) {
-  showMaterialModalBottomSheet(
+  return showMaterialModalBottomSheet(
     backgroundColor: Colors.transparent,
-    barrierColor: backdropMutedDark,
+    barrierColor: backdropFaintDark,
     useRootNavigator: true,
     context: context,
+    isDismissible: isDismissible,
+    enableDrag: enableDrag,
     builder: (_) {
       return ActionSheetWidget(
         title: title,
         body: body,
+        bodyHighlight: bodyHighlight,
         actionButtons: buttons,
         actionSheetType: actionSheetType,
         isCheckIconGreen: isCheckIconGreen,
@@ -41,7 +49,8 @@ void showActionSheet({
 class ActionSheetWidget extends StatelessWidget {
   final String? title;
   final String? body;
-  final List<Widget> actionButtons;
+  final String? bodyHighlight;
+  final List<ButtonWidget> actionButtons;
   final ActionSheetType actionSheetType;
   final bool isCheckIconGreen;
 
@@ -51,6 +60,7 @@ class ActionSheetWidget extends StatelessWidget {
     required this.isCheckIconGreen,
     this.title,
     this.body,
+    this.bodyHighlight,
     super.key,
   });
 
@@ -76,7 +86,7 @@ class ActionSheetWidget extends StatelessWidget {
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
             child: Container(
-              color: backdropBaseDark,
+              color: backdropMutedDark,
               child: Padding(
                 padding: EdgeInsets.fromLTRB(
                   24,
@@ -94,6 +104,7 @@ class ActionSheetWidget extends StatelessWidget {
                             child: ContentContainerWidget(
                               title: title,
                               body: body,
+                              bodyHighlight: bodyHighlight,
                               actionSheetType: actionSheetType,
                               isCheckIconGreen: isCheckIconGreen,
                             ),
@@ -115,6 +126,7 @@ class ActionSheetWidget extends StatelessWidget {
 class ContentContainerWidget extends StatelessWidget {
   final String? title;
   final String? body;
+  final String? bodyHighlight;
   final ActionSheetType actionSheetType;
   final bool isCheckIconGreen;
   const ContentContainerWidget({
@@ -122,6 +134,7 @@ class ContentContainerWidget extends StatelessWidget {
     required this.isCheckIconGreen,
     this.title,
     this.body,
+    this.bodyHighlight,
     super.key,
   });
 
@@ -153,11 +166,24 @@ class ContentContainerWidget extends StatelessWidget {
                     style: textTheme.body
                         .copyWith(color: textMutedDark), //constant color
                   )
-            : Icon(Icons.check_outlined,
+            : Icon(
+                Icons.check_outlined,
                 size: 48,
                 color: isCheckIconGreen
                     ? getEnteColorScheme(context).primary700
-                    : strokeBaseDark)
+                    : strokeBaseDark,
+              ),
+        actionSheetType == ActionSheetType.defaultActionSheet &&
+                bodyHighlight != null
+            ? Padding(
+                padding: const EdgeInsets.only(top: 19.0),
+                child: Text(
+                  bodyHighlight!,
+                  style: textTheme.body
+                      .copyWith(color: textBaseDark), //constant color
+                ),
+              )
+            : const SizedBox.shrink(),
       ],
     );
   }

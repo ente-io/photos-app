@@ -1,5 +1,3 @@
-// @dart=2.9
-
 import 'package:flutter/material.dart';
 import 'package:photos/services/update_service.dart';
 import 'package:photos/theme/ente_theme.dart';
@@ -14,7 +12,7 @@ import 'package:photos/utils/toast_util.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AboutSectionWidget extends StatelessWidget {
-  const AboutSectionWidget({Key key}) : super(key: key);
+  const AboutSectionWidget({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +35,7 @@ class AboutSectionWidget extends StatelessWidget {
           trailingIcon: Icons.chevron_right_outlined,
           trailingIconIsMuted: true,
           onTap: () async {
-            launchUrl(Uri.parse("https://github.com/ente-io/frame"));
+            launchUrl(Uri.parse("https://github.com/ente-io/photos-app"));
           },
         ),
         sectionOptionSpacing,
@@ -79,7 +77,10 @@ class AboutSectionWidget extends StatelessWidget {
                           barrierColor: Colors.black.withOpacity(0.85),
                         );
                       } else {
-                        showToast(context, "You are on the latest version");
+                        showShortToast(
+                          context,
+                          "You are on the latest version",
+                        );
                       }
                     },
                   ),
@@ -95,12 +96,12 @@ class AboutSectionWidget extends StatelessWidget {
 class AboutMenuItemWidget extends StatelessWidget {
   final String title;
   final String url;
-  final String webPageTitle;
+  final String? webPageTitle;
   const AboutMenuItemWidget({
-    @required this.title,
-    @required this.url,
+    required this.title,
+    required this.url,
     this.webPageTitle,
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override

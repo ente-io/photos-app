@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:core';
 
+import 'package:flutter/foundation.dart';
 import 'package:photos/models/magic_metadata.dart';
 
 class Collection {
@@ -9,8 +10,10 @@ class Collection {
   final String encryptedKey;
   final String? keyDecryptionNonce;
   final String? name;
-  final String encryptedName;
-  final String nameDecryptionNonce;
+  // encryptedName & nameDecryptionNonce will be null for collections
+  // created before we started encrypting collection name
+  final String? encryptedName;
+  final String? nameDecryptionNonce;
   final CollectionType type;
   final CollectionAttributes attributes;
   final List<User?>? sharees;
@@ -57,6 +60,10 @@ class Collection {
     return (magicMetadata.subType ?? 0) == subTypeDefaultHidden;
   }
 
+  bool isSharedFilesCollection() {
+    return (magicMetadata.subType ?? 0) == subTypeSharedFilesCollection;
+  }
+
   List<User> getSharees() {
     final List<User> result = [];
     if (sharees == null) {
@@ -70,6 +77,10 @@ class Collection {
     return result;
   }
 
+  bool isOwner(int userID) {
+    return (owner?.id ?? 0) == userID;
+  }
+
   void updateSharees(List<User> newSharees) {
     sharees?.clear();
     sharees?.addAll(newSharees);
@@ -81,8 +92,15 @@ class Collection {
         return CollectionType.folder;
       case "favorites":
         return CollectionType.favorites;
+      case "uncategorized":
+        return CollectionType.uncategorized;
+      case "album":
+        return CollectionType.album;
+      case "unknown":
+        return CollectionType.unknown;
     }
-    return CollectionType.album;
+    debugPrint("unexpected collection type $type");
+    return CollectionType.unknown;
   }
 
   static String typeToString(CollectionType type) {
@@ -91,8 +109,12 @@ class Collection {
         return "folder";
       case CollectionType.favorites:
         return "favorites";
-      default:
+      case CollectionType.album:
         return "album";
+      case CollectionType.uncategorized:
+        return "uncategorized";
+      case CollectionType.unknown:
+        return "unknown";
     }
   }
 
@@ -183,7 +205,9 @@ class Collection {
 enum CollectionType {
   folder,
   favorites,
+  uncategorized,
   album,
+  unknown,
 }
 
 enum CollectionParticipantRole {

@@ -1,5 +1,3 @@
-// @dart=2.9
-
 import 'dart:io';
 import 'dart:io' as io;
 
@@ -25,6 +23,9 @@ import 'package:photos/services/hidden_service.dart';
 import 'package:photos/services/ignored_files_service.dart';
 import 'package:photos/services/local_sync_service.dart';
 import 'package:photos/ui/common/progress_dialog.dart';
+import 'package:photos/ui/components/action_sheet_widget.dart';
+import 'package:photos/ui/components/button_widget.dart';
+import 'package:photos/ui/components/models/button_type.dart';
 import 'package:photos/ui/create_collection_page.dart';
 import 'package:photos/ui/viewer/file/custom_app_bar.dart';
 import 'package:photos/utils/delete_file_util.dart';
@@ -37,7 +38,7 @@ class FadingAppBar extends StatefulWidget implements PreferredSizeWidget {
   final Function(File) onFileRemoved;
   final double height;
   final bool shouldShowActions;
-  final int userID;
+  final int? userID;
 
   const FadingAppBar(
     this.file,
@@ -45,7 +46,7 @@ class FadingAppBar extends StatefulWidget implements PreferredSizeWidget {
     this.userID,
     this.height,
     this.shouldShowActions, {
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override
@@ -84,7 +85,7 @@ class FadingAppBarState extends State<FadingAppBar> {
           ),
         ),
       ),
-      height: Platform.isAndroid ? 80 : 96,
+      Size.fromHeight(Platform.isAndroid ? 80 : 96),
     );
   }
 
@@ -114,7 +115,7 @@ class FadingAppBarState extends State<FadingAppBar> {
     bool isFileHidden = false;
     if (isOwnedByUser && isFileUploaded) {
       isFileHidden = CollectionsService.instance
-              .getCollectionByID(widget.file.collectionID)
+              .getCollectionByID(widget.file.collectionID!)
               ?.isHidden() ??
           false;
     }
@@ -231,11 +232,11 @@ class FadingAppBarState extends State<FadingAppBar> {
           }
           return items;
         },
-        onSelected: (value) {
+        onSelected: (dynamic value) async {
           if (value == 1) {
             _download(widget.file);
           } else if (value == 2) {
-            _showDeleteSheet(widget.file);
+            await _showSingleFileDeleteSheet(widget.file);
           } else if (value == 3) {
             _setAs(widget.file);
           } else if (value == 4) {
@@ -264,7 +265,7 @@ class FadingAppBarState extends State<FadingAppBar> {
       }
     } catch (e, s) {
       _logger.severe("failed to update file visibility", e, s);
-      await showGenericErrorDialog(context);
+      await showGenericErrorDialog(context: context);
     }
   }
 
@@ -285,7 +286,7 @@ class FadingAppBarState extends State<FadingAppBar> {
   }
 
   Widget _getFavoriteButton() {
-    return FutureBuilder(
+    return FutureBuilder<bool>(
       future: FavoritesService.instance.isFavorite(widget.file),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
@@ -297,7 +298,7 @@ class FadingAppBarState extends State<FadingAppBar> {
     );
   }
 
-  Widget _getLikeButton(File file, bool isLiked) {
+  Widget _getLikeButton(File file, bool? isLiked) {
     return LikeButton(
       isLiked: isLiked,
       onTap: (oldValue) async {
@@ -305,7 +306,7 @@ class FadingAppBarState extends State<FadingAppBar> {
         bool hasError = false;
         if (isLiked) {
           final shouldBlockUser = file.uploadedFileID == null;
-          ProgressDialog dialog;
+          late ProgressDialog dialog;
           if (shouldBlockUser) {
             dialog = createProgressDialog(context, "Adding to favorites...");
             await dialog.show();
@@ -343,71 +344,111 @@ class FadingAppBarState extends State<FadingAppBar> {
     );
   }
 
-  void _showDeleteSheet(File file) {
-    final List<Widget> actions = [];
-    if (file.uploadedFileID == null || file.localID == null) {
-      actions.add(
-        CupertinoActionSheetAction(
-          isDestructiveAction: true,
-          onPressed: () async {
-            await deleteFilesFromEverywhere(context, [file]);
-            Navigator.of(context, rootNavigator: true).pop();
-            widget.onFileRemoved(file);
-          },
-          child: const Text("Everywhere"),
-        ),
-      );
+  Future<void> _showSingleFileDeleteSheet(File file) async {
+    final List<ButtonWidget> buttons = [];
+    final String fileType = file.fileType == FileType.video ? "video" : "photo";
+    final bool isBothLocalAndRemote =
+        file.uploadedFileID != null && file.localID != null;
+    final bool isLocalOnly =
+        file.uploadedFileID == null && file.localID != null;
+    final bool isRemoteOnly =
+        file.uploadedFileID != null && file.localID == null;
+    final String title = "Delete $fileType${isBothLocalAndRemote ? '' : '?'}";
+    const String bodyHighlight = "It will be deleted from all albums.";
+    String body = "";
+    if (isBothLocalAndRemote) {
+      body = "This $fileType is in both ente and your device.";
+    } else if (isRemoteOnly) {
+      body = "This $fileType will be deleted from ente.";
+    } else if (isLocalOnly) {
+      body = "This $fileType will be deleted from your device.";
     } else {
-      // uploaded file which is present locally too
-      actions.add(
-        CupertinoActionSheetAction(
-          isDestructiveAction: true,
-          onPressed: () async {
-            await deleteFilesOnDeviceOnly(context, [file]);
-            showToast(context, "File deleted from device");
-            Navigator.of(context, rootNavigator: true).pop();
-            // TODO: Fix behavior when inside a device folder
-          },
-          child: const Text("Device"),
-        ),
-      );
-
-      actions.add(
-        CupertinoActionSheetAction(
-          isDestructiveAction: true,
-          onPressed: () async {
+      throw AssertionError("Unexpected state");
+    }
+    // Add option to delete from ente
+    if (isBothLocalAndRemote || isRemoteOnly) {
+      buttons.add(
+        ButtonWidget(
+          labelText: isBothLocalAndRemote ? "Delete from ente" : "Yes, delete",
+          buttonType: ButtonType.neutral,
+          buttonSize: ButtonSize.large,
+          shouldStickToDarkTheme: true,
+          buttonAction: ButtonAction.first,
+          shouldSurfaceExecutionStates: true,
+          isInAlert: true,
+          onTap: () async {
             await deleteFilesFromRemoteOnly(context, [file]);
             showShortToast(context, "Moved to trash");
-            Navigator.of(context, rootNavigator: true).pop();
-            // TODO: Fix behavior when inside a collection
+            if (isRemoteOnly) {
+              Navigator.of(context, rootNavigator: true).pop();
+              widget.onFileRemoved(file);
+            }
           },
-          child: const Text("ente"),
-        ),
-      );
-
-      actions.add(
-        CupertinoActionSheetAction(
-          isDestructiveAction: true,
-          onPressed: () async {
-            await deleteFilesFromEverywhere(context, [file]);
-            Navigator.of(context, rootNavigator: true).pop();
-            widget.onFileRemoved(file);
-          },
-          child: const Text("Everywhere"),
         ),
       );
     }
-    final action = CupertinoActionSheet(
-      title: const Text("Delete file?"),
-      actions: actions,
-      cancelButton: CupertinoActionSheetAction(
-        child: const Text("Cancel"),
-        onPressed: () {
-          Navigator.of(context, rootNavigator: true).pop();
-        },
+    // Add option to delete from local
+    if (isBothLocalAndRemote || isLocalOnly) {
+      buttons.add(
+        ButtonWidget(
+          labelText:
+              isBothLocalAndRemote ? "Delete from device" : "Yes, delete",
+          buttonType: ButtonType.neutral,
+          buttonSize: ButtonSize.large,
+          shouldStickToDarkTheme: true,
+          buttonAction: ButtonAction.second,
+          shouldSurfaceExecutionStates: false,
+          isInAlert: true,
+          onTap: () async {
+            await deleteFilesOnDeviceOnly(context, [file]);
+            if (isLocalOnly) {
+              Navigator.of(context, rootNavigator: true).pop();
+              widget.onFileRemoved(file);
+            }
+          },
+        ),
+      );
+    }
+
+    if (isBothLocalAndRemote) {
+      buttons.add(
+        ButtonWidget(
+          labelText: "Delete from both",
+          buttonType: ButtonType.neutral,
+          buttonSize: ButtonSize.large,
+          shouldStickToDarkTheme: true,
+          buttonAction: ButtonAction.third,
+          shouldSurfaceExecutionStates: true,
+          isInAlert: true,
+          onTap: () async {
+            await deleteFilesFromEverywhere(context, [file]);
+            Navigator.of(context, rootNavigator: true).pop();
+            widget.onFileRemoved(file);
+          },
+        ),
+      );
+    }
+    buttons.add(
+      const ButtonWidget(
+        labelText: "Cancel",
+        buttonType: ButtonType.secondary,
+        buttonSize: ButtonSize.large,
+        shouldStickToDarkTheme: true,
+        buttonAction: ButtonAction.fourth,
+        isInAlert: true,
       ),
     );
-    showCupertinoModalPopup(context: context, builder: (_) => action);
+    final ButtonAction? result = await showActionSheet(
+      context: context,
+      buttons: buttons,
+      actionSheetType: ActionSheetType.defaultActionSheet,
+      title: title,
+      body: body,
+      bodyHighlight: bodyHighlight,
+    );
+    if (result != null && result == ButtonAction.error) {
+      showGenericErrorDialog(context: context);
+    }
   }
 
   Future<void> _download(File file) async {
@@ -417,42 +458,35 @@ class FadingAppBarState extends State<FadingAppBar> {
       final FileType type = file.fileType;
       final bool downloadLivePhotoOnDroid =
           type == FileType.livePhoto && Platform.isAndroid;
-      AssetEntity savedAsset;
-      final io.File fileToSave = await getFile(file);
+      AssetEntity? savedAsset;
+      final io.File? fileToSave = await getFile(file);
+      //Disabling notifications for assets changing to insert the file into
+      //files db before triggering a sync.
+      PhotoManager.stopChangeNotify();
       if (type == FileType.image) {
         savedAsset = await PhotoManager.editor
-            .saveImageWithPath(fileToSave.path, title: file.title);
+            .saveImageWithPath(fileToSave!.path, title: file.title!);
       } else if (type == FileType.video) {
-        savedAsset =
-            await PhotoManager.editor.saveVideo(fileToSave, title: file.title);
+        savedAsset = await PhotoManager.editor
+            .saveVideo(fileToSave!, title: file.title!);
       } else if (type == FileType.livePhoto) {
-        final io.File liveVideoFile =
+        final io.File? liveVideoFile =
             await getFileFromServer(file, liveVideo: true);
         if (liveVideoFile == null) {
           throw AssertionError("Live video can not be null");
         }
         if (downloadLivePhotoOnDroid) {
-          await _saveLivePhotoOnDroid(fileToSave, liveVideoFile, file);
+          await _saveLivePhotoOnDroid(fileToSave!, liveVideoFile, file);
         } else {
           savedAsset = await PhotoManager.editor.darwin.saveLivePhoto(
-            imageFile: fileToSave,
+            imageFile: fileToSave!,
             videoFile: liveVideoFile,
-            title: file.title,
+            title: file.title!,
           );
         }
       }
 
       if (savedAsset != null) {
-        // immediately track assetID to avoid duplicate upload
-        await LocalSyncService.instance.trackDownloadedFile(savedAsset.id);
-        final ignoreVideoFile = IgnoredFile(
-          savedAsset.id,
-          savedAsset.title ?? "",
-          savedAsset.relativePath ?? 'remoteDownload',
-          "remoteDownload",
-        );
-        debugPrint("IgnoreFile for auto-upload ${ignoreVideoFile.toString()}");
-        await IgnoredFilesService.instance.cacheAndInsert([ignoreVideoFile]);
         file.localID = savedAsset.id;
         await FilesDB.instance.insert(file);
         Bus.instance.fire(
@@ -469,7 +503,10 @@ class FadingAppBarState extends State<FadingAppBar> {
     } catch (e) {
       _logger.warning("Failed to save file", e);
       await dialog.hide();
-      showGenericErrorDialog(context);
+      showGenericErrorDialog(context: context);
+    } finally {
+      PhotoManager.startChangeNotify();
+      LocalSyncService.instance.checkAndSync().ignore();
     }
   }
 
@@ -479,8 +516,11 @@ class FadingAppBarState extends State<FadingAppBar> {
     File enteFile,
   ) async {
     debugPrint("Downloading LivePhoto on Droid");
-    AssetEntity savedAsset = await PhotoManager.editor
-        .saveImageWithPath(image.path, title: enteFile.title);
+    AssetEntity? savedAsset = await (PhotoManager.editor
+        .saveImageWithPath(image.path, title: enteFile.title!));
+    if (savedAsset == null) {
+      throw Exception("Failed to save image of live photo");
+    }
     IgnoredFile ignoreVideoFile = IgnoredFile(
       savedAsset.id,
       savedAsset.title ?? '',
@@ -488,12 +528,16 @@ class FadingAppBarState extends State<FadingAppBar> {
       "remoteDownload",
     );
     await IgnoredFilesService.instance.cacheAndInsert([ignoreVideoFile]);
-    final videoTitle = file_path.basenameWithoutExtension(enteFile.title) +
+    final videoTitle = file_path.basenameWithoutExtension(enteFile.title!) +
         file_path.extension(video.path);
-    savedAsset = (await PhotoManager.editor.saveVideo(
+    savedAsset = (await (PhotoManager.editor.saveVideo(
       video,
       title: videoTitle,
-    ));
+    )));
+    if (savedAsset == null) {
+      throw Exception("Failed to save video of live photo");
+    }
+
     ignoreVideoFile = IgnoredFile(
       savedAsset.id,
       savedAsset.title ?? videoTitle,
@@ -507,7 +551,10 @@ class FadingAppBarState extends State<FadingAppBar> {
     final dialog = createProgressDialog(context, "Please wait...");
     await dialog.show();
     try {
-      final io.File fileToSave = await getFile(file);
+      final io.File? fileToSave = await (getFile(file));
+      if (fileToSave == null) {
+        throw Exception("Fail to get file for setAs operation");
+      }
       final m = MediaExtension();
       final bool result = await m.setAs("file://${fileToSave.path}", "image/*");
       if (result == false) {
@@ -517,7 +564,7 @@ class FadingAppBarState extends State<FadingAppBar> {
     } catch (e) {
       dialog.hide();
       _logger.severe("Failed to use as", e);
-      showGenericErrorDialog(context);
+      showGenericErrorDialog(context: context);
     }
   }
 }

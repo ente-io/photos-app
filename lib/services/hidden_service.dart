@@ -24,7 +24,7 @@ extension HiddenService on CollectionsService {
   // collection
   Future<Collection> getDefaultHiddenCollection() async {
     if (cachedDefaultHiddenCollection != null) {
-      return cachedDefaultHiddenCollection;
+      return cachedDefaultHiddenCollection!;
     }
     final int userID = config.getUserID()!;
     final Collection? defaultHidden =
@@ -33,12 +33,12 @@ extension HiddenService on CollectionsService {
     );
     if (defaultHidden != null) {
       cachedDefaultHiddenCollection = defaultHidden;
-      return cachedDefaultHiddenCollection;
+      return cachedDefaultHiddenCollection!;
     }
     final Collection createdHiddenCollection =
         await _createDefaultHiddenAlbum();
     cachedDefaultHiddenCollection = createdHiddenCollection;
-    return cachedDefaultHiddenCollection;
+    return cachedDefaultHiddenCollection!;
   }
 
   Future<bool> hideFiles(
@@ -90,7 +90,7 @@ extension HiddenService on CollectionsService {
     } catch (e, s) {
       _logger.severe("Could not hide", e, s);
       await dialog.hide();
-      showGenericErrorDialog(context);
+      showGenericErrorDialog(context: context);
       return false;
     } finally {
       await dialog.hide();
@@ -99,15 +99,34 @@ extension HiddenService on CollectionsService {
   }
 
   Future<Collection> _createDefaultHiddenAlbum() async {
+    final CreateRequest createRequest = await buildCollectionCreateRequest(
+      ".Hidden",
+      visibility: visibilityHidden,
+      subType: subTypeDefaultHidden,
+    );
+    _logger.info("Creating Hidden Collection");
+    final collection = await createAndCacheCollection(createRequest);
+    _logger.info("Creating Hidden Collection Created Successfully");
+    final Collection collectionFromServer =
+        await fetchCollectionByID(collection.id);
+    _logger.info("Fetched Created Hidden Collection Successfully");
+    return collectionFromServer;
+  }
+
+  Future<CreateRequest> buildCollectionCreateRequest(
+    String name, {
+    required int visibility,
+    required int subType,
+  }) async {
     final key = CryptoUtil.generateKey();
     final encryptedKeyData = CryptoUtil.encryptSync(key, config.getKey()!);
     final encryptedName = CryptoUtil.encryptSync(
-      utf8.encode(".Hidden") as Uint8List,
+      utf8.encode(name) as Uint8List,
       key,
     );
     final jsonToUpdate = CollectionMagicMetadata(
-      visibility: visibilityHidden,
-      subType: subTypeDefaultHidden,
+      visibility: visibility,
+      subType: subType,
     ).toJson();
     assert(jsonToUpdate.length == 2, "metadata should have two keys");
     final encryptedMMd = await CryptoUtil.encryptChaCha(
@@ -125,18 +144,10 @@ extension HiddenService on CollectionsService {
       keyDecryptionNonce: Sodium.bin2base64(encryptedKeyData.nonce!),
       encryptedName: Sodium.bin2base64(encryptedName.encryptedData!),
       nameDecryptionNonce: Sodium.bin2base64(encryptedName.nonce!),
-      type: CollectionType.album.toString(),
+      type: CollectionType.album,
       attributes: CollectionAttributes(),
       magicMetadata: metadataRequest,
     );
-
-    _logger.info("Creating Hidden Collection");
-    final collection =
-        await createAndCacheCollection(null, createRequest: createRequest);
-    _logger.info("Creating Hidden Collection Created Successfully");
-    final Collection collectionFromServer =
-        await fetchCollectionByID(collection.id);
-    _logger.info("Fetched Created Hidden Collection Successfully");
-    return collectionFromServer;
+    return createRequest;
   }
 }

@@ -1,14 +1,14 @@
-// @dart=2.9
-
 import "package:exif/exif.dart";
 import "package:flutter/cupertino.dart";
 import "package:flutter/material.dart";
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
+import 'package:photo_manager/photo_manager.dart';
 import "package:photos/core/configuration.dart";
 import 'package:photos/db/files_db.dart';
 import "package:photos/ente_theme_data.dart";
 import "package:photos/models/file.dart";
 import "package:photos/models/file_type.dart";
+import 'package:photos/services/collections_service.dart';
 import 'package:photos/services/feature_flag_service.dart';
 import 'package:photos/theme/ente_theme.dart';
 import 'package:photos/ui/components/divider_widget.dart';
@@ -29,7 +29,7 @@ class FileInfoWidget extends StatefulWidget {
 
   const FileInfoWidget(
     this.file, {
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override
@@ -37,7 +37,7 @@ class FileInfoWidget extends StatefulWidget {
 }
 
 class _FileInfoWidgetState extends State<FileInfoWidget> {
-  Map<String, IfdTag> _exif;
+  Map<String, IfdTag>? _exif;
   final Map<String, dynamic> _exifData = {
     "focalLength": null,
     "fNumber": null,
@@ -49,10 +49,12 @@ class _FileInfoWidgetState extends State<FileInfoWidget> {
   };
 
   bool _isImage = false;
+  int? _currentUserID;
 
   @override
   void initState() {
     debugPrint('file_info_dialog initState');
+    _currentUserID = Configuration.instance.getUserID();
     _isImage = widget.file.fileType == FileType.image ||
         widget.file.fileType == FileType.livePhoto;
     if (_isImage) {
@@ -71,22 +73,23 @@ class _FileInfoWidgetState extends State<FileInfoWidget> {
   Widget build(BuildContext context) {
     final file = widget.file;
     final fileIsBackedup = file.uploadedFileID == null ? false : true;
-    Future<Set<int>> allCollectionIDsOfFile;
-    Future<Set<String>>
-        allDeviceFoldersOfFile; //Typing this as Future<Set<T>> as it would be easier to implement showing multiple device folders for a file in the future
+    final bool isFileOwner =
+        file.ownerID == null || file.ownerID == _currentUserID;
+    late Future<Set<int>> allCollectionIDsOfFile;
+    //Typing this as Future<Set<T>> as it would be easier to implement showing multiple device folders for a file in the future
+    final Future<Set<String>> allDeviceFoldersOfFile =
+        Future.sync(() => {file.deviceFolder ?? ''});
     if (fileIsBackedup) {
       allCollectionIDsOfFile = FilesDB.instance.getAllCollectionIDsOfFile(
-        file.uploadedFileID,
+        file.uploadedFileID!,
       );
-    } else {
-      allDeviceFoldersOfFile = Future.sync(() => {file.deviceFolder});
     }
-    final dateTime = DateTime.fromMicrosecondsSinceEpoch(file.creationTime);
+    final dateTime = DateTime.fromMicrosecondsSinceEpoch(file.creationTime!);
     final dateTimeForUpdationTime =
-        DateTime.fromMicrosecondsSinceEpoch(file.updationTime);
+        DateTime.fromMicrosecondsSinceEpoch(file.updationTime!);
 
     if (_isImage && _exif != null) {
-      _generateExifForDetails(_exif);
+      _generateExifForDetails(_exif!);
     }
     final bool showExifListTile = _exifData["focalLength"] != null ||
         _exifData["fNumber"] != null ||
@@ -95,13 +98,15 @@ class _FileInfoWidgetState extends State<FileInfoWidget> {
         _exifData["ISO"] != null;
     final bool showDimension =
         _exifData["resolution"] != null && _exifData["megaPixels"] != null;
-    final listTiles = <Widget>[
-      widget.file.uploadedFileID == null ||
-              Configuration.instance.getUserID() != file.ownerID
+    final listTiles = <Widget?>[
+      !widget.file.isUploaded ||
+              (!isFileOwner && (widget.file.caption?.isEmpty ?? true))
           ? const SizedBox.shrink()
           : Padding(
               padding: const EdgeInsets.only(top: 8, bottom: 4),
-              child: FileCaptionWidget(file: widget.file),
+              child: isFileOwner
+                  ? FileCaptionWidget(file: widget.file)
+                  : FileCaptionReadyOnly(caption: widget.file.caption!),
             ),
       ListTile(
         horizontalTitleGap: 2,
@@ -111,12 +116,12 @@ class _FileInfoWidgetState extends State<FileInfoWidget> {
         ),
         title: Text(
           getFullDate(
-            DateTime.fromMicrosecondsSinceEpoch(file.creationTime),
+            DateTime.fromMicrosecondsSinceEpoch(file.creationTime!),
           ),
         ),
         subtitle: Text(
           getTimeIn12hrFormat(dateTime) + "  " + dateTime.timeZoneName,
-          style: Theme.of(context).textTheme.bodyText2.copyWith(
+          style: Theme.of(context).textTheme.bodyText2!.copyWith(
                 color: Theme.of(context)
                     .colorScheme
                     .defaultTextColor
@@ -124,8 +129,7 @@ class _FileInfoWidgetState extends State<FileInfoWidget> {
               ),
         ),
         trailing: (widget.file.ownerID == null ||
-                    widget.file.ownerID ==
-                        Configuration.instance.getUserID()) &&
+                    widget.file.ownerID == _currentUserID) &&
                 widget.file.uploadedFileID != null
             ? IconButton(
                 onPressed: () {
@@ -172,8 +176,7 @@ class _FileInfoWidgetState extends State<FileInfoWidget> {
                 : const SizedBox.shrink(),
           ],
         ),
-        trailing: file.uploadedFileID == null ||
-                file.ownerID != Configuration.instance.getUserID()
+        trailing: file.uploadedFileID == null || file.ownerID != _currentUserID
             ? const SizedBox.shrink()
             : IconButton(
                 onPressed: () async {
@@ -225,7 +228,10 @@ class _FileInfoWidgetState extends State<FileInfoWidget> {
           horizontalTitleGap: 0,
           leading: const Icon(Icons.folder_outlined),
           title: fileIsBackedup
-              ? CollectionsListOfFileWidget(allCollectionIDsOfFile)
+              ? CollectionsListOfFileWidget(
+                  allCollectionIDsOfFile,
+                  _currentUserID!,
+                )
               : DeviceFoldersListOfFileWidget(allDeviceFoldersOfFile),
         ),
       ),
@@ -248,14 +254,14 @@ class _FileInfoWidgetState extends State<FileInfoWidget> {
               ),
               title: Text(
                 getFullDate(
-                  DateTime.fromMicrosecondsSinceEpoch(file.updationTime),
+                  DateTime.fromMicrosecondsSinceEpoch(file.updationTime!),
                 ),
               ),
               subtitle: Text(
                 getTimeIn12hrFormat(dateTimeForUpdationTime) +
                     "  " +
                     dateTimeForUpdationTime.timeZoneName,
-                style: Theme.of(context).textTheme.bodyText2.copyWith(
+                style: Theme.of(context).textTheme.bodyText2!.copyWith(
                       color: Theme.of(context)
                           .colorScheme
                           .defaultTextColor
@@ -294,6 +300,7 @@ class _FileInfoWidgetState extends State<FileInfoWidget> {
                   onTap: () => Navigator.pop(context),
                 ),
               ),
+              SliverToBoxAdapter(child: addedBy(widget.file)),
               SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
@@ -317,18 +324,46 @@ class _FileInfoWidgetState extends State<FileInfoWidget> {
     );
   }
 
+  Widget addedBy(File file) {
+    if (file.uploadedFileID == null) {
+      return const SizedBox.shrink();
+    }
+    String? addedBy;
+    if (file.ownerID == _currentUserID) {
+      if (file.pubMagicMetadata!.uploaderName != null) {
+        addedBy = file.pubMagicMetadata!.uploaderName;
+      }
+    } else {
+      final fileOwner = CollectionsService.instance
+          .getFileOwner(file.ownerID!, file.collectionID);
+      addedBy = fileOwner.email;
+    }
+    if (addedBy == null || addedBy.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final enteTheme = Theme.of(context).colorScheme.enteTheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: 4.0, bottom: 4.0, left: 16),
+      child: Text(
+        "Added by $addedBy",
+        style: enteTheme.textTheme.mini
+            .copyWith(color: enteTheme.colorScheme.textMuted),
+      ),
+    );
+  }
+
   _generateExifForDetails(Map<String, IfdTag> exif) {
     if (exif["EXIF FocalLength"] != null) {
       _exifData["focalLength"] =
-          (exif["EXIF FocalLength"].values.toList()[0] as Ratio).numerator /
-              (exif["EXIF FocalLength"].values.toList()[0] as Ratio)
+          (exif["EXIF FocalLength"]!.values.toList()[0] as Ratio).numerator /
+              (exif["EXIF FocalLength"]!.values.toList()[0] as Ratio)
                   .denominator;
     }
 
     if (exif["EXIF FNumber"] != null) {
       _exifData["fNumber"] =
-          (exif["EXIF FNumber"].values.toList()[0] as Ratio).numerator /
-              (exif["EXIF FNumber"].values.toList()[0] as Ratio).denominator;
+          (exif["EXIF FNumber"]!.values.toList()[0] as Ratio).numerator /
+              (exif["EXIF FNumber"]!.values.toList()[0] as Ratio).denominator;
     }
     final imageWidth = exif["EXIF ExifImageWidth"] ?? exif["Image ImageWidth"];
     final imageLength = exif["EXIF ExifImageLength"] ??
@@ -361,14 +396,14 @@ class _FileInfoWidgetState extends State<FileInfoWidget> {
     if (widget.file.fileSize != null) {
       fileSizeFuture = Future.value(widget.file.fileSize);
     } else {
-      fileSizeFuture = getFile(widget.file).then((f) => f.length());
+      fileSizeFuture = getFile(widget.file).then((f) => f!.length());
     }
-    return FutureBuilder(
+    return FutureBuilder<int>(
       future: fileSizeFuture,
       builder: (context, snapshot) {
         if (snapshot.hasData) {
           return Text(
-            (snapshot.data / (1024 * 1024)).toStringAsFixed(2) + " MB",
+            (snapshot.data! / (1024 * 1024)).toStringAsFixed(2) + " MB",
           );
         } else {
           return Center(
@@ -387,15 +422,15 @@ class _FileInfoWidgetState extends State<FileInfoWidget> {
   Widget _getVideoDuration() {
     if (widget.file.duration != 0) {
       return Text(
-        secondsToHHMMSS(widget.file.duration),
+        secondsToHHMMSS(widget.file.duration!),
       );
     }
-    return FutureBuilder(
+    return FutureBuilder<AssetEntity?>(
       future: widget.file.getAsset,
       builder: (context, snapshot) {
         if (snapshot.hasData) {
           return Text(
-            snapshot.data.videoDuration.toString().split(".")[0],
+            snapshot.data!.videoDuration.toString().split(".")[0],
           );
         } else {
           return Center(
@@ -416,7 +451,7 @@ class _FileInfoWidgetState extends State<FileInfoWidget> {
       context,
       minTime: DateTime(1800, 1, 1),
       maxTime: DateTime.now(),
-      currentTime: DateTime.fromMicrosecondsSinceEpoch(file.creationTime),
+      currentTime: DateTime.fromMicrosecondsSinceEpoch(file.creationTime!),
       locale: LocaleType.en,
       theme: Theme.of(context).colorScheme.dateTimePickertheme,
     );

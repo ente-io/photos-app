@@ -1,5 +1,6 @@
-import 'package:flutter/cupertino.dart';
+import 'package:fast_base58/fast_base58.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:photos/core/configuration.dart';
 import 'package:photos/models/collection.dart';
@@ -13,11 +14,17 @@ import 'package:photos/services/hidden_service.dart';
 import 'package:photos/theme/ente_theme.dart';
 import 'package:photos/ui/actions/collection/collection_file_actions.dart';
 import 'package:photos/ui/actions/collection/collection_sharing_actions.dart';
+import 'package:photos/ui/components/action_sheet_widget.dart';
 import 'package:photos/ui/components/blur_menu_item_widget.dart';
 import 'package:photos/ui/components/bottom_action_bar/expanded_menu_widget.dart';
+import 'package:photos/ui/components/button_widget.dart';
+import 'package:photos/ui/components/models/button_type.dart';
 import 'package:photos/ui/create_collection_page.dart';
+import 'package:photos/ui/sharing/manage_links_widget.dart';
 import 'package:photos/utils/delete_file_util.dart';
 import 'package:photos/utils/magic_util.dart';
+import 'package:photos/utils/navigation_util.dart';
+import 'package:photos/utils/toast_util.dart';
 
 class FileSelectionActionWidget extends StatefulWidget {
   final GalleryType type;
@@ -43,6 +50,11 @@ class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
   late SelectedFileSplit split;
   late CollectionActions collectionActions;
 
+  // _cachedCollectionForSharedLink is primarly used to avoid creating duplicate
+  // links if user keeps on creating Create link button after selecting
+  // few files. This link is reset on any selection changed;
+  Collection? _cachedCollectionForSharedLink;
+
   @override
   void initState() {
     currentUserID = Configuration.instance.getUserID()!;
@@ -59,6 +71,9 @@ class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
   }
 
   void _selectFileChangeListener() {
+    if (_cachedCollectionForSharedLink != null) {
+      _cachedCollectionForSharedLink = null;
+    }
     split = widget.selectedFiles.split(currentUserID);
     if (mounted) {
       setState(() => {});
@@ -73,7 +88,7 @@ class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
         ? " (${split.ownedByCurrentUser.length})"
             ""
         : "";
-    final String suffixInPending = showPrefix
+    final String suffixInPending = split.ownedByOtherUsers.isNotEmpty
         ? " (${split.ownedByCurrentUser.length + split.pendingUploads.length})"
             ""
         : "";
@@ -88,18 +103,46 @@ class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
     final colorScheme = getEnteColorScheme(context);
     final List<List<BlurMenuItemWidget>> items = [];
     final List<BlurMenuItemWidget> firstList = [];
+    final List<BlurMenuItemWidget> secondList = [];
+
+    if (widget.type.showCreateLink()) {
+      if (_cachedCollectionForSharedLink != null && anyUploadedFiles) {
+        firstList.add(
+          BlurMenuItemWidget(
+            leadingIcon: Icons.copy_outlined,
+            labelText: "Copy link",
+            menuItemColor: colorScheme.fillFaint,
+            onTap: anyUploadedFiles ? _copyLink : null,
+          ),
+        );
+      } else {
+        firstList.add(
+          BlurMenuItemWidget(
+            leadingIcon: Icons.link_outlined,
+            labelText: "Create link$suffix",
+            menuItemColor: colorScheme.fillFaint,
+            onTap: anyUploadedFiles ? _onCreatedSharedLinkClicked : null,
+          ),
+        );
+      }
+    }
+
+    final showUploadIcon = widget.type == GalleryType.localFolder &&
+        split.ownedByCurrentUser.isEmpty;
     if (widget.type.showAddToAlbum()) {
-      firstList.add(
+      secondList.add(
         BlurMenuItemWidget(
-          leadingIcon: Icons.add_outlined,
-          labelText: "Add to album$suffixInPending",
+          leadingIcon:
+              showUploadIcon ? Icons.cloud_upload_outlined : Icons.add_outlined,
+          labelText:
+              "Add to ${showUploadIcon ? 'ente' : 'album'}$suffixInPending",
           menuItemColor: colorScheme.fillFaint,
           onTap: anyOwnedFiles ? _addToAlbum : null,
         ),
       );
     }
     if (widget.type.showMoveToAlbum()) {
-      firstList.add(
+      secondList.add(
         BlurMenuItemWidget(
           leadingIcon: Icons.arrow_forward_outlined,
           labelText: "Move to album$suffix",
@@ -110,7 +153,7 @@ class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
     }
 
     if (showRemoveOption) {
-      firstList.add(
+      secondList.add(
         BlurMenuItemWidget(
           leadingIcon: Icons.remove_outlined,
           labelText: "Remove from album$suffix",
@@ -121,7 +164,7 @@ class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
     }
 
     if (widget.type.showDeleteOption()) {
-      firstList.add(
+      secondList.add(
         BlurMenuItemWidget(
           leadingIcon: Icons.delete_outline,
           labelText: "Delete$suffixInPending",
@@ -132,7 +175,7 @@ class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
     }
 
     if (widget.type.showHideOption()) {
-      firstList.add(
+      secondList.add(
         BlurMenuItemWidget(
           leadingIcon: Icons.visibility_off_outlined,
           labelText: "Hide$suffix",
@@ -141,7 +184,7 @@ class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
         ),
       );
     } else if (widget.type.showUnHideOption()) {
-      firstList.add(
+      secondList.add(
         BlurMenuItemWidget(
           leadingIcon: Icons.visibility_off_outlined,
           labelText: "Unhide$suffix",
@@ -151,7 +194,7 @@ class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
       );
     }
     if (widget.type.showArchiveOption()) {
-      firstList.add(
+      secondList.add(
         BlurMenuItemWidget(
           leadingIcon: Icons.archive_outlined,
           labelText: "Archive$suffix",
@@ -160,7 +203,7 @@ class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
         ),
       );
     } else if (widget.type.showUnArchiveOption()) {
-      firstList.add(
+      secondList.add(
         BlurMenuItemWidget(
           leadingIcon: Icons.unarchive,
           labelText: "Unarchive$suffix",
@@ -171,7 +214,7 @@ class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
     }
 
     if (widget.type.showFavoriteOption()) {
-      firstList.add(
+      secondList.add(
         BlurMenuItemWidget(
           leadingIcon: Icons.favorite_border_rounded,
           labelText: "Favorite$suffix",
@@ -180,7 +223,7 @@ class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
         ),
       );
     } else if (widget.type.showUnFavoriteOption()) {
-      firstList.add(
+      secondList.add(
         BlurMenuItemWidget(
           leadingIcon: Icons.favorite,
           labelText: "Remove from favorite$suffix",
@@ -190,8 +233,11 @@ class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
       );
     }
 
-    if (firstList.isNotEmpty) {
-      items.add(firstList);
+    if (firstList.isNotEmpty || secondList.isNotEmpty) {
+      if (firstList.isNotEmpty) {
+        items.add(firstList);
+      }
+      items.add(secondList);
       return ExpandedMenuWidget(
         items: items,
       );
@@ -220,7 +266,7 @@ class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
   }
 
   Future<void> _onDeleteClick() async {
-    showDeleteSheet(context, widget.selectedFiles);
+    return showDeleteSheet(context, widget.selectedFiles);
   }
 
   Future<void> _removeFilesFromAlbum() async {
@@ -293,6 +339,72 @@ class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
           .unSelectAll(split.ownedByOtherUsers.toSet(), skipNotify: true);
     }
     await _selectionCollectionForAction(CollectionActionType.unHide);
+  }
+
+  Future<void> _onCreatedSharedLinkClicked() async {
+    if (split.ownedByCurrentUser.isEmpty) {
+      showShortToast(context, "Can only create link for files owned by you");
+      return;
+    }
+    _cachedCollectionForSharedLink ??= await collectionActions
+        .createSharedCollectionLink(context, split.ownedByCurrentUser);
+    final actionResult = await showActionSheet(
+      context: context,
+      buttons: [
+        const ButtonWidget(
+          labelText: "Copy link",
+          buttonType: ButtonType.neutral,
+          buttonSize: ButtonSize.large,
+          shouldStickToDarkTheme: true,
+          buttonAction: ButtonAction.first,
+          isInAlert: true,
+        ),
+        const ButtonWidget(
+          labelText: "Manage link",
+          buttonType: ButtonType.secondary,
+          buttonSize: ButtonSize.large,
+          buttonAction: ButtonAction.second,
+          shouldStickToDarkTheme: true,
+          isInAlert: true,
+        ),
+        const ButtonWidget(
+          labelText: "Done",
+          buttonType: ButtonType.secondary,
+          buttonSize: ButtonSize.large,
+          buttonAction: ButtonAction.third,
+          shouldStickToDarkTheme: true,
+          isInAlert: true,
+        )
+      ],
+      title: "Public link created",
+      body: "You can manage your links in the share tab.",
+      actionSheetType: ActionSheetType.defaultActionSheet,
+    );
+    if (actionResult != null && actionResult == ButtonAction.first) {
+      await _copyLink();
+    }
+    if (actionResult != null && actionResult == ButtonAction.second) {
+      routeToPage(
+        context,
+        ManageSharedLinkWidget(collection: _cachedCollectionForSharedLink),
+      );
+    }
+    if (mounted) {
+      setState(() => {});
+    }
+  }
+
+  Future<void> _copyLink() async {
+    if (_cachedCollectionForSharedLink != null) {
+      final String collectionKey = Base58Encode(
+        CollectionsService.instance
+            .getCollectionKey(_cachedCollectionForSharedLink!.id),
+      );
+      final String url =
+          "${_cachedCollectionForSharedLink!.publicURLs?.first?.url}#$collectionKey";
+      await Clipboard.setData(ClipboardData(text: url));
+      showShortToast(context, "Link copied to clipboard");
+    }
   }
 
   Future<Object?> _selectionCollectionForAction(

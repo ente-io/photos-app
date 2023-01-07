@@ -46,6 +46,24 @@ extension GalleyTypeExtension on GalleryType {
     }
   }
 
+  // showDeleteTopOption indicates whether we should show
+  // delete icon as iconButton
+  bool showDeleteIconOption() {
+    switch (this) {
+      case GalleryType.ownedCollection:
+      case GalleryType.searchResults:
+      case GalleryType.homepage:
+      case GalleryType.favorite:
+      case GalleryType.localFolder:
+        return true;
+      case GalleryType.trash:
+      case GalleryType.archive:
+      case GalleryType.hidden:
+      case GalleryType.sharedCollection:
+        return false;
+    }
+  }
+
   bool showDeleteOption() {
     switch (this) {
       case GalleryType.ownedCollection:
@@ -54,7 +72,23 @@ extension GalleyTypeExtension on GalleryType {
       case GalleryType.favorite:
       case GalleryType.archive:
       case GalleryType.hidden:
+      case GalleryType.localFolder:
         return true;
+      case GalleryType.trash:
+      case GalleryType.sharedCollection:
+        return false;
+    }
+  }
+
+  bool showCreateLink() {
+    switch (this) {
+      case GalleryType.ownedCollection:
+      case GalleryType.searchResults:
+      case GalleryType.homepage:
+      case GalleryType.favorite:
+      case GalleryType.archive:
+        return true;
+      case GalleryType.hidden:
       case GalleryType.localFolder:
       case GalleryType.trash:
       case GalleryType.sharedCollection:

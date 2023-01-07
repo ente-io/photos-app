@@ -1,10 +1,6 @@
-// @dart=2.9
-
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart' hide PageView;
-import 'package:photos/core/event_bus.dart';
-import 'package:photos/events/opened_settings_event.dart';
 
 /// This is copy-pasted from the Flutter framework with a support added for building
 /// pages off screen using [Viewport.cacheExtents] and a [LayoutBuilder]
@@ -51,10 +47,10 @@ class ExtentsPageView extends StatefulWidget {
   /// child that could possibly be displayed in the page view, instead of just
   /// those children that are actually visible.
   ExtentsPageView({
-    Key key,
+    Key? key,
     this.scrollDirection = Axis.horizontal,
     this.reverse = false,
-    PageController controller,
+    PageController? controller,
     this.physics,
     this.pageSnapping = true,
     this.onPageChanged,
@@ -83,15 +79,15 @@ class ExtentsPageView extends StatefulWidget {
   /// you are planning to change child order at a later time, consider using
   /// [PageView] or [PageView.custom].
   ExtentsPageView.builder({
-    Key key,
+    Key? key,
     this.scrollDirection = Axis.horizontal,
     this.reverse = false,
-    PageController controller,
+    PageController? controller,
     this.physics,
     this.pageSnapping = true,
     this.onPageChanged,
-    @required IndexedWidgetBuilder itemBuilder,
-    int itemCount,
+    required IndexedWidgetBuilder itemBuilder,
+    int? itemCount,
     this.dragStartBehavior = DragStartBehavior.start,
     this.openDrawer,
   })  : controller = controller ?? _defaultPageController,
@@ -101,16 +97,16 @@ class ExtentsPageView extends StatefulWidget {
         super(key: key);
 
   ExtentsPageView.extents({
-    Key key,
+    Key? key,
     this.extents = 1,
     this.scrollDirection = Axis.horizontal,
     this.reverse = false,
-    PageController controller,
+    PageController? controller,
     this.physics,
     this.pageSnapping = true,
     this.onPageChanged,
-    @required IndexedWidgetBuilder itemBuilder,
-    int itemCount,
+    required IndexedWidgetBuilder itemBuilder,
+    int? itemCount,
     this.dragStartBehavior = DragStartBehavior.start,
     this.openDrawer,
   })  : controller = controller ?? _defaultPageController,
@@ -203,18 +199,17 @@ class ExtentsPageView extends StatefulWidget {
   /// ```
   /// {@end-tool}
   ExtentsPageView.custom({
-    Key key,
+    Key? key,
     this.scrollDirection = Axis.horizontal,
     this.reverse = false,
-    PageController controller,
+    PageController? controller,
     this.physics,
     this.pageSnapping = true,
     this.onPageChanged,
-    @required this.childrenDelegate,
+    required this.childrenDelegate,
     this.dragStartBehavior = DragStartBehavior.start,
     this.openDrawer,
-  })  : assert(childrenDelegate != null),
-        extents = 0,
+  })  : extents = 0,
         controller = controller ?? _defaultPageController,
         super(key: key);
 
@@ -259,13 +254,13 @@ class ExtentsPageView extends StatefulWidget {
   /// [PageScrollPhysics] prior to being used.
   ///
   /// Defaults to matching platform conventions.
-  final ScrollPhysics physics;
+  final ScrollPhysics? physics;
 
   /// Set to false to disable page snapping, useful for custom scroll behavior.
   final bool pageSnapping;
 
   /// Called whenever the page in the center of the viewport changes.
-  final ValueChanged<int> onPageChanged;
+  final ValueChanged<int>? onPageChanged;
 
   /// A delegate that provides the children for the [PageView].
   ///
@@ -278,7 +273,7 @@ class ExtentsPageView extends StatefulWidget {
   /// {@macro flutter.widgets.scrollable.dragStartBehavior}
   final DragStartBehavior dragStartBehavior;
 
-  final Function openDrawer; //nullable
+  final Function? openDrawer; //nullable
 
   @override
   State<ExtentsPageView> createState() => _PageViewState();
@@ -294,8 +289,7 @@ class _PageViewState extends State<ExtentsPageView> {
     widget.openDrawer != null
         ? widget.controller.addListener(() {
             if (widget.controller.offset < -45) {
-              widget.openDrawer();
-              Bus.instance.fire(OpenedSettingsEvent());
+              widget.openDrawer!();
             }
           })
         : null;
@@ -307,7 +301,7 @@ class _PageViewState extends State<ExtentsPageView> {
     super.dispose();
   }
 
-  AxisDirection _getDirection(BuildContext context) {
+  AxisDirection? _getDirection(BuildContext context) {
     switch (widget.scrollDirection) {
       case Axis.horizontal:
         assert(debugCheckHasDirectionality(context));
@@ -320,13 +314,12 @@ class _PageViewState extends State<ExtentsPageView> {
       case Axis.vertical:
         return widget.reverse ? AxisDirection.up : AxisDirection.down;
     }
-    return null;
   }
 
   @override
   Widget build(BuildContext context) {
-    final AxisDirection axisDirection = _getDirection(context);
-    final ScrollPhysics physics = widget.pageSnapping
+    final AxisDirection axisDirection = _getDirection(context)!;
+    final ScrollPhysics? physics = widget.pageSnapping
         ? _kPagePhysics.applyTo(widget.physics)
         : widget.physics;
 
@@ -335,11 +328,11 @@ class _PageViewState extends State<ExtentsPageView> {
         if (notification.depth == 0 &&
             widget.onPageChanged != null &&
             notification is ScrollUpdateNotification) {
-          final PageMetrics metrics = notification.metrics;
-          final int currentPage = metrics.page.round();
+          final PageMetrics metrics = notification.metrics as PageMetrics;
+          final int currentPage = metrics.page!.round();
           if (currentPage != _lastReportedPage) {
             _lastReportedPage = currentPage;
-            widget.onPageChanged(currentPage);
+            widget.onPageChanged!(currentPage);
           }
         }
         return false;
