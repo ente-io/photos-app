@@ -4,6 +4,7 @@ import 'dart:io' as io;
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_sodium/flutter_sodium.dart';
 import 'package:logging/logging.dart';
 import 'package:photo_manager/photo_manager.dart';
@@ -21,7 +22,8 @@ import 'package:photos/utils/file_util.dart';
 final _logger = Logger("ThumbnailUtil");
 final _map = <int, FileDownloadItem>{};
 final _queue = Queue<int>();
-const int kMaximumConcurrentDownloads = 500;
+const int kMaximumConcurrentDownloads = 20;
+int downloaderReqInitCounter = 0;
 
 class FileDownloadItem {
   final File file;
@@ -110,6 +112,8 @@ void removePendingGetThumbnailRequestIfAny(File file) {
 
 void _downloadItem(FileDownloadItem item) async {
   try {
+    downloaderReqInitCounter++;
+    debugPrint("Download counter $downloaderReqInitCounter");
     await _downloadAndDecryptThumbnail(item);
   } catch (e, s) {
     _logger.severe(
@@ -161,7 +165,7 @@ Future<void> _downloadAndDecryptThumbnail(FileDownloadItem item) async {
     await cachedThumbnail.delete();
   }
   // data is already cached in-memory, no need to await on dist write
-  unawaited(cachedThumbnail.writeAsBytes(data));
+  // unawaited(cachedThumbnail.writeAsBytes(data));
   if (_map.containsKey(file.uploadedFileID)) {
     try {
       item.completer.complete(data);

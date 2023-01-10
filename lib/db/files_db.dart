@@ -1475,6 +1475,7 @@ class FilesDB {
 
     file.pubMmdVersion = row[columnPubMMdVersion] ?? 0;
     file.pubMmdEncodedJson = row[columnPubMMdEncodedJson] ?? '{}';
+    file.creationTime = DateTime.now().microsecondsSinceEpoch;
     return file;
   }
 }
