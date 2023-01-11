@@ -241,6 +241,7 @@ class _LazyLoadingGalleryState extends State<LazyLoadingGallery> {
   }
 
   Widget _getGallery() {
+    print("length of files :" + _files.length.toString() + "------------");
     final List<Widget> childGalleries = [];
     final subGalleryItemLimit = widget.photoGirdSize * subGalleryMultiplier;
     for (int index = 0; index < _files.length; index += subGalleryItemLimit) {
@@ -261,6 +262,12 @@ class _LazyLoadingGalleryState extends State<LazyLoadingGallery> {
         ),
       );
     }
+
+    print(
+      "Number of childGalleries/girdViews : " +
+          childGalleries.length.toString() +
+          "----------",
+    );
 
     return Column(
       children: childGalleries,
@@ -335,6 +342,7 @@ class _LazyLoadingGridViewState extends State<LazyLoadingGridView> {
 
   @override
   void didUpdateWidget(LazyLoadingGridView oldWidget) {
+    print("LazyLoadingGridView didUpdateWidget -----------");
     super.didUpdateWidget(oldWidget);
     if (!listEquals(widget.filesInDay, oldWidget.filesInDay)) {
       _shouldRender = widget.shouldRender;
@@ -343,6 +351,12 @@ class _LazyLoadingGridViewState extends State<LazyLoadingGridView> {
 
   @override
   Widget build(BuildContext context) {
+    print("Building LazyLoadingGridView ------------");
+    print(
+      "widget.shouldRecycle : " +
+          widget.shouldRecycle.toString() +
+          "----------",
+    );
     if (widget.shouldRecycle) {
       return _getRecyclableView();
     } else {
@@ -369,11 +383,14 @@ class _LazyLoadingGridViewState extends State<LazyLoadingGridView> {
 
   Widget _getNonRecyclableView() {
     if (!_shouldRender!) {
+      print("inside should not render if block---------");
       return VisibilityDetector(
         key: UniqueKey(),
         onVisibilityChanged: (visibility) {
+          print("Visibility changed for gird --------------");
           if (mounted && visibility.visibleFraction > 0 && !_shouldRender!) {
             setState(() {
+              print("should render gird ---------------");
               _shouldRender = true;
             });
           }
@@ -387,6 +404,7 @@ class _LazyLoadingGridViewState extends State<LazyLoadingGridView> {
   }
 
   Widget _getGridView() {
+    print("Building gridView of child galleries -----------");
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),

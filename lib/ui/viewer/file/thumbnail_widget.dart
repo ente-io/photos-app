@@ -86,6 +86,7 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // print("building thumbnail widget -------------");
     if (widget.file!.isRemoteFile) {
       _loadNetworkImage();
     } else {
@@ -248,6 +249,7 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
   }
 
   void _loadNetworkImage() {
+    // print("here ---------------");
     if (!_hasLoadedThumbnail &&
         !_errorLoadingRemoteThumbnail &&
         !_isLoadingRemoteThumbnail) {
@@ -259,6 +261,8 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
         return;
       }
       if (widget.serverLoadDeferDuration != null) {
+        // print("here ---------------");
+
         Future.delayed(widget.serverLoadDeferDuration!, () {
           if (mounted) {
             _getThumbnailFromServer();
@@ -272,6 +276,7 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
 
   void _getThumbnailFromServer() async {
     try {
+      // print("inside try ---------------");
       final thumbnail = await getThumbnailFromServer(widget.file!);
       if (mounted) {
         final imageProvider = Image.memory(thumbnail).image;
@@ -284,7 +289,11 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
             "Thumbnail request was aborted although it is in view, will retry",
           );
           _reset();
-          setState(() {});
+          Future.delayed(const Duration(seconds: 2), () {
+            if (mounted) {
+              setState(() {});
+            }
+          });
         }
       } else {
         _logger.severe("Could not load image " + widget.file.toString(), e);

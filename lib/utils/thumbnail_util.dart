@@ -22,7 +22,7 @@ import 'package:photos/utils/file_util.dart';
 final _logger = Logger("ThumbnailUtil");
 final _map = <int, FileDownloadItem>{};
 final _queue = Queue<int>();
-const int kMaximumConcurrentDownloads = 20;
+const int kMaximumConcurrentDownloads = 10;
 int downloaderReqInitCounter = 0;
 
 class FileDownloadItem {
@@ -43,6 +43,7 @@ Future<Uint8List> getThumbnailFromServer(File file) async {
   }
   if (!_map.containsKey(file.uploadedFileID)) {
     if (_queue.length > kMaximumConcurrentDownloads) {
+      print("queue length : " + _queue.length.toString() + " -+-+-+-+");
       final id = _queue.removeFirst();
       final item = _map.remove(id)!;
       item.cancelToken.cancel();
@@ -50,6 +51,7 @@ Future<Uint8List> getThumbnailFromServer(File file) async {
     }
     final item =
         FileDownloadItem(file, Completer<Uint8List>(), CancelToken(), 1);
+    print("File id : " + file.generatedID.toString());
     _map[file.uploadedFileID!] = item;
     _queue.add(file.uploadedFileID!);
     _downloadItem(item);
