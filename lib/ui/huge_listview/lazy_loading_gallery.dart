@@ -315,6 +315,7 @@ class _LazyLoadingGridViewState extends State<LazyLoadingGridView> {
   bool? _shouldRender;
   int? _currentUserID;
   late StreamSubscription<ClearSelectionsEvent> _clearSelectionsEvent;
+  final ValueNotifier<bool> _gridVisibilityNotifier = ValueNotifier(false);
 
   @override
   void initState() {
@@ -338,6 +339,7 @@ class _LazyLoadingGridViewState extends State<LazyLoadingGridView> {
     widget.toggleSelectAllFromDay
         .removeListener(_toggleSelectAllFromDayListener);
     super.dispose();
+    _gridVisibilityNotifier.dispose();
   }
 
   @override
@@ -381,26 +383,57 @@ class _LazyLoadingGridViewState extends State<LazyLoadingGridView> {
     );
   }
 
+  // Widget _getNonRecyclableView() {
+  //   if (!_shouldRender!) {
+  //     print("inside should not render if block---------");
+  //     return VisibilityDetector(
+  //       key: UniqueKey(),
+  //       onVisibilityChanged: (visibility) {
+  //         print(
+  //           "grid visibility changed. Visibility : " +
+  //               visibility.visibleFraction.toString() +
+  //               "----------",
+  //         );
+
+  //         if (mounted && visibility.visibleFraction > 0 && !_shouldRender!) {
+  //           setState(() {
+  //             print("should render gird ---------------");
+  //             _shouldRender = true;
+  //           });
+  //         }
+  //       },
+  //       child:
+  //           PlaceHolderWidget(widget.filesInDay.length, widget.photoGridSize!),
+  //     );
+  //   } else {
+  //     return _getGridView();
+  //   }
+  // }
+
   Widget _getNonRecyclableView() {
-    if (!_shouldRender!) {
-      print("inside should not render if block---------");
-      return VisibilityDetector(
-        key: UniqueKey(),
-        onVisibilityChanged: (visibility) {
-          print("Visibility changed for gird --------------");
-          if (mounted && visibility.visibleFraction > 0 && !_shouldRender!) {
-            setState(() {
-              print("should render gird ---------------");
-              _shouldRender = true;
-            });
-          }
-        },
-        child:
-            PlaceHolderWidget(widget.filesInDay.length, widget.photoGridSize!),
-      );
-    } else {
-      return _getGridView();
-    }
+    return VisibilityDetector(
+      key: UniqueKey(),
+      onVisibilityChanged: (visibility) {
+        visibility.visibleFraction > 0
+            ? _gridVisibilityNotifier.value = true
+            : _gridVisibilityNotifier.value = false;
+        print(
+          "grid visibility changed. Visibility : " +
+              visibility.visibleFraction.toString() +
+              "----------",
+        );
+
+        if (mounted && visibility.visibleFraction > 0 && !_shouldRender!) {
+          setState(() {
+            print("should render gird ---------------");
+            _shouldRender = true;
+          });
+        }
+      },
+      child: _shouldRender!
+          ? _getGridView()
+          : PlaceHolderWidget(widget.filesInDay.length, widget.photoGridSize!),
+    );
   }
 
   Widget _getGridView() {
@@ -470,6 +503,7 @@ class _LazyLoadingGridViewState extends State<LazyLoadingGridView> {
                       ? thumbnailLargeSize
                       : thumbnailSmallSize,
                   shouldShowOwnerAvatar: !isFileSelected,
+                  gridVisibilityNotifier: _gridVisibilityNotifier,
                 ),
               ),
             ),

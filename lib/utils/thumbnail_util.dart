@@ -20,7 +20,7 @@ import 'package:photos/utils/file_uploader_util.dart';
 import 'package:photos/utils/file_util.dart';
 
 final _logger = Logger("ThumbnailUtil");
-const int kMaximumConcurrentDownloads = 10;
+const int kMaximumConcurrentDownloads = 80;
 int downloaderReqInitCounter = 0;
 
 final _uploadIDToDownloadItem = <int, FileDownloadItem>{};
@@ -45,6 +45,11 @@ Future<Uint8List> getThumbnailFromServer(File file) async {
 
   // Check if there's already in flight request for fetching thumbnail from the
   // server
+  print(
+    "Entries in uploadedIDToDownloadItem : " +
+        _uploadIDToDownloadItem.entries.length.toString() +
+        "---------",
+  );
   if (!_uploadIDToDownloadItem.containsKey(file.uploadedFileID)) {
     final item =
         FileDownloadItem(file, Completer<Uint8List>(), CancelToken(), 1);
@@ -57,7 +62,7 @@ Future<Uint8List> getThumbnailFromServer(File file) async {
       item.cancelToken.cancel();
       item.completer.completeError(RequestCancelledError());
     }
-    print("File id : " + file.generatedID.toString());
+    print("File uploadedID : " + file.uploadedFileID.toString());
 
     _downloadQueue.add(file.uploadedFileID!);
     _downloadItem(item);
@@ -123,6 +128,7 @@ void _downloadItem(FileDownloadItem item) async {
     downloaderReqInitCounter++;
     debugPrint("Download counter $downloaderReqInitCounter");
     await _downloadAndDecryptThumbnail(item);
+    // print("Downloaded " + item.file.uploadedFileID.toString() + "---------");
   } catch (e, s) {
     _logger.severe(
       "Failed to download thumbnail " + item.file.toString(),
@@ -131,6 +137,11 @@ void _downloadItem(FileDownloadItem item) async {
     );
     item.completer.completeError(e);
   }
+  print(
+    "length of queue in _downloadItem: " +
+        _downloadQueue.length.toString() +
+        "-+-+-+",
+  );
   _downloadQueue.removeWhere((element) => element == item.file.uploadedFileID);
   _uploadIDToDownloadItem.remove(item.file.uploadedFileID);
 }
@@ -173,7 +184,7 @@ Future<void> _downloadAndDecryptThumbnail(FileDownloadItem item) async {
     await cachedThumbnail.delete();
   }
   // data is already cached in-memory, no need to await on dist write
-  unawaited(cachedThumbnail.writeAsBytes(data));
+  // unawaited(cachedThumbnail.writeAsBytes(data));
   if (_uploadIDToDownloadItem.containsKey(file.uploadedFileID)) {
     try {
       item.completer.complete(data);

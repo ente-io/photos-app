@@ -32,6 +32,7 @@ class ThumbnailWidget extends StatefulWidget {
   final Duration? serverLoadDeferDuration;
   final int thumbnailSize;
   final bool shouldShowOwnerAvatar;
+  final ValueNotifier<bool>? gridVisibilityNotifier;
 
   ThumbnailWidget(
     this.file, {
@@ -45,6 +46,7 @@ class ThumbnailWidget extends StatefulWidget {
     this.diskLoadDeferDuration,
     this.serverLoadDeferDuration,
     this.thumbnailSize = thumbnailSmallSize,
+    this.gridVisibilityNotifier,
   }) : super(key: key ?? Key(file!.tag));
 
   @override
@@ -59,9 +61,13 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
   bool _isLoadingRemoteThumbnail = false;
   bool _errorLoadingRemoteThumbnail = false;
   ImageProvider? _imageProvider;
+  late int setStateCount;
+  late int requestCancelledCount;
 
   @override
   void initState() {
+    setStateCount = 0;
+    requestCancelledCount = 0;
     super.initState();
   }
 
@@ -289,17 +295,45 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
           _logger.info(
             "Thumbnail request was aborted although it is in view, will retry",
           );
+          requestCancelledCount += 1;
+          print(
+            "Request cancelled count: " +
+                requestCancelledCount.toString() +
+                "------------",
+          );
           _reset();
-          Future.delayed(const Duration(seconds: 2), () {
-            if (mounted) {
-              setState(() {});
-            }
-          });
+          // setState(() {});
+          // Future.delayed(const Duration(seconds: 1), () {
+          //   if (mounted) {
+          //     setState(() {
+          //       setStateCount += 1;
+          //       print("setState count: " +
+          //           setStateCount.toString() +
+          //           "---------");
+          //     });
+          //   }
+          // });
+          // if ((widget.gridVisibilityNotifier?.value ?? true) && mounted) {
+          //   setState(() {});
+          // }
+          widget.gridVisibilityNotifier
+              ?.addListener(_gridVisibilityNotifierListener);
+          // widget.gridVisibilityNotifier
+          //     ?.removeListener(_gridVisibilityNotifierListener);
         }
       } else {
         _logger.severe("Could not load image " + widget.file.toString(), e);
         _errorLoadingRemoteThumbnail = true;
       }
+    }
+  }
+
+  void _gridVisibilityNotifierListener() {
+    if (widget.gridVisibilityNotifier!.value && mounted) {
+      setState(() {
+        setStateCount += 1;
+        print("setState count: " + setStateCount.toString() + "---------");
+      });
     }
   }
 
