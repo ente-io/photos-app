@@ -1,5 +1,3 @@
-
-
 import 'dart:async';
 import 'dart:math';
 
@@ -13,6 +11,7 @@ import 'package:photos/events/collection_updated_event.dart';
 import 'package:photos/events/local_photos_updated_event.dart';
 import 'package:photos/events/tab_changed_event.dart';
 import 'package:photos/events/user_logged_out_event.dart';
+import 'package:photos/models/collection.dart';
 import 'package:photos/models/collection_items.dart';
 import 'package:photos/models/gallery_type.dart';
 import 'package:photos/services/collections_service.dart';
@@ -39,7 +38,8 @@ class _SharedCollectionGalleryState extends State<SharedCollectionGallery>
     with AutomaticKeepAliveClientMixin {
   final Logger _logger = Logger("SharedCollectionGallery");
   late StreamSubscription<LocalPhotosUpdatedEvent> _localFilesSubscription;
-  late StreamSubscription<CollectionUpdatedEvent> _collectionUpdatesSubscription;
+  late StreamSubscription<CollectionUpdatedEvent>
+      _collectionUpdatesSubscription;
   late StreamSubscription<UserLoggedOutEvent> _loggedOutEvent;
 
   @override
@@ -70,12 +70,22 @@ class _SharedCollectionGalleryState extends State<SharedCollectionGallery>
         final List<CollectionWithThumbnail> outgoing = [];
         final List<CollectionWithThumbnail> incoming = [];
         for (final file in files) {
-          final c =
-              CollectionsService.instance.getCollectionByID(file.collectionID!)!;
+          if (file.collectionID == null) {
+            _logger.severe("collection id should not be null");
+            continue;
+          }
+          final Collection? c =
+              CollectionsService.instance.getCollectionByID(file.collectionID!);
+          if (c == null) {
+            _logger
+                .severe("shared collection is not cached ${file.collectionID}");
+            CollectionsService.instance
+                .fetchCollectionByID(file.collectionID!)
+                .ignore();
+            continue;
+          }
           if (c.owner!.id == Configuration.instance.getUserID()) {
-            if (c.sharees!.isNotEmpty ||
-                c.publicURLs!.isNotEmpty ||
-                c.isSharedFilesCollection()) {
+            if (c.hasSharees || c.hasLink || c.isSharedFilesCollection()) {
               outgoing.add(
                 CollectionWithThumbnail(
                   c,
@@ -114,8 +124,12 @@ class _SharedCollectionGalleryState extends State<SharedCollectionGallery>
         if (snapshot.hasData) {
           return _getSharedCollectionsGallery(snapshot.data!);
         } else if (snapshot.hasError) {
-          _logger.shout(snapshot.error);
-          return Center(child: Text(snapshot.error.toString()));
+          _logger.severe(
+            "critical: failed to load share gallery",
+            snapshot.error,
+            snapshot.stackTrace,
+          );
+          return const Center(child: Text("Something went wrong."));
         } else {
           return const EnteLoadingWidget();
         }
@@ -269,27 +283,29 @@ class OutgoingCollectionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sharees = <String?>[];
-    for (int index = 0; index < c.collection.sharees!.length; index++) {
-      final sharee = c.collection.sharees![index]!;
-      final name =
-          (sharee.name?.isNotEmpty ?? false) ? sharee.name : sharee.email;
-      if (index < 2) {
-        sharees.add(name);
-      } else {
-        final remaining = c.collection.sharees!.length - index;
-        if (remaining == 1) {
-          // If it's the last sharee
-          sharees.add(name);
+    final shareesName = <String>[];
+    if (c.collection.hasSharees) {
+      for (int index = 0; index < c.collection.sharees!.length; index++) {
+        final sharee = c.collection.sharees![index]!;
+        final String name =
+            (sharee.name?.isNotEmpty ?? false) ? sharee.name! : sharee.email;
+        if (index < 2) {
+          shareesName.add(name);
         } else {
-          sharees.add(
-            "and " +
-                remaining.toString() +
-                " other" +
-                (remaining > 1 ? "s" : ""),
-          );
+          final remaining = c.collection.sharees!.length - index;
+          if (remaining == 1) {
+            // If it's the last sharee
+            shareesName.add(name);
+          } else {
+            shareesName.add(
+              "and " +
+                  remaining.toString() +
+                  " other" +
+                  (remaining > 1 ? "s" : ""),
+            );
+          }
+          break;
         }
-        break;
       }
     }
     return GestureDetector(
@@ -326,22 +342,22 @@ class OutgoingCollectionItem extends StatelessWidget {
                         ),
                       ),
                       const Padding(padding: EdgeInsets.all(2)),
-                      c.collection.publicURLs!.isEmpty
-                          ? Container()
-                          : (c.collection.publicURLs!.first!.isExpired
+                      c.collection.hasLink
+                          ? (c.collection.publicURLs!.first!.isExpired
                               ? const Icon(
                                   Icons.link,
                                   color: warning500,
                                 )
-                              : const Icon(Icons.link)),
+                              : const Icon(Icons.link))
+                          : Container(),
                     ],
                   ),
-                  sharees.isEmpty
+                  shareesName.isEmpty
                       ? Container()
                       : Padding(
                           padding: const EdgeInsets.fromLTRB(0, 4, 0, 0),
                           child: Text(
-                            "Shared with " + sharees.join(", "),
+                            "Shared with " + shareesName.join(", "),
                             style: TextStyle(
                               fontSize: 14,
                               color: Theme.of(context).primaryColorLight,

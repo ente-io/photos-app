@@ -6,7 +6,7 @@ import 'package:photos/events/force_reload_home_gallery_event.dart';
 import 'package:photos/theme/ente_theme.dart';
 import 'package:photos/ui/components/captioned_text_widget.dart';
 import 'package:photos/ui/components/icon_button_widget.dart';
-import 'package:photos/ui/components/menu_item_widget.dart';
+import 'package:photos/ui/components/menu_item_widget/menu_item_widget.dart';
 import 'package:photos/ui/components/title_bar_title_widget.dart';
 import 'package:photos/ui/components/title_bar_widget.dart';
 import 'package:photos/ui/tools/debug/app_storage_viewer.dart';
@@ -78,7 +78,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                                   Icons.chevron_right_outlined,
                                   color: colorScheme.strokeBase,
                                 ),
-                                borderRadius: 8,
+                                singleBorderRadius: 8,
                                 alignCaptionedTextToLeft: true,
                                 // isBottomBorderRadiusRemoved: true,
                                 isGestureDetectorDisabled: true,
@@ -96,9 +96,9 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                                 Icons.chevron_right_outlined,
                                 color: colorScheme.strokeBase,
                               ),
-                              borderRadius: 8,
+                              singleBorderRadius: 8,
                               alignCaptionedTextToLeft: true,
-                              onTap: () {
+                              onTap: () async {
                                 routeToPage(context, const AppStorageViewer());
                               },
                             ),

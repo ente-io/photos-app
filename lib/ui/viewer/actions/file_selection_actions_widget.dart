@@ -1,13 +1,13 @@
 import 'package:fast_base58/fast_base58.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:page_transition/page_transition.dart';
 import 'package:photos/core/configuration.dart';
 import 'package:photos/models/collection.dart';
 import 'package:photos/models/device_collection.dart';
+import 'package:photos/models/file.dart';
+import 'package:photos/models/files_split.dart';
 import 'package:photos/models/gallery_type.dart';
 import 'package:photos/models/magic_metadata.dart';
-import 'package:photos/models/selected_file_breakup.dart';
 import 'package:photos/models/selected_files.dart';
 import 'package:photos/services/collections_service.dart';
 import 'package:photos/services/hidden_service.dart';
@@ -19,7 +19,7 @@ import 'package:photos/ui/components/blur_menu_item_widget.dart';
 import 'package:photos/ui/components/bottom_action_bar/expanded_menu_widget.dart';
 import 'package:photos/ui/components/button_widget.dart';
 import 'package:photos/ui/components/models/button_type.dart';
-import 'package:photos/ui/create_collection_page.dart';
+import 'package:photos/ui/create_collection_sheet.dart';
 import 'package:photos/ui/sharing/manage_links_widget.dart';
 import 'package:photos/utils/delete_file_util.dart';
 import 'package:photos/utils/magic_util.dart';
@@ -47,8 +47,9 @@ class FileSelectionActionWidget extends StatefulWidget {
 
 class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
   late int currentUserID;
-  late SelectedFileSplit split;
+  late FilesSplit split;
   late CollectionActions collectionActions;
+  late bool isCollectionOwner;
 
   // _cachedCollectionForSharedLink is primarly used to avoid creating duplicate
   // links if user keeps on creating Create link button after selecting
@@ -58,9 +59,11 @@ class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
   @override
   void initState() {
     currentUserID = Configuration.instance.getUserID()!;
-    split = widget.selectedFiles.split(currentUserID);
+    split = FilesSplit.split(<File>[], currentUserID);
     widget.selectedFiles.addListener(_selectFileChangeListener);
     collectionActions = CollectionActions(CollectionsService.instance);
+    isCollectionOwner =
+        widget.collection != null && widget.collection!.isOwner(currentUserID);
     super.initState();
   }
 
@@ -74,7 +77,7 @@ class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
     if (_cachedCollectionForSharedLink != null) {
       _cachedCollectionForSharedLink = null;
     }
-    split = widget.selectedFiles.split(currentUserID);
+    split = FilesSplit.split(widget.selectedFiles.files, currentUserID);
     if (mounted) {
       setState(() => {});
     }
@@ -88,17 +91,21 @@ class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
         ? " (${split.ownedByCurrentUser.length})"
             ""
         : "";
+    final int removeCount = split.ownedByCurrentUser.length +
+        (isCollectionOwner ? split.ownedByOtherUsers.length : 0);
+    final String removeSuffix = showPrefix
+        ? " ($removeCount)"
+            ""
+        : "";
     final String suffixInPending = split.ownedByOtherUsers.isNotEmpty
         ? " (${split.ownedByCurrentUser.length + split.pendingUploads.length})"
             ""
         : "";
+
     final bool anyOwnedFiles =
         split.pendingUploads.isNotEmpty || split.ownedByCurrentUser.isNotEmpty;
     final bool anyUploadedFiles = split.ownedByCurrentUser.isNotEmpty;
-    bool showRemoveOption = widget.type.showRemoveFromAlbum();
-    if (showRemoveOption && widget.type == GalleryType.sharedCollection) {
-      showRemoveOption = split.ownedByCurrentUser.isNotEmpty;
-    }
+    final bool showRemoveOption = widget.type.showRemoveFromAlbum();
     debugPrint('$runtimeType building  $mounted');
     final colorScheme = getEnteColorScheme(context);
     final List<List<BlurMenuItemWidget>> items = [];
@@ -156,9 +163,9 @@ class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
       secondList.add(
         BlurMenuItemWidget(
           leadingIcon: Icons.remove_outlined,
-          labelText: "Remove from album$suffix",
+          labelText: "Remove from album$removeSuffix",
           menuItemColor: colorScheme.fillFaint,
-          onTap: anyUploadedFiles ? _removeFilesFromAlbum : null,
+          onTap: removeCount > 0 ? _removeFilesFromAlbum : null,
         ),
       );
     }
@@ -233,6 +240,28 @@ class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
       );
     }
 
+    if (widget.type.showRestoreOption()) {
+      secondList.add(
+        BlurMenuItemWidget(
+          leadingIcon: Icons.visibility,
+          labelText: "Restore",
+          menuItemColor: colorScheme.fillFaint,
+          onTap: _restore,
+        ),
+      );
+    }
+
+    if (widget.type.showPermanentlyDeleteOption()) {
+      secondList.add(
+        BlurMenuItemWidget(
+          leadingIcon: Icons.delete_forever_outlined,
+          labelText: "Permanently delete",
+          menuItemColor: colorScheme.fillFaint,
+          onTap: _permanentlyDelete,
+        ),
+      );
+    }
+
     if (firstList.isNotEmpty || secondList.isNotEmpty) {
       if (firstList.isNotEmpty) {
         items.add(firstList);
@@ -254,7 +283,12 @@ class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
       widget.selectedFiles
           .unSelectAll(split.ownedByOtherUsers.toSet(), skipNotify: true);
     }
-    await _selectionCollectionForAction(CollectionActionType.moveFiles);
+    createCollectionSheet(
+      widget.selectedFiles,
+      null,
+      context,
+      actionType: CollectionActionType.moveFiles,
+    );
   }
 
   Future<void> _addToAlbum() async {
@@ -262,7 +296,11 @@ class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
       widget.selectedFiles
           .unSelectAll(split.ownedByOtherUsers.toSet(), skipNotify: true);
     }
-    await _selectionCollectionForAction(CollectionActionType.addFiles);
+    createCollectionSheet(
+      widget.selectedFiles,
+      null,
+      context,
+    );
   }
 
   Future<void> _onDeleteClick() async {
@@ -270,16 +308,21 @@ class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
   }
 
   Future<void> _removeFilesFromAlbum() async {
-    if (split.pendingUploads.isNotEmpty || split.ownedByOtherUsers.isNotEmpty) {
+    if (split.pendingUploads.isNotEmpty) {
       widget.selectedFiles
           .unSelectAll(split.pendingUploads.toSet(), skipNotify: true);
+    }
+    if (!isCollectionOwner && split.ownedByOtherUsers.isNotEmpty) {
       widget.selectedFiles
           .unSelectAll(split.ownedByOtherUsers.toSet(), skipNotify: true);
     }
-    await collectionActions.showRemoveFromCollectionSheet(
+    final bool removingOthersFile =
+        isCollectionOwner && split.ownedByOtherUsers.isNotEmpty;
+    await collectionActions.showRemoveFromCollectionSheetV2(
       context,
       widget.collection!,
       widget.selectedFiles,
+      removingOthersFile,
     );
   }
 
@@ -338,7 +381,12 @@ class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
       widget.selectedFiles
           .unSelectAll(split.ownedByOtherUsers.toSet(), skipNotify: true);
     }
-    await _selectionCollectionForAction(CollectionActionType.unHide);
+    createCollectionSheet(
+      widget.selectedFiles,
+      null,
+      context,
+      actionType: CollectionActionType.unHide,
+    );
   }
 
   Future<void> _onCreatedSharedLinkClicked() async {
@@ -407,19 +455,21 @@ class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
     }
   }
 
-  Future<Object?> _selectionCollectionForAction(
-    CollectionActionType type,
-  ) async {
-    return Navigator.push(
+  void _restore() {
+    createCollectionSheet(
+      widget.selectedFiles,
+      null,
       context,
-      PageTransition(
-        type: PageTransitionType.bottomToTop,
-        child: CreateCollectionPage(
-          widget.selectedFiles,
-          null,
-          actionType: type,
-        ),
-      ),
+      actionType: CollectionActionType.restoreFiles,
     );
+  }
+
+  Future<void> _permanentlyDelete() async {
+    if (await deleteFromTrash(
+      context,
+      widget.selectedFiles.files.toList(),
+    )) {
+      widget.selectedFiles.clearAll();
+    }
   }
 }
