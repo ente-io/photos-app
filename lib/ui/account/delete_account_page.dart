@@ -131,8 +131,8 @@ class DeleteAccountPage extends StatelessWidget {
     );
 
     if (hasAuthenticated) {
-      final choice = await showNewChoiceDialog(
-        context: context,
+      final choice = await showChoiceDialog(
+        context,
         title: 'Are you sure you want to delete your account?',
         body:
             'Your uploaded data will be scheduled for deletion, and your account'

@@ -76,7 +76,7 @@ class _GalleryState extends State<Gallery> {
   StreamSubscription<TabDoubleTapEvent>? _tabDoubleTapEvent;
   final _forceReloadEventSubscriptions = <StreamSubscription<Event>>[];
   String? _logTag;
-  int? _photoGridSize;
+  late int _photoGridSize;
 
   @override
   void initState() {
@@ -258,11 +258,16 @@ class _GalleryState extends State<Gallery> {
         return gallery;
       },
       labelTextBuilder: (int index) {
-        return getMonthAndYear(
-          DateTime.fromMicrosecondsSinceEpoch(
-            _collatedFiles[index][0].creationTime!,
-          ),
-        );
+        try {
+          return getMonthAndYear(
+            DateTime.fromMicrosecondsSinceEpoch(
+              _collatedFiles[index][0].creationTime!,
+            ),
+          );
+        } catch (e) {
+          _logger.severe("label text builder failed", e);
+          return "";
+        }
       },
       thumbBackgroundColor:
           Theme.of(context).colorScheme.galleryThumbBackgroundColor,

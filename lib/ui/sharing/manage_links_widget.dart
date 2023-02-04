@@ -12,10 +12,9 @@ import 'package:photos/services/collections_service.dart';
 import 'package:photos/theme/colors.dart';
 import 'package:photos/theme/ente_theme.dart';
 import 'package:photos/ui/actions/collection/collection_sharing_actions.dart';
-import 'package:photos/ui/common/dialogs.dart';
 import 'package:photos/ui/components/captioned_text_widget.dart';
 import 'package:photos/ui/components/divider_widget.dart';
-import 'package:photos/ui/components/menu_item_widget.dart';
+import 'package:photos/ui/components/menu_item_widget/menu_item_widget.dart';
 import 'package:photos/ui/components/menu_section_description_widget.dart';
 import 'package:photos/utils/crypto_util.dart';
 import 'package:photos/utils/date_time_util.dart';
@@ -82,7 +81,6 @@ class _ManageSharedLinkWidgetState extends State<ManageSharedLinkWidget> {
                     ),
                     alignCaptionedTextToLeft: true,
                     menuItemColor: getEnteColorScheme(context).fillFaint,
-                    pressedColor: getEnteColorScheme(context).fillFaint,
                     trailingWidget: Switch.adaptive(
                       value: widget.collection!.publicURLs?.firstOrNull
                               ?.enableCollect ??
@@ -114,6 +112,7 @@ class _ManageSharedLinkWidgetState extends State<ManageSharedLinkWidget> {
                     ),
                     trailingIcon: Icons.chevron_right,
                     menuItemColor: enteColorScheme.fillFaint,
+                    surfaceExecutionStates: false,
                     onTap: () async {
                       await showPicker();
                     },
@@ -141,6 +140,7 @@ class _ManageSharedLinkWidgetState extends State<ManageSharedLinkWidget> {
                     onTap: () async {
                       await _showDeviceLimitPicker();
                     },
+                    surfaceExecutionStates: false,
                   ),
                   DividerWidget(
                     dividerType: DividerType.menuNoIcon,
@@ -154,29 +154,11 @@ class _ManageSharedLinkWidgetState extends State<ManageSharedLinkWidget> {
                     isBottomBorderRadiusRemoved: true,
                     isTopBorderRadiusRemoved: true,
                     menuItemColor: getEnteColorScheme(context).fillFaint,
-                    pressedColor: getEnteColorScheme(context).fillFaint,
                     trailingWidget: Switch.adaptive(
                       value: widget.collection!.publicURLs?.firstOrNull
                               ?.enableDownload ??
                           true,
                       onChanged: (value) async {
-                        if (!value) {
-                          final choice = await showChoiceDialog(
-                            context,
-                            'Disable downloads',
-                            'Are you sure that you want to disable the download button for files?',
-                            firstAction: 'No',
-                            secondAction: 'Yes',
-                            firstActionColor:
-                                Theme.of(context).colorScheme.greenText,
-                            secondActionColor: Theme.of(context)
-                                .colorScheme
-                                .inverseBackgroundColor,
-                          );
-                          if (choice != DialogUserChoice.secondChoice) {
-                            return;
-                          }
-                        }
                         await _updateUrlSettings(
                           context,
                           {'enableDownload': value},
@@ -203,7 +185,6 @@ class _ManageSharedLinkWidgetState extends State<ManageSharedLinkWidget> {
                     alignCaptionedTextToLeft: true,
                     isTopBorderRadiusRemoved: true,
                     menuItemColor: getEnteColorScheme(context).fillFaint,
-                    pressedColor: getEnteColorScheme(context).fillFaint,
                     trailingWidget: Switch.adaptive(
                       value: widget.collection!.publicURLs?.firstOrNull
                               ?.passwordEnabled ??
@@ -242,12 +223,11 @@ class _ManageSharedLinkWidgetState extends State<ManageSharedLinkWidget> {
                     leadingIcon: Icons.remove_circle_outline,
                     leadingIconColor: warning500,
                     menuItemColor: getEnteColorScheme(context).fillFaint,
-                    pressedColor: getEnteColorScheme(context).fillFaint,
+                    surfaceExecutionStates: false,
                     onTap: () async {
-                      final bool result = await sharingActions.publicLinkToggle(
+                      final bool result = await sharingActions.disableUrl(
                         context,
                         widget.collection!,
-                        false,
                       );
                       if (result && mounted) {
                         Navigator.of(context).pop();
@@ -265,10 +245,6 @@ class _ManageSharedLinkWidgetState extends State<ManageSharedLinkWidget> {
   }
 
   Future<void> showPicker() async {
-    Widget getOptionText(String text) {
-      return Text(text, style: Theme.of(context).textTheme.subtitle1);
-    }
-
     return showCupertinoModalPopup(
       context: context,
       builder: (context) {
@@ -362,8 +338,10 @@ class _ManageSharedLinkWidgetState extends State<ManageSharedLinkWidget> {
                 diameterRatio: 1,
                 children: _expiryOptions
                     .map(
-                      (e) => Text(e.item2,
-                          style: Theme.of(context).textTheme.subtitle1),
+                      (e) => Text(
+                        e.item2,
+                        style: Theme.of(context).textTheme.subtitle1,
+                      ),
                     )
                     .toList(),
               ),

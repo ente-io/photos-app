@@ -610,6 +610,19 @@ class FilesDB {
     return FileLoadResult(files, files.length == limit);
   }
 
+  Future<List<File>> getAllFilesCollection(int collectionID) async {
+    final db = await instance.database;
+    const String whereClause = '$columnCollectionID = ?';
+    final List<Object> whereArgs = [collectionID];
+    final results = await db.query(
+      filesTable,
+      where: whereClause,
+      whereArgs: whereArgs,
+    );
+    final files = convertToFiles(results);
+    return files;
+  }
+
   Future<FileLoadResult> getFilesInCollections(
     List<int> collectionIDs,
     int startTime,
@@ -750,13 +763,15 @@ class FilesDB {
     return convertToFiles(results)[0];
   }
 
-  Future<Set<String>> getExistingLocalFileIDs() async {
+  Future<Set<String>> getExistingLocalFileIDs(int ownerID) async {
     final db = await instance.database;
     final rows = await db.query(
       filesTable,
       columns: [columnLocalID],
       distinct: true,
-      where: '$columnLocalID IS NOT NULL',
+      where: '$columnLocalID IS NOT NULL AND ($columnOwnerID IS NULL OR '
+          '$columnOwnerID = ?)',
+      whereArgs: [ownerID],
     );
     final result = <String>{};
     for (final row in rows) {

@@ -117,6 +117,8 @@ class UserService {
     }
   }
 
+  // getPublicKey returns null value if email id is not
+  // associated with another ente account
   Future<String?> getPublicKey(String email) async {
     try {
       final response = await _enteDio.get(
@@ -127,8 +129,10 @@ class UserService {
       await PublicKeysDB.instance.setKey(PublicKey(email, publicKey));
       return publicKey;
     } on DioError catch (e) {
-      _logger.info(e);
-      return null;
+      if (e.response != null && e.response?.statusCode == 404) {
+        return null;
+      }
+      rethrow;
     }
   }
 
@@ -197,21 +201,23 @@ class UserService {
   }
 
   Future<void> logout(BuildContext context) async {
-    final dialog = createProgressDialog(context, "Logging out...");
-    await dialog.show();
     try {
       final response = await _enteDio.post("/users/logout");
       if (response.statusCode == 200) {
         await Configuration.instance.logout();
-        await dialog.hide();
         Navigator.of(context).popUntil((route) => route.isFirst);
       } else {
         throw Exception("Log out action failed");
       }
     } catch (e) {
       _logger.severe(e);
-      await dialog.hide();
-      showGenericErrorDialog(context: context);
+      //This future is for waiting for the dialog from which logout() is called
+      //to close and only then to show the error dialog.
+      Future.delayed(
+        const Duration(milliseconds: 150),
+        () => showGenericErrorDialog(context: context),
+      );
+      rethrow;
     }
   }
 
@@ -397,8 +403,8 @@ class UserService {
         kekSalt: keyAttributes.kekSalt,
         encryptedKey: keyAttributes.encryptedKey,
         keyDecryptionNonce: keyAttributes.keyDecryptionNonce,
-        memLimit: keyAttributes.memLimit,
-        opsLimit: keyAttributes.opsLimit,
+        memLimit: keyAttributes.memLimit!,
+        opsLimit: keyAttributes.opsLimit!,
       );
       await _enteDio.put(
         "/users/keys",
@@ -414,8 +420,8 @@ class UserService {
   Future<void> setRecoveryKey(KeyAttributes keyAttributes) async {
     try {
       final setRecoveryKeyRequest = SetRecoveryKeyRequest(
-        keyAttributes.masterKeyEncryptedWithRecoveryKey,
-        keyAttributes.masterKeyDecryptionNonce,
+        keyAttributes.masterKeyEncryptedWithRecoveryKey!,
+        keyAttributes.masterKeyDecryptionNonce!,
         keyAttributes.recoveryKeyEncryptedWithMasterKey!,
         keyAttributes.recoveryKeyDecryptionNonce!,
       );

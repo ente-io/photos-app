@@ -32,7 +32,7 @@ class LazyLoadingGallery extends StatefulWidget {
   final String tag;
   final String? logTag;
   final Stream<int> currentIndexStream;
-  final int? photoGirdSize;
+  final int photoGirdSize;
 
   LazyLoadingGallery(
     this.files,
@@ -190,7 +190,7 @@ class _LazyLoadingGalleryState extends State<LazyLoadingGallery> {
             getDayWidget(
               context,
               _files[0].creationTime!,
-              widget.photoGirdSize!,
+              widget.photoGirdSize,
             ),
             ValueListenableBuilder(
               valueListenable: _showSelectAllButton,
@@ -234,7 +234,7 @@ class _LazyLoadingGalleryState extends State<LazyLoadingGallery> {
             ? _getGallery()
             : PlaceHolderWidget(
                 _files.length,
-                widget.photoGirdSize!,
+                widget.photoGirdSize,
               ),
       ],
     );
@@ -242,9 +242,7 @@ class _LazyLoadingGalleryState extends State<LazyLoadingGallery> {
 
   Widget _getGallery() {
     final List<Widget> childGalleries = [];
-    final subGalleryItemLimit = widget.photoGirdSize! < photoGridSizeDefault
-        ? subGalleryLimitMin
-        : subGalleryLimitDefault;
+    final subGalleryItemLimit = widget.photoGirdSize * subGalleryMultiplier;
     for (int index = 0; index < _files.length; index += subGalleryItemLimit) {
       childGalleries.add(
         LazyLoadingGridView(
@@ -354,7 +352,7 @@ class _LazyLoadingGridViewState extends State<LazyLoadingGridView> {
 
   Widget _getRecyclableView() {
     return VisibilityDetector(
-      key: UniqueKey(),
+      key: Key("gallery" + widget.filesInDay.first.tag),
       onVisibilityChanged: (visibility) {
         final shouldRender = visibility.visibleFraction > 0;
         if (mounted && shouldRender != _shouldRender) {
@@ -372,7 +370,7 @@ class _LazyLoadingGridViewState extends State<LazyLoadingGridView> {
   Widget _getNonRecyclableView() {
     if (!_shouldRender!) {
       return VisibilityDetector(
-        key: UniqueKey(),
+        key: Key("gallery" + widget.filesInDay.first.tag),
         onVisibilityChanged: (visibility) {
           if (mounted && visibility.visibleFraction > 0 && !_shouldRender!) {
             setState(() {
@@ -511,11 +509,10 @@ class _LazyLoadingGridViewState extends State<LazyLoadingGridView> {
   void _toggleSelectAllFromDayListener() {
     if (widget.selectedFiles.files.containsAll(widget.filesInDay.toSet())) {
       setState(() {
-        widget.selectedFiles
-            .unSelectAll(widget.filesInDay.toSet() as Set<File>);
+        widget.selectedFiles.unSelectAll(widget.filesInDay.toSet());
       });
     } else {
-      widget.selectedFiles.selectAll(widget.filesInDay.toSet() as Set<File>);
+      widget.selectedFiles.selectAll(widget.filesInDay.toSet());
     }
   }
 }

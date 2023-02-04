@@ -39,6 +39,11 @@ class ButtonWidget extends StatelessWidget {
   final bool isDisabled;
   final ButtonSize buttonSize;
 
+  ///Setting this flag to true will show a success confirmation as a 'check'
+  ///icon once the onTap(). This is expected to be used only if time taken to
+  ///execute onTap() takes less than debouce time.
+  final bool shouldShowSuccessConfirmation;
+
   ///Setting this flag to false will restrict the loading and success states of
   ///the button from surfacing on the UI. The ExecutionState of the button will
   ///change irrespective of the value of this flag. Only that it won't be
@@ -79,6 +84,7 @@ class ButtonWidget extends StatelessWidget {
     this.iconColor,
     this.shouldSurfaceExecutionStates = true,
     this.progressStatus,
+    this.shouldShowSuccessConfirmation = false,
     super.key,
   });
 
@@ -109,7 +115,6 @@ class ButtonWidget extends StatelessWidget {
         buttonType.defaultBorderColor(colorScheme, buttonSize);
     buttonStyle.pressedBorderColor = buttonType.pressedBorderColor(
       colorScheme: colorScheme,
-      inverseColorScheme: inverseColorScheme,
       buttonSize: buttonSize,
     );
     buttonStyle.disabledBorderColor =
@@ -145,6 +150,7 @@ class ButtonWidget extends StatelessWidget {
       buttonAction: buttonAction,
       shouldSurfaceExecutionStates: shouldSurfaceExecutionStates,
       progressStatus: progressStatus,
+      shouldShowSuccessConfirmation: shouldShowSuccessConfirmation,
     );
   }
 }
@@ -161,6 +167,7 @@ class ButtonChildWidget extends StatefulWidget {
   final bool isInAlert;
   final bool shouldSurfaceExecutionStates;
   final ValueNotifier<String>? progressStatus;
+  final bool shouldShowSuccessConfirmation;
 
   const ButtonChildWidget({
     required this.buttonStyle,
@@ -169,6 +176,7 @@ class ButtonChildWidget extends StatefulWidget {
     required this.buttonSize,
     required this.isInAlert,
     required this.shouldSurfaceExecutionStates,
+    required this.shouldShowSuccessConfirmation,
     this.progressStatus,
     this.onTap,
     this.labelText,
@@ -198,31 +206,25 @@ class _ButtonChildWidgetState extends State<ButtonChildWidget> {
 
   @override
   void initState() {
-    progressStatus = widget.progressStatus;
-    checkIconColor = widget.buttonStyle.checkIconColor ??
-        widget.buttonStyle.defaultIconColor;
-    loadingIconColor = widget.buttonStyle.defaultIconColor;
-    if (widget.isDisabled) {
-      buttonColor = widget.buttonStyle.disabledButtonColor ??
-          widget.buttonStyle.defaultButtonColor;
-      borderColor = widget.buttonStyle.disabledBorderColor ??
-          widget.buttonStyle.defaultBorderColor;
-      iconColor = widget.buttonStyle.disabledIconColor ??
-          widget.buttonStyle.defaultIconColor;
-      labelStyle = widget.buttonStyle.disabledLabelStyle ??
-          widget.buttonStyle.defaultLabelStyle;
-    } else {
-      buttonColor = widget.buttonStyle.defaultButtonColor;
-      borderColor = widget.buttonStyle.defaultBorderColor;
-      iconColor = widget.buttonStyle.defaultIconColor;
-      labelStyle = widget.buttonStyle.defaultLabelStyle;
-    }
-
+    _setButtonTheme();
     super.initState();
   }
 
   @override
+  void didUpdateWidget(covariant ButtonChildWidget oldWidget) {
+    _setButtonTheme();
+    super.didUpdateWidget(oldWidget);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (executionState == ExecutionState.successful) {
+      Future.delayed(Duration(seconds: widget.isInAlert ? 1 : 2), () {
+        setState(() {
+          executionState = ExecutionState.idle;
+        });
+      });
+    }
     return GestureDetector(
       onTap: _shouldRegisterGestures ? _onTap : null,
       onTapDown: _shouldRegisterGestures ? _onTapDown : null,
@@ -231,7 +233,9 @@ class _ButtonChildWidgetState extends State<ButtonChildWidget> {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: const BorderRadius.all(Radius.circular(4)),
-          border: Border.all(color: borderColor),
+          border: widget.buttonType == ButtonType.tertiaryCritical
+              ? Border.all(color: borderColor)
+              : null,
         ),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 16),
@@ -373,6 +377,28 @@ class _ButtonChildWidgetState extends State<ButtonChildWidget> {
     );
   }
 
+  void _setButtonTheme() {
+    progressStatus = widget.progressStatus;
+    checkIconColor = widget.buttonStyle.checkIconColor ??
+        widget.buttonStyle.defaultIconColor;
+    loadingIconColor = widget.buttonStyle.defaultIconColor;
+    if (widget.isDisabled) {
+      buttonColor = widget.buttonStyle.disabledButtonColor ??
+          widget.buttonStyle.defaultButtonColor;
+      borderColor = widget.buttonStyle.disabledBorderColor ??
+          widget.buttonStyle.defaultBorderColor;
+      iconColor = widget.buttonStyle.disabledIconColor ??
+          widget.buttonStyle.defaultIconColor;
+      labelStyle = widget.buttonStyle.disabledLabelStyle ??
+          widget.buttonStyle.defaultLabelStyle;
+    } else {
+      buttonColor = widget.buttonStyle.defaultButtonColor;
+      borderColor = widget.buttonStyle.defaultBorderColor;
+      iconColor = widget.buttonStyle.defaultIconColor;
+      labelStyle = widget.buttonStyle.defaultLabelStyle;
+    }
+  }
+
   bool get _shouldRegisterGestures =>
       !widget.isDisabled && executionState == ExecutionState.idle;
 
@@ -389,7 +415,14 @@ class _ButtonChildWidgetState extends State<ButtonChildWidget> {
         executionState = ExecutionState.error;
         _debouncer.cancelDebounce();
       });
+      widget.shouldShowSuccessConfirmation && _debouncer.isActive()
+          ? executionState = ExecutionState.successful
+          : null;
       _debouncer.cancelDebounce();
+      if (executionState == ExecutionState.successful) {
+        setState(() {});
+      }
+
       // when the time taken by widget.onTap is approximately equal to the debounce
       // time, the callback is getting executed when/after the if condition
       // below is executing/executed which results in execution state stuck at
@@ -400,22 +433,26 @@ class _ButtonChildWidgetState extends State<ButtonChildWidget> {
     if (executionState == ExecutionState.inProgress ||
         executionState == ExecutionState.error) {
       if (executionState == ExecutionState.inProgress) {
-        setState(() {
-          executionState = ExecutionState.successful;
-          Future.delayed(
-              Duration(seconds: widget.shouldSurfaceExecutionStates ? 2 : 0),
-              () {
-            widget.isInAlert
-                ? Navigator.of(context, rootNavigator: true)
-                    .pop(widget.buttonAction)
-                : null;
-            if (mounted) {
-              setState(() {
-                executionState = ExecutionState.idle;
-              });
-            }
+        if (mounted) {
+          setState(() {
+            executionState = ExecutionState.successful;
+            Future.delayed(
+                Duration(
+                  seconds: widget.shouldSurfaceExecutionStates
+                      ? (widget.isInAlert ? 1 : 2)
+                      : 0,
+                ), () {
+              widget.isInAlert
+                  ? _popWithButtonAction(context, widget.buttonAction)
+                  : null;
+              if (mounted) {
+                setState(() {
+                  executionState = ExecutionState.idle;
+                });
+              }
+            });
           });
-        });
+        }
       }
       if (executionState == ExecutionState.error) {
         setState(() {
@@ -423,18 +460,27 @@ class _ButtonChildWidgetState extends State<ButtonChildWidget> {
           widget.isInAlert
               ? Future.delayed(
                   const Duration(seconds: 0),
-                  () => Navigator.of(context, rootNavigator: true).pop(
-                    ButtonAction.error,
-                  ),
+                  () => _popWithButtonAction(context, ButtonAction.error),
                 )
               : null;
         });
       }
     } else {
       if (widget.isInAlert) {
-        Navigator.of(context).pop(widget.buttonAction);
+        Future.delayed(
+          Duration(seconds: widget.shouldShowSuccessConfirmation ? 1 : 0),
+          () => _popWithButtonAction(context, widget.buttonAction),
+        );
       }
     }
+  }
+
+  void _popWithButtonAction(BuildContext context, ButtonAction? buttonAction) {
+    Navigator.of(context).canPop()
+        ? Navigator.of(context).pop(
+            buttonAction,
+          )
+        : null;
   }
 
   void _onTapDown(details) {

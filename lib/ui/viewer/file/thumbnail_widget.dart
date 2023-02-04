@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
-import 'package:photos/core/cache/thumbnail_cache.dart';
+import 'package:photos/core/cache/thumbnail_in_memory_cache.dart';
 import 'package:photos/core/configuration.dart';
 import 'package:photos/core/constants.dart';
 import 'package:photos/core/errors.dart';
@@ -10,7 +10,6 @@ import 'package:photos/db/files_db.dart';
 import 'package:photos/db/trash_db.dart';
 import 'package:photos/events/files_updated_event.dart';
 import 'package:photos/events/local_photos_updated_event.dart';
-import 'package:photos/extensions/string_ext.dart';
 import 'package:photos/models/collection.dart';
 import 'package:photos/models/file.dart';
 import 'package:photos/models/file_type.dart';
@@ -128,11 +127,10 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
           );
         } else if (widget.file!.pubMagicMetadata!.uploaderName != null) {
           contentChildren.add(
-            // Use uploadName hashCode as userID so that different uploader
-            // get avatar color
+            // Use -1 as userID for enforcing black avatar color
             OwnerAvatarOverlayIcon(
               User(
-                id: widget.file!.pubMagicMetadata!.uploaderName.sumAsciiValues,
+                id: -1,
                 email: '',
                 name: widget.file!.pubMagicMetadata!.uploaderName,
               ),
@@ -187,7 +185,7 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
         !_isLoadingLocalThumbnail) {
       _isLoadingLocalThumbnail = true;
       final cachedSmallThumbnail =
-          ThumbnailLruCache.get(widget.file!, thumbnailSmallSize);
+          ThumbnailInMemoryLruCache.get(widget.file!, thumbnailSmallSize);
       if (cachedSmallThumbnail != null) {
         _imageProvider = Image.memory(cachedSmallThumbnail).image;
         _hasLoadedThumbnail = true;
@@ -240,7 +238,11 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
         final imageProvider = Image.memory(thumbData).image;
         _cacheAndRender(imageProvider);
       }
-      ThumbnailLruCache.put(widget.file!, thumbData, thumbnailSmallSize);
+      ThumbnailInMemoryLruCache.put(
+        widget.file!,
+        thumbData,
+        thumbnailSmallSize,
+      );
     }).catchError((e) {
       _logger.warning("Could not load image: ", e);
       _errorLoadingLocalThumbnail = true;
@@ -252,7 +254,7 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
         !_errorLoadingRemoteThumbnail &&
         !_isLoadingRemoteThumbnail) {
       _isLoadingRemoteThumbnail = true;
-      final cachedThumbnail = ThumbnailLruCache.get(widget.file!);
+      final cachedThumbnail = ThumbnailInMemoryLruCache.get(widget.file!);
       if (cachedThumbnail != null) {
         _imageProvider = Image.memory(cachedThumbnail).image;
         _hasLoadedThumbnail = true;
