@@ -1,8 +1,12 @@
 import 'dart:math';
 
 import 'package:confetti/confetti.dart';
+import "package:dio/dio.dart";
 import 'package:flutter/material.dart';
 import 'package:photos/core/constants.dart';
+import "package:photos/models/search/button_result.dart";
+import 'package:photos/models/typedefs.dart';
+import 'package:photos/theme/colors.dart';
 import 'package:photos/ui/common/loading_widget.dart';
 import 'package:photos/ui/common/progress_dialog.dart';
 import 'package:photos/ui/components/action_sheet_widget.dart';
@@ -13,7 +17,7 @@ import 'package:photos/ui/components/models/button_type.dart';
 typedef DialogBuilder = DialogWidget Function(BuildContext context);
 
 ///Will return null if dismissed by tapping outside
-Future<ButtonAction?> showErrorDialog(
+Future<ButtonResult?> showErrorDialog(
   BuildContext context,
   String title,
   String? body, {
@@ -35,8 +39,38 @@ Future<ButtonAction?> showErrorDialog(
   );
 }
 
+Future<ButtonResult?> showErrorDialogForException({
+  required BuildContext context,
+  required Exception exception,
+  bool isDismissible = true,
+  String apiErrorPrefix = "It looks like something went wrong.",
+}) async {
+  String errorMessage =
+      "It looks like something went wrong. Please retry after some time. If the error persists, please contact our support team.";
+  if (exception is DioError &&
+      exception.response != null &&
+      exception.response!.data["code"] != null) {
+    errorMessage =
+        "$apiErrorPrefix\n\nReason: " + exception.response!.data["code"];
+  }
+  return showDialogWidget(
+    context: context,
+    title: "Error",
+    icon: Icons.error_outline_outlined,
+    body: errorMessage,
+    isDismissible: isDismissible,
+    buttons: const [
+      ButtonWidget(
+        buttonType: ButtonType.secondary,
+        labelText: "OK",
+        isInAlert: true,
+      ),
+    ],
+  );
+}
+
 ///Will return null if dismissed by tapping outside
-Future<ButtonAction?> showGenericErrorDialog({
+Future<ButtonResult?> showGenericErrorDialog({
   required BuildContext context,
   bool isDismissible = true,
 }) async {
@@ -92,7 +126,7 @@ DialogWidget choiceDialog({
 }
 
 ///Will return null if dismissed by tapping outside
-Future<ButtonAction?> showChoiceDialog(
+Future<ButtonResult?> showChoiceDialog(
   BuildContext context, {
   required String title,
   String? body,
@@ -135,7 +169,7 @@ Future<ButtonAction?> showChoiceDialog(
 }
 
 ///Will return null if dismissed by tapping outside
-Future<ButtonAction?> showChoiceActionSheet(
+Future<ButtonResult?> showChoiceActionSheet(
   BuildContext context, {
   required String title,
   String? body,
@@ -201,7 +235,7 @@ ProgressDialog createProgressDialog(
   return dialog;
 }
 
-Future<ButtonAction?> showConfettiDialog<T>({
+Future<ButtonResult?> showConfettiDialog<T>({
   required BuildContext context,
   required DialogBuilder dialogBuilder,
   bool barrierDismissible = true,
@@ -248,5 +282,58 @@ Future<ButtonAction?> showConfettiDialog<T>({
     useSafeArea: useSafeArea,
     useRootNavigator: useRootNavigator,
     routeSettings: routeSettings,
+  );
+}
+
+//Can return ButtonResult? from ButtonWidget or Exception? from TextInputDialog
+Future<dynamic> showTextInputDialog(
+  BuildContext context, {
+  required String title,
+  String? body,
+  required String submitButtonLabel,
+  IconData? icon,
+  String? label,
+  String? message,
+  String? hintText,
+  required FutureVoidCallbackParamStr onSubmit,
+  IconData? prefixIcon,
+  String? initialValue,
+  Alignment? alignMessage,
+  int? maxLength,
+  bool showOnlyLoadingState = false,
+  TextCapitalization textCapitalization = TextCapitalization.none,
+  bool alwaysShowSuccessState = false,
+  bool isPasswordInput = false,
+}) {
+  return showDialog(
+    barrierColor: backdropFaintDark,
+    context: context,
+    builder: (context) {
+      final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+      final isKeyboardUp = bottomInset > 100;
+      return Center(
+        child: Padding(
+          padding: EdgeInsets.only(bottom: isKeyboardUp ? bottomInset : 0),
+          child: TextInputDialog(
+            title: title,
+            message: message,
+            label: label,
+            body: body,
+            icon: icon,
+            submitButtonLabel: submitButtonLabel,
+            onSubmit: onSubmit,
+            hintText: hintText,
+            prefixIcon: prefixIcon,
+            initialValue: initialValue,
+            alignMessage: alignMessage,
+            maxLength: maxLength,
+            showOnlyLoadingState: showOnlyLoadingState,
+            textCapitalization: textCapitalization,
+            alwaysShowSuccessState: alwaysShowSuccessState,
+            isPasswordInput: isPasswordInput,
+          ),
+        ),
+      );
+    },
   );
 }

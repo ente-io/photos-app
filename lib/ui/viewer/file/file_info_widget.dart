@@ -2,6 +2,7 @@ import "package:exif/exif.dart";
 import "package:flutter/cupertino.dart";
 import "package:flutter/material.dart";
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
+import 'package:path/path.dart' as path;
 import 'package:photo_manager/photo_manager.dart';
 import "package:photos/core/configuration.dart";
 import 'package:photos/db/files_db.dart';
@@ -9,6 +10,7 @@ import "package:photos/ente_theme_data.dart";
 import "package:photos/models/file.dart";
 import "package:photos/models/file_type.dart";
 import 'package:photos/services/collections_service.dart';
+import "package:photos/services/feature_flag_service.dart";
 import 'package:photos/theme/ente_theme.dart';
 import 'package:photos/ui/components/divider_widget.dart';
 import 'package:photos/ui/components/icon_button_widget.dart';
@@ -16,6 +18,7 @@ import 'package:photos/ui/components/title_bar_widget.dart';
 import 'package:photos/ui/viewer/file/collections_list_of_file_widget.dart';
 import 'package:photos/ui/viewer/file/device_folders_list_of_file_widget.dart';
 import 'package:photos/ui/viewer/file/file_caption_widget.dart';
+import "package:photos/ui/viewer/file/object_tags_widget.dart";
 import 'package:photos/ui/viewer/file/raw_exif_list_tile_widget.dart';
 import "package:photos/utils/date_time_util.dart";
 import "package:photos/utils/exif_util.dart";
@@ -154,9 +157,10 @@ class _FileInfoWidgetState extends State<FileInfoWidget> {
                 ),
               ),
         title: Text(
-          file.displayName,
+          path.basenameWithoutExtension(file.displayName) +
+              path.extension(file.displayName).toUpperCase(),
         ),
-        subtitle: Row(
+        subtitle: Wrap(
           children: [
             showDimension
                 ? Text(
@@ -189,7 +193,7 @@ class _FileInfoWidgetState extends State<FileInfoWidget> {
               horizontalTitleGap: 2,
               leading: const Icon(Icons.camera_rounded),
               title: Text(_exifData["takenOnDevice"] ?? "--"),
-              subtitle: Row(
+              subtitle: Wrap(
                 children: [
                   _exifData["fNumber"] != null
                       ? Padding(
@@ -233,6 +237,16 @@ class _FileInfoWidgetState extends State<FileInfoWidget> {
               : DeviceFoldersListOfFileWidget(allDeviceFoldersOfFile),
         ),
       ),
+      FeatureFlagService.instance.isInternalUserOrDebugBuild()
+          ? SizedBox(
+              height: 62,
+              child: ListTile(
+                horizontalTitleGap: 0,
+                leading: const Icon(Icons.image_search),
+                title: ObjectTagsWidget(file),
+              ),
+            )
+          : null,
       (file.uploadedFileID != null && file.updationTime != null)
           ? ListTile(
               horizontalTitleGap: 2,

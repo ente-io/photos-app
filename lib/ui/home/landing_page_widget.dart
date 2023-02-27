@@ -209,7 +209,7 @@ class _LandingPageWidgetState extends State<LandingPageWidget> {
   Future<void> _showAutoLogoutDialogIfRequired() async {
     final bool autoLogout = Configuration.instance.showAutoLogoutDialog();
     if (autoLogout) {
-      final ButtonAction? result = await showDialogWidget(
+      final result = await showDialogWidget(
         context: context,
         title: "Please login again",
         body: "The developer account we use to publish ente on App Store has "
@@ -219,13 +219,13 @@ class _LandingPageWidgetState extends State<LandingPageWidget> {
           ButtonWidget(
             buttonType: ButtonType.neutral,
             buttonAction: ButtonAction.first,
-            labelText: "Ok",
+            labelText: "OK",
             isInAlert: true,
           ),
         ],
       );
       Configuration.instance.clearAutoLogoutFlag().ignore();
-      if (result != null && result == ButtonAction.first) {
+      if (result?.action != null && result!.action == ButtonAction.first) {
         _navigateToSignInPage();
       }
     }

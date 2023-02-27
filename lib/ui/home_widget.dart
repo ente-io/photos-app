@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
+import 'package:media_extension/media_extension_action_types.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import 'package:move_to_background/move_to_background.dart';
 import 'package:photos/core/configuration.dart';
@@ -19,6 +20,7 @@ import 'package:photos/events/tab_changed_event.dart';
 import 'package:photos/events/trigger_logout_event.dart';
 import 'package:photos/events/user_logged_out_event.dart';
 import 'package:photos/models/selected_files.dart';
+import 'package:photos/services/app_lifecycle_service.dart';
 import 'package:photos/services/collections_service.dart';
 import 'package:photos/services/local_sync_service.dart';
 import 'package:photos/services/update_service.dart';
@@ -26,9 +28,9 @@ import 'package:photos/services/user_service.dart';
 import 'package:photos/states/user_details_state.dart';
 import 'package:photos/theme/colors.dart';
 import 'package:photos/theme/ente_theme.dart';
+import 'package:photos/ui/collection_action_sheet.dart';
 import 'package:photos/ui/collections_gallery_widget.dart';
 import 'package:photos/ui/common/bottom_shadow.dart';
-import 'package:photos/ui/create_collection_sheet.dart';
 import 'package:photos/ui/extents_page_view.dart';
 import 'package:photos/ui/home/grant_permissions_widget.dart';
 import 'package:photos/ui/home/header_widget.dart';
@@ -41,13 +43,15 @@ import 'package:photos/ui/loading_photos_widget.dart';
 import 'package:photos/ui/notification/update/change_log_page.dart';
 import 'package:photos/ui/settings/app_update_dialog.dart';
 import 'package:photos/ui/settings_page.dart';
-import 'package:photos/ui/shared_collections_gallery.dart';
+import "package:photos/ui/shared_collections_gallery.dart";
 import 'package:photos/utils/dialog_util.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:uni_links/uni_links.dart';
 
 class HomeWidget extends StatefulWidget {
-  const HomeWidget({Key? key}) : super(key: key);
+  const HomeWidget({
+    Key? key,
+  }) : super(key: key);
 
   @override
   State<StatefulWidget> createState() => _HomeWidgetState();
@@ -172,7 +176,7 @@ class _HomeWidgetState extends State<HomeWidget> {
         });
       }
     });
-    // For sharing images coming from outside the app while the app is in the memory
+    // For sharing images coming from outside the app
     _initMediaShareSubscription();
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => Future.delayed(
@@ -233,6 +237,7 @@ class _HomeWidgetState extends State<HomeWidget> {
   }
 
   void _initMediaShareSubscription() {
+    // For sharing images coming from outside the app while the app is in the memory
     _intentDataStreamSubscription =
         ReceiveSharingIntent.getMediaStream().listen(
       (List<SharedMediaFile> value) {
@@ -249,6 +254,7 @@ class _HomeWidgetState extends State<HomeWidget> {
     ReceiveSharingIntent.getInitialMedia().then((List<SharedMediaFile> value) {
       setState(() {
         _sharedFiles = value;
+        _shouldRenderCreateCollectionSheet = true;
       });
     });
   }
@@ -258,7 +264,7 @@ class _HomeWidgetState extends State<HomeWidget> {
     _logger.info("Building home_Widget with tab $_selectedTabIndex");
     bool isSettingsOpen = false;
     final enableDrawer = LocalSyncService.instance.hasCompletedFirstImport();
-
+    final action = AppLifecycleService.instance.mediaExtensionAction.action;
     return UserDetailsStateWidget(
       child: WillPopScope(
         child: Scaffold(
@@ -291,7 +297,7 @@ class _HomeWidgetState extends State<HomeWidget> {
               Navigator.pop(context);
               return false;
             }
-            if (Platform.isAndroid) {
+            if (Platform.isAndroid && action == IntentAction.main) {
               MoveToBackground.moveTaskToBack();
               return false;
             } else {
@@ -328,10 +334,9 @@ class _HomeWidgetState extends State<HomeWidget> {
       _shouldRenderCreateCollectionSheet = false;
       ReceiveSharingIntent.reset();
       Future.delayed(const Duration(milliseconds: 10), () {
-        createCollectionSheet(
-          null,
-          _sharedFiles,
+        showCollectionActionSheet(
           context,
+          sharedFiles: _sharedFiles,
           actionType: CollectionActionType.addFiles,
         );
       });

@@ -13,6 +13,7 @@ import 'package:photos/core/event_bus.dart';
 import 'package:photos/db/files_db.dart';
 import 'package:photos/events/collection_updated_event.dart';
 import 'package:photos/events/files_updated_event.dart';
+import "package:photos/events/force_reload_trash_page_event.dart";
 import 'package:photos/events/local_photos_updated_event.dart';
 import 'package:photos/models/file.dart';
 import 'package:photos/models/selected_files.dart';
@@ -247,7 +248,7 @@ Future<void> deleteFilesOnDeviceOnly(
 
 Future<bool> deleteFromTrash(BuildContext context, List<File> files) async {
   bool didDeletionStart = false;
-  final result = await showChoiceActionSheet(
+  final actionResult = await showChoiceActionSheet(
     context,
     title: "Permanently delete?",
     body: "This action cannot be undone",
@@ -264,25 +265,29 @@ Future<bool> deleteFromTrash(BuildContext context, List<File> files) async {
             source: "deleteFromTrash",
           ),
         );
+        //the FilesUpdateEvent is not reloading trash on premanently removing
+        //files, so need to fire ForceReloadTrashPageEvent
+        Bus.instance.fire(ForceReloadTrashPageEvent());
       } catch (e, s) {
         _logger.info("failed to delete from trash", e, s);
         rethrow;
       }
     },
   );
-  if (result == ButtonAction.error) {
+
+  if (actionResult?.action == null ||
+      actionResult!.action == ButtonAction.cancel) {
+    return didDeletionStart ? true : false;
+  } else if (actionResult.action == ButtonAction.error) {
     await showGenericErrorDialog(context: context);
     return false;
-  }
-  if (result == null || result == ButtonAction.cancel) {
-    return didDeletionStart ? true : false;
   } else {
     return true;
   }
 }
 
 Future<bool> emptyTrash(BuildContext context) async {
-  final result = await showChoiceActionSheet(
+  final actionResult = await showChoiceActionSheet(
     context,
     title: "Empty trash?",
     body:
@@ -298,11 +303,11 @@ Future<bool> emptyTrash(BuildContext context) async {
       }
     },
   );
-  if (result == ButtonAction.error) {
-    await showGenericErrorDialog(context: context);
+  if (actionResult?.action == null ||
+      actionResult!.action == ButtonAction.cancel) {
     return false;
-  }
-  if (result == null || result == ButtonAction.cancel) {
+  } else if (actionResult.action == ButtonAction.error) {
+    await showGenericErrorDialog(context: context);
     return false;
   } else {
     return true;
@@ -467,7 +472,7 @@ Future<List<String>> _tryDeleteSharedMediaFiles(List<String> localIDs) {
 }
 
 Future<bool> shouldProceedWithDeletion(BuildContext context) async {
-  final choice = await showChoiceActionSheet(
+  final actionResult = await showChoiceActionSheet(
     context,
     title: "Permanently delete from device?",
     body:
@@ -475,10 +480,10 @@ Future<bool> shouldProceedWithDeletion(BuildContext context) async {
     firstButtonLabel: "Delete",
     isCritical: true,
   );
-  if (choice == null) {
+  if (actionResult?.action == null) {
     return false;
   } else {
-    return choice == ButtonAction.first;
+    return actionResult!.action == ButtonAction.first;
   }
 }
 
@@ -528,8 +533,14 @@ Future<void> showDeleteSheet(
           await deleteFilesFromRemoteOnly(
             context,
             selectedFiles.files.toList(),
+          ).then(
+            (value) {
+              showShortToast(context, "Moved to trash");
+            },
+            onError: (e, s) {
+              showGenericErrorDialog(context: context);
+            },
           );
-          showShortToast(context, "Moved to trash");
         },
       ),
     );
@@ -581,14 +592,15 @@ Future<void> showDeleteSheet(
       isInAlert: true,
     ),
   );
-  final ButtonAction? result = await showActionSheet(
+  final actionResult = await showActionSheet(
     context: context,
     buttons: buttons,
     actionSheetType: ActionSheetType.defaultActionSheet,
     body: body,
     bodyHighlight: bodyHighlight,
   );
-  if (result != null && result == ButtonAction.error) {
+  if (actionResult?.action != null &&
+      actionResult!.action == ButtonAction.error) {
     showGenericErrorDialog(context: context);
   } else {
     selectedFiles.clearAll();

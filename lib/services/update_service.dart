@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:photos/core/constants.dart';
-import 'package:photos/core/network.dart';
+import 'package:photos/core/network/network.dart';
 import 'package:photos/services/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tuple/tuple.dart';
@@ -16,7 +16,7 @@ class UpdateService {
   static final UpdateService instance = UpdateService._privateConstructor();
   static const kUpdateAvailableShownTimeKey = "update_available_shown_time_key";
   static const changeLogVersionKey = "update_change_log_key";
-  static const currentChangeLogVersion = 4;
+  static const currentChangeLogVersion = 7;
 
   LatestVersionInfo? _latestVersion;
   final _logger = Logger("UpdateService");
@@ -39,7 +39,6 @@ class UpdateService {
   }
 
   Future<bool> resetChangeLog() async {
-    await _prefs.remove("userNotify.passwordReminderFlag");
     return _prefs.remove(changeLogVersionKey);
   }
 
@@ -98,7 +97,7 @@ class UpdateService {
   }
 
   Future<LatestVersionInfo> _getLatestVersionInfo() async {
-    final response = await Network.instance
+    final response = await NetworkClient.instance
         .getDio()
         .get("https://ente.io/release-info/independent.json");
     return LatestVersionInfo.fromMap(response.data["latestVersion"]);

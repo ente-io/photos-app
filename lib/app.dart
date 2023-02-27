@@ -7,14 +7,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:logging/logging.dart';
+import 'package:media_extension/media_extension_action_types.dart';
 import 'package:photos/ente_theme_data.dart';
 import 'package:photos/services/app_lifecycle_service.dart';
 import 'package:photos/services/sync_service.dart';
 import 'package:photos/ui/home_widget.dart';
+import "package:photos/ui/viewer/actions/file_viewer.dart";
+import "package:photos/utils/intent_util.dart";
 
 class EnteApp extends StatefulWidget {
-  static const _homeWidget = HomeWidget();
-
   final Future<void> Function(String) runBackgroundTask;
   final Future<void> Function(String) killBackgroundTask;
 
@@ -35,8 +36,18 @@ class _EnteAppState extends State<EnteApp> with WidgetsBindingObserver {
   void initState() {
     _logger.info('init App');
     super.initState();
+    setupIntentAction();
     WidgetsBinding.instance.addObserver(this);
-    _configureBackgroundFetch();
+  }
+
+  void setupIntentAction() async {
+    final mediaExtentionAction = Platform.isAndroid
+        ? await initIntentAction()
+        : MediaExtentionAction(action: IntentAction.main);
+    AppLifecycleService.instance.setMediaExtensionAction(mediaExtentionAction);
+    if (mediaExtentionAction.action == IntentAction.main) {
+      _configureBackgroundFetch();
+    }
   }
 
   @override
@@ -51,7 +62,10 @@ class _EnteAppState extends State<EnteApp> with WidgetsBindingObserver {
           themeMode: ThemeMode.system,
           theme: lightTheme,
           darkTheme: dartTheme,
-          home: EnteApp._homeWidget,
+          home: AppLifecycleService.instance.mediaExtensionAction.action ==
+                  IntentAction.view
+              ? const FileViewer()
+              : const HomeWidget(),
           debugShowCheckedModeBanner: false,
           builder: EasyLoading.init(),
           supportedLocales: AppLocalizations.supportedLocales,
@@ -64,7 +78,7 @@ class _EnteAppState extends State<EnteApp> with WidgetsBindingObserver {
         themeMode: ThemeMode.system,
         theme: lightThemeData,
         darkTheme: darkThemeData,
-        home: EnteApp._homeWidget,
+        home: const HomeWidget(),
         debugShowCheckedModeBanner: false,
         builder: EasyLoading.init(),
         supportedLocales: AppLocalizations.supportedLocales,

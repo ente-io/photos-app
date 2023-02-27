@@ -1,5 +1,14 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" package="io.ente.photos">
-    <application android:name="${applicationName}" android:label="@string/app_name" android:icon="@mipmap/launcher_icon" android:usesCleartextTraffic="true" android:requestLegacyExternalStorage="true" android:allowBackup="false" android:fullBackupContent="false" android:largeHeap="true">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:tools="http://schemas.android.com/tools"
+          package="io.ente.photos">
+    <application android:name="${applicationName}"
+                 android:label="@string/app_name"
+                 android:icon="@mipmap/launcher_icon"
+                 android:usesCleartextTraffic="true"
+                 android:requestLegacyExternalStorage="true"
+                 android:allowBackup="false"
+                 android:fullBackupContent="false"
+                 android:largeHeap="true">
 
         <activity android:name=".MainActivity" android:launchMode="singleTop"
                   android:theme="@style/LaunchTheme"
@@ -11,15 +20,30 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
-                <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="ente"/>
+                <data android:mimeType="image/*"/>
+                <data android:mimeType="video/*"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.PICK"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="image/*"/>
+                <data android:mimeType="video/*"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.GET_CONTENT"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.OPENABLE"/>
+                <data android:mimeType="image/*"/>
+                <data android:mimeType="video/*"/>
             </intent-filter>
 
-            <!--Filter to support sharing images into our app-->
+            <!-- file provider to share files having a file:// URI -->
+
+            <!--Filter
+            to support sharing images into our app-->
             <intent-filter android:label="@string/backup">
                 <action android:name="android.intent.action.SEND"/>
                 <category android:name="android.intent.category.DEFAULT"/>
@@ -45,6 +69,7 @@
             </intent-filter>
 
         </activity>
+
         <provider
                 android:name="androidx.core.content.FileProvider"
                 android:authorities="${applicationId}.fileProvider"
@@ -54,7 +79,7 @@
             <meta-data
                     android:name="android.support.FILE_PROVIDER_PATHS"
                     android:resource="@xml/filepaths"
-                    tools:replace="android:resource" />
+                    tools:replace="android:resource"/>
         </provider>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
