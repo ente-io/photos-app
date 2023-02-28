@@ -1,0 +1,5 @@
+* You can now double your storage by referring your friends and family! Both you and your friends will get 10 GB of storage when they upgrade to a paid plan.
+
+* Security of your end-to-end encryption with those you are sharing your albums with can now be verified, with the help of Verification IDs.
+
+* ente will now be an option to pick files from, while sharing photos and videos through other apps. We are one step closer towards becoming your default gallery app!

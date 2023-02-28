@@ -1,8 +1,13 @@
+import "dart:io";
+
+import "package:flutter/cupertino.dart";
 import 'package:flutter/material.dart';
 import 'package:photos/ente_theme_data.dart';
 import 'package:photos/models/memory.dart';
 import 'package:photos/services/memories_service.dart';
-import 'package:photos/ui/extents_page_view.dart';
+import "package:photos/theme/text_style.dart";
+import "package:photos/ui/actions/file/file_actions.dart";
+import "package:photos/ui/extents_page_view.dart";
 import 'package:photos/ui/viewer/file/file_widget.dart';
 import 'package:photos/ui/viewer/file/thumbnail_widget.dart';
 import 'package:photos/utils/date_time_util.dart';
@@ -315,48 +320,91 @@ class _FullScreenMemoryState extends State<FullScreenMemory> {
     );
   }
 
+  void onFileDeleted() {
+    if (widget.memories.length == 1) {
+      Navigator.pop(context);
+    } else {
+      setState(() {
+        if (_index != 0) {
+          _pageController?.jumpToPage(_index - 1);
+        }
+        widget.memories.removeAt(_index);
+        if (_index != 0) {
+          _index--;
+        }
+      });
+    }
+  }
+
   Hero _buildInfoText() {
     return Hero(
       tag: widget.title,
-      child: Container(
-        alignment: Alignment.bottomCenter,
-        padding: const EdgeInsets.fromLTRB(0, 0, 0, 28),
-        child: _showCounter
-            ? Text(
-                '${_index + 1}/${widget.memories.length}',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyText1!
-                    .copyWith(color: Colors.white.withOpacity(0.4)),
-              )
-            : AnimatedOpacity(
-                opacity: _opacity,
-                duration: const Duration(milliseconds: 500),
-                child: Text(
-                  widget.title,
-                  style: Theme.of(context)
-                      .textTheme
-                      .headline4!
-                      .copyWith(color: Colors.white),
+      child: SafeArea(
+        child: Container(
+          alignment: Alignment.bottomCenter,
+          padding: const EdgeInsets.fromLTRB(0, 0, 0, 72),
+          child: _showCounter
+              ? Text(
+                  '${_index + 1}/${widget.memories.length}',
+                  style: darkTextTheme.bodyMuted,
+                )
+              : AnimatedOpacity(
+                  opacity: _opacity,
+                  duration: const Duration(milliseconds: 500),
+                  child: Text(
+                    widget.title,
+                    style: darkTextTheme.h2,
+                  ),
                 ),
-              ),
+        ),
       ),
     );
   }
 
   Widget _buildBottomIcons() {
     final file = widget.memories[_index].file;
-    return Container(
-      alignment: Alignment.bottomRight,
-      padding: const EdgeInsets.fromLTRB(0, 0, 26, 20),
-      child: IconButton(
-        icon: Icon(
-          Icons.adaptive.share,
-          color: Colors.white, //same for both themes
+    return SafeArea(
+      child: Container(
+        alignment: Alignment.bottomRight,
+        padding: const EdgeInsets.fromLTRB(26, 0, 26, 20),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            IconButton(
+              icon: Icon(
+                Platform.isAndroid ? Icons.info_outline : CupertinoIcons.info,
+                color: Colors.white, //same for both themes
+              ),
+              onPressed: () {
+                showInfoSheet(context, file);
+              },
+            ),
+            IconButton(
+              icon: Icon(
+                Platform.isAndroid
+                    ? Icons.delete_outline
+                    : CupertinoIcons.delete,
+                color: Colors.white, //same for both themes
+              ),
+              onPressed: () async {
+                await showSingleFileDeleteSheet(
+                  context,
+                  file,
+                  onFileRemoved: (file) => {onFileDeleted()},
+                );
+              },
+            ),
+            IconButton(
+              icon: Icon(
+                Icons.adaptive.share,
+                color: Colors.white, //same for both themes
+              ),
+              onPressed: () {
+                share(context, [file]);
+              },
+            ),
+          ],
         ),
-        onPressed: () {
-          share(context, [file]);
-        },
       ),
     );
   }
@@ -405,7 +453,6 @@ class _FullScreenMemoryState extends State<FullScreenMemory> {
       },
       itemCount: widget.memories.length,
       controller: _pageController,
-      extents: 1,
       onPageChanged: (index) async {
         await MemoriesService.instance.markMemoryAsSeen(widget.memories[index]);
         if (mounted) {

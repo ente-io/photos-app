@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
-import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
 import 'package:dio/dio.dart';
@@ -12,7 +11,7 @@ import 'package:photos/core/configuration.dart';
 import 'package:photos/core/constants.dart';
 import 'package:photos/core/errors.dart';
 import 'package:photos/core/event_bus.dart';
-import 'package:photos/core/network.dart';
+import 'package:photos/core/network/network.dart';
 import 'package:photos/db/collections_db.dart';
 import 'package:photos/db/device_files_db.dart';
 import 'package:photos/db/files_db.dart';
@@ -50,7 +49,7 @@ class CollectionsService {
   late Configuration _config;
   late SharedPreferences _prefs;
 
-  final _enteDio = Network.instance.enteDio;
+  final _enteDio = NetworkClient.instance.enteDio;
   final _localPathToCollectionID = <String, int>{};
   final _collectionIDToCollections = <int, Collection>{};
   final _cachedKeys = <int, Uint8List>{};
@@ -181,6 +180,15 @@ class CollectionsService {
         .where((element) => element.isArchived())
         .map((e) => e.id)
         .toSet();
+  }
+
+  Future<List<CollectionWithThumbnail>> getArchivedCollectionWithThumb() async {
+    final allCollections = await getCollectionsWithThumbnails();
+    return allCollections
+        .where(
+          (c) => c.collection.isArchived() && !c.collection.isHidden(),
+        )
+        .toList();
   }
 
   Set<int> getHiddenCollections() {
@@ -646,7 +654,7 @@ class CollectionsService {
       }
       rethrow;
     } catch (e, s) {
-      _logger.severe("failed to rename collection", e, s);
+      _logger.severe("failed to update ShareUrl", e, s);
       rethrow;
     }
   }
