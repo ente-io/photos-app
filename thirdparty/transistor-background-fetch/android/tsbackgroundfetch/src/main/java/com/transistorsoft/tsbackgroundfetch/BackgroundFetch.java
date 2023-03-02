@@ -4,6 +4,8 @@ import android.annotation.TargetApi;
 import android.app.ActivityManager;
 
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
@@ -76,6 +78,8 @@ public class BackgroundFetch {
 
     private BackgroundFetch(Context context) {
         mContext = context;
+        // Start Lifecycle Observer to be notified when app enters background.
+        getUiHandler().post(LifecycleManager.getInstance());
     }
 
     @SuppressWarnings({"unused"})
@@ -84,7 +88,16 @@ public class BackgroundFetch {
         mFetchCallback = callback;
 
         synchronized (mConfig) {
-            mConfig.put(config.getTaskId(), config);
+            if (mConfig.containsKey(config.getTaskId())) {
+                // Developer called `.configure` again.  Re-configure the plugin by re-scheduling the fetch task.
+                BackgroundFetchConfig existing = mConfig.get(config.getTaskId());
+                Log.d(TAG, "Re-configured existing task");
+                BGTask.reschedule(mContext, existing, config);
+                mConfig.put(config.getTaskId(), config);
+                return;
+            } else {
+                mConfig.put(config.getTaskId(), config);
+            }
         }
         start(config.getTaskId());
     }
@@ -224,8 +237,6 @@ public class BackgroundFetch {
     }
 
     private void registerTask(String taskId) {
-        Log.d(TAG, "- registerTask: " + taskId);
-
         BackgroundFetchConfig config = getConfig(taskId);
 
         if (config == null) {
@@ -233,6 +244,12 @@ public class BackgroundFetch {
             return;
         }
         config.save(mContext);
+
+        String msg = "- registerTask: " + taskId;
+        if (!config.getForceAlarmManager()) {
+            msg += " (jobId: " + config.getJobId() + ")";
+        }
+        Log.d(TAG, msg);
 
         BGTask.schedule(mContext, config);
     }
@@ -245,7 +262,7 @@ public class BackgroundFetch {
             return;
         }
 
-        if (isMainActivityActive()) {
+        if (!LifecycleManager.getInstance().isHeadless()) {
             if (mFetchCallback != null) {
                 mFetchCallback.onFetch(task.getTaskId());
             }
@@ -265,29 +282,6 @@ public class BackgroundFetch {
             finish(task.getTaskId());
             stop(task.getTaskId());
         }
-    }
-
-    @SuppressWarnings({"WeakerAccess", "deprecation"})
-    public Boolean isMainActivityActive() {
-        Boolean isActive = false;
-
-        if (mContext == null || mFetchCallback == null) {
-            return false;
-        }
-        ActivityManager activityManager = (ActivityManager) mContext.getSystemService(Context.ACTIVITY_SERVICE);
-        try {
-            List<ActivityManager.RunningTaskInfo> tasks = activityManager.getRunningTasks(Integer.MAX_VALUE);
-            for (ActivityManager.RunningTaskInfo task : tasks) {
-                if (mContext.getPackageName().equalsIgnoreCase(task.baseActivity.getPackageName())) {
-                    isActive = true;
-                    break;
-                }
-            }
-        } catch (java.lang.SecurityException e) {
-            Log.w(TAG, "TSBackgroundFetch attempted to determine if MainActivity is active but was stopped due to a missing permission.  Please add the permission 'android.permission.GET_TASKS' to your AndroidManifest.  See Installation steps for more information");
-            throw e;
-        }
-        return isActive;
     }
 
     BackgroundFetchConfig getConfig(String taskId) {
