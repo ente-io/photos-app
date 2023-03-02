@@ -14,6 +14,15 @@ public class FetchJobService extends JobService {
     @Override
     public boolean onStartJob(final JobParameters params) {
         PersistableBundle extras = params.getExtras();
+        long scheduleAt = extras.getLong("scheduled_at");
+        long dt = System.currentTimeMillis() - scheduleAt;
+        // Scheduled < 1s ago?  Ignore.
+        if (dt < 1000) {
+            // JobScheduler always immediately fires an initial event on Periodic jobs -- We IGNORE these.
+            jobFinished(params, false);
+            return true;
+        }
+
         final String taskId = extras.getString(BackgroundFetchConfig.FIELD_TASK_ID);
 
         CompletionHandler completionHandler = new CompletionHandler() {

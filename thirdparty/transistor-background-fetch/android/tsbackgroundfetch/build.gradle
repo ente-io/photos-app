@@ -29,8 +29,14 @@ android {
             }
         }
         repositories {
-            mavenLocal()
+            maven {
+                url "$buildDir/repo"
+            }
         }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 }
 
@@ -40,15 +46,14 @@ dependencies {
 
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
+    implementation "androidx.lifecycle:lifecycle-runtime:2.5.1"
+    implementation "androidx.lifecycle:lifecycle-extensions:2.2.0"
     //implementation "androidx.appcompat:appcompat:$rootProject.appCompatVersion"
 
 }
 
 // Build Release
 task buildRelease { task ->
-    task.dependsOn 'cordovaRelease'
-    task.dependsOn 'reactNativeRelease'
-    task.dependsOn 'nativeScriptRelease'
     task.dependsOn 'flutterRelease'
 }
 
@@ -59,7 +64,7 @@ task publishRelease { task ->
 tasks["publishRelease"].mustRunAfter("assembleRelease")
 tasks["publishRelease"].finalizedBy("publish")
 
-def WORKSPACE_PATH = "/Volumes/Glyph2TB/Users/chris/workspace"
+def WORKSPACE_PATH = "/Users/chris/workspace"
 
 // Build local maven repo.
 def LIBRARY_PATH = "com/transistorsoft/tsbackgroundfetch"
@@ -78,7 +83,7 @@ task buildLocalRepository { task ->
     }
 }
 
-def cordovaDir = "$WORKSPACE_PATH/cordova/background-geolocation/cordova-plugin-background-fetch"
+def cordovaDir = "$WORKSPACE_PATH/background-geolocation/cordova/cordova-plugin-background-fetch"
 task cordovaRelease { task ->
     task.dependsOn 'buildLocalRepository'
     doLast {
@@ -95,7 +100,7 @@ task cordovaRelease { task ->
     }
 }
 
-def reactNativeDir = "$WORKSPACE_PATH/react/background-geolocation/react-native-background-fetch"
+def reactNativeDir = "$WORKSPACE_PATH/background-geolocation/react/react-native-background-fetch"
 task reactNativeRelease { task ->
     task.dependsOn 'buildLocalRepository'
     doLast {
@@ -125,6 +130,19 @@ task flutterRelease { task ->
             //from("$buildDir/outputs/aar/tsbackgroundfetch-release.aar")
             //into("$flutterDir/android/libs")
             //rename(/(.*)-release/, '$1-' + VERSION_NAME)
+        }
+    }
+}
+
+def capacitorDir = "$WORKSPACE_PATH/background-geolocation/capacitor/capacitor-background-fetch"
+task capacitorRelease { task ->
+    task.dependsOn 'buildLocalRepository'
+    doLast {
+        delete "$capacitorDir/android/libs"
+        copy {
+            // Maven repo format.
+            from("$buildDir/repo-local")
+            into("$capacitorDir/android/libs")
         }
     }
 }
