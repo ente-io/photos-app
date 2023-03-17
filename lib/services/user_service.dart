@@ -116,6 +116,17 @@ class UserService {
     }
   }
 
+  Future<void> sendFeedback(
+    BuildContext context,
+    String feedback, {
+    String type = "SubCancellation",
+  }) async {
+    await _dio.post(
+      _config.getHttpEndpoint() + "/anonymous/feedback",
+      data: {"feedback": feedback, "type": "type"},
+    );
+  }
+
   // getPublicKey returns null value if email id is not
   // associated with another ente account
   Future<String?> getPublicKey(String email) async {
@@ -222,13 +233,9 @@ class UserService {
   Future<DeleteChallengeResponse?> getDeleteChallenge(
     BuildContext context,
   ) async {
-    final dialog = createProgressDialog(context, "Please wait...");
-    await dialog.show();
     try {
       final response = await _enteDio.get("/users/delete-challenge");
       if (response.statusCode == 200) {
-        // clear data
-        await dialog.hide();
         return DeleteChallengeResponse(
           allowDelete: response.data["allowDelete"] as bool,
           encryptedChallenge: response.data["encryptedChallenge"],
@@ -238,7 +245,6 @@ class UserService {
       }
     } catch (e) {
       _logger.severe(e);
-      await dialog.hide();
       await showGenericErrorDialog(context: context);
       return null;
     }
@@ -246,13 +252,17 @@ class UserService {
 
   Future<void> deleteAccount(
     BuildContext context,
-    String challengeResponse,
-  ) async {
+    String challengeResponse, {
+    required String reasonCategory,
+    required String feedback,
+  }) async {
     try {
       final response = await _enteDio.delete(
         "/users/delete",
         data: {
           "challenge": challengeResponse,
+          "reasonCategory": reasonCategory,
+          "feedback": feedback,
         },
       );
       if (response.statusCode == 200) {
