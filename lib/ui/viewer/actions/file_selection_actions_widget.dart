@@ -18,7 +18,7 @@ import 'package:photos/ui/collection_action_sheet.dart';
 import 'package:photos/ui/components/action_sheet_widget.dart';
 import 'package:photos/ui/components/blur_menu_item_widget.dart';
 import 'package:photos/ui/components/bottom_action_bar/expanded_menu_widget.dart';
-import 'package:photos/ui/components/button_widget.dart';
+import 'package:photos/ui/components/buttons/button_widget.dart';
 import 'package:photos/ui/components/models/button_type.dart';
 import 'package:photos/ui/sharing/manage_links_widget.dart';
 import 'package:photos/utils/delete_file_util.dart';
@@ -243,7 +243,7 @@ class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
     if (widget.type.showRestoreOption()) {
       secondList.add(
         BlurMenuItemWidget(
-          leadingIcon: Icons.visibility,
+          leadingIcon: Icons.restore_outlined,
           labelText: "Restore",
           menuItemColor: colorScheme.fillFaint,
           onTap: _restore,

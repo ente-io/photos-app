@@ -2,6 +2,7 @@ import 'dart:async';
 
 import "package:flutter/foundation.dart";
 import 'package:flutter/material.dart';
+import "package:logging/logging.dart";
 import 'package:photos/ente_theme_data.dart';
 import 'package:photos/models/billing_plan.dart';
 import 'package:photos/models/subscription.dart';
@@ -14,7 +15,7 @@ import 'package:photos/ui/common/bottom_shadow.dart';
 import 'package:photos/ui/common/loading_widget.dart';
 import 'package:photos/ui/common/progress_dialog.dart';
 import 'package:photos/ui/common/web_page.dart';
-import 'package:photos/ui/components/button_widget.dart';
+import 'package:photos/ui/components/buttons/button_widget.dart';
 import "package:photos/ui/components/captioned_text_widget.dart";
 import "package:photos/ui/components/menu_item_widget/menu_item_widget.dart";
 import 'package:photos/ui/payment/child_subscription_widget.dart';
@@ -55,6 +56,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
   bool _isStripeSubscriber = false;
   bool _showYearlyPlan = false;
   EnteColorScheme colorScheme = darkScheme;
+  final Logger logger = Logger("StripeSubscriptionPage");
 
   @override
   void initState() {
@@ -366,20 +368,44 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
     );
   }
 
-  Future<void> toggleStripeSubscription(bool isRenewCancelled) async {
+  // toggleStripeSubscription, based on current auto renew status, will
+  // toggle the auto renew status of the user's subscription
+  Future<void> toggleStripeSubscription(bool isAutoRenewDisabled) async {
     await _dialog.show();
     try {
-      isRenewCancelled
+      isAutoRenewDisabled
           ? await _billingService.activateStripeSubscription()
           : await _billingService.cancelStripeSubscription();
       await _fetchSub();
     } catch (e) {
       showShortToast(
         context,
-        isRenewCancelled ? 'Failed to renew' : 'Failed to cancel',
+        isAutoRenewDisabled ? 'Failed to renew' : 'Failed to cancel',
       );
     }
     await _dialog.hide();
+    if (!isAutoRenewDisabled && mounted) {
+      await showTextInputDialog(
+        context,
+        title: "Your subscription was cancelled. Would you like to share the "
+            "reason?",
+        submitButtonLabel: "Send",
+        hintText: "Optional, as short as you like...",
+        alwaysShowSuccessState: true,
+        textCapitalization: TextCapitalization.words,
+        onSubmit: (String text) async {
+          // indicates user cancelled the rename request
+          if (text == "" || text.trim().isEmpty) {
+            return;
+          }
+          try {
+            await UserService.instance.sendFeedback(context, text);
+          } catch (e, s) {
+            logger.severe("Failed to send feedback", e, s);
+          }
+        },
+      );
+    }
   }
 
   List<Widget> _getStripePlanWidgets() {
@@ -466,8 +492,13 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
     return planWidgets;
   }
 
+  bool _isFreePlanUser() {
+    return _currentSubscription != null &&
+        freeProductID == _currentSubscription!.productID;
+  }
+
   Widget _showSubscriptionToggle() {
-    Widget _planText(String title, bool reduceOpacity) {
+    Widget planText(String title, bool reduceOpacity) {
       return Padding(
         padding: const EdgeInsets.only(left: 4, right: 4),
         child: Text(
@@ -483,24 +514,35 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
     }
 
     return Container(
-      padding: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
-      margin: const EdgeInsets.only(bottom: 12),
-      // color: Color.fromRGBO(10, 40, 40, 0.3),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+      padding: const EdgeInsets.only(left: 8, right: 8, top: 2, bottom: 2),
+      margin: const EdgeInsets.only(bottom: 6),
+      child: Column(
         children: [
-          _planText("Monthly", _showYearlyPlan),
-          Switch(
-            value: _showYearlyPlan,
-            activeColor: Colors.white,
-            inactiveThumbColor: Colors.white,
-            activeTrackColor: getEnteColorScheme(context).strokeMuted,
-            onChanged: (value) async {
-              _showYearlyPlan = value;
-              await _filterStripeForUI();
-            },
+          _isFreePlanUser()
+              ? Text(
+                  "2 months free on yearly plans",
+                  style: getEnteTextTheme(context).miniMuted,
+                )
+              : const SizedBox.shrink(),
+          RepaintBoundary(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                planText("Monthly", _showYearlyPlan),
+                Switch(
+                  value: _showYearlyPlan,
+                  activeColor: Colors.white,
+                  inactiveThumbColor: Colors.white,
+                  activeTrackColor: getEnteColorScheme(context).strokeMuted,
+                  onChanged: (value) async {
+                    _showYearlyPlan = value;
+                    await _filterStripeForUI();
+                  },
+                ),
+                planText("Yearly", !_showYearlyPlan)
+              ],
+            ),
           ),
-          _planText("Yearly", !_showYearlyPlan)
         ],
       ),
     );

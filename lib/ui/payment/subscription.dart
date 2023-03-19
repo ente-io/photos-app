@@ -6,7 +6,6 @@ import 'package:photos/ui/payment/stripe_subscription_page.dart';
 // import 'package:photos/ui/payment/subscription_page.dart'; #f-droid
 
 StatefulWidget getSubscriptionPage({bool isOnBoarding = false}) {
-
   if (UpdateService.instance.isIndependentFlavor()) {
     return StripeSubscriptionPage(isOnboarding: isOnBoarding);
   }

@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_sodium/flutter_sodium.dart';
 import 'package:logging/logging.dart';
 import 'package:photos/core/configuration.dart';
 import 'package:photos/core/constants.dart';
@@ -117,6 +116,17 @@ class UserService {
     }
   }
 
+  Future<void> sendFeedback(
+    BuildContext context,
+    String feedback, {
+    String type = "SubCancellation",
+  }) async {
+    await _dio.post(
+      _config.getHttpEndpoint() + "/anonymous/feedback",
+      data: {"feedback": feedback, "type": "type"},
+    );
+  }
+
   // getPublicKey returns null value if email id is not
   // associated with another ente account
   Future<String?> getPublicKey(String email) async {
@@ -159,7 +169,6 @@ class UserService {
       if (shouldCache) {
         await _preferences.setString(keyUserDetails, userDetails.toJson());
       }
-      _logger.info("User details fetched: " + userDetails.toJson());
       return userDetails;
     } on DioError catch (e) {
       _logger.info(e);
@@ -224,13 +233,9 @@ class UserService {
   Future<DeleteChallengeResponse?> getDeleteChallenge(
     BuildContext context,
   ) async {
-    final dialog = createProgressDialog(context, "Please wait...");
-    await dialog.show();
     try {
       final response = await _enteDio.get("/users/delete-challenge");
       if (response.statusCode == 200) {
-        // clear data
-        await dialog.hide();
         return DeleteChallengeResponse(
           allowDelete: response.data["allowDelete"] as bool,
           encryptedChallenge: response.data["encryptedChallenge"],
@@ -240,7 +245,6 @@ class UserService {
       }
     } catch (e) {
       _logger.severe(e);
-      await dialog.hide();
       await showGenericErrorDialog(context: context);
       return null;
     }
@@ -248,13 +252,17 @@ class UserService {
 
   Future<void> deleteAccount(
     BuildContext context,
-    String challengeResponse,
-  ) async {
+    String challengeResponse, {
+    required String reasonCategory,
+    required String feedback,
+  }) async {
     try {
       final response = await _enteDio.delete(
         "/users/delete",
         data: {
           "challenge": challengeResponse,
+          "reasonCategory": reasonCategory,
+          "feedback": feedback,
         },
       );
       if (response.statusCode == 200) {
@@ -569,11 +577,11 @@ class UserService {
         }
         recoveryKey = bip39.mnemonicToEntropy(recoveryKey);
       }
-      secret = Sodium.bin2base64(
+      secret = CryptoUtil.bin2base64(
         await CryptoUtil.decrypt(
-          Sodium.base642bin(encryptedSecret),
-          Sodium.hex2bin(recoveryKey.trim()),
-          Sodium.base642bin(secretDecryptionNonce),
+          CryptoUtil.base642bin(encryptedSecret),
+          CryptoUtil.hex2bin(recoveryKey.trim()),
+          CryptoUtil.base642bin(secretDecryptionNonce),
         ),
       );
     } catch (e) {
@@ -675,16 +683,16 @@ class UserService {
     final dialog = createProgressDialog(context, "Verifying...");
     await dialog.show();
     final encryptionResult =
-        CryptoUtil.encryptSync(Sodium.base642bin(secret), recoveryKey);
+        CryptoUtil.encryptSync(CryptoUtil.base642bin(secret), recoveryKey);
     try {
       await _enteDio.post(
         "/users/two-factor/enable",
         data: {
           "code": code,
           "encryptedTwoFactorSecret":
-              Sodium.bin2base64(encryptionResult.encryptedData as Uint8List),
+              CryptoUtil.bin2base64(encryptionResult.encryptedData!),
           "twoFactorSecretDecryptionNonce":
-              Sodium.bin2base64(encryptionResult.nonce as Uint8List),
+              CryptoUtil.bin2base64(encryptionResult.nonce!),
         },
       );
       await dialog.hide();
