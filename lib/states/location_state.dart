@@ -6,6 +6,8 @@ import "package:photos/models/location_tag/location_tag.dart";
 import "package:photos/models/typedefs.dart";
 import "package:photos/utils/debouncer.dart";
 
+typedef VoidCallbackParamLocTagEntity = void Function(LocalEntity<LocationTag>);
+
 class LocationTagStateProvider extends StatefulWidget {
   //This is used when we want to edit a locaiton tag
   final LocalEntity<LocationTag>? locationTagEntity;
@@ -28,6 +30,7 @@ class LocationTagStateProvider extends StatefulWidget {
 class _LocationTagStateProviderState extends State<LocationTagStateProvider> {
   late int selectedRaduisIndex = defaultRadiusValueIndex;
   late Location centerPoint;
+  late LocalEntity<LocationTag>? locationTagEntity;
   final Debouncer _selectedRadiusDebouncer =
       Debouncer(const Duration(milliseconds: 300));
   @override
@@ -37,6 +40,7 @@ class _LocationTagStateProviderState extends State<LocationTagStateProvider> {
         widget.locationTagEntity?.item.centerPoint ?? widget.centerPoint!;
     selectedRaduisIndex =
         widget.locationTagEntity?.item.radiusIndex ?? defaultRadiusValueIndex;
+    locationTagEntity = widget.locationTagEntity;
     super.initState();
   }
 
@@ -51,13 +55,21 @@ class _LocationTagStateProviderState extends State<LocationTagStateProvider> {
     });
   }
 
+  void _updateLocationTagEntity(LocalEntity<LocationTag> newLocationTagEntity) {
+    setState(() {
+      locationTagEntity = newLocationTagEntity;
+      centerPoint = newLocationTagEntity.item.centerPoint;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return InheritedLocationTagData(
       selectedRaduisIndex,
       centerPoint,
       _updateSelectedIndex,
-      widget.locationTagEntity,
+      locationTagEntity,
+      _updateLocationTagEntity,
       child: widget.child,
     );
   }
@@ -69,11 +81,13 @@ class InheritedLocationTagData extends InheritedWidget {
   //locationTag is null when we are creating a new location tag in a add location sheet
   final LocalEntity<LocationTag>? locationTagEntity;
   final VoidCallbackParamInt updateSelectedIndex;
+  final VoidCallbackParamLocTagEntity updateLocationTagEntity;
   const InheritedLocationTagData(
     this.selectedRadiusIndex,
     this.centerPoint,
     this.updateSelectedIndex,
-    this.locationTagEntity, {
+    this.locationTagEntity,
+    this.updateLocationTagEntity, {
     required super.child,
     super.key,
   });

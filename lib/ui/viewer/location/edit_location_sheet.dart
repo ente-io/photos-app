@@ -125,7 +125,10 @@ class _EditLocationSheetState extends State<EditLocationSheet> {
                           alwaysShowSuccessState: true,
                         ),
                         const SizedBox(height: 20),
-                        const EditCenterPointTileWidget(),
+                        EditCenterPointTileWidget((newLocTagEntity) {
+                          InheritedLocationTagData.of(context)
+                              .updateLocationTagEntity(newLocTagEntity);
+                        }),
                         const SizedBox(height: 20),
                         RadiusPickerWidget(
                           _selectedRadiusIndexNotifier,

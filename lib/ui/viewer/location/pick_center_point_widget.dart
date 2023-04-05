@@ -11,6 +11,7 @@ import "package:photos/models/selected_files.dart";
 import "package:photos/services/collections_service.dart";
 import "package:photos/services/ignored_files_service.dart";
 import "package:photos/services/location_service.dart";
+import "package:photos/states/location_state.dart";
 import "package:photos/theme/colors.dart";
 import "package:photos/theme/ente_theme.dart";
 import "package:photos/ui/components/bottom_of_title_bar_widget.dart";
@@ -18,17 +19,16 @@ import "package:photos/ui/components/buttons/button_widget.dart";
 import "package:photos/ui/components/models/button_type.dart";
 import "package:photos/ui/components/title_bar_title_widget.dart";
 import "package:photos/ui/viewer/gallery/gallery.dart";
-import "package:photos/utils/dialog_util.dart";
 
 showPickCenterPointSheet(
   BuildContext context,
   LocalEntity<LocationTag> locationTagEntity,
-  VoidCallback onLocationEdited,
+  VoidCallbackParamLocTagEntity onEdit,
 ) {
   showBarModalBottomSheet(
     context: context,
     builder: (context) {
-      return PickCenterPointWidget(locationTagEntity, onLocationEdited);
+      return PickCenterPointWidget(locationTagEntity, onEdit);
     },
     shape: const RoundedRectangleBorder(
       side: BorderSide(width: 0),
@@ -45,11 +45,11 @@ showPickCenterPointSheet(
 
 class PickCenterPointWidget extends StatelessWidget {
   final LocalEntity<LocationTag> locationTagEntity;
-  final VoidCallback onLocationEdited;
+  final VoidCallbackParamLocTagEntity onEdit;
 
   const PickCenterPointWidget(
     this.locationTagEntity,
-    this.onLocationEdited, {
+    this.onEdit, {
     super.key,
   });
 
@@ -171,15 +171,16 @@ class PickCenterPointWidget extends StatelessWidget {
                                   onTap: () async {
                                     final selectedFile =
                                         selectedFiles.files.first;
-                                    await LocationService.instance
-                                        .updateCenterPoint(
+                                    final updatedLocationTag =
+                                        await LocationService.instance
+                                            .updateCenterPoint(
                                       locationTagEntity,
                                       selectedFile.location!,
-                                    )
-                                        .onError((e, s) {
-                                      showGenericErrorDialog(context: context);
-                                    });
-                                    onLocationEdited();
+                                    );
+                                    //     .onError((e, s) {
+                                    //   showGenericErrorDialog(context: context);
+                                    // });
+                                    onEdit(updatedLocationTag);
                                   },
                                 ),
                               );

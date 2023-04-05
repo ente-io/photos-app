@@ -79,7 +79,10 @@ class _DynamicLocationGalleryWidgetState
     }
 
     return FutureBuilder(
-      key: ValueKey(selectedRadius),
+      key: ValueKey(
+        InheritedLocationTagData.of(context).centerPoint.toString() +
+            selectedRadius.toString(),
+      ),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
           return SizedBox(
@@ -90,7 +93,10 @@ class _DynamicLocationGalleryWidgetState
               ),
             ),
             child: Gallery(
-              key: ValueKey(selectedRadius),
+              key: ValueKey(
+                InheritedLocationTagData.of(context).centerPoint.toString() +
+                    selectedRadius.toString(),
+              ),
               loadingWidget: const SizedBox.shrink(),
               disableScroll: true,
               asyncLoader: (

@@ -124,13 +124,13 @@ class LocationService {
     return [degrees, minutes, seconds];
   }
 
-  Future<void> updateCenterPoint(
+  Future<LocalEntity<LocationTag>> updateCenterPoint(
     LocalEntity<LocationTag> locationTagEntity,
     Location newCenterPoint,
   ) async {
     try {
-      await Future.delayed(const Duration(seconds: 2));
-      assert(false);
+      // await Future.delayed(const Duration(seconds: 2));
+      // assert(false);
       final locationTag = locationTagEntity.item;
       //Semi-major axis of the ellipse (b) doesn't change unless radius is changed.
       final a = (locationTag.radius * _scaleFactor(newCenterPoint.latitude!)) /
@@ -142,6 +142,7 @@ class LocationService {
         json.encode(updatedLoationTag.toJson()),
         id: locationTagEntity.id,
       );
+      return LocalEntity(updatedLoationTag, locationTagEntity.id);
     } catch (e, s) {
       _logger.severe("Failed to update center point", e, s);
       rethrow;

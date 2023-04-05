@@ -5,7 +5,8 @@ import "package:photos/theme/ente_theme.dart";
 import "package:photos/ui/viewer/location/pick_center_point_widget.dart";
 
 class EditCenterPointTileWidget extends StatelessWidget {
-  const EditCenterPointTileWidget({super.key});
+  final VoidCallbackParamLocTagEntity onEdit;
+  const EditCenterPointTileWidget(this.onEdit, {super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +54,7 @@ class EditCenterPointTileWidget extends StatelessWidget {
             showPickCenterPointSheet(
               context,
               InheritedLocationTagData.of(context).locationTagEntity!,
-              () {},
+              onEdit,
             );
           },
           icon: const Icon(Icons.edit),
