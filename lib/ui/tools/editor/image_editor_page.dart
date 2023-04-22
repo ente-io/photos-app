@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
+import "package:flutter_image_compress/flutter_image_compress.dart";
 import 'package:image_editor/image_editor.dart';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart' as path;
@@ -11,8 +12,9 @@ import 'package:photo_manager/photo_manager.dart';
 import 'package:photos/core/event_bus.dart';
 import 'package:photos/db/files_db.dart';
 import 'package:photos/events/local_photos_updated_event.dart';
+import "package:photos/generated/l10n.dart";
 import 'package:photos/models/file.dart' as ente;
-import 'package:photos/models/location.dart';
+import 'package:photos/models/location/location.dart';
 import 'package:photos/services/sync_service.dart';
 import 'package:photos/ui/common/loading_widget.dart';
 import 'package:photos/ui/components/action_sheet_widget.dart';
@@ -63,7 +65,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
     return WillPopScope(
       onWillPop: () async {
         if (_hasBeenEdited()) {
-          await _showExitConfirmationDialog();
+          await _showExitConfirmationDialog(context);
         } else {
           replacePage(context, DetailPage(widget.detailPageConfig));
         }
@@ -181,7 +183,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
             ),
             const Padding(padding: EdgeInsets.all(2)),
             Text(
-              "Flip",
+              S.of(context).flip,
               style: subtitle2.copyWith(
                 color: subtitle2.color!.withOpacity(0.8),
               ),
@@ -211,7 +213,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
             ),
             const Padding(padding: EdgeInsets.all(2)),
             Text(
-              "Rotate left",
+              S.of(context).rotateLeft,
               style: subtitle2.copyWith(
                 color: subtitle2.color!.withOpacity(0.8),
               ),
@@ -241,7 +243,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
             ),
             const Padding(padding: EdgeInsets.all(2)),
             Text(
-              "Rotate right",
+              S.of(context).rotateRight,
               style: subtitle2.copyWith(
                 color: subtitle2.color!.withOpacity(0.8),
               ),
@@ -271,7 +273,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
             ),
             const Padding(padding: EdgeInsets.all(2)),
             Text(
-              "Save copy",
+              S.of(context).saveCopy,
               style: subtitle2.copyWith(
                 color: subtitle2.color!.withOpacity(0.8),
               ),
@@ -284,7 +286,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
   }
 
   Future<void> _saveEdits() async {
-    final dialog = createProgressDialog(context, "Saving...");
+    final dialog = createProgressDialog(context, S.of(context).saving);
     await dialog.show();
     final ExtendedImageEditorState? state = editorKey.currentState;
     if (state == null) {
@@ -303,7 +305,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
 
     if (img == null) {
       _logger.severe("null rawImageData");
-      showToast(context, "Something went wrong");
+      showToast(context, S.of(context).somethingWentWrong);
       return;
     }
 
@@ -320,35 +322,37 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
     option.addOption(ColorOption.saturation(_saturation!));
     option.addOption(ColorOption.brightness(_brightness!));
 
-    option.outputFormat = const OutputFormat.png(88);
+    option.outputFormat = const OutputFormat.jpeg(100);
 
     final DateTime start = DateTime.now();
-    final Uint8List? result = await ImageEditor.editImage(
+    Uint8List? result = await ImageEditor.editImage(
       image: img,
       imageEditorOption: option,
     );
-    _logger.info('result.length = ${result?.length}');
+    if (result == null) {
+      _logger.severe("null result");
+      showToast(context, S.of(context).somethingWentWrong);
+      return;
+    }
+    _logger.info('Size before compression = ${result.length}');
+    result = await FlutterImageCompress.compressWithList(result);
+    _logger.info('Size after compression = ${result.length}');
     final Duration diff = DateTime.now().difference(start);
     _logger.info('image_editor time : $diff');
 
-    if (result == null) {
-      _logger.severe("null result");
-      showToast(context, "Something went wrong");
-      return;
-    }
     try {
       final fileName =
           path.basenameWithoutExtension(widget.originalFile.title!) +
               "_edited_" +
               DateTime.now().microsecondsSinceEpoch.toString() +
-              path.extension(widget.originalFile.title!);
+              ".JPEG";
       //Disabling notifications for assets changing to insert the file into
       //files db before triggering a sync.
       PhotoManager.stopChangeNotify();
       final AssetEntity? newAsset =
           await (PhotoManager.editor.saveImage(result, title: fileName));
       final newFile = await ente.File.fromAsset(
-        widget.originalFile.deviceFolder!,
+        widget.originalFile.deviceFolder ?? '',
         newAsset!,
       );
 
@@ -359,13 +363,16 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
         final assetEntity = await widget.originalFile.getAsset;
         if (assetEntity != null) {
           final latLong = await assetEntity.latlngAsync();
-          newFile.location = Location(latLong.latitude, latLong.longitude);
+          newFile.location = Location(
+            latitude: latLong.latitude,
+            longitude: latLong.longitude,
+          );
         }
       }
       newFile.generatedID = await FilesDB.instance.insert(newFile);
       Bus.instance.fire(LocalPhotosUpdatedEvent([newFile], source: "editSave"));
       SyncService.instance.sync();
-      showShortToast(context, "Edits saved");
+      showShortToast(context, S.of(context).editsSaved);
       _logger.info("Original file " + widget.originalFile.toString());
       _logger.info("Saved edits to file " + newFile.toString());
       final existingFiles = widget.detailPageConfig.files;
@@ -392,7 +399,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
         ),
       );
     } catch (e, s) {
-      showToast(context, "Oops, could not save edits");
+      showToast(context, S.of(context).oopsCouldNotSaveEdits);
       _logger.severe(e, s);
     } finally {
       PhotoManager.startChangeNotify();
@@ -418,7 +425,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
           SizedBox(
             width: 40,
             child: Text(
-              "Color",
+              S.of(context).color,
               style: subtitle2.copyWith(
                 color: subtitle2.color!.withOpacity(0.8),
               ),
@@ -464,7 +471,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
           SizedBox(
             width: 40,
             child: Text(
-              "Light",
+              S.of(context).light,
               style: subtitle2.copyWith(
                 color: subtitle2.color!.withOpacity(0.8),
               ),
@@ -500,20 +507,20 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
     );
   }
 
-  Future<void> _showExitConfirmationDialog() async {
+  Future<void> _showExitConfirmationDialog(BuildContext context) async {
     final actionResult = await showActionSheet(
       context: context,
       buttons: [
-        const ButtonWidget(
-          labelText: "Yes, discard changes",
+        ButtonWidget(
+          labelText: S.of(context).yesDiscardChanges,
           buttonType: ButtonType.critical,
           buttonSize: ButtonSize.large,
           shouldStickToDarkTheme: true,
           buttonAction: ButtonAction.first,
           isInAlert: true,
         ),
-        const ButtonWidget(
-          labelText: "No",
+        ButtonWidget(
+          labelText: S.of(context).no,
           buttonType: ButtonType.secondary,
           buttonSize: ButtonSize.large,
           buttonAction: ButtonAction.second,
@@ -521,7 +528,7 @@ class _ImageEditorPageState extends State<ImageEditorPage> {
           isInAlert: true,
         ),
       ],
-      body: "Do you want to discard the edits you have made?",
+      body: S.of(context).doYouWantToDiscardTheEditsYouHaveMade,
       actionSheetType: ActionSheetType.defaultActionSheet,
     );
     if (actionResult?.action != null &&

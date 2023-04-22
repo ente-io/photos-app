@@ -9,6 +9,8 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:logging/logging.dart';
 import 'package:media_extension/media_extension_action_types.dart';
 import 'package:photos/ente_theme_data.dart';
+import "package:photos/generated/l10n.dart";
+import "package:photos/l10n/l10n.dart";
 import 'package:photos/services/app_lifecycle_service.dart';
 import 'package:photos/services/sync_service.dart';
 import 'package:photos/ui/home_widget.dart';
@@ -19,13 +21,20 @@ class EnteApp extends StatefulWidget {
   final Future<void> Function(String) runBackgroundTask;
   final Future<void> Function(String) killBackgroundTask;
   final AdaptiveThemeMode? savedThemeMode;
+  final Locale locale;
 
   const EnteApp(
     this.runBackgroundTask,
     this.killBackgroundTask,
+    this.locale,
     this.savedThemeMode, {
     Key? key,
   }) : super(key: key);
+
+  static void setLocale(BuildContext context, Locale newLocale) {
+    final state = context.findAncestorStateOfType<_EnteAppState>()!;
+    state.setLocale(newLocale);
+  }
 
   @override
   State<EnteApp> createState() => _EnteAppState();
@@ -33,13 +42,21 @@ class EnteApp extends StatefulWidget {
 
 class _EnteAppState extends State<EnteApp> with WidgetsBindingObserver {
   final _logger = Logger("EnteAppState");
+  late Locale locale;
 
   @override
   void initState() {
     _logger.info('init App');
     super.initState();
+    locale = widget.locale;
     setupIntentAction();
     WidgetsBinding.instance.addObserver(this);
+  }
+
+  setLocale(Locale newLocale) {
+    setState(() {
+      locale = newLocale;
+    });
   }
 
   void setupIntentAction() async {
@@ -70,8 +87,13 @@ class _EnteAppState extends State<EnteApp> with WidgetsBindingObserver {
               : const HomeWidget(),
           debugShowCheckedModeBanner: false,
           builder: EasyLoading.init(),
-          supportedLocales: AppLocalizations.supportedLocales,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          locale: locale,
+          supportedLocales: appSupportedLocales,
+          localeListResolutionCallback: localResolutionCallBack,
+          localizationsDelegates: const [
+            ...AppLocalizations.localizationsDelegates,
+            S.delegate
+          ],
         ),
       );
     } else {
@@ -83,8 +105,13 @@ class _EnteAppState extends State<EnteApp> with WidgetsBindingObserver {
         home: const HomeWidget(),
         debugShowCheckedModeBanner: false,
         builder: EasyLoading.init(),
-        supportedLocales: AppLocalizations.supportedLocales,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        locale: locale,
+        supportedLocales: appSupportedLocales,
+        localeListResolutionCallback: localResolutionCallBack,
+        localizationsDelegates: const [
+          ...AppLocalizations.localizationsDelegates,
+          S.delegate
+        ],
       );
     }
   }
