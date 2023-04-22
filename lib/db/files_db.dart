@@ -1,3 +1,4 @@
+import 'dart:developer' as dev;
 import 'dart:io' as io;
 
 import 'package:flutter/foundation.dart';
@@ -8,7 +9,7 @@ import 'package:photos/models/backup_status.dart';
 import 'package:photos/models/file.dart';
 import 'package:photos/models/file_load_result.dart';
 import 'package:photos/models/file_type.dart';
-import 'package:photos/models/location.dart';
+import 'package:photos/models/location/location.dart';
 import 'package:photos/models/magic_metadata.dart';
 import 'package:photos/utils/file_uploader_util.dart';
 import 'package:sqflite/sqflite.dart';
@@ -79,6 +80,7 @@ class FilesDB {
     ...createOnDeviceFilesAndPathCollection(),
     ...addFileSizeColumn(),
     ...updateIndexes(),
+    ...createEntityDataTable(),
   ];
 
   final dbConfig = MigrationConfig(
@@ -331,6 +333,20 @@ class FilesDB {
     ];
   }
 
+  static List<String> createEntityDataTable() {
+    return [
+      '''
+       CREATE TABLE IF NOT EXISTS entities (
+          id TEXT PRIMARY KEY NOT NULL,
+          type TEXT NOT NULL,
+          ownerID INTEGER NOT NULL,
+          data TEXT NOT NULL DEFAULT '{}',
+          updatedAt INTEGER NOT NULL
+      );
+      '''
+    ];
+  }
+
   static List<String> addFileSizeColumn() {
     return [
       '''
@@ -355,6 +371,7 @@ class FilesDB {
     await db.delete(filesTable);
     await db.delete("device_files");
     await db.delete("device_collections");
+    await db.delete("entities");
   }
 
   Future<void> deleteDB() async {
@@ -486,6 +503,8 @@ class FilesDB {
     int visibility = visibilityVisible,
     Set<int>? ignoredCollectionIDs,
   }) async {
+    final stopWatch = Stopwatch()..start();
+
     final db = await instance.database;
     final order = (asc ?? false ? 'ASC' : 'DESC');
     final results = await db.query(
@@ -501,6 +520,10 @@ class FilesDB {
     final files = convertToFiles(results);
     final List<File> deduplicatedFiles =
         _deduplicatedAndFilterIgnoredFiles(files, ignoredCollectionIDs);
+    dev.log(
+      "getAllPendingOrUploadedFiles time taken: ${stopWatch.elapsedMilliseconds} ms",
+    );
+    stopWatch.stop();
     return FileLoadResult(deduplicatedFiles, files.length == limit);
   }
 
@@ -1352,9 +1375,46 @@ class FilesDB {
     return result;
   }
 
+  // For givenUserID, get List of unique LocalIDs for files which are
+  // uploaded by the given user and location is missing
+  Future<List<String>> getLocalIDsForFilesWithoutLocation(int ownerID) async {
+    final db = await instance.database;
+    final rows = await db.query(
+      filesTable,
+      columns: [columnLocalID],
+      distinct: true,
+      where: '$columnOwnerID = ? AND $columnLocalID IS NOT NULL AND '
+          '($columnLatitude IS NULL OR '
+          '$columnLongitude IS NULL OR $columnLongitude = 0.0 or $columnLongitude = 0.0)',
+      whereArgs: [ownerID],
+    );
+    final result = <String>[];
+    for (final row in rows) {
+      result.add(row[columnLocalID].toString());
+    }
+    return result;
+  }
+
+  // For given list of localIDs and ownerID, get a list of uploaded files
+  // owned by given user
+  Future<List<File>> getFilesForLocalIDs(
+    List<String> localIDs,
+    int ownerID,
+  ) async {
+    final db = await instance.database;
+    final rows = await db.query(
+      filesTable,
+      where:
+          '$columnLocalID IN (${localIDs.map((e) => "'$e'").join(',')}) AND $columnOwnerID = ?',
+      whereArgs: [ownerID],
+    );
+    return _deduplicatedAndFilterIgnoredFiles(convertToFiles(rows), {});
+  }
+
   Future<List<File>> getAllFilesFromDB(Set<int> collectionsToIgnore) async {
     final db = await instance.database;
-    final List<Map<String, dynamic>> result = await db.query(filesTable);
+    final List<Map<String, dynamic>> result =
+        await db.query(filesTable, orderBy: '$columnCreationTime DESC');
     final List<File> files = convertToFiles(result);
     final List<File> deduplicatedFiles =
         _deduplicatedAndFilterIgnoredFiles(files, collectionsToIgnore);
@@ -1376,6 +1436,33 @@ class FilesDB {
     return filesCount;
   }
 
+  Future<FileLoadResult> fetchAllUploadedAndSharedFilesWithLocation(
+    int startTime,
+    int endTime, {
+    int? limit,
+    bool? asc,
+    Set<int>? ignoredCollectionIDs,
+  }) async {
+    final db = await instance.database;
+    final order = (asc ?? false ? 'ASC' : 'DESC');
+    final results = await db.query(
+      filesTable,
+      where:
+          '$columnLatitude IS NOT NULL AND $columnLongitude IS NOT NULL AND ($columnLatitude IS NOT 0 OR $columnLongitude IS NOT 0)'
+          ' AND $columnCreationTime >= ? AND $columnCreationTime <= ? AND '
+          '($columnMMdVisibility IS NULL OR $columnMMdVisibility = ?)'
+          ' AND ($columnLocalID IS NOT NULL OR ($columnCollectionID IS NOT NULL AND $columnCollectionID IS NOT -1))',
+      whereArgs: [startTime, endTime, visibilityVisible],
+      orderBy:
+          '$columnCreationTime ' + order + ', $columnModificationTime ' + order,
+      limit: limit,
+    );
+    final files = convertToFiles(results);
+    final List<File> deduplicatedFiles =
+        _deduplicatedAndFilterIgnoredFiles(files, ignoredCollectionIDs);
+    return FileLoadResult(deduplicatedFiles, files.length == limit);
+  }
+
   Map<String, dynamic> _getRowForFile(File file) {
     final row = <String, dynamic>{};
     if (file.generatedID != null) {
@@ -1387,6 +1474,10 @@ class FilesDB {
     row[columnCollectionID] = file.collectionID ?? -1;
     row[columnTitle] = file.title;
     row[columnDeviceFolder] = file.deviceFolder;
+    // if (file.location == null ||
+    //     (file.location!.latitude == null && file.location!.longitude == null)) {
+    //   file.location = Location.randomLocation();
+    // }
     if (file.location != null) {
       row[columnLatitude] = file.location!.latitude;
       row[columnLongitude] = file.location!.longitude;
@@ -1411,11 +1502,16 @@ class FilesDB {
     row[columnMMdVisibility] = file.magicMetadata.visibility;
     row[columnPubMMdVersion] = file.pubMmdVersion;
     row[columnPubMMdEncodedJson] = file.pubMmdEncodedJson ?? '{}';
-    if (file.pubMagicMetadata != null &&
-        file.pubMagicMetadata!.editedTime != null) {
-      // override existing creationTime to avoid re-writing all queries related
-      // to loading the gallery
-      row[columnCreationTime] = file.pubMagicMetadata!.editedTime;
+    // override existing fields to avoid re-writing all queries and logic
+    if (file.pubMagicMetadata != null) {
+      if (file.pubMagicMetadata!.editedTime != null) {
+        row[columnCreationTime] = file.pubMagicMetadata!.editedTime;
+      }
+      if (file.pubMagicMetadata!.lat != null &&
+          file.pubMagicMetadata!.long != null) {
+        row[columnLatitude] = file.pubMagicMetadata!.lat;
+        row[columnLongitude] = file.pubMagicMetadata!.long;
+      }
     }
     return row;
   }
@@ -1471,7 +1567,10 @@ class FilesDB {
     file.title = row[columnTitle];
     file.deviceFolder = row[columnDeviceFolder];
     if (row[columnLatitude] != null && row[columnLongitude] != null) {
-      file.location = Location(row[columnLatitude], row[columnLongitude]);
+      file.location = Location(
+        latitude: row[columnLatitude],
+        longitude: row[columnLongitude],
+      );
     }
     file.fileType = getFileType(row[columnFileType]);
     file.creationTime = row[columnCreationTime];

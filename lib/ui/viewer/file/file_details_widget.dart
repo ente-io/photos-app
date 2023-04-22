@@ -1,10 +1,12 @@
 import "package:exif/exif.dart";
-import "package:flutter/cupertino.dart";
 import "package:flutter/material.dart";
+import "package:logging/logging.dart";
 import "package:photos/core/configuration.dart";
 import "package:photos/models/file.dart";
 import "package:photos/models/file_type.dart";
+import "package:photos/models/magic_metadata.dart";
 import "package:photos/services/feature_flag_service.dart";
+import "package:photos/services/file_magic_service.dart";
 import 'package:photos/theme/ente_theme.dart';
 import 'package:photos/ui/components/buttons/icon_button_widget.dart';
 import "package:photos/ui/components/divider_widget.dart";
@@ -16,6 +18,7 @@ import 'package:photos/ui/viewer/file_details/backed_up_time_item_widget.dart';
 import "package:photos/ui/viewer/file_details/creation_time_item_widget.dart";
 import 'package:photos/ui/viewer/file_details/exif_item_widgets.dart';
 import "package:photos/ui/viewer/file_details/file_properties_item_widget.dart";
+import "package:photos/ui/viewer/file_details/location_tags_widget.dart";
 import "package:photos/ui/viewer/file_details/objects_item_widget.dart";
 import "package:photos/utils/exif_util.dart";
 
@@ -39,19 +42,33 @@ class _FileDetailsWidgetState extends State<FileDetailsWidget> {
     "takenOnDevice": null,
     "exposureTime": null,
     "ISO": null,
-    "megaPixels": null
+    "megaPixels": null,
+    "lat": null,
+    "long": null,
+    "latRef": null,
+    "longRef": null,
   };
 
   bool _isImage = false;
   late int _currentUserID;
   bool showExifListTile = false;
+  final ValueNotifier<bool> hasLocationData = ValueNotifier(false);
+  final Logger _logger = Logger("_FileDetailsWidgetState");
 
   @override
   void initState() {
     debugPrint('file_details_sheet initState');
     _currentUserID = Configuration.instance.getUserID()!;
+    hasLocationData.value = widget.file.hasLocation;
     _isImage = widget.file.fileType == FileType.image ||
         widget.file.fileType == FileType.livePhoto;
+
+    _exifNotifier.addListener(() {
+      if (_exifNotifier.value != null && !widget.file.hasLocation) {
+        _updateLocationFromExif(_exifNotifier.value!).ignore();
+      }
+    });
+
     if (_isImage) {
       _exifNotifier.addListener(() {
         if (_exifNotifier.value != null) {
@@ -63,10 +80,10 @@ class _FileDetailsWidgetState extends State<FileDetailsWidget> {
             _exifData["exposureTime"] != null ||
             _exifData["ISO"] != null;
       });
-      getExif(widget.file).then((exif) {
-        _exifNotifier.value = exif;
-      });
     }
+    getExif(widget.file).then((exif) {
+      _exifNotifier.value = exif;
+    });
     super.initState();
   }
 
@@ -125,6 +142,23 @@ class _FileDetailsWidgetState extends State<FileDetailsWidget> {
         },
       ),
     );
+    fileDetailsTiles.addAll([
+      ValueListenableBuilder(
+        valueListenable: hasLocationData,
+        builder: (context, bool value, __) {
+          return value
+              ? Column(
+                  children: [
+                    LocationTagsWidget(
+                      widget.file.location!,
+                    ),
+                    const FileDetailsDivider(),
+                  ],
+                )
+              : const SizedBox.shrink();
+        },
+      )
+    ]);
     if (_isImage) {
       fileDetailsTiles.addAll([
         ValueListenableBuilder(
@@ -198,6 +232,33 @@ class _FileDetailsWidgetState extends State<FileDetailsWidget> {
         ),
       ),
     );
+  }
+
+  //This code is for updating the location of files in which location data is
+  //missing and the EXIF has location data. This is only happens for a
+  //certain specific minority of devices.
+  Future<void> _updateLocationFromExif(Map<String, IfdTag> exif) async {
+    // If the file is not uploaded or the file is not owned by the current user
+    // then we don't need to update the location.
+    if (!widget.file.isUploaded || widget.file.ownerID! != _currentUserID) {
+      return;
+    }
+    try {
+      final locationDataFromExif = locationFromExif(exif);
+      if (locationDataFromExif?.latitude != null &&
+          locationDataFromExif?.longitude != null) {
+        widget.file.location = locationDataFromExif;
+        await FileMagicService.instance.updatePublicMagicMetadata([
+          widget.file
+        ], {
+          pubMagicKeyLat: locationDataFromExif!.latitude,
+          pubMagicKeyLong: locationDataFromExif.longitude
+        });
+        hasLocationData.value = true;
+      }
+    } catch (e, s) {
+      _logger.severe("Error while updating location from EXIF", e, s);
+    }
   }
 
   _generateExifForDetails(Map<String, IfdTag> exif) {

@@ -2,6 +2,7 @@ import "dart:io";
 
 import "package:flutter/cupertino.dart";
 import 'package:flutter/material.dart';
+import "package:photos/generated/l10n.dart";
 import 'package:photos/models/memory.dart';
 import 'package:photos/services/memories_service.dart';
 import "package:photos/theme/ente_theme.dart";
@@ -187,11 +188,7 @@ class _MemoryWidgetState extends State<MemoryWidget> {
     final present = DateTime.now();
     final then = DateTime.fromMicrosecondsSinceEpoch(memory.file.creationTime!);
     final diffInYears = present.year - then.year;
-    if (diffInYears == 1) {
-      return "1 year ago";
-    } else {
-      return diffInYears.toString() + " years ago";
-    }
+    return S.of(context).yearsAgo(diffInYears);
   }
 }
 
@@ -372,7 +369,7 @@ class _FullScreenMemoryState extends State<FullScreenMemory> {
                 color: Colors.white, //same for both themes
               ),
               onPressed: () {
-                showInfoSheet(context, file);
+                showDetailsSheet(context, file);
               },
             ),
             IconButton(

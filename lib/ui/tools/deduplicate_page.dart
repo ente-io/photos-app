@@ -4,6 +4,7 @@ import 'package:photos/core/constants.dart';
 import 'package:photos/core/event_bus.dart';
 import 'package:photos/ente_theme_data.dart';
 import 'package:photos/events/user_details_changed_event.dart';
+import "package:photos/generated/l10n.dart";
 import 'package:photos/models/duplicate_files.dart';
 import 'package:photos/models/file.dart';
 import 'package:photos/services/collections_service.dart';
@@ -48,16 +49,17 @@ class _DeduplicatePageState extends State<DeduplicatePage> {
   final Map<int?, int> _fileSizeMap = {};
   late List<DuplicateFiles> _duplicates;
   bool? _shouldClubByCaptureTime = true;
+  bool toastShown = false;
 
   SortKey sortKey = SortKey.size;
 
   @override
   void initState() {
-    super.initState();
     _duplicates =
         DeduplicationService.instance.clubDuplicatesByTime(widget.duplicates);
     _selectAllFilesButFirst();
-    showToast(context, "Long-press on an item to view in full-screen");
+
+    super.initState();
   }
 
   void _selectAllFilesButFirst() {
@@ -76,11 +78,16 @@ class _DeduplicatePageState extends State<DeduplicatePage> {
 
   @override
   Widget build(BuildContext context) {
+    if (!toastShown) {
+      toastShown = true;
+      showShortToast(
+          context, S.of(context).longpressOnAnItemToViewInFullscreen);
+    }
     _sortDuplicates();
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
-        title: const Text("Deduplicate Files"),
+        title: Text(S.of(context).deduplicateFiles),
         actions: <Widget>[
           PopupMenuButton(
             constraints: const BoxConstraints(minWidth: 180),
@@ -109,7 +116,7 @@ class _DeduplicatePageState extends State<DeduplicatePage> {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 1),
                       child: Text(
-                        "Deselect all",
+                        S.of(context).deselectAll,
                         style: Theme.of(context)
                             .textTheme
                             .subtitle1!
@@ -156,7 +163,7 @@ class _DeduplicatePageState extends State<DeduplicatePage> {
                 return _getClubbingConfig();
               } else if (index == 2) {
                 if (_duplicates.isNotEmpty) {
-                  return _getSortMenu();
+                  return _getSortMenu(context);
                 } else {
                   return const Padding(
                     padding: EdgeInsets.only(top: 32),
@@ -203,7 +210,7 @@ class _DeduplicatePageState extends State<DeduplicatePage> {
             padding: EdgeInsets.all(2),
           ),
           Text(
-            "Please review and delete the items you believe are duplicates.",
+            S.of(context).reviewDeduplicateItems,
             style: Theme.of(context).textTheme.subtitle2,
           ),
           const Padding(
@@ -227,7 +234,7 @@ class _DeduplicatePageState extends State<DeduplicatePage> {
           _resetEntriesAndSelection();
           setState(() {});
         },
-        title: const Text("Club by capture time"),
+        title: Text(S.of(context).clubByCaptureTime),
       ),
     );
   }
@@ -242,18 +249,18 @@ class _DeduplicatePageState extends State<DeduplicatePage> {
     _selectAllFilesButFirst();
   }
 
-  Widget _getSortMenu() {
+  Widget _getSortMenu(BuildContext context) {
     Text sortOptionText(SortKey key) {
       String text = key.toString();
       switch (key) {
         case SortKey.count:
-          text = "Count";
+          text = S.of(context).count;
           break;
         case SortKey.size:
-          text = "Total size";
+          text = S.of(context).totalSize;
           break;
         case SortKey.time:
-          text = "Time";
+          text = S.of(context).time;
           break;
       }
       return Text(

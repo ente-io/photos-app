@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import "package:photos/generated/l10n.dart";
 import 'package:photos/models/file.dart';
 import 'package:photos/models/file_type.dart';
 import 'package:photos/models/selected_files.dart';
@@ -75,7 +76,7 @@ class FadingBottomBarState extends State<FadingBottomBar> {
               color: Colors.white,
             ),
             onPressed: () async {
-              await _displayInfo(widget.file);
+              await _displayDetails(widget.file);
               safeRefresh(); //to instantly show the new caption if keypad is closed after pressing 'done' - here the caption will be updated before the bottom sheet is closed
               await Future.delayed(
                 const Duration(milliseconds: 500),
@@ -114,7 +115,7 @@ class FadingBottomBarState extends State<FadingBottomBar> {
       if (isOwnedByUser) {
         children.add(
           Tooltip(
-            message: "Delete",
+            message: S.of(context).delete,
             child: Padding(
               padding: const EdgeInsets.only(top: 12, bottom: 12),
               child: IconButton(
@@ -134,7 +135,7 @@ class FadingBottomBarState extends State<FadingBottomBar> {
       }
       children.add(
         Tooltip(
-          message: "Share",
+          message: S.of(context).share,
           child: Padding(
             padding: const EdgeInsets.only(top: 12, bottom: 12),
             child: IconButton(
@@ -222,7 +223,7 @@ class FadingBottomBarState extends State<FadingBottomBar> {
   void _addTrashOptions(List<Widget> children) {
     children.add(
       Tooltip(
-        message: "Restore",
+        message: S.of(context).restore,
         child: Padding(
           padding: const EdgeInsets.only(top: 12, bottom: 12),
           child: IconButton(
@@ -246,7 +247,7 @@ class FadingBottomBarState extends State<FadingBottomBar> {
 
     children.add(
       Tooltip(
-        message: "Delete",
+        message: S.of(context).delete,
         child: Padding(
           padding: const EdgeInsets.only(top: 12, bottom: 12),
           child: IconButton(
@@ -267,7 +268,7 @@ class FadingBottomBarState extends State<FadingBottomBar> {
     );
   }
 
-  Future<void> _displayInfo(File file) async {
-    await showInfoSheet(context, file);
+  Future<void> _displayDetails(File file) async {
+    await showDetailsSheet(context, file);
   }
 }
