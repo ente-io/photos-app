@@ -6779,6 +6779,76 @@ class S {
       args: [],
     );
   }
+
+  /// `Machine learning`
+  String get machineLearning {
+    return Intl.message(
+      'Machine learning',
+      name: 'machineLearning',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Status`
+  String get status {
+    return Intl.message(
+      'Status',
+      name: 'status',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Clear indexes`
+  String get clearIndexes {
+    return Intl.message(
+      'Clear indexes',
+      name: 'clearIndexes',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Indexed items`
+  String get indexedItems {
+    return Intl.message(
+      'Indexed items',
+      name: 'indexedItems',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unindexed items`
+  String get unindexedItems {
+    return Intl.message(
+      'Unindexed items',
+      name: 'unindexedItems',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enable machine learning`
+  String get enableMachineLearning {
+    return Intl.message(
+      'Enable machine learning',
+      name: 'enableMachineLearning',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please note that this will result in a higher bandwidth and battery usage until all items are indexed.`
+  String get enableMLWarning {
+    return Intl.message(
+      'Please note that this will result in a higher bandwidth and battery usage until all items are indexed.',
+      name: 'enableMLWarning',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {
