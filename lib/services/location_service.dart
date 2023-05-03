@@ -1,6 +1,7 @@
 import "dart:convert";
 import "dart:math";
 
+import "package:flutter/foundation.dart";
 import "package:logging/logging.dart";
 import "package:photos/core/constants.dart";
 import "package:photos/core/event_bus.dart";
@@ -229,9 +230,15 @@ class GPSData {
       longSign = longRef == "E" ? 1 : -1;
     }
 
-    return Location(
+    final result = Location(
       latitude: latSign * (lat![0] + lat![1] / 60 + lat![2] / 3600),
       longitude: longSign * (long![0] + long![1] / 60 + long![2] / 3600),
     );
+    if (Location.isValidLocation(result)) {
+      return result;
+    } else {
+      debugPrint("Invalid location ${result.toString()}");
+      return null;
+    }
   }
 }
