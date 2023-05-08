@@ -945,7 +945,7 @@ class FilesDB {
     final db = await instance.database;
     final rows = await db.query(
       filesTable,
-      where: '($columnUploadedFileID != NULL OR $columnUploadedFileID != -1) '
+      where: '($columnUploadedFileID != NULL AND $columnUploadedFileID != -1) '
           'AND $columnOwnerID = ? AND $columnFileType ='
           ' ? '
           'AND $columnHash IN ($inParam)',
