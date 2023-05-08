@@ -632,6 +632,24 @@ class FileUploader {
       return Tuple2(true, fileMissingLocalButSameCollection);
     }
 
+    // case e:
+    final File? diffLocalAtSameCollection =
+        existingUploadedFiles.firstWhereOrNull(
+      (e) =>
+          e.collectionID == toCollectionID &&
+          (e.localID != null && e.localID != fileToUpload.localID),
+    );
+    if (diffLocalAtSameCollection != null) {
+      // update the local id of the existing file and delete the fileToUpload
+      // entry
+      _logger.fine(
+        "diffLocalAtSameCollection: \n upload duplicate file  ${fileToUpload.tag} with name ${fileToUpload.displayName}} \n "
+        "existing:${diffLocalAtSameCollection.tag} with name "
+        "${diffLocalAtSameCollection.displayName}",
+      );
+      return Tuple2(false, fileToUpload);
+    }
+
     // case c and d
     final File? fileExistsButDifferentCollection =
         existingUploadedFiles.firstWhereOrNull(
