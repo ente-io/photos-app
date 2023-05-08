@@ -1,5 +1,6 @@
 import "package:flutter/material.dart";
 import "package:flutter_datetime_picker/flutter_datetime_picker.dart";
+import "package:intl/intl.dart";
 import "package:photos/ente_theme_data.dart";
 import "package:photos/models/file.dart";
 import "package:photos/theme/ente_theme.dart";
@@ -24,7 +25,8 @@ class _CreationTimeItemState extends State<CreationTimeItem> {
     return InfoItemWidget(
       key: const ValueKey("Creation time"),
       leadingIcon: Icons.calendar_today_outlined,
-      title: getFullDate(
+      title: DateFormat.yMMMEd(Localizations.localeOf(context).languageCode)
+          .format(
         DateTime.fromMicrosecondsSinceEpoch(widget.file.creationTime!),
       ),
       subtitleSection: Future.value([
