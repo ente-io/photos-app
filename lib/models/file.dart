@@ -193,8 +193,7 @@ class File extends EnteFile {
         if (Platform.isAndroid) {
           //Fix for missing location data in lower android versions.
           final Location? exifLocation = locationFromExif(exifData);
-          if (exifLocation?.latitude != null &&
-              exifLocation?.longitude != null) {
+          if (Location.isValidLocation(exifLocation)) {
             location = exifLocation;
           }
         }
@@ -283,6 +282,15 @@ class File extends EnteFile {
     }
     if (title == null && kDebugMode) _logger.severe('File title is null');
     return title ?? '';
+  }
+
+  // return 0 if the height is not available
+  int get height {
+    return pubMagicMetadata?.h ?? 0;
+  }
+
+  int get width {
+    return pubMagicMetadata?.w ?? 0;
   }
 
   // returns true if the file isn't available in the user's gallery

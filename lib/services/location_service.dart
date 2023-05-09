@@ -38,7 +38,7 @@ class LocationService {
   Future<void> addLocation(
     String location,
     Location centerPoint,
-    int radius,
+    double radius,
   ) async {
     //The area enclosed by the location tag will be a circle on a 3D spherical
     //globe and an ellipse on a 2D Mercator projection (2D map)
@@ -101,7 +101,7 @@ class LocationService {
   bool isFileInsideLocationTag(
     Location centerPoint,
     Location fileCoordinates,
-    int radius,
+    double radius,
   ) {
     final a =
         (radius * _scaleFactor(centerPoint.latitude!)) / kilometersPerDegree;
@@ -134,7 +134,7 @@ class LocationService {
   ///Will only update if there is a change in the locationTag's properties
   Future<void> updateLocationTag({
     required LocalEntity<LocationTag> locationTagEntity,
-    int? newRadius,
+    double? newRadius,
     Location? newCenterPoint,
     String? newName,
   }) async {
@@ -206,8 +206,8 @@ class GPSData {
   GPSData(this.latRef, this.lat, this.longRef, this.long);
 
   Location? toLocationObj() {
-    final int latSign;
-    final int longSign;
+    int? latSign;
+    int? longSign;
     if (lat == null || long == null) {
       return null;
     }
@@ -225,13 +225,32 @@ class GPSData {
         long![long!.indexOf(element)] = element.abs();
       }
     } else {
-      latSign = latRef == "N" ? 1 : -1;
-      longSign = longRef == "E" ? 1 : -1;
+      if (latRef!.toLowerCase().startsWith('n')) {
+        latSign = 1;
+      } else if (latRef!.toLowerCase().startsWith('s')) {
+        latSign = -1;
+      }
+      if (longRef!.toLowerCase().startsWith('e')) {
+        longSign = 1;
+      } else if (longRef!.toLowerCase().startsWith('w')) {
+        longSign = -1;
+      }
     }
 
-    return Location(
+    //At this point, latSign and longSign will only be null if latRef and longRef
+    //is of invalid format.
+    if (latSign == null || longSign == null) {
+      return null;
+    }
+
+    final result = Location(
       latitude: latSign * (lat![0] + lat![1] / 60 + lat![2] / 3600),
       longitude: longSign * (long![0] + long![1] / 60 + long![2] / 3600),
     );
+    if (Location.isValidLocation(result)) {
+      return result;
+    } else {
+      return null;
+    }
   }
 }

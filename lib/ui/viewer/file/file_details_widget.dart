@@ -2,10 +2,10 @@ import "package:exif/exif.dart";
 import "package:flutter/material.dart";
 import "package:logging/logging.dart";
 import "package:photos/core/configuration.dart";
+import "package:photos/generated/l10n.dart";
 import "package:photos/models/file.dart";
 import "package:photos/models/file_type.dart";
 import "package:photos/models/magic_metadata.dart";
-import "package:photos/services/feature_flag_service.dart";
 import "package:photos/services/file_magic_service.dart";
 import 'package:photos/theme/ente_theme.dart';
 import 'package:photos/ui/components/buttons/icon_button_widget.dart';
@@ -24,6 +24,7 @@ import "package:photos/utils/exif_util.dart";
 
 class FileDetailsWidget extends StatefulWidget {
   final File file;
+
   const FileDetailsWidget(
     this.file, {
     Key? key,
@@ -174,12 +175,12 @@ class _FileDetailsWidgetState extends State<FileDetailsWidget> {
         )
       ]);
     }
-    if (FeatureFlagService.instance.isInternalUserOrDebugBuild()) {
-      fileDetailsTiles.addAll([
-        ObjectsItemWidget(file),
-        const FileDetailsDivider(),
-      ]);
-    }
+
+    fileDetailsTiles.addAll([
+      ObjectsItemWidget(file),
+      const FileDetailsDivider(),
+    ]);
+
     if (file.uploadedFileID != null && file.updationTime != null) {
       fileDetailsTiles.addAll(
         [
@@ -204,7 +205,7 @@ class _FileDetailsWidgetState extends State<FileDetailsWidget> {
             slivers: <Widget>[
               TitleBarWidget(
                 isFlexibleSpaceDisabled: true,
-                title: "Details",
+                title: S.of(context).details,
                 isOnTopOfScreen: false,
                 backgroundColor: getEnteColorScheme(context).backgroundElevated,
                 leading: IconButtonWidget(

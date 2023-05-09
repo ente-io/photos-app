@@ -1,11 +1,17 @@
 import 'dart:io' as io;
+import "dart:io";
 
 import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
+import 'package:motion_photos/motion_photos.dart';
+import "package:photos/core/configuration.dart";
 import 'package:photos/core/constants.dart';
 import "package:photos/generated/l10n.dart";
 import 'package:photos/models/file.dart';
+import "package:photos/models/file_type.dart";
+import "package:photos/models/magic_metadata.dart";
+import "package:photos/services/file_magic_service.dart";
 import 'package:photos/ui/viewer/file/zoomable_image.dart';
 import 'package:photos/utils/file_util.dart';
 import 'package:photos/utils/toast_util.dart';
@@ -43,7 +49,7 @@ class _ZoomableLiveImageState extends State<ZoomableLiveImage>
   @override
   void initState() {
     _file = widget.file;
-    _showLivePhotoToast();
+    Future.microtask(() => _showHintForMotionPhotoPlay).ignore();
     super.initState();
   }
 
@@ -119,6 +125,19 @@ class _ZoomableLiveImageState extends State<ZoomableLiveImage>
       return;
     }
     _isLoadingVideoPlayer = true;
+    final io.File? videoFile = _file.fileType == FileType.livePhoto
+        ? await _getLivePhotoVideo()
+        : await _getMotionPhotoVideo();
+
+    if (videoFile != null && videoFile.existsSync()) {
+      _setVideoPlayerController(file: videoFile);
+    } else if (_file.fileType == FileType.livePhoto) {
+      showShortToast(context, S.of(context).downloadFailed);
+    }
+    _isLoadingVideoPlayer = false;
+  }
+
+  Future<io.File?> _getLivePhotoVideo() async {
     if (_file.isRemoteFile && !(await isFileCached(_file, liveVideo: true))) {
       showShortToast(context, S.of(context).downloading);
     }
@@ -142,13 +161,39 @@ class _ZoomableLiveImageState extends State<ZoomableLiveImage>
         return null;
       });
     }
+    return videoFile;
+  }
 
-    if (videoFile != null && videoFile.existsSync()) {
-      _setVideoPlayerController(file: videoFile);
-    } else {
-      showShortToast(context, S.of(context).downloadFailed);
+  Future<io.File?> _getMotionPhotoVideo() async {
+    if (_file.isRemoteFile && !(await isFileCached(_file))) {
+      showShortToast(context, S.of(context).downloading);
     }
-    _isLoadingVideoPlayer = false;
+
+    final io.File? imageFile = await getFile(
+      widget.file,
+      isOrigin: !Platform.isAndroid,
+    ).timeout(const Duration(seconds: 15)).onError((dynamic e, s) {
+      _logger.info("getFile failed ${_file.tag}", e);
+      return null;
+    });
+    if (imageFile != null) {
+      final motionPhoto = MotionPhotos(imageFile.path);
+      final index = await motionPhoto.getMotionVideoIndex();
+      if (index != null) {
+        if (widget.file.pubMagicMetadata?.mvi == null &&
+            (widget.file.ownerID ?? 0) == Configuration.instance.getUserID()!) {
+          FileMagicService.instance.updatePublicMagicMetadata(
+            [widget.file],
+            {pubMotionVideoIndex: index.start},
+          ).ignore();
+        }
+        return motionPhoto.getMotionVideoFile(
+          index: index,
+        );
+      }
+    }
+
+    return null;
   }
 
   VideoPlayerController _setVideoPlayerController({required io.File file}) {
@@ -163,11 +208,15 @@ class _ZoomableLiveImageState extends State<ZoomableLiveImage>
       });
   }
 
-  void _showLivePhotoToast() async {
+  void _showHintForMotionPhotoPlay() async {
+    if (widget.file.fileType != FileType.livePhoto ||
+        widget.file.pubMagicMetadata?.mvi != null) {
+      return;
+    }
     final preferences = await SharedPreferences.getInstance();
     final int promptTillNow = preferences.getInt(livePhotoToastCounterKey) ?? 0;
     if (promptTillNow < maxLivePhotoToastCount && mounted) {
-      showToast(context, S.of(context).pressAndHoldToPlayVideo);
+      showShortToast(context, S.of(context).pressAndHoldToPlayVideo);
       preferences.setInt(livePhotoToastCounterKey, promptTillNow + 1);
     }
   }
