@@ -110,7 +110,7 @@ class _LockScreenState extends State<LockScreen> with WidgetsBindingObserver {
         }
       }
     } catch (e, s) {
-      _logger.severe(e, s);
+      _logger.severe("showLockScreenError", e, s);
     }
   }
 }
