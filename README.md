@@ -71,6 +71,12 @@ You can alternatively install the build from PlayStore or F-Droid.
 8. For iOS, run `flutter build ios`
 <br/>
 
+### Proto
+  - Install `protoc` (on macOS, `brew install protobuf`)
+  - Install `https://pub.dev/packages/protoc_plugin` plugin.
+  - Add `protoc-gen-dart` to your `PATH` (on macOS, `export PATH="$PATH":"$HOME/.pub-cache/bin"`)
+  - Run `protoc --dart_out=lib/models/protos -Iprotos protos/*.proto`
+
 ## 🙋 Help
 
 We provide human support to our customers. Please write to [support@ente.io](mailto:support@ente.io) sharing as many details as possible about whatever it is that you need help with, and we will get back to you as soon as possible.
