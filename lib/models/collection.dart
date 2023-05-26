@@ -2,7 +2,8 @@ import 'dart:convert';
 import 'dart:core';
 
 import 'package:flutter/foundation.dart';
-import 'package:photos/models/magic_metadata.dart';
+import "package:photos/models/metadata/collection_magic.dart";
+import "package:photos/models/metadata/common_keys.dart";
 
 class Collection {
   final int id;
@@ -21,13 +22,22 @@ class Collection {
   final int updationTime;
   final bool isDeleted;
   String? mMdEncodedJson;
+  String? mMdPubEncodedJson;
   int mMdVersion = 0;
+  int mMbPubVersion = 0;
   CollectionMagicMetadata? _mmd;
+  CollectionPubMagicMetadata? _pubMmd;
 
   CollectionMagicMetadata get magicMetadata =>
       _mmd ?? CollectionMagicMetadata.fromEncodedJson(mMdEncodedJson ?? '{}');
 
-  set magicMetadata(val) => _mmd = val;
+  CollectionPubMagicMetadata get pubMagicMetadata =>
+      _pubMmd ??
+      CollectionPubMagicMetadata.fromEncodedJson(mMdPubEncodedJson ?? '{}');
+
+  set magicMetadata(CollectionMagicMetadata? val) => _mmd = val;
+
+  set pubMagicMetadata(CollectionPubMagicMetadata? val) => _pubMmd = val;
 
   Collection(
     this.id,
@@ -46,7 +56,7 @@ class Collection {
   });
 
   bool isArchived() {
-    return mMdVersion > 0 && magicMetadata.visibility == visibilityArchive;
+    return mMdVersion > 0 && magicMetadata.visibility == archiveVisibility;
   }
 
   // hasLink returns true if there's any link attached to the collection
@@ -60,7 +70,7 @@ class Collection {
     if (isDefaultHidden()) {
       return true;
     }
-    return mMdVersion > 0 && (magicMetadata.visibility == visibilityHidden);
+    return mMdVersion > 0 && (magicMetadata.visibility == hiddenVisibility);
   }
 
   bool isDefaultHidden() {
@@ -161,6 +171,8 @@ class Collection {
     );
     result.mMdVersion = mMdVersion ?? this.mMdVersion;
     result.mMdEncodedJson = mMdEncodedJson ?? this.mMdEncodedJson;
+    result.mMbPubVersion = mMbPubVersion;
+    result.mMdPubEncodedJson = mMdPubEncodedJson;
     return result;
   }
 

@@ -26,7 +26,7 @@ import 'package:photos/models/collection.dart';
 import 'package:photos/models/collection_file_item.dart';
 import 'package:photos/models/collection_items.dart';
 import 'package:photos/models/file.dart';
-import 'package:photos/models/magic_metadata.dart';
+import "package:photos/models/metadata/collection_magic.dart";
 import 'package:photos/services/app_lifecycle_service.dart';
 import 'package:photos/services/file_magic_service.dart';
 import 'package:photos/services/local_sync_service.dart';
@@ -92,7 +92,7 @@ class CollectionsService {
 
   // sync method fetches just sync the collections, not the individual files
   // within the collection.
-  Future<List<Collection>> sync() async {
+  Future<void> sync() async {
     _logger.info("Syncing collections");
     final EnteWatch watch = EnteWatch("syncCollection")..start();
     final lastCollectionUpdationTime =
@@ -101,17 +101,20 @@ class CollectionsService {
     // Might not have synced the collection fully
     final fetchedCollections =
         await _fetchCollections(lastCollectionUpdationTime);
-    watch.log("remote fetch");
+    watch.log("remote fetch collections ${fetchedCollections.length}");
+    if (fetchedCollections.isEmpty) {
+      return;
+    }
     final updatedCollections = <Collection>[];
     int maxUpdationTime = lastCollectionUpdationTime;
     final ownerID = _config.getUserID();
-    bool fireEventForCollectionDeleted = false;
+    bool shouldFireDeleteEvent = false;
     for (final collection in fetchedCollections) {
       if (collection.isDeleted) {
         await _filesDB.deleteCollection(collection.id);
         await setCollectionSyncTime(collection.id, null);
         if (_collectionIDToCollections.containsKey(collection.id)) {
-          fireEventForCollectionDeleted = true;
+          shouldFireDeleteEvent = true;
         }
       }
       // remove reference for incoming collections when unshared/deleted
@@ -126,7 +129,7 @@ class CollectionsService {
           ? collection.updationTime
           : maxUpdationTime;
     }
-    if (fireEventForCollectionDeleted) {
+    if (shouldFireDeleteEvent) {
       Bus.instance.fire(
         LocalPhotosUpdatedEvent(
           List<File>.empty(),
@@ -137,12 +140,11 @@ class CollectionsService {
     await _updateDB(updatedCollections);
     _prefs.setInt(_collectionsSyncTimeKey, maxUpdationTime);
     watch.logAndReset("till DB insertion ${updatedCollections.length}");
-    final collections = await _db.getAllCollections();
-    for (final collection in collections) {
+    for (final collection in fetchedCollections) {
       _cacheCollectionAttributes(collection);
     }
     _logger.info("Collections synced");
-    watch.log("collection cache refresh");
+    watch.log("${fetchedCollections.length} collection cached refreshed ");
     if (fetchedCollections.isNotEmpty) {
       Bus.instance.fire(
         CollectionUpdatedEvent(
@@ -152,7 +154,6 @@ class CollectionsService {
         ),
       );
     }
-    return collections;
   }
 
   void clearCache() {
@@ -163,15 +164,18 @@ class CollectionsService {
     _cachedKeys.clear();
   }
 
-  Future<List<Collection>> getCollectionsToBeSynced() async {
-    final collections = await _db.getAllCollections();
-    final updatedCollections = <Collection>[];
-    for (final c in collections) {
-      if (c.updationTime > getCollectionSyncTime(c.id) && !c.isDeleted) {
-        updatedCollections.add(c);
+  Future<Map<int, int>> getCollectionIDsToBeSynced() async {
+    final idsToRemoveUpdateTimeMap =
+        await _db.getActiveIDsAndRemoteUpdateTime();
+    final result = <int, int>{};
+    for (final MapEntry<int, int> e in idsToRemoveUpdateTimeMap.entries) {
+      final int cid = e.key;
+      final int remoteUpdateTime = e.value;
+      if (remoteUpdateTime > getCollectionSyncTime(cid)) {
+        result[cid] = remoteUpdateTime;
       }
     }
-    return updatedCollections;
+    return result;
   }
 
   Set<int> getArchivedCollections() {
@@ -606,6 +610,65 @@ class CollectionsService {
     }
   }
 
+  Future<void> updatePublicMagicMetadata(
+    Collection collection,
+    Map<String, dynamic> newMetadataUpdate,
+  ) async {
+    final int ownerID = Configuration.instance.getUserID()!;
+    try {
+      if (collection.owner?.id != ownerID) {
+        throw AssertionError("cannot modify albums not owned by you");
+      }
+      // read the existing magic metadata and apply new updates to existing data
+      // current update is simple replace. This will be enhanced in the future,
+      // as required.
+      final Map<String, dynamic> jsonToUpdate =
+          jsonDecode(collection.mMdPubEncodedJson ?? '{}');
+      newMetadataUpdate.forEach((key, value) {
+        jsonToUpdate[key] = value;
+      });
+
+      final key = getCollectionKey(collection.id);
+      final encryptedMMd = await CryptoUtil.encryptChaCha(
+        utf8.encode(jsonEncode(jsonToUpdate)) as Uint8List,
+        key,
+      );
+      // for required field, the json validator on golang doesn't treat 0 as valid
+      // value. Instead of changing version to ptr, decided to start version with 1.
+      final int currentVersion = max(collection.mMbPubVersion, 1);
+      final params = UpdateMagicMetadataRequest(
+        id: collection.id,
+        magicMetadata: MetadataRequest(
+          version: currentVersion,
+          count: jsonToUpdate.length,
+          data: CryptoUtil.bin2base64(encryptedMMd.encryptedData!),
+          header: CryptoUtil.bin2base64(encryptedMMd.header!),
+        ),
+      );
+      await _enteDio.put(
+        "/collections/public-magic-metadata",
+        data: params,
+      );
+      // update the local information so that it's reflected on UI
+      collection.mMdPubEncodedJson = jsonEncode(jsonToUpdate);
+      collection.pubMagicMetadata =
+          CollectionPubMagicMetadata.fromJson(jsonToUpdate);
+      collection.mMbPubVersion = currentVersion + 1;
+      _cacheCollectionAttributes(collection);
+      // trigger sync to fetch the latest collection state from server
+      sync().ignore();
+    } on DioError catch (e) {
+      if (e.response != null && e.response?.statusCode == 409) {
+        _logger.severe('collection magic data out of sync');
+        sync().ignore();
+      }
+      rethrow;
+    } catch (e, s) {
+      _logger.severe("failed to sync magic metadata", e, s);
+      rethrow;
+    }
+  }
+
   Future<void> createShareUrl(
     Collection collection, {
     bool enableCollect = false,
@@ -697,9 +760,9 @@ class CollectionsService {
       final c = response.data["collections"];
       for (final collectionData in c) {
         final collection = Collection.fromMap(collectionData);
+        final collectionKey =
+            _getAndCacheDecryptedKey(collection, source: "fetchCollection");
         if (collectionData['magicMetadata'] != null) {
-          final collectionKey =
-              _getAndCacheDecryptedKey(collection, source: "fetchCollection");
           final utfEncodedMmd = await CryptoUtil.decryptChaCha(
             CryptoUtil.base642bin(collectionData['magicMetadata']['data']),
             collectionKey,
@@ -708,6 +771,21 @@ class CollectionsService {
           collection.mMdEncodedJson = utf8.decode(utfEncodedMmd);
           collection.mMdVersion = collectionData['magicMetadata']['version'];
           collection.magicMetadata = CollectionMagicMetadata.fromEncodedJson(
+            collection.mMdEncodedJson,
+          );
+        }
+
+        if (collectionData['pubMagicMetadata'] != null) {
+          final utfEncodedMmd = await CryptoUtil.decryptChaCha(
+            CryptoUtil.base642bin(collectionData['pubMagicMetadata']['data']),
+            collectionKey,
+            CryptoUtil.base642bin(collectionData['pubMagicMetadata']['header']),
+          );
+          collection.mMdPubEncodedJson = utf8.decode(utfEncodedMmd);
+          collection.mMbPubVersion =
+              collectionData['pubMagicMetadata']['version'];
+          collection.pubMagicMetadata =
+              CollectionPubMagicMetadata.fromEncodedJson(
             collection.mMdEncodedJson,
           );
         }

@@ -41,9 +41,9 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m2(isFamilyMember, storageAmountInGb) =>
       "${Intl.select(isFamilyMember, {
             'true':
-                'Jouw familie heeft ${storageAmountInGb} Gb geclaimd tot nu toe',
-            'false': 'Je hebt ${storageAmountInGb} Gb geclaimd tot nu toe',
-            'other': 'Je hebt ${storageAmountInGb} Gb geclaimd tot nu toe!',
+                'Jouw familie heeft ${storageAmountInGb} GB geclaimd tot nu toe',
+            'false': 'Je hebt ${storageAmountInGb} GB geclaimd tot nu toe',
+            'other': 'Je hebt ${storageAmountInGb} GB geclaimd tot nu toe!',
           })}";
 
   static String m47(albumName) =>
@@ -183,6 +183,9 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m37(email) => "Dit is de verificatie-ID van ${email}";
 
+  static String m62(count) =>
+      "${Intl.plural(count, zero: '', one: '1 dag', other: '${count} dagen')}";
+
   static String m38(email) => "Verifieer ${email}";
 
   static String m39(email) =>
@@ -248,8 +251,26 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Downloads toestaan"),
         "allowPeopleToAddPhotos": MessageLookupByLibrary.simpleMessage(
             "Mensen toestaan foto\'s toe te voegen"),
+        "androidBiometricHint":
+            MessageLookupByLibrary.simpleMessage("Identiteit verifiëren"),
+        "androidBiometricNotRecognized": MessageLookupByLibrary.simpleMessage(
+            "Niet herkend. Probeer het opnieuw."),
+        "androidBiometricRequiredTitle": MessageLookupByLibrary.simpleMessage(
+            "Biometrische verificatie vereist"),
+        "androidBiometricSuccess":
+            MessageLookupByLibrary.simpleMessage("Succes"),
+        "androidCancelButton":
+            MessageLookupByLibrary.simpleMessage("Annuleren"),
+        "androidDeviceCredentialsRequiredTitle":
+            MessageLookupByLibrary.simpleMessage("Apparaatgegevens vereist"),
+        "androidDeviceCredentialsSetupDescription":
+            MessageLookupByLibrary.simpleMessage("Apparaatgegevens vereist"),
+        "androidGoToSettingsDescription": MessageLookupByLibrary.simpleMessage(
+            "Biometrische verificatie is niet ingesteld op uw apparaat. Ga naar \'Instellingen > Beveiliging\' om biometrische verificatie toe te voegen."),
         "androidIosWebDesktop":
             MessageLookupByLibrary.simpleMessage("Android, iOS, Web, Desktop"),
+        "androidSignInTitle":
+            MessageLookupByLibrary.simpleMessage("Verificatie vereist"),
         "appVersion": m46,
         "appleId": MessageLookupByLibrary.simpleMessage("Apple ID"),
         "apply": MessageLookupByLibrary.simpleMessage("Toepassen"),
@@ -650,6 +671,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "general": MessageLookupByLibrary.simpleMessage("Algemeen"),
         "generatingEncryptionKeys": MessageLookupByLibrary.simpleMessage(
             "Encryptiesleutels genereren..."),
+        "goToSettings":
+            MessageLookupByLibrary.simpleMessage("Ga naar instellingen"),
         "googlePlayId": MessageLookupByLibrary.simpleMessage("Google Play ID"),
         "grantPermission":
             MessageLookupByLibrary.simpleMessage("Toestemming verlenen"),
@@ -660,6 +683,11 @@ class MessageLookup extends MessageLookupByLibrary {
         "howItWorks": MessageLookupByLibrary.simpleMessage("Hoe het werkt"),
         "howToViewShareeVerificationID": MessageLookupByLibrary.simpleMessage(
             "Vraag hen om hun e-mailadres lang in te drukken op het instellingenscherm en te controleren dat de ID\'s op beide apparaten overeenkomen."),
+        "iOSGoToSettingsDescription": MessageLookupByLibrary.simpleMessage(
+            "Biometrische authenticatie is niet ingesteld op uw apparaat. Schakel Touch ID of Face ID in op uw telefoon."),
+        "iOSLockOut": MessageLookupByLibrary.simpleMessage(
+            "Biometrische verificatie is uitgeschakeld. Vergrendel en ontgrendel uw scherm om het in te schakelen."),
+        "iOSOkButton": MessageLookupByLibrary.simpleMessage("Oké"),
         "ignoredFolderUploadReason": MessageLookupByLibrary.simpleMessage(
             "Sommige bestanden in dit album worden genegeerd voor de upload omdat ze eerder van ente zijn verwijderd."),
         "importing": MessageLookupByLibrary.simpleMessage("Importeren...."),
@@ -1065,7 +1093,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Deel alleen met de mensen die u wilt"),
         "shareTextConfirmOthersVerificationID": m25,
         "shareTextRecommendUsingEnte": MessageLookupByLibrary.simpleMessage(
-            "Download ente zodat we gemakkelijk foto\'s en video\'s van originele kwaliteit kunnen delen\n\nhttps://ente.io/#download"),
+            "Download ente zodat we gemakkelijk foto\'s en video\'s van originele kwaliteit kunnen delen\n\nhttps://ente.io"),
         "shareTextReferralCode": m26,
         "shareWithNonenteUsers": MessageLookupByLibrary.simpleMessage(
             "Delen met niet-ente gebruikers"),
@@ -1196,6 +1224,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "total": MessageLookupByLibrary.simpleMessage("totaal"),
         "totalSize": MessageLookupByLibrary.simpleMessage("Totale grootte"),
         "trash": MessageLookupByLibrary.simpleMessage("Prullenbak"),
+        "trashDaysLeft": m62,
         "tryAgain": MessageLookupByLibrary.simpleMessage("Probeer opnieuw"),
         "turnOnBackupForAutoUpload": MessageLookupByLibrary.simpleMessage(
             "Schakel back-up in om bestanden die toegevoegd zijn aan deze map op dit apparaat automatisch te uploaden."),

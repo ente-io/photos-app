@@ -1,8 +1,11 @@
+import "dart:async";
 import "dart:io";
 
 import "package:flutter/cupertino.dart";
 import "package:flutter/material.dart";
 import "package:intl/intl.dart";
+import "package:photos/core/configuration.dart";
+import 'package:photos/models/file.dart';
 import "package:photos/models/memory.dart";
 import "package:photos/services/memories_service.dart";
 import "package:photos/theme/text_style.dart";
@@ -35,12 +38,14 @@ class _FullScreenMemoryState extends State<FullScreenMemory> {
   bool _showStepIndicator = true;
   PageController? _pageController;
   bool _shouldDisableScroll = false;
+  late int currentUserID;
   final GlobalKey shareButtonKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
     _index = widget.index;
+    currentUserID = Configuration.instance.getUserID() ?? 0;
     _showStepIndicator = widget.memories.length <= 60;
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
@@ -55,6 +60,7 @@ class _FullScreenMemoryState extends State<FullScreenMemory> {
 
   @override
   Widget build(BuildContext context) {
+    _pageController ??= PageController(initialPage: _index);
     final file = widget.memories[_index].file;
     return Scaffold(
       appBar: AppBar(
@@ -124,6 +130,7 @@ class _FullScreenMemoryState extends State<FullScreenMemory> {
       ),
       extendBodyBehindAppBar: true,
       body: Container(
+        key: ValueKey(widget.memories.length),
         color: Colors.black,
         child: Stack(
           alignment: Alignment.bottomCenter,
@@ -138,19 +145,39 @@ class _FullScreenMemoryState extends State<FullScreenMemory> {
     );
   }
 
-  void onFileDeleted() {
-    if (widget.memories.length == 1) {
-      Navigator.pop(context);
+  @override
+  void dispose() {
+    debugPrint("FullScreenMemoryDisposed");
+    // _pageController?.dispose();
+    _pageController = null;
+    super.dispose();
+  }
+
+  Future<void> onFileDeleted(Memory removedMemory) async {
+    if (!mounted) {
+      return;
+    }
+    final totalFiles = widget.memories.length;
+    if (totalFiles == 1) {
+      // Deleted the only file
+      Navigator.of(context).pop(); // Close pageview
+      return;
+    }
+    if (_index == totalFiles - 1) {
+      // Deleted the last file
+      widget.memories.remove(removedMemory);
+      await _pageController!.previousPage(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+      );
+      setState(() {});
     } else {
-      setState(() {
-        if (_index != 0) {
-          _pageController?.jumpToPage(_index - 1);
-        }
-        widget.memories.removeAt(_index);
-        if (_index != 0) {
-          _index--;
-        }
-      });
+      widget.memories.remove(removedMemory);
+      await _pageController!.nextPage(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+      );
+      setState(() {});
     }
   }
 
@@ -180,52 +207,62 @@ class _FullScreenMemoryState extends State<FullScreenMemory> {
   }
 
   Widget _buildBottomIcons() {
-    final file = widget.memories[_index].file;
+    final File currentFile = widget.memories[_index].file;
+    final List<Widget> rowChildren = [
+      IconButton(
+        icon: Icon(
+          Platform.isAndroid ? Icons.info_outline : CupertinoIcons.info,
+          color: Colors.white, //same for both themes
+        ),
+        onPressed: () {
+          showDetailsSheet(context, currentFile);
+        },
+      ),
+    ];
+    if (currentFile.ownerID == null || currentUserID == currentFile.ownerID) {
+      rowChildren.addAll(
+        [
+          IconButton(
+            icon: Icon(
+              Platform.isAndroid ? Icons.delete_outline : CupertinoIcons.delete,
+              color: Colors.white, //same for both themes
+            ),
+            onPressed: () async {
+              await showSingleFileDeleteSheet(
+                context,
+                currentFile,
+                onFileRemoved: (file) =>
+                    {onFileDeleted(widget.memories[_index])},
+              );
+            },
+          ),
+          SizedBox(
+            height: 32,
+            child: FavoriteWidget(currentFile),
+          ),
+        ],
+      );
+    }
+
+    rowChildren.add(
+      IconButton(
+        icon: Icon(
+          Icons.adaptive.share,
+          color: Colors.white, //same for both themes
+        ),
+        onPressed: () {
+          share(context, [currentFile]);
+        },
+      ),
+    );
+
     return SafeArea(
       child: Container(
         alignment: Alignment.bottomCenter,
-        padding: const EdgeInsets.fromLTRB(26, 0, 26, 20),
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            IconButton(
-              icon: Icon(
-                Platform.isAndroid ? Icons.info_outline : CupertinoIcons.info,
-                color: Colors.white, //same for both themes
-              ),
-              onPressed: () {
-                showDetailsSheet(context, file);
-              },
-            ),
-            IconButton(
-              icon: Icon(
-                Platform.isAndroid
-                    ? Icons.delete_outline
-                    : CupertinoIcons.delete,
-                color: Colors.white, //same for both themes
-              ),
-              onPressed: () async {
-                await showSingleFileDeleteSheet(
-                  context,
-                  file,
-                  onFileRemoved: (file) => {onFileDeleted()},
-                );
-              },
-            ),
-            SizedBox(
-              height: 32,
-              child: FavoriteWidget(file),
-            ),
-            IconButton(
-              icon: Icon(
-                Icons.adaptive.share,
-                color: Colors.white, //same for both themes
-              ),
-              onPressed: () {
-                share(context, [file]);
-              },
-            ),
-          ],
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: rowChildren,
         ),
       ),
     );
@@ -250,42 +287,78 @@ class _FullScreenMemoryState extends State<FullScreenMemory> {
   }
 
   Widget _buildSwiper() {
+    debugPrint(
+      "FullScreenbuildSwiper: $_index and total ${widget.memories.length}",
+    );
     _pageController = PageController(initialPage: _index);
-    return ExtentsPageView.extents(
-      itemBuilder: (BuildContext context, int index) {
-        if (index < widget.memories.length - 1) {
-          final nextFile = widget.memories[index + 1].file;
-          preloadThumbnail(nextFile);
-          preloadFile(nextFile);
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTapDown: (TapDownDetails details) {
+        if (_shouldDisableScroll) {
+          return;
         }
-        final file = widget.memories[index].file;
-        return FileWidget(
-          file,
-          autoPlay: false,
-          tagPrefix: "memories",
-          shouldDisableScroll: (value) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final edgeWidth = screenWidth * 0.20; // 20% of screen width
+        if (details.localPosition.dx < edgeWidth) {
+          if (_index > 0) {
+            _pageController!.previousPage(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.ease,
+            );
+          }
+        } else if (details.localPosition.dx > screenWidth - edgeWidth) {
+          if (_index < (widget.memories.length - 1)) {
+            _pageController!.nextPage(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.ease,
+            );
+          }
+        }
+      },
+      child: ExtentsPageView.extents(
+        itemBuilder: (BuildContext context, int index) {
+          if (index < widget.memories.length - 1) {
+            final nextFile = widget.memories[index + 1].file;
+            preloadThumbnail(nextFile);
+            preloadFile(nextFile);
+          }
+          final file = widget.memories[index].file;
+          return FileWidget(
+            file,
+            autoPlay: false,
+            tagPrefix: "memories",
+            shouldDisableScroll: (value) {
+              if (value == _shouldDisableScroll) {
+                return;
+              }
+              setState(() {
+                _shouldDisableScroll = value;
+              });
+            },
+            backgroundDecoration: const BoxDecoration(
+              color: Colors.transparent,
+            ),
+          );
+        },
+        itemCount: widget.memories.length,
+        controller: _pageController,
+        onPageChanged: (index) async {
+          unawaited(
+            MemoriesService.instance.markMemoryAsSeen(widget.memories[index]),
+          );
+          if (mounted) {
+            debugPrint(
+              "FullScreenonPageChanged: $index and total ${widget.memories.length}",
+            );
             setState(() {
-              _shouldDisableScroll = value;
+              _index = index;
             });
-          },
-          backgroundDecoration: const BoxDecoration(
-            color: Colors.transparent,
-          ),
-        );
-      },
-      itemCount: widget.memories.length,
-      controller: _pageController,
-      onPageChanged: (index) async {
-        await MemoriesService.instance.markMemoryAsSeen(widget.memories[index]);
-        if (mounted) {
-          setState(() {
-            _index = index;
-          });
-        }
-      },
-      physics: _shouldDisableScroll
-          ? const NeverScrollableScrollPhysics()
-          : const PageScrollPhysics(),
+          }
+        },
+        physics: _shouldDisableScroll
+            ? const NeverScrollableScrollPhysics()
+            : const PageScrollPhysics(),
+      ),
     );
   }
 }

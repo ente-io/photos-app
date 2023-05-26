@@ -40,9 +40,9 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m2(isFamilyMember, storageAmountInGb) =>
       "${Intl.select(isFamilyMember, {
-            'true': 'Your family has claimed ${storageAmountInGb} Gb so far',
-            'false': 'You have claimed ${storageAmountInGb} Gb so far',
-            'other': 'You have claimed ${storageAmountInGb} Gb so far!',
+            'true': 'Your family has claimed ${storageAmountInGb} GB so far',
+            'false': 'You have claimed ${storageAmountInGb} GB so far',
+            'other': 'You have claimed ${storageAmountInGb} GB so far!',
           })}";
 
   static String m47(albumName) => "Collaborative link created for ${albumName}";
@@ -243,8 +243,25 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Allow downloads"),
         "allowPeopleToAddPhotos":
             MessageLookupByLibrary.simpleMessage("Allow people to add photos"),
+        "androidBiometricHint":
+            MessageLookupByLibrary.simpleMessage("Verify identity"),
+        "androidBiometricNotRecognized":
+            MessageLookupByLibrary.simpleMessage("Not recognized. Try again."),
+        "androidBiometricRequiredTitle":
+            MessageLookupByLibrary.simpleMessage("Biometric required"),
+        "androidBiometricSuccess":
+            MessageLookupByLibrary.simpleMessage("Success"),
+        "androidCancelButton": MessageLookupByLibrary.simpleMessage("Cancel"),
+        "androidDeviceCredentialsRequiredTitle":
+            MessageLookupByLibrary.simpleMessage("Device credentials required"),
+        "androidDeviceCredentialsSetupDescription":
+            MessageLookupByLibrary.simpleMessage("Device credentials required"),
+        "androidGoToSettingsDescription": MessageLookupByLibrary.simpleMessage(
+            "Biometric authentication is not set up on your device. Go to \'Settings > Security\' to add biometric authentication."),
         "androidIosWebDesktop":
             MessageLookupByLibrary.simpleMessage("Android, iOS, Web, Desktop"),
+        "androidSignInTitle":
+            MessageLookupByLibrary.simpleMessage("Authentication required"),
         "appVersion": m46,
         "appleId": MessageLookupByLibrary.simpleMessage("Apple ID"),
         "apply": MessageLookupByLibrary.simpleMessage("Apply"),
@@ -628,6 +645,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "general": MessageLookupByLibrary.simpleMessage("General"),
         "generatingEncryptionKeys": MessageLookupByLibrary.simpleMessage(
             "Generating encryption keys..."),
+        "goToSettings": MessageLookupByLibrary.simpleMessage("Go to settings"),
         "googlePlayId": MessageLookupByLibrary.simpleMessage("Google Play ID"),
         "grantPermission":
             MessageLookupByLibrary.simpleMessage("Grant permission"),
@@ -638,6 +656,11 @@ class MessageLookup extends MessageLookupByLibrary {
         "howItWorks": MessageLookupByLibrary.simpleMessage("How it works"),
         "howToViewShareeVerificationID": MessageLookupByLibrary.simpleMessage(
             "Please ask them to long-press their email address on the settings screen, and verify that the IDs on both devices match."),
+        "iOSGoToSettingsDescription": MessageLookupByLibrary.simpleMessage(
+            "Biometric authentication is not set up on your device. Please either enable Touch ID or Face ID on your phone."),
+        "iOSLockOut": MessageLookupByLibrary.simpleMessage(
+            "Biometric authentication is disabled. Please lock and unlock your screen to enable it."),
+        "iOSOkButton": MessageLookupByLibrary.simpleMessage("OK"),
         "ignoredFolderUploadReason": MessageLookupByLibrary.simpleMessage(
             "Some files in this album are ignored from upload because they had previously been deleted from ente."),
         "importing": MessageLookupByLibrary.simpleMessage("Importing...."),
@@ -892,7 +915,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "recoveryKeyVerified":
             MessageLookupByLibrary.simpleMessage("Recovery key verified"),
         "recoveryKeyVerifyReason": MessageLookupByLibrary.simpleMessage(
-            "Your recovery key is the only way to recover your photos if you forget your password. You can find your recovery key in Settings > Account.\n\nPlease enter your recovery key here to verify that you have saved it correctly."),
+            "Your recovery key is the only way to recover your photos if you forget your password. You can find your recovery key in Settings > Security.\n\nPlease enter your recovery key here to verify that you have saved it correctly."),
         "recoverySuccessful":
             MessageLookupByLibrary.simpleMessage("Recovery successful!"),
         "recreatePasswordBody": MessageLookupByLibrary.simpleMessage(
@@ -1025,7 +1048,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Share only with the people you want"),
         "shareTextConfirmOthersVerificationID": m25,
         "shareTextRecommendUsingEnte": MessageLookupByLibrary.simpleMessage(
-            "Download ente so we can easily share original quality photos and videos\n\nhttps://ente.io/#download"),
+            "Download ente so we can easily share original quality photos and videos\n\nhttps://ente.io"),
         "shareTextReferralCode": m26,
         "shareWithNonenteUsers":
             MessageLookupByLibrary.simpleMessage("Share with non-ente users"),
@@ -1073,6 +1096,9 @@ class MessageLookup extends MessageLookupByLibrary {
         "sorryWeCouldNotGenerateSecureKeysOnThisDevicennplease":
             MessageLookupByLibrary.simpleMessage(
                 "Sorry, we could not generate secure keys on this device.\n\nplease sign up from a different device."),
+        "sortAlbumsBy": MessageLookupByLibrary.simpleMessage("Sort by"),
+        "sortNewestFirst": MessageLookupByLibrary.simpleMessage("Newest first"),
+        "sortOldestFirst": MessageLookupByLibrary.simpleMessage("Oldest first"),
         "sparkleSuccess": MessageLookupByLibrary.simpleMessage("✨ Success"),
         "startBackup": MessageLookupByLibrary.simpleMessage("Start backup"),
         "storage": MessageLookupByLibrary.simpleMessage("Storage"),

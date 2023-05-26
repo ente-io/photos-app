@@ -345,7 +345,6 @@ class _HomeWidgetState extends State<HomeWidget> {
         );
       });
     }
-    final isBottomInsetPresent = MediaQuery.of(context).viewPadding.bottom != 0;
 
     final bool showBackupFolderHook =
         !Configuration.instance.hasSelectedAnyBackupFolder() &&
@@ -384,16 +383,15 @@ class _HomeWidgetState extends State<HomeWidget> {
         ),
         const Align(
           alignment: Alignment.bottomCenter,
-          child: BottomShadowWidget(),
+          child: BottomShadowWidget(
+            offsetDy: 36,
+          ),
         ),
         Align(
           alignment: Alignment.bottomCenter,
-          child: Padding(
-            padding: EdgeInsets.only(bottom: isBottomInsetPresent ? 32 : 8),
-            child: HomeBottomNavigationBar(
-              _selectedFiles,
-              selectedTabIndex: _selectedTabIndex,
-            ),
+          child: HomeBottomNavigationBar(
+            _selectedFiles,
+            selectedTabIndex: _selectedTabIndex,
           ),
         ),
       ],

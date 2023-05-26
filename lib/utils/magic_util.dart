@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart';
 import 'package:photos/core/event_bus.dart';
+import "package:photos/events/collection_meta_event.dart";
 import 'package:photos/events/force_reload_home_gallery_event.dart';
 import "package:photos/generated/l10n.dart";
 import 'package:photos/models/collection.dart';
 import 'package:photos/models/file.dart';
-import 'package:photos/models/magic_metadata.dart';
+import "package:photos/models/metadata/common_keys.dart";
+import "package:photos/models/metadata/file_magic.dart";
 import 'package:photos/services/collections_service.dart';
 import 'package:photos/services/file_magic_service.dart';
 import 'package:photos/ui/common/progress_dialog.dart';
@@ -22,7 +24,7 @@ Future<void> changeVisibility(
 ) async {
   final dialog = createProgressDialog(
     context,
-    newVisibility == visibilityArchive
+    newVisibility == archiveVisibility
         ? S.of(context).archiving
         : S.of(context).unarchiving,
   );
@@ -31,7 +33,7 @@ Future<void> changeVisibility(
     await FileMagicService.instance.changeVisibility(files, newVisibility);
     showShortToast(
       context,
-      newVisibility == visibilityArchive
+      newVisibility == archiveVisibility
           ? S.of(context).successfullyArchived
           : S.of(context).successfullyUnarchived,
     );
@@ -51,7 +53,7 @@ Future<void> changeCollectionVisibility(
 ) async {
   final dialog = createProgressDialog(
     context,
-    newVisibility == visibilityArchive
+    newVisibility == archiveVisibility
         ? S.of(context).archiving
         : S.of(context).unarchiving,
   );
@@ -63,7 +65,7 @@ Future<void> changeCollectionVisibility(
     Bus.instance.fire(ForceReloadHomeGalleryEvent("CollectionArchiveChange"));
     showShortToast(
       context,
-      newVisibility == visibilityArchive
+      newVisibility == archiveVisibility
           ? S.of(context).successfullyArchived
           : S.of(context).successfullyUnarchived,
     );
@@ -72,6 +74,25 @@ Future<void> changeCollectionVisibility(
   } catch (e, s) {
     _logger.severe("failed to update collection visibility", e, s);
     await dialog.hide();
+    rethrow;
+  }
+}
+
+Future<void> changeSortOrder(
+  BuildContext context,
+  Collection collection,
+  bool sortedInAscOrder,
+) async {
+  try {
+    final Map<String, dynamic> update = {"asc": sortedInAscOrder};
+    await CollectionsService.instance
+        .updatePublicMagicMetadata(collection, update);
+    Bus.instance.fire(
+      CollectionMetaEvent(collection.id, CollectionMetaEventType.sortChanged),
+    );
+  } catch (e, s) {
+    _logger.severe("failed to update collection visibility", e, s);
+    showShortToast(context, S.of(context).somethingWentWrong);
     rethrow;
   }
 }
@@ -85,7 +106,7 @@ Future<bool> editTime(
     await _updatePublicMetadata(
       context,
       files,
-      pubMagicKeyEditedTime,
+      editTimeKey,
       editedTime,
     );
     return true;
@@ -120,7 +141,7 @@ Future<void> editFilename(
       await _updatePublicMetadata(
         context,
         List.of([file]),
-        pubMagicKeyEditedName,
+        editNameKey,
         newName,
         showProgressDialogs: false,
         showDoneToast: false,
@@ -142,7 +163,7 @@ Future<bool> editFileCaption(
     await _updatePublicMetadata(
       context,
       [file],
-      pubMagicKeyCaption,
+      captionKey,
       caption,
       showDoneToast: false,
     );
@@ -194,5 +215,5 @@ Future<void> _updatePublicMetadata(
 }
 
 bool _shouldReloadGallery(String key) {
-  return key == pubMagicKeyEditedTime;
+  return key == editTimeKey;
 }

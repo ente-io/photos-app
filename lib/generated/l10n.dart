@@ -1240,10 +1240,10 @@ class S {
     );
   }
 
-  /// `Your recovery key is the only way to recover your photos if you forget your password. You can find your recovery key in Settings > Account.\n\nPlease enter your recovery key here to verify that you have saved it correctly.`
+  /// `Your recovery key is the only way to recover your photos if you forget your password. You can find your recovery key in Settings > Security.\n\nPlease enter your recovery key here to verify that you have saved it correctly.`
   String get recoveryKeyVerifyReason {
     return Intl.message(
-      'Your recovery key is the only way to recover your photos if you forget your password. You can find your recovery key in Settings > Account.\n\nPlease enter your recovery key here to verify that you have saved it correctly.',
+      'Your recovery key is the only way to recover your photos if you forget your password. You can find your recovery key in Settings > Security.\n\nPlease enter your recovery key here to verify that you have saved it correctly.',
       name: 'recoveryKeyVerifyReason',
       desc: '',
       args: [],
@@ -1966,10 +1966,10 @@ class S {
     );
   }
 
-  /// `Download ente so we can easily share original quality photos and videos\n\nhttps://ente.io/#download`
+  /// `Download ente so we can easily share original quality photos and videos\n\nhttps://ente.io`
   String get shareTextRecommendUsingEnte {
     return Intl.message(
-      'Download ente so we can easily share original quality photos and videos\n\nhttps://ente.io/#download',
+      'Download ente so we can easily share original quality photos and videos\n\nhttps://ente.io',
       name: 'shareTextRecommendUsingEnte',
       desc: '',
       args: [],
@@ -2197,14 +2197,14 @@ class S {
     );
   }
 
-  /// `{isFamilyMember, select, true {Your family has claimed {storageAmountInGb} Gb so far} false {You have claimed {storageAmountInGb} Gb so far} other {You have claimed {storageAmountInGb} Gb so far!}}`
+  /// `{isFamilyMember, select, true {Your family has claimed {storageAmountInGb} GB so far} false {You have claimed {storageAmountInGb} GB so far} other {You have claimed {storageAmountInGb} GB so far!}}`
   String claimedStorageSoFar(String isFamilyMember, int storageAmountInGb) {
     return Intl.select(
       isFamilyMember,
       {
-        'true': 'Your family has claimed $storageAmountInGb Gb so far',
-        'false': 'You have claimed $storageAmountInGb Gb so far',
-        'other': 'You have claimed $storageAmountInGb Gb so far!',
+        'true': 'Your family has claimed $storageAmountInGb GB so far',
+        'false': 'You have claimed $storageAmountInGb GB so far',
+        'other': 'You have claimed $storageAmountInGb GB so far!',
       },
       name: 'claimedStorageSoFar',
       desc: '',
@@ -5233,6 +5233,36 @@ class S {
     );
   }
 
+  /// `Sort by`
+  String get sortAlbumsBy {
+    return Intl.message(
+      'Sort by',
+      name: 'sortAlbumsBy',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Newest first`
+  String get sortNewestFirst {
+    return Intl.message(
+      'Newest first',
+      name: 'sortNewestFirst',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Oldest first`
+  String get sortOldestFirst {
+    return Intl.message(
+      'Oldest first',
+      name: 'sortOldestFirst',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Rename`
   String get rename {
     return Intl.message(
@@ -6976,6 +7006,149 @@ class S {
       'Add 5 family members to your existing plan without paying extra.\n\nEach member gets their own private space, and cannot see each other\'s files unless they\'re shared.\n\nFamily plans are available to customers who have a paid ente subscription.\n\nSubscribe now to get started!',
       name: 'familyPlanOverview',
       desc: '',
+      args: [],
+    );
+  }
+
+  /// `Verify identity`
+  String get androidBiometricHint {
+    return Intl.message(
+      'Verify identity',
+      name: 'androidBiometricHint',
+      desc:
+          'Hint message advising the user how to authenticate with biometrics. It is used on Android side. Maximum 60 characters.',
+      args: [],
+    );
+  }
+
+  /// `Not recognized. Try again.`
+  String get androidBiometricNotRecognized {
+    return Intl.message(
+      'Not recognized. Try again.',
+      name: 'androidBiometricNotRecognized',
+      desc:
+          'Message to let the user know that authentication was failed. It is used on Android side. Maximum 60 characters.',
+      args: [],
+    );
+  }
+
+  /// `Success`
+  String get androidBiometricSuccess {
+    return Intl.message(
+      'Success',
+      name: 'androidBiometricSuccess',
+      desc:
+          'Message to let the user know that authentication was successful. It is used on Android side. Maximum 60 characters.',
+      args: [],
+    );
+  }
+
+  /// `Cancel`
+  String get androidCancelButton {
+    return Intl.message(
+      'Cancel',
+      name: 'androidCancelButton',
+      desc:
+          'Message showed on a button that the user can click to leave the current dialog. It is used on Android side. Maximum 30 characters.',
+      args: [],
+    );
+  }
+
+  /// `Authentication required`
+  String get androidSignInTitle {
+    return Intl.message(
+      'Authentication required',
+      name: 'androidSignInTitle',
+      desc:
+          'Message showed as a title in a dialog which indicates the user that they need to scan biometric to continue. It is used on Android side. Maximum 60 characters.',
+      args: [],
+    );
+  }
+
+  /// `Biometric required`
+  String get androidBiometricRequiredTitle {
+    return Intl.message(
+      'Biometric required',
+      name: 'androidBiometricRequiredTitle',
+      desc:
+          'Message showed as a title in a dialog which indicates the user has not set up biometric authentication on their device. It is used on Android side. Maximum 60 characters.',
+      args: [],
+    );
+  }
+
+  /// `Device credentials required`
+  String get androidDeviceCredentialsRequiredTitle {
+    return Intl.message(
+      'Device credentials required',
+      name: 'androidDeviceCredentialsRequiredTitle',
+      desc:
+          'Message showed as a title in a dialog which indicates the user has not set up credentials authentication on their device. It is used on Android side. Maximum 60 characters.',
+      args: [],
+    );
+  }
+
+  /// `Device credentials required`
+  String get androidDeviceCredentialsSetupDescription {
+    return Intl.message(
+      'Device credentials required',
+      name: 'androidDeviceCredentialsSetupDescription',
+      desc:
+          'Message advising the user to go to the settings and configure device credentials on their device. It shows in a dialog on Android side.',
+      args: [],
+    );
+  }
+
+  /// `Go to settings`
+  String get goToSettings {
+    return Intl.message(
+      'Go to settings',
+      name: 'goToSettings',
+      desc:
+          'Message showed on a button that the user can click to go to settings pages from the current dialog. It is used on both Android and iOS side. Maximum 30 characters.',
+      args: [],
+    );
+  }
+
+  /// `Biometric authentication is not set up on your device. Go to 'Settings > Security' to add biometric authentication.`
+  String get androidGoToSettingsDescription {
+    return Intl.message(
+      'Biometric authentication is not set up on your device. Go to \'Settings > Security\' to add biometric authentication.',
+      name: 'androidGoToSettingsDescription',
+      desc:
+          'Message advising the user to go to the settings and configure biometric on their device. It shows in a dialog on Android side.',
+      args: [],
+    );
+  }
+
+  /// `Biometric authentication is disabled. Please lock and unlock your screen to enable it.`
+  String get iOSLockOut {
+    return Intl.message(
+      'Biometric authentication is disabled. Please lock and unlock your screen to enable it.',
+      name: 'iOSLockOut',
+      desc:
+          'Message advising the user to re-enable biometrics on their device. It shows in a dialog on iOS side.',
+      args: [],
+    );
+  }
+
+  /// `Biometric authentication is not set up on your device. Please either enable Touch ID or Face ID on your phone.`
+  String get iOSGoToSettingsDescription {
+    return Intl.message(
+      'Biometric authentication is not set up on your device. Please either enable Touch ID or Face ID on your phone.',
+      name: 'iOSGoToSettingsDescription',
+      desc:
+          'Message advising the user to go to the settings and configure Biometrics for their device. It shows in a dialog on iOS side.',
+      args: [],
+    );
+  }
+
+  /// `OK`
+  String get iOSOkButton {
+    return Intl.message(
+      'OK',
+      name: 'iOSOkButton',
+      desc:
+          'Message showed on a button that the user can click to leave the current dialog. It is used on iOS side. Maximum 30 characters.',
       args: [],
     );
   }
