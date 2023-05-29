@@ -370,6 +370,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "close": MessageLookupByLibrary.simpleMessage("Close"),
         "clubByCaptureTime":
             MessageLookupByLibrary.simpleMessage("Club by capture time"),
+        "clubByFileName":
+            MessageLookupByLibrary.simpleMessage("Club by file name"),
         "codeAppliedPageTitle":
             MessageLookupByLibrary.simpleMessage("Code applied"),
         "codeCopiedToClipboard":
@@ -618,6 +620,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "faqs": MessageLookupByLibrary.simpleMessage("FAQs"),
         "favorite": MessageLookupByLibrary.simpleMessage("Favorite"),
         "feedback": MessageLookupByLibrary.simpleMessage("Feedback"),
+        "fileFailedToSaveToGallery": MessageLookupByLibrary.simpleMessage(
+            "Failed to save file to gallery"),
         "fileInfoAddDescHint":
             MessageLookupByLibrary.simpleMessage("Add a description..."),
         "fileSavedToGallery":
@@ -665,6 +669,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "iOSLockOut": MessageLookupByLibrary.simpleMessage(
             "Biometric authentication is disabled. Please lock and unlock your screen to enable it."),
         "iOSOkButton": MessageLookupByLibrary.simpleMessage("OK"),
+        "ignoreUpdate": MessageLookupByLibrary.simpleMessage("Ignore"),
         "ignoredFolderUploadReason": MessageLookupByLibrary.simpleMessage(
             "Some files in this album are ignored from upload because they had previously been deleted from ente."),
         "importing": MessageLookupByLibrary.simpleMessage("Importing...."),

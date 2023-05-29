@@ -3190,6 +3190,16 @@ class S {
     );
   }
 
+  /// `Ignore`
+  String get ignoreUpdate {
+    return Intl.message(
+      'Ignore',
+      name: 'ignoreUpdate',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Downloading...`
   String get downloading {
     return Intl.message(
@@ -5663,6 +5673,16 @@ class S {
     );
   }
 
+  /// `Failed to save file to gallery`
+  String get fileFailedToSaveToGallery {
+    return Intl.message(
+      'Failed to save file to gallery',
+      name: 'fileFailedToSaveToGallery',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Download`
   String get download {
     return Intl.message(
@@ -5728,6 +5748,16 @@ class S {
     return Intl.message(
       'Club by capture time',
       name: 'clubByCaptureTime',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Club by file name`
+  String get clubByFileName {
+    return Intl.message(
+      'Club by file name',
+      name: 'clubByFileName',
       desc: '',
       args: [],
     );
