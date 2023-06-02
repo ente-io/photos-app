@@ -8,8 +8,10 @@ import 'package:photos/ui/components/title_bar_title_widget.dart';
 import 'package:photos/ui/components/title_bar_widget.dart';
 import 'package:photos/ui/tools/debug/app_storage_viewer.dart';
 import 'package:photos/ui/viewer/gallery/photo_grid_size_picker_page.dart';
+import "package:photos/ui/viewer/search/settings/ml_settings.dart";
 import 'package:photos/utils/local_settings.dart';
 import 'package:photos/utils/navigation_util.dart';
+import "package:shared_preferences/shared_preferences.dart";
 
 class AdvancedSettingsScreen extends StatefulWidget {
   const AdvancedSettingsScreen({super.key});
@@ -61,6 +63,26 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                       children: [
                         Column(
                           children: [
+                            MenuItemWidget(
+                              captionedTextWidget: CaptionedTextWidget(
+                                title: S.of(context).machineLearning,
+                              ),
+                              menuItemColor: colorScheme.fillFaint,
+                              trailingWidget: Icon(
+                                Icons.chevron_right_outlined,
+                                color: colorScheme.strokeBase,
+                              ),
+                              singleBorderRadius: 8,
+                              alignCaptionedTextToLeft: true,
+                              onTap: () async {
+                                final SharedPreferences pref =
+                                    await SharedPreferences.getInstance();
+                                routeToPage(context, MLSettings(pref: pref));
+                              },
+                            ),
+                            const SizedBox(
+                              height: 24,
+                            ),
                             GestureDetector(
                               onTap: () {
                                 routeToPage(

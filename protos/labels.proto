@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+message Label {
+    string name = 1;
+    float score = 2;
+}
+
+message LabelMap {
+    repeated Label labels = 1;
+}

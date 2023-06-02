@@ -965,6 +965,13 @@
   "saving": "Saving...",
   "editsSaved": "Edits saved",
   "oopsCouldNotSaveEdits": "Oops, could not save edits",
+  "machineLearning": "Machine learning",
+  "status": "Status",
+  "clearIndexes": "Clear indexes",
+  "indexedItems": "Indexed items",
+  "unindexedItems": "Unindexed items",
+  "enableMachineLearning": "Enable machine learning",
+  "enableMLWarning": "Please note that this will result in a higher bandwidth and battery usage until all items are indexed.",
   "distanceInKMUnit": "km",
   "@distanceInKMUnit": {
     "description": "Unit for distance in km"

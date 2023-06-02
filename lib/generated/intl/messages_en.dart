@@ -364,6 +364,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "claimed": MessageLookupByLibrary.simpleMessage("Claimed"),
         "claimedStorageSoFar": m2,
         "clearCaches": MessageLookupByLibrary.simpleMessage("Clear caches"),
+        "clearIndexes": MessageLookupByLibrary.simpleMessage("Clear indexes"),
         "click": MessageLookupByLibrary.simpleMessage("• Click"),
         "clickOnTheOverflowMenu": MessageLookupByLibrary.simpleMessage(
             "• Click on the overflow menu"),
@@ -549,6 +550,10 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Email your logs"),
         "empty": MessageLookupByLibrary.simpleMessage("Empty"),
         "emptyTrash": MessageLookupByLibrary.simpleMessage("Empty trash?"),
+        "enableMLWarning": MessageLookupByLibrary.simpleMessage(
+            "Please note that this will result in a higher bandwidth and battery usage until all items are indexed."),
+        "enableMachineLearning":
+            MessageLookupByLibrary.simpleMessage("Enable machine learning"),
         "encryptingBackup":
             MessageLookupByLibrary.simpleMessage("Encrypting backup..."),
         "encryption": MessageLookupByLibrary.simpleMessage("Encryption"),
@@ -682,6 +687,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "The recovery key you entered is incorrect"),
         "incorrectRecoveryKeyTitle":
             MessageLookupByLibrary.simpleMessage("Incorrect recovery key"),
+        "indexedItems": MessageLookupByLibrary.simpleMessage("Indexed items"),
         "insecureDevice":
             MessageLookupByLibrary.simpleMessage("Insecure device"),
         "installManually":
@@ -772,6 +778,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage(
                 "Long-press on an item to view in full-screen"),
         "lostDevice": MessageLookupByLibrary.simpleMessage("Lost device?"),
+        "machineLearning":
+            MessageLookupByLibrary.simpleMessage("Machine learning"),
         "manage": MessageLookupByLibrary.simpleMessage("Manage"),
         "manageDeviceStorage":
             MessageLookupByLibrary.simpleMessage("Manage device storage"),
@@ -1111,6 +1119,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "sortOldestFirst": MessageLookupByLibrary.simpleMessage("Oldest first"),
         "sparkleSuccess": MessageLookupByLibrary.simpleMessage("✨ Success"),
         "startBackup": MessageLookupByLibrary.simpleMessage("Start backup"),
+        "status": MessageLookupByLibrary.simpleMessage("Status"),
         "storage": MessageLookupByLibrary.simpleMessage("Storage"),
         "storageBreakupFamily": MessageLookupByLibrary.simpleMessage("Family"),
         "storageBreakupYou": MessageLookupByLibrary.simpleMessage("You"),
@@ -1218,6 +1227,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Unhide to album"),
         "unhidingFilesToAlbum":
             MessageLookupByLibrary.simpleMessage("Unhiding files to album"),
+        "unindexedItems":
+            MessageLookupByLibrary.simpleMessage("Unindexed items"),
         "unlock": MessageLookupByLibrary.simpleMessage("Unlock"),
         "unselectAll": MessageLookupByLibrary.simpleMessage("Unselect all"),
         "update": MessageLookupByLibrary.simpleMessage("Update"),
