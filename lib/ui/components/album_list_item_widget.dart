@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import "package:intl/intl.dart";
 import 'package:logging/logging.dart';
 import 'package:photos/db/files_db.dart';
 import "package:photos/generated/l10n.dart";
@@ -51,7 +52,7 @@ class AlbumListItemWidget extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(item.collection.collectionName),
+                      Text(item.collection.displayName),
                       FutureBuilder<int>(
                         future: FilesDB.instance.collectionFileCount(
                           item.collection.id,
@@ -59,7 +60,10 @@ class AlbumListItemWidget extends StatelessWidget {
                         builder: (context, snapshot) {
                           if (snapshot.hasData) {
                             return Text(
-                              S.of(context).memoryCount(snapshot.data!),
+                              S.of(context).memoryCount(
+                                    snapshot.data!,
+                                    NumberFormat().format(snapshot.data!),
+                                  ),
                               style: textTheme.small.copyWith(
                                 color: colorScheme.textMuted,
                               ),

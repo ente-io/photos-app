@@ -3,6 +3,9 @@ import 'dart:io';
 
 import "package:adaptive_theme/adaptive_theme.dart";
 import 'package:background_fetch/background_fetch.dart';
+import "package:computer/computer.dart";
+// import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import "package:flutter/rendering.dart";
 import 'package:logging/logging.dart';
@@ -150,6 +153,8 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
     AppLifecycleService.instance.onAppInForeground('init via: $via');
   }
   // InAppPurchaseConnection.enablePendingPurchases();
+  // Start workers asynchronously. No need to wait for them to start
+  Computer.shared().turnOn(workersCount: 4, verbose: kDebugMode);
   CryptoUtil.init();
   await NotificationService.instance.init();
   await NetworkClient.instance.init();
@@ -182,9 +187,14 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
   }
 
   FeatureFlagService.instance.init();
-  if (FeatureFlagService.instance.isInternalUserOrDebugBuild()) {
-    await ObjectDetectionService.instance.init();
+
+  // Can not including existing tf/ml binaries as they are not being built
+  // from source.
+  // See https://gitlab.com/fdroid/fdroiddata/-/merge_requests/12671#note_1294346819
+  if (!UpdateService.instance.isFdroidFlavor()) {
+    unawaited(ObjectDetectionService.instance.init());
   }
+
   _logger.info("Initialization done");
 }
 
@@ -255,7 +265,6 @@ Future<bool> _isRunningInForeground() async {
   final lastFGHeartBeatTime = DateTime.fromMicrosecondsSinceEpoch(
     prefs.getInt(kLastFGTaskHeartBeatTime) ?? 0,
   );
-  _logger.info("Last FG heart beat @ $lastFGHeartBeatTime");
   return lastFGHeartBeatTime.microsecondsSinceEpoch >
       (currentTime - kFGTaskDeathTimeoutInMicroseconds);
 }

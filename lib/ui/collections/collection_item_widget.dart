@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import "package:intl/intl.dart";
 import 'package:photos/db/files_db.dart';
 import 'package:photos/models/collection.dart';
 import 'package:photos/models/collection_items.dart';
@@ -61,7 +62,7 @@ class CollectionItem extends StatelessWidget {
             children: [
               const SizedBox(height: 2),
               Text(
-                (c.collection.collectionName).trim(),
+                (c.collection.displayName).trim(),
                 style: enteTextTheme.small,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -72,7 +73,7 @@ class CollectionItem extends StatelessWidget {
                       builder: (context, snapshot) {
                         if (snapshot.hasData) {
                           return Text(
-                            snapshot.data.toString(),
+                            NumberFormat().format(snapshot.data),
                             style: enteTextTheme.small.copyWith(
                               color: enteColorScheme.textMuted,
                             ),

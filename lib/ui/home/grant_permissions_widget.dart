@@ -9,8 +9,7 @@ class GrantPermissionsWidget extends StatelessWidget {
   const GrantPermissionsWidget({Key? key}) : super(key: key);
   @override
   Widget build(BuildContext context) {
-    final isLightMode =
-        MediaQuery.of(context).platformBrightness == Brightness.light;
+    final isLightMode = Theme.of(context).brightness == Brightness.light;
     return Scaffold(
       body: SingleChildScrollView(
         child: Padding(
@@ -92,6 +91,7 @@ class GrantPermissionsWidget extends StatelessWidget {
           bottom: 16,
         ),
         child: OutlinedButton(
+          key: const ValueKey("grantPermissionButton"),
           child: Text(S.of(context).grantPermission),
           onPressed: () async {
             final state = await PhotoManager.requestPermissionExtend();

@@ -12,8 +12,7 @@ description: ente photos application
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 
-version: 0.7.48+448
-
+version: 0.7.62+462
 
 environment:
   sdk: '>=2.17.0 <3.0.0'
@@ -29,7 +28,8 @@ dependencies:
   chewie:
     path: thirdparty/chewie
   collection: # dart
-  computer: ^2.0.0
+  computer:
+    git: "https://github.com/ente-io/computer.git"
   confetti: ^0.6.0
   connectivity_plus: ^3.0.3
   crypto: ^3.0.2
@@ -67,7 +67,7 @@ dependencies:
   flutter_password_strength: ^0.1.6
   flutter_secure_storage: ^8.0.0
   flutter_sodium: ^0.2.0
-  flutter_typeahead: ^4.0.0
+  flutter_staggered_grid_view: ^0.6.2
   fluttertoast: ^8.0.6
   freezed_annotation: ^2.2.0
   google_nav_bar: ^5.0.5
@@ -86,6 +86,8 @@ dependencies:
   lottie: ^1.2.2
   media_extension: ^1.0.1
   modal_bottom_sheet: ^3.0.0-pre
+  motion_photos:
+    git: "https://github.com/ente-io/motion_photo.git"
   motionphoto:
     git: "https://github.com/ente-io/motionphoto.git"
   move_to_background: ^1.0.2
@@ -130,6 +132,7 @@ dependencies:
   visibility_detector: ^0.3.3
   wakelock: ^0.6.1+2
   wallpaper_manager_flutter: ^0.0.2
+  widgets_to_image: ^0.0.2
 
 flutter_intl:
     enabled: true
@@ -140,12 +143,16 @@ dependency_overrides:
 
 dev_dependencies:
   build_runner: ^2.3.3
+  flutter_driver:
+    sdk: flutter
   flutter_lints: ^2.0.1
   flutter_test:
     sdk: flutter
   freezed: ^2.3.2
+  integration_test:
+    sdk: flutter
   json_serializable: ^6.6.1
-  test:
+  test: ^1.22.0
 
 flutter_icons:
   android: "launcher_icon"

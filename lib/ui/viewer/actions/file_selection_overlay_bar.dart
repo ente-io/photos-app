@@ -3,7 +3,7 @@ import "package:photos/generated/l10n.dart";
 import 'package:photos/models/collection.dart';
 import 'package:photos/models/device_collection.dart';
 import 'package:photos/models/gallery_type.dart';
-import 'package:photos/models/magic_metadata.dart';
+import "package:photos/models/metadata/common_keys.dart";
 import 'package:photos/models/selected_files.dart';
 import 'package:photos/theme/ente_theme.dart';
 import 'package:photos/ui/collection_action_sheet.dart';
@@ -104,7 +104,7 @@ class _FileSelectionOverlayBarState extends State<FileSelectionOverlayBar> {
           onTap: () async {
             if (await deleteFromTrash(
               context,
-              widget.selectedFiles.files.toList(),
+              widget.selectedFiles.files,
             )) {
               widget.selectedFiles.clearAll();
             }
@@ -160,8 +160,8 @@ class _FileSelectionOverlayBarState extends State<FileSelectionOverlayBar> {
   Future<void> _onUnArchiveClick() async {
     await changeVisibility(
       context,
-      widget.selectedFiles.files.toList(),
-      visibilityVisible,
+      widget.selectedFiles.files,
+      visibleVisibility,
     );
     widget.selectedFiles.clearAll();
   }

@@ -219,6 +219,16 @@
   "after1Month": "Después de un mes",
   "after1Year": "Después de un año",
   "manageParticipants": "Administrar",
+  "albumParticipantsCount": "{count, plural, =0 {No hay Participantes} =1 {1 Participante} other {{count} Participantes}}",
+  "@albumParticipantsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "5"
+      }
+    },
+    "description": "Number of participants in an album, including the album owner."
+  },
   "collabLinkSectionDescription": "Crea un enlace para que la gente pueda añadir y ver fotos en tu álbum compartido sin necesidad de la aplicación ente o una cuenta. Genial para recolectar fotos de eventos.",
   "collectPhotos": "Recolectar fotos",
   "collaborativeLink": "Enlace colaborativo",
@@ -258,7 +268,7 @@
   "shareTextConfirmOthersVerificationID": "Hola, ¿puedes confirmar que esta es tu ID de verificación ente.io: {verificationID}?",
   "somethingWentWrong": "Algo salió mal",
   "sendInvite": "Enviar invitación",
-  "shareTextRecommendUsingEnte": "Descarga ente para que podamos compartir fácilmente fotos y videos en su calidad original\n\nhttps://ente.io/#download",
+  "shareTextRecommendUsingEnte": "Descarga ente para que podamos compartir fácilmente fotos y videos en su calidad original\n\nhttps://ente.io",
   "done": "Hecho",
   "applyCodeTitle": "Usar código",
   "enterCodeDescription": "Introduce el código proporcionado por tu amigo para reclamar almacenamiento gratuito para ambos",
@@ -284,7 +294,7 @@
   "referralStep3": "3. Ambos obtienen {storageInGB} GB* gratis",
   "referralsAreCurrentlyPaused": "Las referencias están actualmente en pausa",
   "youCanAtMaxDoubleYourStorage": "* Puedes al máximo duplicar tu almacenamiento",
-  "claimedStorageSoFar": "{isFamilyMember, select, true {Su familia ha reclamado {storageAmountInGb} Gb hasta el momento} false {Tú has reclamado {storageAmountInGb} Gb hasta el momento} other {¡Tú has reclamado {storageAmountInGb} Gb hasta el momento!}}",
+  "claimedStorageSoFar": "{isFamilyMember, select, true {Su familia ha reclamado {storageAmountInGb} GB hasta el momento} false {Tú has reclamado {storageAmountInGb} GB hasta el momento} other {¡Tú has reclamado {storageAmountInGb} GB hasta el momento!}}",
   "@claimedStorageSoFar": {
     "placeholders": {
       "isFamilyMember": {
@@ -353,7 +363,7 @@
   "deleteFromBoth": "Eliminar de ambos",
   "newAlbum": "Nuevo álbum",
   "albums": "Álbunes",
-  "memoryCount": "{count, plural, zero{no recuerdos} one{{count} recuerdo} other{{count} recuerdos}}\n",
+  "memoryCount": "{count, plural, zero{no recuerdos} one{{formattedCount} recuerdo} other{{formattedCount} recuerdos}}\n",
   "@memoryCount": {
     "description": "The text to display the number of memories",
     "type": "text",
@@ -361,6 +371,10 @@
       "count": {
         "example": "1",
         "type": "int"
+      },
+      "formattedCount": {
+        "type": "String",
+        "example": "11.513, 11,511"
       }
     }
   },
@@ -929,5 +943,34 @@
   "doYouWantToDiscardTheEditsYouHaveMade": "¿Quieres descartar las ediciones que has hecho?",
   "saving": "Saving...",
   "editsSaved": "Ediciones guardadas",
-  "oopsCouldNotSaveEdits": "Ups, no se pudieron guardar las ediciónes"
+  "oopsCouldNotSaveEdits": "Ups, no se pudieron guardar las ediciónes",
+  "distanceInKMUnit": "km",
+  "@distanceInKMUnit": {
+    "description": "Unit for distance in km"
+  },
+  "dayToday": "Hoy",
+  "dayYesterday": "Ayer",
+  "storage": "Almacenamiento",
+  "usedSpace": "Espacio usado",
+  "storageBreakupFamily": "Familia",
+  "storageBreakupYou": "Usted",
+  "@storageBreakupYou": {
+    "description": "Label to indicate how much storage you are using when you are part of a family plan"
+  },
+  "storageUsageInfo": "{usedAmount} {usedStorageUnit} de {totalAmount} {totalStorageUnit} usados",
+  "@storageUsageInfo": {
+    "description": "Example: 1.2 GB of 2 GB used or 100 GB or 2TB used"
+  },
+  "freeStorageSpace": "{freeAmount} {storageUnit} gratis",
+  "appVersion": "Versión: {versionValue}",
+  "verifyIDLabel": "Verificar",
+  "fileInfoAddDescHint": "Añadir una descripción...",
+  "editLocationTagTitle": "Editar la ubicación",
+  "setLabel": "Establecer",
+  "@setLabel": {
+    "description": "Label of confirm button to add a new custom radius to the radius selector of a location tag"
+  },
+  "setRadius": "Establecer radio",
+  "familyPlanPortalTitle": "Familia",
+  "familyPlanOverview": "Añada 5 familiares a su plan existente sin pagar más.\n\nCada miembro tiene su propio espacio privado y no puede ver los archivos del otro a menos que sean compartidos.\n\nLos planes familiares están disponibles para los clientes que tienen una suscripción de ente pagada.\n\n¡Suscríbete ahora para empezar!"
 }

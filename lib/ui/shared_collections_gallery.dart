@@ -343,7 +343,7 @@ class OutgoingCollectionItem extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        c.collection.name!,
+                        c.collection.displayName,
                         style: const TextStyle(
                           fontSize: 16,
                         ),
@@ -427,6 +427,8 @@ class IncomingCollectionItem extends StatelessWidget {
                     child: ThumbnailWidget(
                       c.thumbnail,
                       key: Key("shared_collection" + c.thumbnail!.tag),
+                      shouldShowArchiveStatus: c.collection.hasShareeArchived(),
+                      shouldShowSyncStatus: false,
                     ),
                   ),
                   Align(
@@ -449,7 +451,7 @@ class IncomingCollectionItem extends StatelessWidget {
               Container(
                 constraints: BoxConstraints(maxWidth: sideOfThumbnail - 40),
                 child: Text(
-                  c.collection.name!,
+                  c.collection.displayName,
                   style: albumTitleTextStyle,
                   overflow: TextOverflow.ellipsis,
                 ),

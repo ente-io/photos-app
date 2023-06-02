@@ -219,6 +219,16 @@
   "after1Month": "1个月后",
   "after1Year": "1 年后",
   "manageParticipants": "管理",
+  "albumParticipantsCount": "{count, plural, =0 {无参与者} =1 {1个参与者} other {{count} 个参与者}}",
+  "@albumParticipantsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "5"
+      }
+    },
+    "description": "Number of participants in an album, including the album owner."
+  },
   "collabLinkSectionDescription": "创建一个链接以允许人们在您的共享相册中添加和查看照片，而无需应用程序或账户。 非常适合收集活动照片。",
   "collectPhotos": "收集照片",
   "collaborativeLink": "协作链接",
@@ -258,7 +268,7 @@
   "shareTextConfirmOthersVerificationID": "嘿，你能确认这是你的 ente.io 验证 ID：{verificationID}",
   "somethingWentWrong": "出了些问题",
   "sendInvite": "发送邀请",
-  "shareTextRecommendUsingEnte": "下载 ente，以便我们轻松分享原始质量的照片和视频\n\nhttps://ente.io/#download",
+  "shareTextRecommendUsingEnte": "下载 ente，以便我们轻松分享原始质量的照片和视频\n\nhttps://ente.io",
   "done": "已完成",
   "applyCodeTitle": "应用代码",
   "enterCodeDescription": "输入您的朋友提供的代码来为您申请免费存储",
@@ -284,7 +294,7 @@
   "referralStep3": "3. 你都可以免费获得 {storageInGB} GB*",
   "referralsAreCurrentlyPaused": "推荐已暂停",
   "youCanAtMaxDoubleYourStorage": "* 您最多可以将您的存储空间增加一倍",
-  "claimedStorageSoFar": "{isFamilyMember, select, true {到目前为止，您的家庭已经领取了 {storageAmountInGb} Gb} false {到目前为止，您已经领取了 {storageAmountInGb} Gb} other {到目前为止，您已经领取了{storageAmountInGb} Gb}}",
+  "claimedStorageSoFar": "{isFamilyMember, select, true {到目前为止，您的家庭已经领取了 {storageAmountInGb} GB} false {到目前为止，您已经领取了 {storageAmountInGb} GB} other {到目前为止，您已经领取了{storageAmountInGb} GB}}",
   "@claimedStorageSoFar": {
     "placeholders": {
       "isFamilyMember": {
@@ -353,7 +363,7 @@
   "deleteFromBoth": "同时从两者中删除",
   "newAlbum": "新建相册",
   "albums": "相册",
-  "memoryCount": "{count, plural, zero{没有回忆} one{{count} 个回忆} other{{count} 个回忆}}",
+  "memoryCount": "{count, plural, zero{没有回忆} one{{formattedCount} 个回忆} other{{formattedCount} 个回忆}}",
   "@memoryCount": {
     "description": "The text to display the number of memories",
     "type": "text",
@@ -361,6 +371,10 @@
       "count": {
         "example": "1",
         "type": "int"
+      },
+      "formattedCount": {
+        "type": "String",
+        "example": "11.513, 11,511"
       }
     }
   },
@@ -672,6 +686,10 @@
   "favorite": "收藏",
   "removeFromFavorite": "从收藏中移除",
   "shareLink": "分享链接",
+  "createCollage": "创建拼贴",
+  "saveCollage": "保存拼贴",
+  "collageSaved": "拼贴已保存到相册",
+  "collageLayout": "布局",
   "addToEnte": "添加到 ente",
   "addToAlbum": "添加到相册",
   "delete": "删除",
@@ -721,8 +739,21 @@
   "referFriendsAnd2xYourPlan": "推荐朋友和 2 倍您的计划",
   "shareAlbumHint": "打开相册并点击右上角的分享按钮进行分享",
   "itemsShowTheNumberOfDaysRemainingBeforePermanentDeletion": "项目显示永久删除前剩余的天数",
+  "trashDaysLeft": "{count, plural, =0 {} =1 {1天} other {{count} 天}}",
+  "@trashDaysLeft": {
+    "description": "Text to indicate number of days remaining before permanent deletion",
+    "placeholders": {
+      "count": {
+        "example": "1|2|3",
+        "type": "int"
+      }
+    }
+  },
   "deleteAll": "全部删除",
   "renameAlbum": "重命名相册",
+  "sortAlbumsBy": "排序方式",
+  "sortNewestFirst": "最新在前",
+  "sortOldestFirst": "最旧在前",
   "rename": "重命名",
   "leaveSharedAlbum": "要离开共享相册吗？",
   "leaveAlbum": "离开相册",
@@ -759,6 +790,7 @@
   "close": "关闭",
   "setAs": "设置为",
   "fileSavedToGallery": "文件已保存到相册",
+  "fileFailedToSaveToGallery": "无法将文件保存到相册",
   "download": "下载",
   "pressAndHoldToPlayVideo": "按住以播放视频",
   "downloadFailed": "下載失敗",
@@ -929,5 +961,86 @@
   "doYouWantToDiscardTheEditsYouHaveMade": "您想要放弃您所做的编辑吗？",
   "saving": "正在保存...",
   "editsSaved": "已保存编辑",
-  "oopsCouldNotSaveEdits": "糟糕，无法保存编辑"
+  "oopsCouldNotSaveEdits": "糟糕，无法保存编辑",
+  "distanceInKMUnit": "公里",
+  "@distanceInKMUnit": {
+    "description": "Unit for distance in km"
+  },
+  "dayToday": "今天",
+  "dayYesterday": "昨天",
+  "storage": "存储空间",
+  "usedSpace": "已用空间",
+  "storageBreakupFamily": "家庭",
+  "storageBreakupYou": "您",
+  "@storageBreakupYou": {
+    "description": "Label to indicate how much storage you are using when you are part of a family plan"
+  },
+  "storageUsageInfo": "已使用 {usedAmount} {usedStorageUnit} / {totalAmount} {totalStorageUnit}",
+  "@storageUsageInfo": {
+    "description": "Example: 1.2 GB of 2 GB used or 100 GB or 2TB used"
+  },
+  "freeStorageSpace": "{freeAmount} {storageUnit} 空闲",
+  "appVersion": "版本: {versionValue}",
+  "verifyIDLabel": "验证",
+  "fileInfoAddDescHint": "添加说明...",
+  "editLocationTagTitle": "编辑位置",
+  "setLabel": "设置",
+  "@setLabel": {
+    "description": "Label of confirm button to add a new custom radius to the radius selector of a location tag"
+  },
+  "setRadius": "设定半径",
+  "familyPlanPortalTitle": "家庭",
+  "familyPlanOverview": "在您现有的计划中添加 5 名家庭成员，无需支付额外费用。\n\n每个成员都有自己的私人空间，除非共享，否则无法看到彼此的文件。\n\n家庭计划适用于付费订阅的客户。\n\n立即订阅以开始使用！",
+  "androidBiometricHint": "验证身份",
+  "@androidBiometricHint": {
+    "description": "Hint message advising the user how to authenticate with biometrics. It is used on Android side. Maximum 60 characters."
+  },
+  "androidBiometricNotRecognized": "无法识别。请重试。",
+  "@androidBiometricNotRecognized": {
+    "description": "Message to let the user know that authentication was failed. It is used on Android side. Maximum 60 characters."
+  },
+  "androidBiometricSuccess": "成功",
+  "@androidBiometricSuccess": {
+    "description": "Message to let the user know that authentication was successful. It is used on Android side. Maximum 60 characters."
+  },
+  "androidCancelButton": "取消",
+  "@androidCancelButton": {
+    "description": "Message showed on a button that the user can click to leave the current dialog. It is used on Android side. Maximum 30 characters."
+  },
+  "androidSignInTitle": "需要身份验证",
+  "@androidSignInTitle": {
+    "description": "Message showed as a title in a dialog which indicates the user that they need to scan biometric to continue. It is used on Android side. Maximum 60 characters."
+  },
+  "androidBiometricRequiredTitle": "需要生物量",
+  "@androidBiometricRequiredTitle": {
+    "description": "Message showed as a title in a dialog which indicates the user has not set up biometric authentication on their device. It is used on Android side. Maximum 60 characters."
+  },
+  "androidDeviceCredentialsRequiredTitle": "需要设备凭据",
+  "@androidDeviceCredentialsRequiredTitle": {
+    "description": "Message showed as a title in a dialog which indicates the user has not set up credentials authentication on their device. It is used on Android side. Maximum 60 characters."
+  },
+  "androidDeviceCredentialsSetupDescription": "需要设备凭据",
+  "@androidDeviceCredentialsSetupDescription": {
+    "description": "Message advising the user to go to the settings and configure device credentials on their device. It shows in a dialog on Android side."
+  },
+  "goToSettings": "前往设置",
+  "@goToSettings": {
+    "description": "Message showed on a button that the user can click to go to settings pages from the current dialog. It is used on both Android and iOS side. Maximum 30 characters."
+  },
+  "androidGoToSettingsDescription": "未在您的设备上设置生物鉴别身份验证。前往“设置>安全”添加生物鉴别身份验证。",
+  "@androidGoToSettingsDescription": {
+    "description": "Message advising the user to go to the settings and configure biometric on their device. It shows in a dialog on Android side."
+  },
+  "iOSLockOut": "生物鉴别认证已禁用。请锁定并解锁您的屏幕以启用它。",
+  "@iOSLockOut": {
+    "description": "Message advising the user to re-enable biometrics on their device. It shows in a dialog on iOS side."
+  },
+  "iOSGoToSettingsDescription": "未在您的设备上设置生物鉴别身份验证。请在您的手机上启用 Touch ID或Face ID。",
+  "@iOSGoToSettingsDescription": {
+    "description": "Message advising the user to go to the settings and configure Biometrics for their device. It shows in a dialog on iOS side."
+  },
+  "iOSOkButton": "好的",
+  "@iOSOkButton": {
+    "description": "Message showed on a button that the user can click to leave the current dialog. It is used on iOS side. Maximum 30 characters."
+  }
 }

@@ -55,7 +55,7 @@ class _DynamicLocationGalleryWidgetState
   @override
   Widget build(BuildContext context) {
     const galleryFilesLimit = 1000;
-    final selectedRadius = _selectedRadius();
+    final selectedRadius = InheritedLocationTagData.of(context).selectedRadius;
     Future<FileLoadResult> filterFiles() async {
       final FileLoadResult result = await fileLoadResult;
       //wait for ignored files to be removed after init
@@ -91,27 +91,32 @@ class _DynamicLocationGalleryWidgetState
       ),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
-          return SizedBox(
-            height: _galleryHeight(
-              min(
-                (widget.memoriesCountNotifier.value ?? 0),
-                galleryFilesLimit,
-              ),
-            ),
-            child: Gallery(
-              loadingWidget: const SizedBox.shrink(),
-              disableScroll: true,
-              asyncLoader: (
-                creationStartTime,
-                creationEndTime, {
-                limit,
-                asc,
-              }) async {
-                return snapshot.data as FileLoadResult;
-              },
-              tagPrefix: widget.tagPrefix,
-              shouldCollateFilesByDay: false,
-            ),
+          return LayoutBuilder(
+            builder: (context, constrains) {
+              return SizedBox(
+                height: _galleryHeight(
+                  min(
+                    (widget.memoriesCountNotifier.value ?? 0),
+                    galleryFilesLimit,
+                  ),
+                  constrains.maxWidth,
+                ),
+                child: Gallery(
+                  loadingWidget: const SizedBox.shrink(),
+                  disableScroll: true,
+                  asyncLoader: (
+                    creationStartTime,
+                    creationEndTime, {
+                    limit,
+                    asc,
+                  }) async {
+                    return snapshot.data as FileLoadResult;
+                  },
+                  tagPrefix: widget.tagPrefix,
+                  enableFileGrouping: false,
+                ),
+              );
+            },
           );
         } else {
           return const SizedBox.shrink();
@@ -121,19 +126,13 @@ class _DynamicLocationGalleryWidgetState
     );
   }
 
-  int _selectedRadius() {
-    return radiusValues[
-        InheritedLocationTagData.of(context).selectedRadiusIndex];
-  }
-
-  double _galleryHeight(int fileCount) {
+  double _galleryHeight(int fileCount, double widthOfGrid) {
     final photoGridSize = LocalSettings.instance.getPhotoGridSize();
     final totalWhiteSpaceBetweenPhotos =
         galleryGridSpacing * (photoGridSize - 1);
 
     final thumbnailHeight =
-        ((MediaQuery.of(context).size.width - totalWhiteSpaceBetweenPhotos) /
-            photoGridSize);
+        ((widthOfGrid - totalWhiteSpaceBetweenPhotos) / photoGridSize);
 
     final numberOfRows = (fileCount / photoGridSize).ceil();
 

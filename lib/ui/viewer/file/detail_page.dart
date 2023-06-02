@@ -77,16 +77,17 @@ class _DetailPageState extends State<DetailPage> {
 
   @override
   void initState() {
+    super.initState();
     _files = [
       ...widget.config.files
     ]; // Make a copy since we append preceding and succeeding entries to this
     _selectedIndex = widget.config.selectedIndex;
     _preloadEntries();
-    super.initState();
   }
 
   @override
   void dispose() {
+    // _pageController?.dispose();
     SystemChrome.setEnabledSystemUIMode(
       SystemUiMode.manual,
       overlays: SystemUiOverlay.values,
@@ -117,6 +118,7 @@ class _DetailPageState extends State<DetailPage> {
         key: _appBarKey,
       ),
       extendBodyBehindAppBar: true,
+      resizeToAvoidBottomInset: false,
       body: Center(
         child: Stack(
           children: [
@@ -139,6 +141,7 @@ class _DetailPageState extends State<DetailPage> {
 
   Widget _buildPageView() {
     _logger.info("Building with " + _selectedIndex.toString());
+    // todo: perf.. do we always need to create new controller?
     _pageController = PageController(initialPage: _selectedIndex);
     return PageView.builder(
       itemBuilder: (context, index) {

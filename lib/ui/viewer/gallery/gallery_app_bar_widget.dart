@@ -12,7 +12,7 @@ import 'package:photos/models/backup_status.dart';
 import 'package:photos/models/collection.dart';
 import 'package:photos/models/device_collection.dart';
 import 'package:photos/models/gallery_type.dart';
-import 'package:photos/models/magic_metadata.dart';
+import "package:photos/models/metadata/common_keys.dart";
 import 'package:photos/models/selected_files.dart';
 import 'package:photos/services/collections_service.dart';
 import 'package:photos/services/sync_service.dart';
@@ -285,6 +285,22 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
       if (isArchived || widget.collection!.type != CollectionType.favorites) {
         items.add(
           PopupMenuItem(
+            value: 6,
+            child: Row(
+              children: [
+                const Icon(Icons.sort_outlined),
+                const Padding(
+                  padding: EdgeInsets.all(8),
+                ),
+                Text(
+                  S.of(context).sortAlbumsBy,
+                ),
+              ],
+            ),
+          ),
+        );
+        items.add(
+          PopupMenuItem(
             value: 2,
             child: Row(
               children: [
@@ -321,6 +337,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
     } // ownedCollection open ends
 
     if (widget.type == GalleryType.sharedCollection) {
+      final bool hasShareeArchived = widget.collection!.hasShareeArchived();
       items.add(
         PopupMenuItem(
           value: 4,
@@ -331,6 +348,26 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
                 padding: EdgeInsets.all(8),
               ),
               Text(S.of(context).leaveAlbum),
+            ],
+          ),
+        ),
+      );
+      items.add(
+        PopupMenuItem(
+          value: 7,
+          child: Row(
+            children: [
+              Icon(
+                hasShareeArchived ? Icons.unarchive : Icons.archive_outlined,
+              ),
+              const Padding(
+                padding: EdgeInsets.all(8),
+              ),
+              Text(
+                hasShareeArchived
+                    ? S.of(context).unarchiveAlbum
+                    : S.of(context).archiveAlbum,
+              ),
             ],
           ),
         ),
@@ -366,8 +403,8 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
                 context,
                 widget.collection!,
                 widget.collection!.isArchived()
-                    ? visibilityVisible
-                    : visibilityArchive,
+                    ? visibleVisibility
+                    : archiveVisibility,
               );
             } else if (value == 3) {
               await _trashCollection();
@@ -375,6 +412,20 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
               await _leaveAlbum(context);
             } else if (value == 5) {
               await _deleteBackedUpFiles(context);
+            } else if (value == 6) {
+              await _showSortOption(context);
+            } else if (value == 7) {
+              await changeCollectionVisibility(
+                context,
+                widget.collection!,
+                widget.collection!.hasShareeArchived()
+                    ? visibleVisibility
+                    : archiveVisibility,
+                isOwner: false,
+              );
+              if (mounted) {
+                setState(() {});
+              }
             } else {
               showToast(context, S.of(context).somethingWentWrong);
             }
@@ -384,6 +435,31 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
     }
 
     return actions;
+  }
+
+  Future<void> _showSortOption(BuildContext bContext) async {
+    final bool? sortByAsc = await showMenu<bool>(
+      context: bContext,
+      position: RelativeRect.fromLTRB(
+        MediaQuery.of(context).size.width,
+        kToolbarHeight + 12,
+        12,
+        0,
+      ),
+      items: [
+        PopupMenuItem(
+          value: false,
+          child: Text(S.of(context).sortNewestFirst),
+        ),
+        PopupMenuItem(
+          value: true,
+          child: Text(S.of(context).sortOldestFirst),
+        ),
+      ],
+    );
+    if (sortByAsc != null) {
+      changeSortOrder(bContext, widget.collection!, sortByAsc);
+    }
   }
 
   Future<void> _trashCollection() async {

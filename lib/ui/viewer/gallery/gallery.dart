@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:photos/core/constants.dart';
 import 'package:photos/core/event_bus.dart';
-import 'package:photos/ente_theme_data.dart';
 import 'package:photos/events/event.dart';
 import 'package:photos/events/files_updated_event.dart';
 import 'package:photos/events/tab_changed_event.dart';
@@ -14,10 +13,9 @@ import 'package:photos/models/file_load_result.dart';
 import 'package:photos/models/selected_files.dart';
 import 'package:photos/ui/common/loading_widget.dart';
 import 'package:photos/ui/huge_listview/huge_listview.dart';
-import 'package:photos/ui/huge_listview/lazy_loading_gallery.dart';
+import "package:photos/ui/viewer/gallery/component/multiple_groups_gallery_view.dart";
 import 'package:photos/ui/viewer/gallery/empty_state.dart';
 import 'package:photos/utils/date_time_util.dart';
-import 'package:photos/utils/local_settings.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 typedef GalleryLoader = Future<FileLoadResult> Function(
@@ -26,6 +24,8 @@ typedef GalleryLoader = Future<FileLoadResult> Function(
   int? limit,
   bool? asc,
 });
+
+typedef SortAscFn = bool Function();
 
 class Gallery extends StatefulWidget {
   final GalleryLoader asyncLoader;
@@ -40,10 +40,13 @@ class Gallery extends StatefulWidget {
   final Widget emptyState;
   final String? albumName;
   final double scrollBottomSafeArea;
-  final bool shouldCollateFilesByDay;
+  final bool enableFileGrouping;
   final Widget loadingWidget;
   final bool disableScroll;
   final bool limitSelectionToOne;
+
+  // add a Function variable to get sort value in bool
+  final SortAscFn? sortAsyncFn;
 
   const Gallery({
     required this.asyncLoader,
@@ -58,10 +61,11 @@ class Gallery extends StatefulWidget {
     this.emptyState = const EmptyState(),
     this.scrollBottomSafeArea = 120.0,
     this.albumName = '',
-    this.shouldCollateFilesByDay = true,
+    this.enableFileGrouping = true,
     this.loadingWidget = const EnteLoadingWidget(),
     this.disableScroll = false,
     this.limitSelectionToOne = false,
+    this.sortAsyncFn,
     Key? key,
   }) : super(key: key);
 
@@ -77,21 +81,22 @@ class _GalleryState extends State<Gallery> {
   final _hugeListViewKey = GlobalKey<HugeListViewState>();
 
   late Logger _logger;
-  List<List<File>> _collatedFiles = [];
+  List<List<File>> _currentGroupedFiles = [];
   bool _hasLoadedFiles = false;
-  ItemScrollController? _itemScroller;
+  late ItemScrollController _itemScroller;
   StreamSubscription<FilesUpdatedEvent>? _reloadEventSubscription;
   StreamSubscription<TabDoubleTapEvent>? _tabDoubleTapEvent;
   final _forceReloadEventSubscriptions = <StreamSubscription<Event>>[];
-  String? _logTag;
-  late int _photoGridSize;
+  late String _logTag;
+  bool _sortOrderAsc = false;
 
   @override
   void initState() {
     _logTag =
         "Gallery_${widget.tagPrefix}${kDebugMode ? "_" + widget.albumName! : ""}";
-    _logger = Logger(_logTag!);
+    _logger = Logger(_logTag);
     _logger.finest("init Gallery");
+    _sortOrderAsc = widget.sortAsyncFn != null ? widget.sortAsyncFn!() : false;
     _itemScroller = ItemScrollController();
     if (widget.reloadEvent != null) {
       _reloadEventSubscription = widget.reloadEvent!.listen((event) async {
@@ -112,7 +117,7 @@ class _GalleryState extends State<Gallery> {
       // todo: Assign ID to Gallery and fire generic event with ID &
       //  target index/date
       if (mounted && event.selectedIndex == 0) {
-        _itemScroller!.scrollTo(
+        _itemScroller.scrollTo(
           index: 0,
           duration: const Duration(milliseconds: 150),
         );
@@ -123,13 +128,15 @@ class _GalleryState extends State<Gallery> {
         _forceReloadEventSubscriptions.add(
           event.listen((event) async {
             _logger.finest("Force refresh all files on ${event.reason}");
+            _sortOrderAsc =
+                widget.sortAsyncFn != null ? widget.sortAsyncFn!() : false;
             final result = await _loadFiles();
             _setFilesAndReload(result.files);
           }),
         );
       }
     }
-    if (widget.initialFiles != null) {
+    if (widget.initialFiles != null && !_sortOrderAsc) {
       _onFilesLoaded(widget.initialFiles!);
     }
     _loadFiles(limit: kInitialLoadLimit).then((result) async {
@@ -157,6 +164,7 @@ class _GalleryState extends State<Gallery> {
         galleryLoadStartTime,
         galleryLoadEndTime,
         limit: limit,
+        asc: _sortOrderAsc,
       );
       final endTime = DateTime.now().microsecondsSinceEpoch;
       final duration = Duration(microseconds: endTime - startTime);
@@ -174,21 +182,22 @@ class _GalleryState extends State<Gallery> {
     }
   }
 
-  // Collates files and returns `true` if it resulted in a gallery reload
+  // group files into multiple groups and returns `true` if it resulted in a
+  // gallery reload
   bool _onFilesLoaded(List<File> files) {
-    final updatedCollatedFiles =
-        widget.shouldCollateFilesByDay ? _collateFiles(files) : [files];
-    if (_collatedFiles.length != updatedCollatedFiles.length ||
-        _collatedFiles.isEmpty) {
+    final updatedGroupedFiles =
+        widget.enableFileGrouping ? _groupFiles(files) : [files];
+    if (_currentGroupedFiles.length != updatedGroupedFiles.length ||
+        _currentGroupedFiles.isEmpty) {
       if (mounted) {
         setState(() {
           _hasLoadedFiles = true;
-          _collatedFiles = updatedCollatedFiles;
+          _currentGroupedFiles = updatedGroupedFiles;
         });
       }
       return true;
     } else {
-      _collatedFiles = updatedCollatedFiles;
+      _currentGroupedFiles = updatedGroupedFiles;
       return false;
     }
   }
@@ -209,114 +218,53 @@ class _GalleryState extends State<Gallery> {
     if (!_hasLoadedFiles) {
       return widget.loadingWidget;
     }
-    _photoGridSize = LocalSettings.instance.getPhotoGridSize();
-    return _getListView();
-  }
-
-  Widget _getListView() {
-    return HugeListView<List<File>>(
-      key: _hugeListViewKey,
-      controller: _itemScroller,
-      startIndex: 0,
-      totalCount: _collatedFiles.length,
-      isDraggableScrollbarEnabled: _collatedFiles.length > 10,
+    return MultipleGroupsGalleryView(
+      hugeListViewKey: _hugeListViewKey,
+      itemScroller: _itemScroller,
+      groupedFiles: _currentGroupedFiles,
       disableScroll: widget.disableScroll,
-      waitBuilder: (_) {
-        return const EnteLoadingWidget();
-      },
-      emptyResultBuilder: (_) {
-        final List<Widget> children = [];
-        if (widget.header != null) {
-          children.add(widget.header!);
-        }
-        children.add(
-          Expanded(
-            child: widget.emptyState,
-          ),
-        );
-        if (widget.footer != null) {
-          children.add(widget.footer!);
-        }
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: children,
-        );
-      },
-      itemBuilder: (context, index) {
-        Widget gallery;
-        gallery = LazyLoadingGallery(
-          _collatedFiles[index],
-          index,
-          widget.reloadEvent,
-          widget.removalEventTypes,
-          widget.asyncLoader,
-          widget.selectedFiles,
-          widget.tagPrefix,
-          Bus.instance
-              .on<GalleryIndexUpdatedEvent>()
-              .where((event) => event.tag == widget.tagPrefix)
-              .map((event) => event.index),
-          widget.shouldCollateFilesByDay,
-          logTag: _logTag,
-          photoGirdSize: _photoGridSize,
-          limitSelectionToOne: widget.limitSelectionToOne,
-        );
-        if (widget.header != null && index == 0) {
-          gallery = Column(children: [widget.header!, gallery]);
-        }
-        if (widget.footer != null && index == _collatedFiles.length - 1) {
-          gallery = Column(children: [gallery, widget.footer!]);
-        }
-        return gallery;
-      },
-      labelTextBuilder: (int index) {
-        try {
-          return getMonthAndYear(
-            DateTime.fromMicrosecondsSinceEpoch(
-              _collatedFiles[index][0].creationTime!,
-            ),
-          );
-        } catch (e) {
-          _logger.severe("label text builder failed", e);
-          return "";
-        }
-      },
-      thumbBackgroundColor:
-          Theme.of(context).colorScheme.galleryThumbBackgroundColor,
-      thumbDrawColor: Theme.of(context).colorScheme.galleryThumbDrawColor,
-      thumbPadding: widget.header != null
-          ? const EdgeInsets.only(top: 60)
-          : const EdgeInsets.all(0),
-      bottomSafeArea: widget.scrollBottomSafeArea,
-      firstShown: (int firstIndex) {
-        Bus.instance
-            .fire(GalleryIndexUpdatedEvent(widget.tagPrefix, firstIndex));
-      },
+      emptyState: widget.emptyState,
+      asyncLoader: widget.asyncLoader,
+      sortOrderAsc: _sortOrderAsc,
+      removalEventTypes: widget.removalEventTypes,
+      tagPrefix: widget.tagPrefix,
+      scrollBottomSafeArea: widget.scrollBottomSafeArea,
+      limitSelectionToOne: widget.limitSelectionToOne,
+      enableFileGrouping: widget.enableFileGrouping,
+      logTag: _logTag,
+      logger: _logger,
+      reloadEvent: widget.reloadEvent,
+      header: widget.header,
+      footer: widget.footer,
+      selectedFiles: widget.selectedFiles,
     );
   }
 
-  List<List<File>> _collateFiles(List<File> files) {
-    final List<File> dailyFiles = [];
-    final List<List<File>> collatedFiles = [];
+  List<List<File>> _groupFiles(List<File> files) {
+    List<File> dailyFiles = [];
+    final List<List<File>> resultGroupedFiles = [];
     for (int index = 0; index < files.length; index++) {
       if (index > 0 &&
           !areFromSameDay(
             files[index - 1].creationTime!,
             files[index].creationTime!,
           )) {
-        final List<File> collatedDailyFiles = [];
-        collatedDailyFiles.addAll(dailyFiles);
-        collatedFiles.add(collatedDailyFiles);
-        dailyFiles.clear();
+        resultGroupedFiles.add(dailyFiles);
+        dailyFiles = [];
       }
       dailyFiles.add(files[index]);
     }
     if (dailyFiles.isNotEmpty) {
-      collatedFiles.add(dailyFiles);
+      resultGroupedFiles.add(dailyFiles);
     }
-    collatedFiles
-        .sort((a, b) => b[0].creationTime!.compareTo(a[0].creationTime!));
-    return collatedFiles;
+    if (_sortOrderAsc) {
+      resultGroupedFiles
+          .sort((a, b) => a[0].creationTime!.compareTo(b[0].creationTime!));
+    } else {
+      resultGroupedFiles
+          .sort((a, b) => b[0].creationTime!.compareTo(a[0].creationTime!));
+    }
+    return resultGroupedFiles;
   }
 }
 

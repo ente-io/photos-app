@@ -9,8 +9,8 @@ import 'package:photos/core/event_bus.dart';
 import 'package:photos/db/files_db.dart';
 import 'package:photos/db/trash_db.dart';
 import 'package:photos/events/files_updated_event.dart';
-import 'package:photos/events/local_photos_updated_event.dart';
-import 'package:photos/models/collection.dart';
+import "package:photos/events/local_photos_updated_event.dart";
+import "package:photos/models/api/collection/user.dart";
 import 'package:photos/models/file.dart';
 import 'package:photos/models/file_type.dart';
 import 'package:photos/models/trash_file.dart';
@@ -58,10 +58,13 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
   bool _isLoadingRemoteThumbnail = false;
   bool _errorLoadingRemoteThumbnail = false;
   ImageProvider? _imageProvider;
+  int? optimizedImageHeight;
+  int? optimizedImageWidth;
 
   @override
   void initState() {
     super.initState();
+    assignOptimizedImageDimensions();
   }
 
   @override
@@ -83,6 +86,19 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
     }
   }
 
+  ///Assigned dimension will be the size of a grid item. The size will be
+  ///assigned to the side which is smaller in dimension.
+  void assignOptimizedImageDimensions() {
+    if (widget.file!.width == 0 || widget.file!.height == 0) {
+      return;
+    }
+    if (widget.file!.width < widget.file!.height) {
+      optimizedImageWidth = widget.thumbnailSize;
+    } else {
+      optimizedImageHeight = widget.thumbnailSize;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.file!.isRemoteFile) {
@@ -93,7 +109,13 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
     Widget? image;
     if (_imageProvider != null) {
       image = Image(
-        image: _imageProvider!,
+        image: optimizedImageHeight != null || optimizedImageWidth != null
+            ? ResizeImage(
+                _imageProvider!,
+                width: optimizedImageWidth,
+                height: optimizedImageHeight,
+              )
+            : _imageProvider!,
         fit: widget.fit,
       );
     }
@@ -111,8 +133,9 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
       }
       if (widget.file!.fileType == FileType.video) {
         contentChildren.add(const VideoOverlayIcon());
-      } else if (widget.file!.fileType == FileType.livePhoto &&
-          widget.shouldShowLivePhotoOverlay) {
+      } else if (widget.shouldShowLivePhotoOverlay &&
+          (widget.file!.fileType == FileType.livePhoto ||
+              ((widget.file!.pubMagicMetadata?.mvi ?? 0) > 0))) {
         contentChildren.add(const LivePhotoOverlayIcon());
       }
       if (widget.shouldShowOwnerAvatar) {
@@ -147,11 +170,7 @@ class _ThumbnailWidgetState extends State<ThumbnailWidget> {
     }
     final List<Widget> viewChildren = [
       const ThumbnailPlaceHolder(),
-      AnimatedOpacity(
-        opacity: content == null ? 0 : 1.0,
-        duration: const Duration(milliseconds: 200),
-        child: content,
-      )
+      content ?? const SizedBox(),
     ];
     if (widget.shouldShowSyncStatus && widget.file!.uploadedFileID == null) {
       viewChildren.add(const UnSyncedIcon());

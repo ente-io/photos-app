@@ -48,15 +48,18 @@ class _DeduplicatePageState extends State<DeduplicatePage> {
   final Set<File> _selectedFiles = <File>{};
   final Map<int?, int> _fileSizeMap = {};
   late List<DuplicateFiles> _duplicates;
-  bool? _shouldClubByCaptureTime = true;
+  bool _shouldClubByCaptureTime = false;
+  bool _shouldClubByFileName = false;
   bool toastShown = false;
 
   SortKey sortKey = SortKey.size;
 
   @override
   void initState() {
-    _duplicates =
-        DeduplicationService.instance.clubDuplicatesByTime(widget.duplicates);
+    _duplicates = DeduplicationService.instance.clubDuplicates(
+      widget.duplicates,
+      clubbingKey: (File f) => f.hash,
+    );
     _selectAllFilesButFirst();
 
     super.initState();
@@ -204,14 +207,6 @@ class _DeduplicatePageState extends State<DeduplicatePage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Following files were clubbed based on their sizes" +
-                (_shouldClubByCaptureTime! ? " and capture times." : "."),
-            style: Theme.of(context).textTheme.subtitle2,
-          ),
-          const Padding(
-            padding: EdgeInsets.all(2),
-          ),
-          Text(
             S.of(context).reviewDeduplicateItems,
             style: Theme.of(context).textTheme.subtitle2,
           ),
@@ -229,25 +224,60 @@ class _DeduplicatePageState extends State<DeduplicatePage> {
   Widget _getClubbingConfig() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
-      child: CheckboxListTile(
-        value: _shouldClubByCaptureTime,
-        onChanged: (value) {
-          _shouldClubByCaptureTime = value;
-          _resetEntriesAndSelection();
-          setState(() {});
-        },
-        title: Text(S.of(context).clubByCaptureTime),
+      child: Column(
+        children: [
+          CheckboxListTile(
+            value: _shouldClubByFileName,
+            onChanged: (value) {
+              _shouldClubByFileName = value!;
+              if (_shouldClubByFileName) {
+                _shouldClubByCaptureTime = false;
+              }
+              _resetEntriesAndSelection();
+              setState(() {});
+            },
+            title: Text(S.of(context).clubByFileName),
+          ),
+          CheckboxListTile(
+            value: _shouldClubByCaptureTime,
+            onChanged: (value) {
+              _shouldClubByCaptureTime = value!;
+              if (_shouldClubByCaptureTime) {
+                _shouldClubByFileName = false;
+              }
+              _resetEntriesAndSelection();
+              setState(() {});
+            },
+            title: Text(S.of(context).clubByCaptureTime),
+          ),
+          const Padding(
+            padding: EdgeInsets.all(8),
+          ),
+          const Divider(
+            height: 0,
+          ),
+          const Padding(
+            padding: EdgeInsets.all(4),
+          ),
+        ],
       ),
     );
   }
 
   void _resetEntriesAndSelection() {
-    if (_shouldClubByCaptureTime!) {
-      _duplicates =
-          DeduplicationService.instance.clubDuplicatesByTime(_duplicates);
+    _duplicates = widget.duplicates;
+    late String? Function(File) clubbingKeyFn;
+    if (_shouldClubByCaptureTime) {
+      clubbingKeyFn = (File f) => f.creationTime?.toString() ?? '';
+    } else if (_shouldClubByFileName) {
+      clubbingKeyFn = (File f) => f.displayName;
     } else {
-      _duplicates = widget.duplicates;
+      clubbingKeyFn = (File f) => f.hash;
     }
+    _duplicates = DeduplicationService.instance.clubDuplicates(
+      _duplicates,
+      clubbingKey: clubbingKeyFn,
+    );
     _selectAllFilesButFirst();
   }
 
@@ -480,7 +510,7 @@ class _DeduplicatePageState extends State<DeduplicatePage> {
             child: Text(
               CollectionsService.instance
                   .getCollectionByID(file.collectionID!)!
-                  .name!,
+                  .displayName,
               style:
                   Theme.of(context).textTheme.caption!.copyWith(fontSize: 12),
               overflow: TextOverflow.ellipsis,

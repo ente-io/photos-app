@@ -31,7 +31,7 @@ class MessageLookup extends MessageLookupByLibrary {
             'true':
                 'Deine Familiengruppe hat bereits ${storageAmountInGb} GB erhalten',
             'false': 'Du hast bereits ${storageAmountInGb} GB erhalten',
-            'other': 'Du hast bereits ${storageAmountInGb} Gb erhalten!',
+            'other': 'Du hast bereits ${storageAmountInGb} GB erhalten!',
           })}";
 
   static String m3(familyAdminEmail) =>
@@ -65,8 +65,8 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m13(maxValue) =>
       "Wenn auf den Höchstwert von ${maxValue} gesetzt, dann wird das Limit gelockert um potenzielle Höchstlasten unterstützen zu können.";
 
-  static String m14(count) =>
-      "${Intl.plural(count, zero: 'keine Erinnerungsstücke', one: '${count} Erinnerung', other: '${count} Erinnerungsstücke')}";
+  static String m14(count, formattedCount) =>
+      "${Intl.plural(count, zero: 'keine Erinnerungsstücke', one: '${formattedCount} Erinnerung', other: '${formattedCount} Erinnerungsstücke')}";
 
   static String m15(passwordStrengthValue) =>
       "Passwortstärke: ${passwordStrengthValue}";
@@ -811,7 +811,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Teile mit ausgewählten Personen"),
         "shareTextConfirmOthersVerificationID": m25,
         "shareTextRecommendUsingEnte": MessageLookupByLibrary.simpleMessage(
-            "Lade ente herunter, damit wir einfach Fotos und Videos in höchster Qualität teilen können\n\nhttps://ente.io/#download"),
+            "Lade ente herunter, damit wir einfach Fotos und Videos in höchster Qualität teilen können\n\nhttps://ente.io"),
         "shareTextReferralCode": m26,
         "shareWithNonenteUsers": MessageLookupByLibrary.simpleMessage(
             "Mit Nicht-Ente-Benutzern teilen"),

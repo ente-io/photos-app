@@ -102,30 +102,40 @@ class _ChangeLogPageState extends State<ChangeLogPage> {
   Widget _getChangeLog() {
     final scrollController = ScrollController();
     final List<ChangeLogEntry> items = [];
-
     items.add(
       ChangeLogEntry(
-        "Security Audit",
-        "It gives us immense joy to announce that ente's source code has been"
-            " successfully audited by Cure53, in collaboration with Symbolic "
-            "Software.\n\nTogether they have certified that ente's "
-            "architecture is sound and that our implementation across all "
-            "clients is cryptographically accurate.\n\nYou can find more "
-            "details at ente.io/blog.",
+        "Collages ✨",
+        'Create collages out of your favorite photos!\n\nSelect your photos, '
+            'and click on "Create collage" to build a single frame that captures your whole memory.',
       ),
     );
 
     items.add(
       ChangeLogEntry(
-        "Location tags",
-        "This release includes a fresh, beautiful, privacy-friendly way to "
-            "search through your photos by location!\n\nTag a photo with a "
-            "location, define a radius, and ente will automatically cluster "
-            "all photos clicked within that area.\n\nOpen a photo, and click on"
-            " the Info button to get started!",
+        "Album sort order",
+        'You can now choose how photos within your albums are ordered – '
+            'newest or oldest first.\n\nThis is useful for albums of trips '
+            'and events, where you wish to see your stories unfold along '
+            'their original timelines.\n\nClick on the overflow menu within '
+            'an album to configure how it\'s sorted.',
       ),
     );
 
+    items.add(
+      ChangeLogEntry(
+        "Shared album improvements",
+        'Photos in albums that are shared with you will now be shown in your home gallery. You can hide them by simply archiving the shared album.',
+      ),
+    );
+    //You can now specify a custom radius while creating Location tags.
+    items.add(
+      ChangeLogEntry(
+        "Performance improvements",
+        "We've worked super hard to improve how smoothly our home gallery "
+            "scrolls. Skimming through your memories should be a lot more enjoyable now.",
+        isFeature: false,
+      ),
+    );
     return Container(
       padding: const EdgeInsets.only(left: 16),
       child: Scrollbar(

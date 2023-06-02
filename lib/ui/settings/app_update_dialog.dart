@@ -112,6 +112,7 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
     return WillPopScope(
       onWillPop: () async => !shouldForceUpdate,
       child: AlertDialog(
+        key: const ValueKey("updateAppDialog"),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -202,9 +203,9 @@ class _ApkDownloaderDialogState extends State<ApkDownloaderDialog> {
         content: Text(S.of(context).theDownloadCouldNotBeCompleted),
         actions: [
           TextButton(
-            child: const Text(
-              "Ignore",
-              style: TextStyle(
+            child: Text(
+              S.of(context).ignoreUpdate,
+              style: const TextStyle(
                 color: Colors.white,
               ),
             ),

@@ -1240,10 +1240,10 @@ class S {
     );
   }
 
-  /// `Your recovery key is the only way to recover your photos if you forget your password. You can find your recovery key in Settings > Account.\n\nPlease enter your recovery key here to verify that you have saved it correctly.`
+  /// `Your recovery key is the only way to recover your photos if you forget your password. You can find your recovery key in Settings > Security.\n\nPlease enter your recovery key here to verify that you have saved it correctly.`
   String get recoveryKeyVerifyReason {
     return Intl.message(
-      'Your recovery key is the only way to recover your photos if you forget your password. You can find your recovery key in Settings > Account.\n\nPlease enter your recovery key here to verify that you have saved it correctly.',
+      'Your recovery key is the only way to recover your photos if you forget your password. You can find your recovery key in Settings > Security.\n\nPlease enter your recovery key here to verify that you have saved it correctly.',
       name: 'recoveryKeyVerifyReason',
       desc: '',
       args: [],
@@ -1720,6 +1720,19 @@ class S {
     );
   }
 
+  /// `{count, plural, =0 {No Participants} =1 {1 Participant} other {{count} Participants}}`
+  String albumParticipantsCount(int count) {
+    return Intl.plural(
+      count,
+      zero: 'No Participants',
+      one: '1 Participant',
+      other: '$count Participants',
+      name: 'albumParticipantsCount',
+      desc: 'Number of participants in an album, including the album owner.',
+      args: [count],
+    );
+  }
+
   /// `Create a link to allow people to add and view photos in your shared album without needing an ente app or account. Great for collecting event photos.`
   String get collabLinkSectionDescription {
     return Intl.message(
@@ -1953,10 +1966,10 @@ class S {
     );
   }
 
-  /// `Download ente so we can easily share original quality photos and videos\n\nhttps://ente.io/#download`
+  /// `Download ente so we can easily share original quality photos and videos\n\nhttps://ente.io`
   String get shareTextRecommendUsingEnte {
     return Intl.message(
-      'Download ente so we can easily share original quality photos and videos\n\nhttps://ente.io/#download',
+      'Download ente so we can easily share original quality photos and videos\n\nhttps://ente.io',
       name: 'shareTextRecommendUsingEnte',
       desc: '',
       args: [],
@@ -2184,14 +2197,14 @@ class S {
     );
   }
 
-  /// `{isFamilyMember, select, true {Your family has claimed {storageAmountInGb} Gb so far} false {You have claimed {storageAmountInGb} Gb so far} other {You have claimed {storageAmountInGb} Gb so far!}}`
+  /// `{isFamilyMember, select, true {Your family has claimed {storageAmountInGb} GB so far} false {You have claimed {storageAmountInGb} GB so far} other {You have claimed {storageAmountInGb} GB so far!}}`
   String claimedStorageSoFar(String isFamilyMember, int storageAmountInGb) {
     return Intl.select(
       isFamilyMember,
       {
-        'true': 'Your family has claimed $storageAmountInGb Gb so far',
-        'false': 'You have claimed $storageAmountInGb Gb so far',
-        'other': 'You have claimed $storageAmountInGb Gb so far!',
+        'true': 'Your family has claimed $storageAmountInGb GB so far',
+        'false': 'You have claimed $storageAmountInGb GB so far',
+        'other': 'You have claimed $storageAmountInGb GB so far!',
       },
       name: 'claimedStorageSoFar',
       desc: '',
@@ -2759,16 +2772,16 @@ class S {
     );
   }
 
-  /// `{count, plural, zero{no memories} one{{count} memory} other{{count} memories}}`
-  String memoryCount(int count) {
+  /// `{count, plural, zero{no memories} one{{formattedCount} memory} other{{formattedCount} memories}}`
+  String memoryCount(int count, String formattedCount) {
     return Intl.plural(
       count,
       zero: 'no memories',
-      one: '$count memory',
-      other: '$count memories',
+      one: '$formattedCount memory',
+      other: '$formattedCount memories',
       name: 'memoryCount',
       desc: 'The text to display the number of memories',
-      args: [count],
+      args: [count, formattedCount],
     );
   }
 
@@ -3172,6 +3185,16 @@ class S {
     return Intl.message(
       'Update available',
       name: 'updateAvailable',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ignore`
+  String get ignoreUpdate {
+    return Intl.message(
+      'Ignore',
+      name: 'ignoreUpdate',
       desc: '',
       args: [],
     );
@@ -4842,6 +4865,46 @@ class S {
     );
   }
 
+  /// `Create collage`
+  String get createCollage {
+    return Intl.message(
+      'Create collage',
+      name: 'createCollage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Save collage`
+  String get saveCollage {
+    return Intl.message(
+      'Save collage',
+      name: 'saveCollage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Collage saved to gallery`
+  String get collageSaved {
+    return Intl.message(
+      'Collage saved to gallery',
+      name: 'collageSaved',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Layout`
+  String get collageLayout {
+    return Intl.message(
+      'Layout',
+      name: 'collageLayout',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Add to ente`
   String get addToEnte {
     return Intl.message(
@@ -5186,6 +5249,20 @@ class S {
     );
   }
 
+  /// `{count, plural, =0 {} =1 {1 day} other {{count} days}}`
+  String trashDaysLeft(int count) {
+    return Intl.plural(
+      count,
+      zero: '',
+      one: '1 day',
+      other: '$count days',
+      name: 'trashDaysLeft',
+      desc:
+          'Text to indicate number of days remaining before permanent deletion',
+      args: [count],
+    );
+  }
+
   /// `Delete All`
   String get deleteAll {
     return Intl.message(
@@ -5201,6 +5278,36 @@ class S {
     return Intl.message(
       'Rename album',
       name: 'renameAlbum',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sort by`
+  String get sortAlbumsBy {
+    return Intl.message(
+      'Sort by',
+      name: 'sortAlbumsBy',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Newest first`
+  String get sortNewestFirst {
+    return Intl.message(
+      'Newest first',
+      name: 'sortNewestFirst',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Oldest first`
+  String get sortOldestFirst {
+    return Intl.message(
+      'Oldest first',
+      name: 'sortOldestFirst',
       desc: '',
       args: [],
     );
@@ -5566,6 +5673,16 @@ class S {
     );
   }
 
+  /// `Failed to save file to gallery`
+  String get fileFailedToSaveToGallery {
+    return Intl.message(
+      'Failed to save file to gallery',
+      name: 'fileFailedToSaveToGallery',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Download`
   String get download {
     return Intl.message(
@@ -5631,6 +5748,16 @@ class S {
     return Intl.message(
       'Club by capture time',
       name: 'clubByCaptureTime',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Club by file name`
+  String get clubByFileName {
+    return Intl.message(
+      'Club by file name',
+      name: 'clubByFileName',
       desc: '',
       args: [],
     );
@@ -6776,6 +6903,322 @@ class S {
       'Oops, could not save edits',
       name: 'oopsCouldNotSaveEdits',
       desc: '',
+      args: [],
+    );
+  }
+
+  /// `km`
+  String get distanceInKMUnit {
+    return Intl.message(
+      'km',
+      name: 'distanceInKMUnit',
+      desc: 'Unit for distance in km',
+      args: [],
+    );
+  }
+
+  /// `Today`
+  String get dayToday {
+    return Intl.message(
+      'Today',
+      name: 'dayToday',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Yesterday`
+  String get dayYesterday {
+    return Intl.message(
+      'Yesterday',
+      name: 'dayYesterday',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Storage`
+  String get storage {
+    return Intl.message(
+      'Storage',
+      name: 'storage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Used space`
+  String get usedSpace {
+    return Intl.message(
+      'Used space',
+      name: 'usedSpace',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Family`
+  String get storageBreakupFamily {
+    return Intl.message(
+      'Family',
+      name: 'storageBreakupFamily',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `You`
+  String get storageBreakupYou {
+    return Intl.message(
+      'You',
+      name: 'storageBreakupYou',
+      desc:
+          'Label to indicate how much storage you are using when you are part of a family plan',
+      args: [],
+    );
+  }
+
+  /// `{usedAmount} {usedStorageUnit} of {totalAmount} {totalStorageUnit} used`
+  String storageUsageInfo(Object usedAmount, Object usedStorageUnit,
+      Object totalAmount, Object totalStorageUnit) {
+    return Intl.message(
+      '$usedAmount $usedStorageUnit of $totalAmount $totalStorageUnit used',
+      name: 'storageUsageInfo',
+      desc: 'Example: 1.2 GB of 2 GB used or 100 GB or 2TB used',
+      args: [usedAmount, usedStorageUnit, totalAmount, totalStorageUnit],
+    );
+  }
+
+  /// `{freeAmount} {storageUnit} free`
+  String freeStorageSpace(Object freeAmount, Object storageUnit) {
+    return Intl.message(
+      '$freeAmount $storageUnit free',
+      name: 'freeStorageSpace',
+      desc: '',
+      args: [freeAmount, storageUnit],
+    );
+  }
+
+  /// `Version: {versionValue}`
+  String appVersion(Object versionValue) {
+    return Intl.message(
+      'Version: $versionValue',
+      name: 'appVersion',
+      desc: '',
+      args: [versionValue],
+    );
+  }
+
+  /// `Verify`
+  String get verifyIDLabel {
+    return Intl.message(
+      'Verify',
+      name: 'verifyIDLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add a description...`
+  String get fileInfoAddDescHint {
+    return Intl.message(
+      'Add a description...',
+      name: 'fileInfoAddDescHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Edit location`
+  String get editLocationTagTitle {
+    return Intl.message(
+      'Edit location',
+      name: 'editLocationTagTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Set`
+  String get setLabel {
+    return Intl.message(
+      'Set',
+      name: 'setLabel',
+      desc:
+          'Label of confirm button to add a new custom radius to the radius selector of a location tag',
+      args: [],
+    );
+  }
+
+  /// `Set radius`
+  String get setRadius {
+    return Intl.message(
+      'Set radius',
+      name: 'setRadius',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Family`
+  String get familyPlanPortalTitle {
+    return Intl.message(
+      'Family',
+      name: 'familyPlanPortalTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add 5 family members to your existing plan without paying extra.\n\nEach member gets their own private space, and cannot see each other's files unless they're shared.\n\nFamily plans are available to customers who have a paid ente subscription.\n\nSubscribe now to get started!`
+  String get familyPlanOverview {
+    return Intl.message(
+      'Add 5 family members to your existing plan without paying extra.\n\nEach member gets their own private space, and cannot see each other\'s files unless they\'re shared.\n\nFamily plans are available to customers who have a paid ente subscription.\n\nSubscribe now to get started!',
+      name: 'familyPlanOverview',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Verify identity`
+  String get androidBiometricHint {
+    return Intl.message(
+      'Verify identity',
+      name: 'androidBiometricHint',
+      desc:
+          'Hint message advising the user how to authenticate with biometrics. It is used on Android side. Maximum 60 characters.',
+      args: [],
+    );
+  }
+
+  /// `Not recognized. Try again.`
+  String get androidBiometricNotRecognized {
+    return Intl.message(
+      'Not recognized. Try again.',
+      name: 'androidBiometricNotRecognized',
+      desc:
+          'Message to let the user know that authentication was failed. It is used on Android side. Maximum 60 characters.',
+      args: [],
+    );
+  }
+
+  /// `Success`
+  String get androidBiometricSuccess {
+    return Intl.message(
+      'Success',
+      name: 'androidBiometricSuccess',
+      desc:
+          'Message to let the user know that authentication was successful. It is used on Android side. Maximum 60 characters.',
+      args: [],
+    );
+  }
+
+  /// `Cancel`
+  String get androidCancelButton {
+    return Intl.message(
+      'Cancel',
+      name: 'androidCancelButton',
+      desc:
+          'Message showed on a button that the user can click to leave the current dialog. It is used on Android side. Maximum 30 characters.',
+      args: [],
+    );
+  }
+
+  /// `Authentication required`
+  String get androidSignInTitle {
+    return Intl.message(
+      'Authentication required',
+      name: 'androidSignInTitle',
+      desc:
+          'Message showed as a title in a dialog which indicates the user that they need to scan biometric to continue. It is used on Android side. Maximum 60 characters.',
+      args: [],
+    );
+  }
+
+  /// `Biometric required`
+  String get androidBiometricRequiredTitle {
+    return Intl.message(
+      'Biometric required',
+      name: 'androidBiometricRequiredTitle',
+      desc:
+          'Message showed as a title in a dialog which indicates the user has not set up biometric authentication on their device. It is used on Android side. Maximum 60 characters.',
+      args: [],
+    );
+  }
+
+  /// `Device credentials required`
+  String get androidDeviceCredentialsRequiredTitle {
+    return Intl.message(
+      'Device credentials required',
+      name: 'androidDeviceCredentialsRequiredTitle',
+      desc:
+          'Message showed as a title in a dialog which indicates the user has not set up credentials authentication on their device. It is used on Android side. Maximum 60 characters.',
+      args: [],
+    );
+  }
+
+  /// `Device credentials required`
+  String get androidDeviceCredentialsSetupDescription {
+    return Intl.message(
+      'Device credentials required',
+      name: 'androidDeviceCredentialsSetupDescription',
+      desc:
+          'Message advising the user to go to the settings and configure device credentials on their device. It shows in a dialog on Android side.',
+      args: [],
+    );
+  }
+
+  /// `Go to settings`
+  String get goToSettings {
+    return Intl.message(
+      'Go to settings',
+      name: 'goToSettings',
+      desc:
+          'Message showed on a button that the user can click to go to settings pages from the current dialog. It is used on both Android and iOS side. Maximum 30 characters.',
+      args: [],
+    );
+  }
+
+  /// `Biometric authentication is not set up on your device. Go to 'Settings > Security' to add biometric authentication.`
+  String get androidGoToSettingsDescription {
+    return Intl.message(
+      'Biometric authentication is not set up on your device. Go to \'Settings > Security\' to add biometric authentication.',
+      name: 'androidGoToSettingsDescription',
+      desc:
+          'Message advising the user to go to the settings and configure biometric on their device. It shows in a dialog on Android side.',
+      args: [],
+    );
+  }
+
+  /// `Biometric authentication is disabled. Please lock and unlock your screen to enable it.`
+  String get iOSLockOut {
+    return Intl.message(
+      'Biometric authentication is disabled. Please lock and unlock your screen to enable it.',
+      name: 'iOSLockOut',
+      desc:
+          'Message advising the user to re-enable biometrics on their device. It shows in a dialog on iOS side.',
+      args: [],
+    );
+  }
+
+  /// `Biometric authentication is not set up on your device. Please either enable Touch ID or Face ID on your phone.`
+  String get iOSGoToSettingsDescription {
+    return Intl.message(
+      'Biometric authentication is not set up on your device. Please either enable Touch ID or Face ID on your phone.',
+      name: 'iOSGoToSettingsDescription',
+      desc:
+          'Message advising the user to go to the settings and configure Biometrics for their device. It shows in a dialog on iOS side.',
+      args: [],
+    );
+  }
+
+  /// `OK`
+  String get iOSOkButton {
+    return Intl.message(
+      'OK',
+      name: 'iOSOkButton',
+      desc:
+          'Message showed on a button that the user can click to leave the current dialog. It is used on iOS side. Maximum 30 characters.',
       args: [],
     );
   }

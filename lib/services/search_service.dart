@@ -15,7 +15,6 @@ import 'package:photos/models/search/album_search_result.dart';
 import 'package:photos/models/search/generic_search_result.dart';
 import 'package:photos/models/search/search_result.dart';
 import 'package:photos/services/collections_service.dart';
-import "package:photos/services/feature_flag_service.dart";
 import "package:photos/services/location_service.dart";
 import "package:photos/states/location_screen_state.dart";
 import "package:photos/ui/viewer/location/location_screen.dart";
@@ -77,7 +76,7 @@ class SearchService {
 
       if (!c.collection.isHidden() &&
           c.collection.type != CollectionType.uncategorized &&
-          c.collection.name!.toLowerCase().contains(
+          c.collection.displayName.toLowerCase().contains(
                 query.toLowerCase(),
               )) {
         collectionSearchResults.add(AlbumSearchResult(c));

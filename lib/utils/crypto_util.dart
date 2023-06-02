@@ -6,6 +6,7 @@ import 'package:flutter_sodium/flutter_sodium.dart';
 import 'package:logging/logging.dart';
 import 'package:photos/models/derived_key_result.dart';
 import 'package:photos/models/encryption_result.dart';
+import "package:photos/utils/device_info.dart";
 
 const int encryptionChunkSize = 4 * 1024 * 1024;
 final int decryptionChunkSize =
@@ -166,10 +167,10 @@ Uint8List chachaDecryptData(Map<String, dynamic> args) {
 }
 
 class CryptoUtil {
-  static final Computer _computer = Computer();
+  // Note: workers are turned on during app startup.
+  static final Computer _computer = Computer.shared();
 
   static init() {
-    _computer.turnOn(workersCount: 4);
     Sodium.init();
   }
 
@@ -231,7 +232,11 @@ class CryptoUtil {
     args["cipher"] = cipher;
     args["nonce"] = nonce;
     args["key"] = key;
-    return _computer.compute(cryptoSecretboxOpenEasy, param: args);
+    return _computer.compute(
+      cryptoSecretboxOpenEasy,
+      param: args,
+      taskName: "decrypt",
+    );
   }
 
   // Decrypts the given cipher, with the given key and nonce using XSalsa20
@@ -262,7 +267,11 @@ class CryptoUtil {
     final args = <String, dynamic>{};
     args["source"] = source;
     args["key"] = key;
-    return _computer.compute(chachaEncryptData, param: args);
+    return _computer.compute(
+      chachaEncryptData,
+      param: args,
+      taskName: "encryptChaCha",
+    );
   }
 
   // Decrypts the given source, with the given key and header using XChaCha20
@@ -277,7 +286,11 @@ class CryptoUtil {
     args["source"] = source;
     args["key"] = key;
     args["header"] = header;
-    return _computer.compute(chachaDecryptData, param: args);
+    return _computer.compute(
+      chachaDecryptData,
+      param: args,
+      taskName: "decryptChaCha",
+    );
   }
 
   // Encrypts the file at sourceFilePath, with the key (if provided) and a
@@ -293,7 +306,11 @@ class CryptoUtil {
     args["sourceFilePath"] = sourceFilePath;
     args["destinationFilePath"] = destinationFilePath;
     args["key"] = key;
-    return _computer.compute(chachaEncryptFile, param: args);
+    return _computer.compute(
+      chachaEncryptFile,
+      param: args,
+      taskName: "encryptFile",
+    );
   }
 
   // Decrypts the file at sourceFilePath, with the given key and header using
@@ -309,7 +326,11 @@ class CryptoUtil {
     args["destinationFilePath"] = destinationFilePath;
     args["header"] = header;
     args["key"] = key;
-    return _computer.compute(chachaDecryptFile, param: args);
+    return _computer.compute(
+      chachaDecryptFile,
+      param: args,
+      taskName: "decryptFile",
+    );
   }
 
   // Generates and returns a 256-bit key.
@@ -357,6 +378,22 @@ class CryptoUtil {
     final logger = Logger("pwhash");
     int memLimit = Sodium.cryptoPwhashMemlimitSensitive;
     int opsLimit = Sodium.cryptoPwhashOpslimitSensitive;
+    if (await isLowSpecDevice()) {
+      logger.info("low spec device detected");
+      // When sensitive memLimit (1 GB) is used, on low spec device the OS might
+      // kill the app with OOM. To avoid that, start with 256 MB and
+      // corresponding ops limit (16).
+      // This ensures that the product of these two variables
+      // (the area under the graph that determines the amount of work required)
+      // stays the same
+      // SODIUM_CRYPTO_PWHASH_MEMLIMIT_SENSITIVE: 1073741824
+      // SODIUM_CRYPTO_PWHASH_MEMLIMIT_MODERATE: 268435456
+      // SODIUM_CRYPTO_PWHASH_OPSLIMIT_SENSITIVE: 4
+      memLimit = Sodium.cryptoPwhashMemlimitModerate;
+      final factor = Sodium.cryptoPwhashMemlimitSensitive ~/
+          Sodium.cryptoPwhashMemlimitModerate; // = 4
+      opsLimit = opsLimit * factor; // = 16
+    }
     Uint8List key;
     while (memLimit >= Sodium.cryptoPwhashMemlimitMin &&
         opsLimit <= Sodium.cryptoPwhashOpslimitMax) {
@@ -391,7 +428,7 @@ class CryptoUtil {
     return DerivedKeyResult(key, memLimit, opsLimit);
   }
 
-  // Derives a key for a given password, salt, memLimit and opsLimit using 
+  // Derives a key for a given password, salt, memLimit and opsLimit using
   // Argon2id, v1.3.
   static Future<Uint8List> deriveKey(
     Uint8List password,
@@ -407,6 +444,7 @@ class CryptoUtil {
         "memLimit": memLimit,
         "opsLimit": opsLimit,
       },
+      taskName: "deriveKey",
     );
   }
 
@@ -417,6 +455,7 @@ class CryptoUtil {
       param: {
         "sourceFilePath": source.path,
       },
+      taskName: "fileHash",
     );
   }
 }

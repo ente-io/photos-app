@@ -7,7 +7,7 @@ import 'package:photos/db/files_db.dart';
 import 'package:photos/extensions/list.dart';
 import 'package:photos/models/file.dart';
 import "package:photos/models/file_load_result.dart";
-import 'package:photos/models/magic_metadata.dart';
+import "package:photos/models/metadata/file_magic.dart";
 import 'package:photos/services/file_magic_service.dart';
 import "package:photos/services/ignored_files_service.dart";
 import 'package:photos/utils/date_time_util.dart';
@@ -42,6 +42,47 @@ class FilesService {
     }
   }
 
+  Future<bool> hasMigratedSizes() async {
+    try {
+      final List<int> uploadIDsWithMissingSize =
+          await _filesDB.getUploadIDsWithMissingSize(_config.getUserID()!);
+      if (uploadIDsWithMissingSize.isEmpty) {
+        return Future.value(true);
+      }
+      final batchedFiles = uploadIDsWithMissingSize.chunks(1000);
+      for (final batch in batchedFiles) {
+        final Map<int, int> uploadIdToSize = await getFilesSizeFromInfo(batch);
+        await _filesDB.updateSizeForUploadIDs(uploadIdToSize);
+      }
+      return Future.value(true);
+    } catch (e, s) {
+      _logger.severe("error during has migrated sizes", e, s);
+      return Future.value(false);
+    }
+  }
+
+  Future<Map<int, int>> getFilesSizeFromInfo(List<int> uploadedFileID) async {
+    try {
+      final response = await _enteDio.post(
+        "/files/info",
+        data: {"fileIDs": uploadedFileID},
+      );
+      final Map<int, int> idToSize = {};
+      final List result = response.data["filesInfo"] as List;
+      for (var fileInfo in result) {
+        final int uploadedFileID = fileInfo["id"];
+        final int size = fileInfo["fileInfo"]["fileSize"];
+        idToSize[uploadedFileID] = size;
+      }
+      return idToSize;
+    } catch (e, s) {
+      _logger.severe("failed to fetch size from fileInfo", e, s);
+      rethrow;
+    }
+  }
+
+  // Note: this method is not used anywhere, but it is kept for future
+  // reference when we add bulk EditTime feature
   Future<void> bulkEditTime(
     List<File> files,
     EditTimeSource source,
@@ -73,7 +114,7 @@ class FilesService {
       if (timeResult != null) {
         remoteFilesToUpdate.add(remoteFile);
         fileIDToUpdateMetadata[remoteFile.uploadedFileID!] = {
-          pubMagicKeyEditedTime: timeResult,
+          editTimeKey: timeResult,
         };
       }
     }

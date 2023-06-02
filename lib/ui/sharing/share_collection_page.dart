@@ -3,6 +3,7 @@ import 'package:fast_base58/fast_base58.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import "package:photos/generated/l10n.dart";
+import "package:photos/models/api/collection/user.dart";
 import 'package:photos/models/collection.dart';
 import 'package:photos/services/collections_service.dart';
 import 'package:photos/theme/ente_theme.dart';
@@ -14,6 +15,7 @@ import 'package:photos/ui/components/menu_section_description_widget.dart';
 import 'package:photos/ui/components/menu_section_title.dart';
 import 'package:photos/ui/sharing/add_partipant_page.dart';
 import 'package:photos/ui/sharing/album_participants_page.dart';
+import "package:photos/ui/sharing/manage_album_participant.dart";
 import 'package:photos/ui/sharing/manage_links_widget.dart';
 import 'package:photos/ui/sharing/user_avator_widget.dart';
 import 'package:photos/utils/navigation_util.dart';
@@ -35,10 +37,20 @@ class _ShareCollectionPageState extends State<ShareCollectionPage> {
       CollectionActions(CollectionsService.instance);
 
   Future<void> _navigateToManageUser() async {
-    await routeToPage(
-      context,
-      AlbumParticipantsPage(widget.collection),
-    );
+    if (_sharees.length == 1) {
+      await routeToPage(
+        context,
+        ManageIndividualParticipant(
+          collection: widget.collection,
+          user: _sharees.first!,
+        ),
+      );
+    } else {
+      await routeToPage(
+        context,
+        AlbumParticipantsPage(widget.collection),
+      );
+    }
     if (mounted) {
       setState(() => {});
     }
@@ -65,8 +77,8 @@ class _ShareCollectionPageState extends State<ShareCollectionPage> {
 
     children.add(
       MenuItemWidget(
-        captionedTextWidget: const CaptionedTextWidget(
-          title: "Add viewer",
+        captionedTextWidget: CaptionedTextWidget(
+          title: S.of(context).addViewer,
           makeTextBold: true,
         ),
         leadingIcon: Icons.add,
@@ -141,7 +153,6 @@ class _ShareCollectionPageState extends State<ShareCollectionPage> {
             leadingIcon: Icons.error_outline,
             leadingIconColor: getEnteColorScheme(context).warning500,
             menuItemColor: getEnteColorScheme(context).fillFaint,
-            onTap: () async {},
             isBottomBorderRadiusRemoved: true,
           ),
         );
@@ -163,7 +174,7 @@ class _ShareCollectionPageState extends State<ShareCollectionPage> {
               showOnlyLoadingState: true,
               onTap: () async {
                 await Clipboard.setData(ClipboardData(text: url));
-                showShortToast(context, "Link copied to clipboard");
+                showShortToast(context, S.of(context).linkCopiedToClipboard);
               },
               isBottomBorderRadiusRemoved: true,
             ),
@@ -277,7 +288,7 @@ class _ShareCollectionPageState extends State<ShareCollectionPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.collection.name ?? "Unnamed",
+          widget.collection.displayName,
           style: Theme.of(context).textTheme.headline5?.copyWith(fontSize: 16),
         ),
         elevation: 0,

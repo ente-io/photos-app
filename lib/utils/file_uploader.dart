@@ -23,8 +23,11 @@ import 'package:photos/main.dart';
 import 'package:photos/models/encryption_result.dart';
 import 'package:photos/models/file.dart';
 import 'package:photos/models/file_type.dart';
+import "package:photos/models/metadata/file_magic.dart";
+
 import 'package:photos/models/upload_url.dart';
 import 'package:photos/services/collections_service.dart';
+import "package:photos/services/file_magic_service.dart";
 import 'package:photos/services/local_sync_service.dart';
 import 'package:photos/services/sync_service.dart';
 import 'package:photos/utils/crypto_util.dart';
@@ -389,14 +392,15 @@ class FileUploader {
         await io.File(encryptedFilePath).delete();
       }
       final encryptedFile = io.File(encryptedFilePath);
-      final fileAttributes = await CryptoUtil.encryptFile(
+      final EncryptionResult fileAttributes = await CryptoUtil.encryptFile(
         mediaUploadData!.sourceFile!.path,
         encryptedFilePath,
         key: key,
       );
       final thumbnailData = mediaUploadData.thumbnail;
 
-      final encryptedThumbnailData = await CryptoUtil.encryptChaCha(
+      final EncryptionResult encryptedThumbnailData =
+          await CryptoUtil.encryptChaCha(
         thumbnailData!,
         fileAttributes.key!,
       );
@@ -455,6 +459,23 @@ class FileUploader {
             CryptoUtil.bin2base64(encryptedFileKeyData.encryptedData!);
         final keyDecryptionNonce =
             CryptoUtil.bin2base64(encryptedFileKeyData.nonce!);
+        MetadataRequest? pubMetadataRequest;
+        if ((mediaUploadData.height ?? 0) != 0 &&
+            (mediaUploadData.width ?? 0) != 0) {
+          final pubMetadata = {
+            heightKey: mediaUploadData.height,
+            widthKey: mediaUploadData.width
+          };
+          if (mediaUploadData.motionPhotoStartIndex != null) {
+            pubMetadata[motionVideoIndexKey] =
+                mediaUploadData.motionPhotoStartIndex;
+          }
+          pubMetadataRequest = await getPubMetadataRequest(
+            file,
+            pubMetadata,
+            fileAttributes.key!,
+          );
+        }
         remoteFile = await _uploadFile(
           file,
           collectionID,
@@ -469,6 +490,7 @@ class FileUploader {
           await encryptedThumbnailFile.length(),
           encryptedMetadata,
           metadataDecryptionHeader,
+          pubMetadata: pubMetadataRequest,
         );
         if (mediaUploadData.isDeleted) {
           _logger.info("File found to be deleted");
@@ -522,13 +544,11 @@ class FileUploader {
   It performs following checks:
     a) Uploaded file with same localID and destination collection. Delete the
      fileToUpload entry
-    b) Uploaded file in destination collection but with missing localID.
+    b) Uploaded file in any collection but with missing localID.
      Update the localID for uploadedFile and delete the fileToUpload entry
     c) A uploaded file exist with same localID but in a different collection.
-    or
-    d) Uploaded file in different collection but missing localID.
-    For both c and d, perform add to collection operation.
-    e) File already exists but different localID. Re-upload
+    Add a symlink in the destination collection and update the fileToUpload
+    d) File already exists but different localID. Re-upload
     In case the existing files already have local identifier, which is
     different from the {fileToUpload}, then most probably device has
     duplicate files.
@@ -583,40 +603,38 @@ class FileUploader {
     }
 
     // case b
-    final File? fileMissingLocalButSameCollection =
-        existingUploadedFiles.firstWhereOrNull(
-      (e) => e.collectionID == toCollectionID && e.localID == null,
+    final File? fileMissingLocal = existingUploadedFiles.firstWhereOrNull(
+      (e) => e.localID == null,
     );
-    if (fileMissingLocalButSameCollection != null) {
+    if (fileMissingLocal != null) {
       // update the local id of the existing file and delete the fileToUpload
       // entry
       _logger.fine(
-        "fileMissingLocalButSameCollection: \n toUpload  ${fileToUpload.tag} "
-        "\n existing: ${fileMissingLocalButSameCollection.tag}",
+        "fileMissingLocal: \n toUpload  ${fileToUpload.tag} "
+        "\n existing: ${fileMissingLocal.tag}",
       );
-      fileMissingLocalButSameCollection.localID = fileToUpload.localID;
+      fileMissingLocal.localID = fileToUpload.localID;
       // set localID for the given uploadedID across collections
       await FilesDB.instance.updateLocalIDForUploaded(
-        fileMissingLocalButSameCollection.uploadedFileID!,
+        fileMissingLocal.uploadedFileID!,
         fileToUpload.localID!,
       );
       await FilesDB.instance.deleteByGeneratedID(fileToUpload.generatedID!);
       Bus.instance.fire(
         LocalPhotosUpdatedEvent(
           [fileToUpload],
-          source: "alreadyUploadedInSameCollection",
+          source: "fileMissingLocal",
           type: EventType.deletedFromEverywhere, //
         ),
       );
-      return Tuple2(true, fileMissingLocalButSameCollection);
+      return Tuple2(true, fileMissingLocal);
     }
 
-    // case c and d
+    // case c
     final File? fileExistsButDifferentCollection =
         existingUploadedFiles.firstWhereOrNull(
       (e) =>
-          e.collectionID != toCollectionID &&
-          (e.localID == null || e.localID == fileToUpload.localID),
+          e.collectionID != toCollectionID && e.localID == fileToUpload.localID,
     );
     if (fileExistsButDifferentCollection != null) {
       _logger.fine(
@@ -641,7 +659,7 @@ class FileUploader {
       "Found hashMatch but probably with diff localIDs "
       "$matchLocalIDs",
     );
-    // case e
+    // case d
     return Tuple2(false, fileToUpload);
   }
 
@@ -699,6 +717,7 @@ class FileUploader {
     int thumbnailSize,
     String encryptedMetadata,
     String metadataDecryptionHeader, {
+    MetadataRequest? pubMetadata,
     int attempt = 1,
   }) async {
     final request = {
@@ -720,6 +739,9 @@ class FileUploader {
         "decryptionHeader": metadataDecryptionHeader,
       }
     };
+    if (pubMetadata != null) {
+      request["pubMagicMetadata"] = pubMetadata;
+    }
     try {
       final response = await _enteDio.post("/files", data: request);
       final data = response.data;
@@ -756,6 +778,7 @@ class FileUploader {
           encryptedMetadata,
           metadataDecryptionHeader,
           attempt: attempt + 1,
+          pubMetadata: pubMetadata,
         );
       }
       rethrow;
@@ -830,7 +853,7 @@ class FileUploader {
     try {
       return _uploadURLs.removeFirst();
     } catch (e) {
-      if (e is StateError && e.message == 'No element' && _queue.isNotEmpty) {
+      if (e is StateError && e.message == 'No element' && _queue.isEmpty) {
         _logger.warning("Oops, uploadUrls has no element now, fetching again");
         return _getUploadURL();
       } else {
