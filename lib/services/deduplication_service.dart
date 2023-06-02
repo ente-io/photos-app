@@ -1,9 +1,12 @@
 import 'package:logging/logging.dart';
+import "package:photos/core/configuration.dart";
 import 'package:photos/core/errors.dart';
 import 'package:photos/core/network/network.dart';
 import 'package:photos/db/files_db.dart';
 import 'package:photos/models/duplicate_files.dart';
 import 'package:photos/models/file.dart';
+import "package:photos/services/collections_service.dart";
+import "package:photos/services/files_service.dart";
 
 class DeduplicationService {
   final _logger = Logger("DeduplicationService");
@@ -16,6 +19,11 @@ class DeduplicationService {
 
   Future<List<DuplicateFiles>> getDuplicateFiles() async {
     try {
+      final bool hasFileSizes = await FilesService.instance.hasMigratedSizes();
+      if (hasFileSizes) {
+        final List<DuplicateFiles> result = await _getDuplicateFilesFromLocal();
+        return result;
+      }
       final DuplicateFilesResponse dupes = await _fetchDuplicateFileIDs();
       final ids = <int>[];
       for (final dupe in dupes.duplicates) {
@@ -60,85 +68,66 @@ class DeduplicationService {
         );
       }
       return result;
-    } catch (e) {
-      _logger.severe(e);
+    } catch (e, s) {
+      _logger.severe("failed to get dedupeFile", e, s);
       rethrow;
     }
   }
 
-  List<DuplicateFiles> clubDuplicatesByTime(List<DuplicateFiles> dupes) {
-    final result = <DuplicateFiles>[];
-    for (final dupe in dupes) {
-      final files = <File>[];
-      final Map<int, int> creationTimeCounter = {};
-      int mostFrequentCreationTime = 0, mostFrequentCreationTimeCount = 0;
-      // Counts the frequency of creationTimes within the supposed duplicates
-      for (final file in dupe.files) {
-        if (creationTimeCounter.containsKey(file.creationTime!)) {
-          creationTimeCounter[file.creationTime!] =
-              creationTimeCounter[file.creationTime!]! + 1;
-        } else {
-          creationTimeCounter[file.creationTime!] = 0;
+  List<DuplicateFiles> clubDuplicates(
+    List<DuplicateFiles> dupesBySize, {
+    required String? Function(File) clubbingKey,
+  }) {
+    final dupesBySizeAndClubKey = <DuplicateFiles>[];
+    for (final sizeBasedDupe in dupesBySize) {
+      final Map<String, List<File>> clubKeyToFilesMap = {};
+      for (final file in sizeBasedDupe.files) {
+        final String? clubKey = clubbingKey(file);
+        if (clubKey == null || clubKey.isEmpty) {
+          continue;
         }
-        if (creationTimeCounter[file.creationTime]! >
-            mostFrequentCreationTimeCount) {
-          mostFrequentCreationTimeCount =
-              creationTimeCounter[file.creationTime]!;
-          mostFrequentCreationTime = file.creationTime!;
+        if (!clubKeyToFilesMap.containsKey(clubKey)) {
+          clubKeyToFilesMap[clubKey] = <File>[];
         }
-        files.add(file);
+        clubKeyToFilesMap[clubKey]!.add(file);
       }
-      // Ignores those files that were not created within the most common creationTime
-      final incorrectDuplicates = <File>{};
-      for (final file in files) {
-        if (file.creationTime != mostFrequentCreationTime) {
-          incorrectDuplicates.add(file);
+      for (final clubbingKey in clubKeyToFilesMap.keys) {
+        final clubbedFiles = clubKeyToFilesMap[clubbingKey]!;
+        if (clubbedFiles.length > 1) {
+          dupesBySizeAndClubKey.add(
+            DuplicateFiles(clubbedFiles, sizeBasedDupe.size),
+          );
         }
-      }
-      files.removeWhere((file) => incorrectDuplicates.contains(file));
-      if (files.length > 1) {
-        result.add(DuplicateFiles(files, dupe.size));
       }
     }
-    return result;
+    return dupesBySizeAndClubKey;
   }
 
-  List<DuplicateFiles> clubDuplicatesByName(List<DuplicateFiles> dupes) {
-    final result = <DuplicateFiles>[];
-    for (final dupe in dupes) {
-      final files = <File>[];
-      final Map<String, int> fileNameCounter = {};
-      String mostFrequentFileName = "";
-      int mostFrequentFileNameCount = 0;
-      // Counts the frequency of creationTimes within the supposed duplicates
-      for (final file in dupe.files) {
-        if (fileNameCounter.containsKey(file.displayName)) {
-          fileNameCounter[file.displayName] =
-              fileNameCounter[file.displayName]! + 1;
-        } else {
-          fileNameCounter[file.displayName] = 0;
-        }
-        if (fileNameCounter[file.displayName]! >
-            mostFrequentFileNameCount) {
-          mostFrequentFileNameCount =
-              fileNameCounter[file.displayName]!;
-          mostFrequentFileName = file.displayName;
-        }
-        files.add(file);
+  Future<List<DuplicateFiles>> _getDuplicateFilesFromLocal() async {
+    final List<File> allFiles = await FilesDB.instance
+        .getAllFilesFromDB(CollectionsService.instance.getHiddenCollections());
+    final int ownerID = Configuration.instance.getUserID()!;
+    allFiles.removeWhere(
+      (f) =>
+          !f.isUploaded ||
+          (f.ownerID ?? 0) != ownerID ||
+          (f.fileSize ?? 0) <= 0,
+    );
+    final Map<int, List<File>> sizeToFilesMap = {};
+    for (final file in allFiles) {
+      if (!sizeToFilesMap.containsKey(file.fileSize)) {
+        sizeToFilesMap[file.fileSize!] = <File>[];
       }
-      // Ignores those files that were not created within the most common creationTime
-      final incorrectDuplicates = <File>{};
-      for (final file in files) {
-        if (file.displayName != mostFrequentFileName) {
-          incorrectDuplicates.add(file);
-        }
-      }
-      files.removeWhere((file) => incorrectDuplicates.contains(file));
+      sizeToFilesMap[file.fileSize]!.add(file);
+    }
+    final List<DuplicateFiles> dupesBySize = [];
+    for (final size in sizeToFilesMap.keys) {
+      final List<File> files = sizeToFilesMap[size]!;
       if (files.length > 1) {
-        result.add(DuplicateFiles(files, dupe.size));
+        dupesBySize.add(DuplicateFiles(files, size));
       }
     }
-    return result;
+    return dupesBySize;
   }
 
   Future<DuplicateFilesResponse> _fetchDuplicateFileIDs() async {

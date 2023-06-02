@@ -481,17 +481,23 @@ class FilesDB {
     final db = await instance.database;
     final results = await db.query(
       filesTable,
-      columns: [columnLocalID, columnUploadedFileID],
+      columns: [columnLocalID, columnUploadedFileID, columnFileSize],
       where:
           '$columnLocalID IS NOT NULL AND ($columnUploadedFileID IS NOT NULL AND $columnUploadedFileID IS NOT -1)',
     );
-    final localIDs = <String>{};
-    final uploadedIDs = <int>{};
+    final Set<String> localIDs = <String>{};
+    final Set<int> uploadedIDs = <int>{};
+    int localSize = 0;
     for (final result in results) {
+      final String localID = result[columnLocalID] as String;
+      final int? fileSize = result[columnFileSize] as int?;
+      if (!localIDs.contains(localID) && fileSize != null) {
+        localSize += fileSize;
+      }
       localIDs.add(result[columnLocalID] as String);
       uploadedIDs.add(result[columnUploadedFileID] as int);
     }
-    return BackedUpFileIDs(localIDs.toList(), uploadedIDs.toList());
+    return BackedUpFileIDs(localIDs.toList(), uploadedIDs.toList(), localSize);
   }
 
   Future<FileLoadResult> getAllPendingOrUploadedFiles(
@@ -502,17 +508,32 @@ class FilesDB {
     bool? asc,
     int visibility = visibleVisibility,
     Set<int>? ignoredCollectionIDs,
+    bool applyOwnerCheck = false,
   }) async {
     final stopWatch = Stopwatch()..start();
+    late String whereQuery;
+    late List<Object?>? whereArgs;
+    if (applyOwnerCheck) {
+      whereQuery = '$columnCreationTime >= ? AND $columnCreationTime <= ? '
+          'AND ($columnOwnerID IS NULL OR $columnOwnerID = ?) '
+          'AND ($columnCollectionID IS NOT NULL AND $columnCollectionID IS NOT -1)'
+          ' AND $columnMMdVisibility = ?';
+      whereArgs = [startTime, endTime, ownerID, visibility];
+    } else {
+      whereQuery =
+          '$columnCreationTime >= ? AND $columnCreationTime <= ? AND ($columnCollectionID IS NOT NULL AND $columnCollectionID IS NOT -1)'
+          ' AND $columnMMdVisibility = ?';
+      whereArgs = [startTime, endTime, visibility];
+    }
 
     final db = await instance.database;
     final order = (asc ?? false ? 'ASC' : 'DESC');
     final results = await db.query(
       filesTable,
       where:
-          '$columnCreationTime >= ? AND $columnCreationTime <= ? AND  ($columnOwnerID IS NULL OR $columnOwnerID = ?) AND ($columnCollectionID IS NOT NULL AND $columnCollectionID IS NOT -1)'
+          '$columnCreationTime >= ? AND $columnCreationTime <= ? AND ($columnCollectionID IS NOT NULL AND $columnCollectionID IS NOT -1)'
           ' AND $columnMMdVisibility = ?',
-      whereArgs: [startTime, endTime, ownerID, visibility],
+      whereArgs: [startTime, endTime, visibility],
       orderBy:
           '$columnCreationTime ' + order + ', $columnModificationTime ' + order,
       limit: limit,
@@ -540,9 +561,9 @@ class FilesDB {
     final results = await db.query(
       filesTable,
       where:
-          '$columnCreationTime >= ? AND $columnCreationTime <= ? AND ($columnOwnerID IS NULL OR $columnOwnerID = ?)  AND ($columnMMdVisibility IS NULL OR $columnMMdVisibility = ?)'
+          '$columnCreationTime >= ? AND $columnCreationTime <= ?  AND ($columnMMdVisibility IS NULL OR $columnMMdVisibility = ?)'
           ' AND ($columnLocalID IS NOT NULL OR ($columnCollectionID IS NOT NULL AND $columnCollectionID IS NOT -1))',
-      whereArgs: [startTime, endTime, ownerID, visibleVisibility],
+      whereArgs: [startTime, endTime, visibleVisibility],
       orderBy:
           '$columnCreationTime ' + order + ', $columnModificationTime ' + order,
       limit: limit,
@@ -703,7 +724,7 @@ class FilesDB {
         whereClause += " OR ";
       }
     }
-    whereClause += ") AND $columnMMdVisibility = $visibleVisibility";
+    whereClause += ")";
     final results = await db.query(
       filesTable,
       where: whereClause,
@@ -1400,33 +1421,6 @@ class FilesDB {
     return result;
   }
 
-  // returns the localID of all files which are uploaded and belong to the
-  // user and upload time is greater than 20 April 2023 epoch time and less than
-  // 15 May 2023 epoch time
-  Future<List<String>> getFilesWithLocationUploadedBtw20AprTo15May2023(
-    int ownerID,
-  ) async {
-    final db = await database;
-    final result = await db.query(
-      filesTable,
-      columns: [columnLocalID],
-      distinct: true,
-      where: ''
-          '($columnUploadedFileID IS NOT NULL'
-          ' AND $columnUploadedFileID IS NOT -1)'
-          ' AND $columnOwnerID = ?'
-          ' AND $columnUpdationTime > ? AND $columnUpdationTime < ? '
-          'AND ($columnLatitude IS NOT NULL AND $columnLongitude IS NOT NULL) '
-          'AND ($columnLongitude IS NOT 0.0 AND $columnLongitude IS NOT 0.0)',
-      whereArgs: [
-        ownerID,
-        1681952400000000,
-        1684112400000000,
-      ],
-    );
-    return result.map((row) => row[columnLocalID].toString()).toList();
-  }
-
   // For given list of localIDs and ownerID, get a list of uploaded files
   // owned by given user
   Future<List<File>> getFilesForLocalIDs(
@@ -1441,6 +1435,44 @@ class FilesDB {
       whereArgs: [ownerID],
     );
     return _deduplicatedAndFilterIgnoredFiles(convertToFiles(rows), {});
+  }
+
+  // For a given userID, return unique uploadedFileId for the given userID
+  Future<List<int>> getUploadIDsWithMissingSize(int userId) async {
+    final db = await instance.database;
+    final rows = await db.query(
+      filesTable,
+      columns: [columnUploadedFileID],
+      distinct: true,
+      where: '$columnOwnerID = ? AND $columnFileSize IS NULL',
+      whereArgs: [userId],
+    );
+    final result = <int>[];
+    for (final row in rows) {
+      result.add(row[columnUploadedFileID] as int);
+    }
+    return result;
+  }
+
+  // updateSizeForUploadIDs takes a map of upploadedFileID and fileSize and
+  // update the fileSize for the given uploadedFileID
+  Future<void> updateSizeForUploadIDs(
+    Map<int, int> uploadedFileIDToSize,
+  ) async {
+    if (uploadedFileIDToSize.isEmpty) {
+      return;
+    }
+    final db = await instance.database;
+    final batch = db.batch();
+    for (final uploadedFileID in uploadedFileIDToSize.keys) {
+      batch.update(
+        filesTable,
+        {columnFileSize: uploadedFileIDToSize[uploadedFileID]},
+        where: '$columnUploadedFileID = ?',
+        whereArgs: [uploadedFileID],
+      );
+    }
+    await batch.commit(noResult: true);
   }
 
   Future<List<File>> getAllFilesFromDB(Set<int> collectionsToIgnore) async {
@@ -1481,10 +1513,9 @@ class FilesDB {
       filesTable,
       where:
           '$columnLatitude IS NOT NULL AND $columnLongitude IS NOT NULL AND ($columnLatitude IS NOT 0 OR $columnLongitude IS NOT 0)'
-          ' AND $columnCreationTime >= ? AND $columnCreationTime <= ? AND '
-          '($columnMMdVisibility IS NULL OR $columnMMdVisibility = ?)'
+          ' AND $columnCreationTime >= ? AND $columnCreationTime <= ?'
           ' AND ($columnLocalID IS NOT NULL OR ($columnCollectionID IS NOT NULL AND $columnCollectionID IS NOT -1))',
-      whereArgs: [startTime, endTime, visibleVisibility],
+      whereArgs: [startTime, endTime],
       orderBy:
           '$columnCreationTime ' + order + ', $columnModificationTime ' + order,
       limit: limit,

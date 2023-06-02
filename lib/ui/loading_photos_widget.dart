@@ -86,8 +86,7 @@ class _LoadingPhotosWidgetState extends State<LoadingPhotosWidget> {
   @override
   Widget build(BuildContext context) {
     _setupLoadingMessages(context);
-    final isLightMode =
-        MediaQuery.of(context).platformBrightness == Brightness.light;
+    final isLightMode = Theme.of(context).brightness == Brightness.light;
     return Scaffold(
       body: SingleChildScrollView(
         child: Center(

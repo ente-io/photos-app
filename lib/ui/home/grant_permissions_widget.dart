@@ -9,8 +9,7 @@ class GrantPermissionsWidget extends StatelessWidget {
   const GrantPermissionsWidget({Key? key}) : super(key: key);
   @override
   Widget build(BuildContext context) {
-    final isLightMode =
-        MediaQuery.of(context).platformBrightness == Brightness.light;
+    final isLightMode = Theme.of(context).brightness == Brightness.light;
     return Scaffold(
       body: SingleChildScrollView(
         child: Padding(

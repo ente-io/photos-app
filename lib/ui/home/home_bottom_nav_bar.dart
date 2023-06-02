@@ -101,8 +101,7 @@ class _HomeBottomNavigationBarState extends State<HomeBottomNavigationBar> {
                     gap: 0,
                     tabBorderRadius: 32,
                     tabBackgroundColor:
-                        MediaQuery.of(context).platformBrightness ==
-                                Brightness.light
+                        Theme.of(context).brightness == Brightness.light
                             ? strokeFainterLight
                             : strokeSolidFaintLight,
                     haptic: false,
