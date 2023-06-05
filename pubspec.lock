@@ -873,6 +873,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.0"
+  home_widget:
+    dependency: "direct main"
+    description:
+      name: home_widget
+      sha256: "2ef64c73c7cf3b7cbfdf8233a0a46055a66d6289de58ae40912f9801f9282d79"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.1"
   html:
     dependency: transitive
     description:
