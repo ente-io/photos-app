@@ -25,8 +25,7 @@ dependencies:
   background_fetch: ^1.1.1
   bip39: ^1.0.6
   cached_network_image: ^3.0.0
-  chewie:
-    path: thirdparty/chewie
+  chewie: ^1.5.0
   collection: # dart
   computer:
     git: "https://github.com/ente-io/computer.git"
@@ -124,8 +123,7 @@ dependencies:
   uni_links: ^0.5.1
   url_launcher: ^6.0.3
   uuid: ^3.0.4
-  video_player:
-    path: thirdparty/plugins/packages/video_player/video_player
+  video_player: ^2.6.1
   video_thumbnail: ^0.4.3
   visibility_detector: ^0.3.3
   wakelock: ^0.6.1+2
