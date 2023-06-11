@@ -87,7 +87,8 @@ dependencies:
   local_auth_ios:
   logging: ^1.0.1
   lottie: ^1.2.2
-  media_extension: ^1.0.1
+  media_extension: 
+    path: /Users/muheshkrishnamurthy/media_extension
   modal_bottom_sheet: ^3.0.0-pre
   motion_photos:
     git: "https://github.com/ente-io/motion_photo.git"
@@ -139,6 +140,7 @@ dependencies:
   wakelock: ^0.6.2
   wallpaper_manager_flutter: ^0.0.2
   widgets_to_image: ^0.0.2
+  workmanager: ^0.5.1
 
 flutter_intl:
     enabled: true

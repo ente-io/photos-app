@@ -1129,10 +1129,9 @@ packages:
   media_extension:
     dependency: "direct main"
     description:
-      name: media_extension
-      sha256: "5c4347d7035a48220c210149df776c764b920daf312b2ae7e3077506273db8d3"
-      url: "https://pub.dev"
-    source: hosted
+      path: "/Users/muheshkrishnamurthy/media_extension"
+      relative: false
+    source: path
     version: "1.0.2"
   meta:
     dependency: transitive
@@ -2167,6 +2166,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.6.1"
+  workmanager:
+    dependency: "direct main"
+    description:
+      name: workmanager
+      sha256: e0be7e35d644643f164ee45d2ce14414f0e0fdde19456aa66065f35a0b1d2ea1
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.5.1"
   xdg_directories:
     dependency: transitive
     description:

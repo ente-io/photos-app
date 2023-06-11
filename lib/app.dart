@@ -6,8 +6,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import "package:home_widget/home_widget.dart" as hw;
 import 'package:logging/logging.dart';
 import 'package:media_extension/media_extension_action_types.dart';
+import "package:photos/appwidget/app_widget.dart";
 import 'package:photos/ente_theme_data.dart';
 import "package:photos/generated/l10n.dart";
 import "package:photos/l10n/l10n.dart";
@@ -43,6 +45,7 @@ class EnteApp extends StatefulWidget {
 class _EnteAppState extends State<EnteApp> with WidgetsBindingObserver {
   final _logger = Logger("EnteAppState");
   late Locale locale;
+  bool isLaunchedByWidget = false;
 
   @override
   void initState() {
@@ -63,6 +66,8 @@ class _EnteAppState extends State<EnteApp> with WidgetsBindingObserver {
     final mediaExtentionAction = Platform.isAndroid
         ? await initIntentAction()
         : MediaExtentionAction(action: IntentAction.main);
+    _logger.info(mediaExtentionAction.action);
+    _logger.info(mediaExtentionAction.data ?? 'null');
     AppLifecycleService.instance.setMediaExtensionAction(mediaExtentionAction);
     if (mediaExtentionAction.action == IntentAction.main) {
       _configureBackgroundFetch();
@@ -81,10 +86,12 @@ class _EnteAppState extends State<EnteApp> with WidgetsBindingObserver {
           themeMode: ThemeMode.system,
           theme: lightTheme,
           darkTheme: dartTheme,
-          home: AppLifecycleService.instance.mediaExtensionAction.action ==
-                  IntentAction.view
-              ? const FileViewer()
-              : const HomeWidget(),
+          home: isLaunchedByWidget
+              ? const AppWidget()
+              : (AppLifecycleService.instance.mediaExtensionAction.action ==
+                      IntentAction.view
+                  ? const FileViewer()
+                  : const HomeWidget()),
           debugShowCheckedModeBanner: false,
           builder: EasyLoading.init(),
           locale: locale,
@@ -123,9 +130,15 @@ class _EnteAppState extends State<EnteApp> with WidgetsBindingObserver {
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
     final String stateChangeReason = 'app -> $state';
     if (state == AppLifecycleState.resumed) {
+      hw.HomeWidget.widgetClicked.listen((uri) {
+        setState(() {
+          isLaunchedByWidget = (uri?.host == "configure");
+        });
+        _logger.info('home-widget clicked: $uri');
+      });
       AppLifecycleService.instance
           .onAppInForeground(stateChangeReason + ': sync now');
       SyncService.instance.sync();
