@@ -39,7 +39,7 @@ class MultipleGroupsGalleryView extends StatelessWidget {
   final bool enableFileGrouping;
   final String logTag;
   final Logger logger;
-  final bool sortOrderAsc;
+  final bool showSelectAllByDefault;
 
   const MultipleGroupsGalleryView({
     required this.hugeListViewKey,
@@ -59,7 +59,7 @@ class MultipleGroupsGalleryView extends StatelessWidget {
     required this.enableFileGrouping,
     required this.logTag,
     required this.logger,
-    required this.sortOrderAsc,
+    required this.showSelectAllByDefault,
     super.key,
   });
 
@@ -101,7 +101,6 @@ class MultipleGroupsGalleryView extends StatelessWidget {
           reloadEvent,
           removalEventTypes,
           asyncLoader,
-          sortOrderAsc,
           selectedFiles,
           tagPrefix,
           Bus.instance
@@ -109,6 +108,7 @@ class MultipleGroupsGalleryView extends StatelessWidget {
               .where((event) => event.tag == tagPrefix)
               .map((event) => event.index),
           enableFileGrouping,
+          showSelectAllByDefault,
           logTag: logTag,
           photoGridSize: LocalSettings.instance.getPhotoGridSize(),
           limitSelectionToOne: limitSelectionToOne,
