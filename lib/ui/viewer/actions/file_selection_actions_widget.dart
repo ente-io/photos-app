@@ -16,7 +16,7 @@ import 'package:photos/services/hidden_service.dart';
 import 'package:photos/theme/ente_theme.dart';
 import 'package:photos/ui/actions/collection/collection_file_actions.dart';
 import 'package:photos/ui/actions/collection/collection_sharing_actions.dart';
-import 'package:photos/ui/collection_action_sheet.dart';
+import 'package:photos/ui/collections/collection_action_sheet.dart';
 import 'package:photos/ui/components/action_sheet_widget.dart';
 import 'package:photos/ui/components/blur_menu_item_widget.dart';
 import 'package:photos/ui/components/bottom_action_bar/expanded_menu_widget.dart';
@@ -412,7 +412,7 @@ class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
   Future<void> _onCreateCollageClicked() async {
     final bool? result = await routeToPage(
       context,
-      CollageCreatorPage(widget.selectedFiles.files),
+      CollageCreatorPage(widget.selectedFiles.files.toList()),
     );
     if (result != null && result) {
       widget.selectedFiles.clearAll();
@@ -502,7 +502,7 @@ class _FileSelectionActionWidgetState extends State<FileSelectionActionWidget> {
   Future<void> _permanentlyDelete() async {
     if (await deleteFromTrash(
       context,
-      widget.selectedFiles.files,
+      widget.selectedFiles.files.toList(),
     )) {
       widget.selectedFiles.clearAll();
     }

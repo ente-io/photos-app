@@ -15,6 +15,7 @@ import 'package:photos/ui/common/loading_widget.dart';
 import 'package:photos/ui/huge_listview/huge_listview.dart';
 import "package:photos/ui/viewer/gallery/component/multiple_groups_gallery_view.dart";
 import 'package:photos/ui/viewer/gallery/empty_state.dart';
+import "package:photos/ui/viewer/gallery/state/gallery_sort_order.dart";
 import 'package:photos/utils/date_time_util.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
@@ -44,6 +45,7 @@ class Gallery extends StatefulWidget {
   final Widget loadingWidget;
   final bool disableScroll;
   final bool limitSelectionToOne;
+  final bool showSelectAllByDefault;
 
   // add a Function variable to get sort value in bool
   final SortAscFn? sortAsyncFn;
@@ -66,6 +68,7 @@ class Gallery extends StatefulWidget {
     this.disableScroll = false,
     this.limitSelectionToOne = false,
     this.sortAsyncFn,
+    this.showSelectAllByDefault = true,
     Key? key,
   }) : super(key: key);
 
@@ -218,25 +221,28 @@ class _GalleryState extends State<Gallery> {
     if (!_hasLoadedFiles) {
       return widget.loadingWidget;
     }
-    return MultipleGroupsGalleryView(
-      hugeListViewKey: _hugeListViewKey,
-      itemScroller: _itemScroller,
-      groupedFiles: _currentGroupedFiles,
-      disableScroll: widget.disableScroll,
-      emptyState: widget.emptyState,
-      asyncLoader: widget.asyncLoader,
+    return GallerySortOrder(
       sortOrderAsc: _sortOrderAsc,
-      removalEventTypes: widget.removalEventTypes,
-      tagPrefix: widget.tagPrefix,
-      scrollBottomSafeArea: widget.scrollBottomSafeArea,
-      limitSelectionToOne: widget.limitSelectionToOne,
-      enableFileGrouping: widget.enableFileGrouping,
-      logTag: _logTag,
-      logger: _logger,
-      reloadEvent: widget.reloadEvent,
-      header: widget.header,
-      footer: widget.footer,
-      selectedFiles: widget.selectedFiles,
+      child: MultipleGroupsGalleryView(
+        hugeListViewKey: _hugeListViewKey,
+        itemScroller: _itemScroller,
+        groupedFiles: _currentGroupedFiles,
+        disableScroll: widget.disableScroll,
+        emptyState: widget.emptyState,
+        asyncLoader: widget.asyncLoader,
+        removalEventTypes: widget.removalEventTypes,
+        tagPrefix: widget.tagPrefix,
+        scrollBottomSafeArea: widget.scrollBottomSafeArea,
+        limitSelectionToOne: widget.limitSelectionToOne,
+        enableFileGrouping: widget.enableFileGrouping,
+        logTag: _logTag,
+        logger: _logger,
+        reloadEvent: widget.reloadEvent,
+        header: widget.header,
+        footer: widget.footer,
+        selectedFiles: widget.selectedFiles,
+        showSelectAllByDefault: widget.showSelectAllByDefault,
+      ),
     );
   }
 

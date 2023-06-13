@@ -12,6 +12,7 @@ import "package:photos/ui/viewer/gallery/component/grid/place_holder_grid_view_w
 import "package:photos/ui/viewer/gallery/component/group/group_gallery.dart";
 import "package:photos/ui/viewer/gallery/component/group/group_header_widget.dart";
 import 'package:photos/ui/viewer/gallery/gallery.dart';
+import "package:photos/ui/viewer/gallery/state/gallery_sort_order.dart";
 
 class LazyGroupGallery extends StatefulWidget {
   final List<File> files;
@@ -19,7 +20,6 @@ class LazyGroupGallery extends StatefulWidget {
   final Stream<FilesUpdatedEvent>? reloadEvent;
   final Set<EventType> removalEventTypes;
   final GalleryLoader asyncLoader;
-  final bool sortOrderAsc;
   final SelectedFiles? selectedFiles;
   final String tag;
   final String? logTag;
@@ -27,17 +27,18 @@ class LazyGroupGallery extends StatefulWidget {
   final int photoGridSize;
   final bool enableFileGrouping;
   final bool limitSelectionToOne;
+  final bool showSelectAllByDefault;
   LazyGroupGallery(
     this.files,
     this.index,
     this.reloadEvent,
     this.removalEventTypes,
     this.asyncLoader,
-    this.sortOrderAsc,
     this.selectedFiles,
     this.tag,
     this.currentIndexStream,
-    this.enableFileGrouping, {
+    this.enableFileGrouping,
+    this.showSelectAllByDefault, {
     this.logTag = "",
     this.photoGridSize = photoGridSizeDefault,
     this.limitSelectionToOne = false,
@@ -58,14 +59,15 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
   late StreamSubscription<int> _currentIndexSubscription;
   bool? _shouldRender;
   final ValueNotifier<bool> _toggleSelectAllFromDay = ValueNotifier(false);
-  final ValueNotifier<bool> _showSelectAllButton = ValueNotifier(false);
+  late final ValueNotifier<bool> _showSelectAllButton;
   final ValueNotifier<bool> _areAllFromDaySelected = ValueNotifier(false);
 
   @override
   void initState() {
     //this is for removing the 'select all from day' icon on unselecting all files with 'cancel'
-    widget.selectedFiles?.addListener(_selectedFilesListener);
     super.initState();
+    widget.selectedFiles?.addListener(_selectedFilesListener);
+    _showSelectAllButton = ValueNotifier(widget.showSelectAllByDefault);
     _init();
   }
 
@@ -114,7 +116,7 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
         final result = await widget.asyncLoader(
           dayStartTime.microsecondsSinceEpoch,
           dayStartTime.microsecondsSinceEpoch + microSecondsInDay - 1,
-          asc: widget.sortOrderAsc,
+          asc: GallerySortOrder.of(context)!.sortOrderAsc,
         );
         if (mounted) {
           setState(() {
@@ -224,7 +226,7 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
   }
 
   void _selectedFilesListener() {
-    if (widget.selectedFiles!.files.isEmpty) {
+    if (widget.selectedFiles!.files.isEmpty && !widget.showSelectAllByDefault) {
       _showSelectAllButton.value = false;
     } else {
       _showSelectAllButton.value = true;
