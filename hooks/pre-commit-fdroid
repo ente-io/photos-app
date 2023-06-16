@@ -1,11 +1,10 @@
 #!/bin/sh
-
+echo "not on f-droid branch"
 # Get the current branch
 current_branch=$(git rev-parse --abbrev-ref HEAD)
 
-# If the current branch is f-droid, echo Hello World
 if [ "$current_branch" = "f-droid" ]; then
-    # Verify that the pubspec.yaml doesn't contain certain words
+    # Verify that the pubspec.yaml doesn't contain certain dependencies
     WORDS=("in_app_purchase" "firebase")
     for word in ${WORDS[@]}; do
         if grep -q $word pubspec.yaml; then
@@ -13,4 +12,6 @@ if [ "$current_branch" = "f-droid" ]; then
             exit 1
         fi
     done
+else
+    echo "not on f-droid branch"
 fi

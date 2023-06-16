@@ -2,6 +2,10 @@
 # This git hook fails if a user is trying to add a new file which is
 # not null safe.
 
+# If the current branch is f-droid, run pre-commit-fdroid
+if [ "$current_branch" = "f-droid" ]; then
+    exec .git/hooks/pre-commit-fdroid
+fi
 # Check the contents of each file that is being added(A) or modified(N) or
 # copied (C)
 for file in `git diff --name-only --diff-filter=ACM --cached`; do
