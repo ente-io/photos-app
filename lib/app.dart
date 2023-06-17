@@ -1,7 +1,9 @@
+import "dart:async";
 import 'dart:io';
 
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:background_fetch/background_fetch.dart';
+import "package:collection/collection.dart";
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
@@ -10,14 +12,24 @@ import "package:home_widget/home_widget.dart" as hw;
 import 'package:logging/logging.dart';
 import 'package:media_extension/media_extension_action_types.dart';
 import "package:photos/appwidget/app_widget.dart";
+import "package:photos/core/configuration.dart";
+import "package:photos/core/constants.dart";
+import "package:photos/db/device_files_db.dart";
+import "package:photos/db/files_db.dart";
 import 'package:photos/ente_theme_data.dart';
 import "package:photos/generated/l10n.dart";
 import "package:photos/l10n/l10n.dart";
+import "package:photos/models/device_collection.dart";
+import "package:photos/models/file_load_result.dart";
 import 'package:photos/services/app_lifecycle_service.dart';
+import 'package:photos/services/search_service.dart';
 import 'package:photos/services/sync_service.dart';
 import 'package:photos/ui/tabs/home_widget.dart';
 import "package:photos/ui/viewer/actions/file_viewer.dart";
+import "package:photos/ui/viewer/file/detail_page.dart";
+import "package:photos/ui/viewer/gallery/collection_page.dart";
 import "package:photos/utils/intent_util.dart";
+import "package:photos/utils/navigation_util.dart";
 
 class EnteApp extends StatefulWidget {
   final Future<void> Function(String) runBackgroundTask;
@@ -46,6 +58,8 @@ class _EnteAppState extends State<EnteApp> with WidgetsBindingObserver {
   final _logger = Logger("EnteAppState");
   late Locale locale;
   bool isLaunchedByWidget = false;
+  final StreamController<bool> isHomeWidgetController =
+      StreamController<bool>.broadcast();
 
   @override
   void initState() {
@@ -86,12 +100,20 @@ class _EnteAppState extends State<EnteApp> with WidgetsBindingObserver {
           themeMode: ThemeMode.system,
           theme: lightTheme,
           darkTheme: dartTheme,
-          home: isLaunchedByWidget
-              ? const AppWidget()
-              : (AppLifecycleService.instance.mediaExtensionAction.action ==
-                      IntentAction.view
-                  ? const FileViewer()
-                  : const HomeWidget()),
+          home: StreamBuilder<bool>(
+            stream: isHomeWidgetController.stream,
+            builder: (context, snapshot) {
+              if (snapshot.data != null && snapshot.data!) {
+                return const AppWidget();
+              } else {
+                return (AppLifecycleService
+                            .instance.mediaExtensionAction.action ==
+                        IntentAction.view
+                    ? const FileViewer()
+                    : const HomeWidget());
+              }
+            },
+          ),
           debugShowCheckedModeBanner: false,
           builder: EasyLoading.init(),
           locale: locale,
@@ -124,6 +146,27 @@ class _EnteAppState extends State<EnteApp> with WidgetsBindingObserver {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _checkForWidgetLaunch();
+    hw.HomeWidget.widgetClicked.listen(_launchedFromWidget);
+  }
+
+  void _checkForWidgetLaunch() {
+    hw.HomeWidget.initiallyLaunchedFromHomeWidget().then(_launchedFromWidget);
+  }
+
+  void _launchedFromWidget(Uri? uri) {
+    if (uri != null) {
+      if (uri.host == "configure") {
+        isHomeWidgetController.sink.add(true);
+      } else if (uri.host == "view") {
+        _onHomeWigetClicked(context, uri);
+      }
+    }
+  }
+
+  @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -133,12 +176,6 @@ class _EnteAppState extends State<EnteApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     final String stateChangeReason = 'app -> $state';
     if (state == AppLifecycleState.resumed) {
-      hw.HomeWidget.widgetClicked.listen((uri) {
-        setState(() {
-          isLaunchedByWidget = (uri?.host == "configure");
-        });
-        _logger.info('home-widget clicked: $uri');
-      });
       AppLifecycleService.instance
           .onAppInForeground(stateChangeReason + ': sync now');
       SyncService.instance.sync();
@@ -170,5 +207,58 @@ class _EnteAppState extends State<EnteApp> with WidgetsBindingObserver {
     }).catchError((e) {
       _logger.info('[BackgroundFetch] configure ERROR: $e');
     });
+  }
+}
+
+void _onHomeWigetClicked(BuildContext context, Uri uri) async {
+  final params = uri.queryParameters;
+  final type = int.parse(params['type']!);
+  final thumbnailId = int.parse(params['id']!);
+  final collectionId = params['collection'];
+  final collections = await FilesDB.instance.getDeviceCollections();
+  DeviceCollection? deviceCollection;
+  for (var e in collections) {
+    if (e.id == collectionId) {
+      deviceCollection = e;
+    }
+  }
+  if (type == 0) {
+    final collectionName = deviceCollection!.name;
+    final allResults =
+        await SearchService.instance.getCollectionSearchResults(collectionName);
+    routeToPage(
+      context,
+      CollectionPage(
+        allResults[0].collectionWithThumbnail,
+      ),
+    );
+  } else {
+    final fileloader = await FilesDB.instance.getFilesInDeviceCollection(
+      deviceCollection!,
+      Configuration.instance.getUserID(),
+      galleryLoadStartTime,
+      galleryLoadEndTime,
+    );
+    int selectedIndex = 0;
+    fileloader.files.forEachIndexed((index, element) {
+      if (element.generatedID == thumbnailId) {
+        selectedIndex = index;
+      }
+    });
+    final page = DetailPage(
+      DetailPageConfiguration(
+        fileloader.files,
+        (creationStartTime, creationEndTime, {asc, limit}) async {
+          final result = FileLoadResult(fileloader.files, false);
+          return result;
+        },
+        selectedIndex,
+        'HomeWidget',
+      ),
+    );
+    routeToPage(
+      context,
+      page,
+    );
   }
 }
