@@ -666,6 +666,27 @@ class FilesDB {
     return files;
   }
 
+  Future<List<File>> getCollectionFilesByID(int id) async {
+    final db = await instance.database;
+    const String whereClause = '_id = ?';
+    final List<Object> whereArgs = [id];
+    final res = await db.query(
+      'device_collections',
+      limit: 1,
+    );
+    final columnNames1 = res.first.keys.toList();
+    final columnNames = res.first.values.toList();
+    print(columnNames1);
+    print(columnNames);
+    final results = await db.query(
+      filesTable,
+      where: whereClause,
+      whereArgs: whereArgs,
+    );
+    final files = convertToFiles(results);
+    return files;
+  }
+
   Future<FileLoadResult> getFilesInCollections(
     List<int> collectionIDs,
     int startTime,

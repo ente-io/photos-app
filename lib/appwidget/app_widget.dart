@@ -1,15 +1,21 @@
 import "dart:convert";
+import "dart:math";
+
 import "package:collection/collection.dart";
 import "package:flutter/material.dart";
+import 'package:flutter/services.dart';
 import "package:home_widget/home_widget.dart";
 import "package:logging/logging.dart";
+import "package:photo_manager/photo_manager.dart";
 import "package:photos/appwidget/circle_painter.dart";
 import "package:photos/appwidget/heart_painter.dart";
 import "package:photos/appwidget/square_painter.dart";
+import "package:photos/core/configuration.dart";
+import 'package:photos/core/constants.dart';
 import "package:photos/db/device_files_db.dart";
 import "package:photos/db/files_db.dart";
 import "package:photos/models/device_collection.dart";
-import "package:photos/models/file.dart";
+import "package:photos/theme/text_style.dart";
 import "package:photos/ui/viewer/file/thumbnail_widget.dart";
 import "package:photos/utils/file_util.dart";
 
@@ -17,34 +23,59 @@ const shapeKey = 'shape';
 const typeKey = 'type';
 const recentKey = 'recent';
 const collectionKey = 'collection';
+const thumbnailKey = 'thumbnail';
+const thumbnailIdKey = 'thumbnail_id';
+const widgetIdKey = 'widget_id';
 
 /// Called when Doing Background Work initiated from Widget
 @pragma("vm:entry-point")
-void backgroundCallback(Uri? data) async {
+void backgroundHomeWidgetCallback(Uri? data) async {
   if (data?.host == 'refresh') {
     Logger('refresh').info('refreshing widget');
+    final widgetId = await HomeWidget.getWidgetData<int>(
+      widgetIdKey,
+      defaultValue: 0,
+    );
     final collectionId = await HomeWidget.getWidgetData<String>(
-      collectionKey,
+      '${widgetId}_$collectionKey',
       defaultValue: '-1',
     );
 
-    File? file;
+    final isRecent = await HomeWidget.getWidgetData<bool>(
+      '${widgetId}_$recentKey',
+      defaultValue: false,
+    );
 
-    FilesDB.instance
-        .getDeviceCollections(includeCoverThumbnail: true)
-        .then((collections) {
-      file = collections
-          .firstWhere((element) => element.id == collectionId)
-          .thumbnail;
-    });
+    final collections = await FilesDB.instance.getDeviceCollections();
+    DeviceCollection? deviceCollection;
+    for (var e in collections) {
+      if (e.id == collectionId) {
+        deviceCollection = e;
+      }
+    }
+    PhotoManager.setIgnorePermissionCheck(true);
+    await Configuration.instance.init();
 
-    final ioFile = await getFile(file!);
-    final bytes = ioFile!.readAsBytesSync();
+    final fileloader = await FilesDB.instance.getFilesInDeviceCollection(
+      deviceCollection!,
+      Configuration.instance.getUserID(),
+      galleryLoadStartTime,
+      galleryLoadEndTime,
+    );
+    final files = fileloader.files;
+    final file =
+        isRecent! ? files.first : files[Random().nextInt(files.length) + 1];
+    final ioFile = await getFile(file);
+    final bytes = await ioFile!.readAsBytes();
     final base64 = base64Encode(bytes);
 
     await HomeWidget.saveWidgetData<String>(
-      "thumbnail",
+      '${widgetId}_$thumbnailKey',
       base64,
+    );
+    await HomeWidget.saveWidgetData<int>(
+      '${widgetId}_$thumbnailIdKey',
+      file.generatedID,
     );
     await HomeWidget.updateWidget(
       name: 'HomeScreenWidget',
@@ -61,9 +92,10 @@ class AppWidget extends StatefulWidget {
   State<AppWidget> createState() => _AppWidgetState();
 }
 
-class _AppWidgetState extends State<AppWidget> {
+class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
   int selectedShape = 0;
   int selectedType = 0;
+  int widgetId = 0;
   String collectionId = '-1';
   bool isRecent = false;
   bool isLoading = true;
@@ -73,21 +105,40 @@ class _AppWidgetState extends State<AppWidget> {
   @override
   void initState() {
     super.initState();
-    HomeWidget.setAppGroupId('YOUR_GROUP_ID');
+    _logger.info("init State");
+    WidgetsBinding.instance.addObserver(this);
     _loadData();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _logger.info("resumed");
+      _loadData();
+    }
   }
 
   Future _sendData() async {
     try {
-      await HomeWidget.saveWidgetData<String>(collectionKey, collectionId);
-      await HomeWidget.saveWidgetData<int>(shapeKey, selectedShape);
-      await HomeWidget.saveWidgetData<int>(typeKey, selectedType);
-      await HomeWidget.saveWidgetData<bool>(recentKey, isRecent);
+      await HomeWidget.saveWidgetData<String>(
+        '${widgetId}_$collectionKey',
+        collectionId,
+      );
+      await HomeWidget.saveWidgetData<int>(
+        '${widgetId}_$shapeKey',
+        selectedShape,
+      );
+      await HomeWidget.saveWidgetData<int>(
+        '${widgetId}_$typeKey',
+        selectedType,
+      );
+      await HomeWidget.saveWidgetData<bool>('${widgetId}_$recentKey', isRecent);
     } catch (exception) {
       _logger.info('Error Sending Data. $exception');
     }
@@ -99,7 +150,14 @@ class _AppWidgetState extends State<AppWidget> {
           collections.firstWhere((e) => e.id == collectionId).thumbnail!;
       final bytes = (await getFile(file))!.readAsBytesSync();
       final base64 = base64Encode(bytes);
-      await HomeWidget.saveWidgetData<String>("thumbnail", base64);
+      await HomeWidget.saveWidgetData<String>(
+        '${widgetId}_$thumbnailKey',
+        base64,
+      );
+      await HomeWidget.saveWidgetData<int>(
+        '${widgetId}_$thumbnailIdKey',
+        file.generatedID,
+      );
     } catch (exception) {
       _logger.info('Error Setting Thumbnail. $exception');
     }
@@ -121,27 +179,37 @@ class _AppWidgetState extends State<AppWidget> {
     try {
       collections = await FilesDB.instance
           .getDeviceCollections(includeCoverThumbnail: true);
-      int shape, type;
+      int shape, type, id;
       String collection;
       bool recent;
 
-      shape = (await HomeWidget.getWidgetData<int>(shapeKey, defaultValue: 0))!;
+      id = (await HomeWidget.getWidgetData<int>(
+        widgetIdKey,
+        defaultValue: 0,
+      ))!;
+
+      shape = (await HomeWidget.getWidgetData<int>(
+        '${widgetId}_$shapeKey',
+        defaultValue: 0,
+      ))!;
 
       type = (await HomeWidget.getWidgetData<int>(
-        typeKey,
+        '${widgetId}_$typeKey',
         defaultValue: 0,
       ))!;
 
       recent = (await HomeWidget.getWidgetData<bool>(
-        recentKey,
+        '${widgetId}_$recentKey',
         defaultValue: false,
       ))!;
 
       collection = (await HomeWidget.getWidgetData<String>(
-        collectionKey,
+        '${widgetId}_$collectionKey',
         defaultValue: '-1',
       ))!;
+      _logger.info("widgetId: $id");
       setState(() {
+        widgetId = id;
         selectedShape = shape;
         selectedType = type;
         isRecent = recent;
@@ -157,6 +225,7 @@ class _AppWidgetState extends State<AppWidget> {
     await _sendData();
     await setThumbnail();
     await _updateWidget();
+    SystemNavigator.pop();
   }
 
   List<CustomPainter> widgetShapes() {
@@ -168,7 +237,6 @@ class _AppWidgetState extends State<AppWidget> {
   }
 
   List<String> onWidgetTapped = [
-    'Open Home',
     'Open Collection',
     'Open Viewer',
   ];
@@ -178,7 +246,7 @@ class _AppWidgetState extends State<AppWidget> {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('ente'),
+          title: const Text('ente', style: brandStyleMedium),
           centerTitle: true,
         ),
         body: Center(
@@ -318,11 +386,19 @@ class _AppWidgetState extends State<AppWidget> {
                         ),
                       ),
                     ),
-                    ElevatedButton(
-                      onPressed: _sendAndUpdate,
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 32),
-                        child: Text('Save'),
+                    const Spacer(),
+                    Container(
+                      margin: const EdgeInsets.all(16),
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _sendAndUpdate,
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 32),
+                          child: Text(
+                            'Save',
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
                       ),
                     ),
                   ],

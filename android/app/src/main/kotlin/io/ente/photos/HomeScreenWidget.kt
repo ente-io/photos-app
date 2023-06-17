@@ -11,6 +11,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.RemoteViews
+import androidx.core.content.edit
 import es.antonborri.home_widget.HomeWidgetBackgroundIntent
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetProvider
@@ -26,6 +27,7 @@ class HomeScreenWidget : HomeWidgetProvider() {
         widgetData: SharedPreferences
     ) {
         appWidgetIds.forEach { widgetId ->
+            Log.d("APPWIDGET",widgetId.toString())
             val views = RemoteViews(context.packageName, R.layout.home_screen_widget).apply {
                 // Open App on Widget Click
                 val pendingIntent = HomeWidgetLaunchIntent.getActivity(
@@ -35,9 +37,23 @@ class HomeScreenWidget : HomeWidgetProvider() {
                 )
 
                 setOnClickPendingIntent(R.id.edit, pendingIntent)
+
+                widgetData.edit {
+                    this.putInt("widget_id",widgetId)
+                }
+
+                val collection = widgetData.getString("${widgetId}_collection","-1")
+                val type = widgetData.getInt("${widgetId}_type",0)
+                val thumbnailID = widgetData.getInt("${widgetId}_thumbnail_id",0)
+                val pendingIntent2 = HomeWidgetLaunchIntent.getActivity(
+                    context,
+                    MainActivity::class.java,
+                    uri = Uri.parse("homescreenwidget://view?type=$type&id=$thumbnailID&collection=$collection")
+                )
+
+                setOnClickPendingIntent(R.id.thumbnail, pendingIntent2)
                 // Swap Title Text by calling Dart Code in the Background
-                val shape = widgetData.getInt("shape", 0)
-                Log.d("SHAPE", shape.toString())
+                val shape = widgetData.getInt("${widgetId}_shape", 0)
 
                 // Pending intent to update counter on button click
                 val backgroundIntent = HomeWidgetBackgroundIntent.getBroadcast(context,
@@ -45,7 +61,7 @@ class HomeScreenWidget : HomeWidgetProvider() {
                 setOnClickPendingIntent(R.id.refresh, backgroundIntent)
 
                 val thumbnailString = widgetData.getString(
-                    "thumbnail",
+                    "${widgetId}_thumbnail",
                     context.getText(R.string.default_thumbnail).toString()
                 )!!
                 var thumbnailBitmap: Bitmap = base64ToBitmap(thumbnailString,67392)!!
@@ -140,25 +156,26 @@ private fun compressBitmap(bitmap: Bitmap, maxSizeBytes: Long): Bitmap {
         val centerY = canvasSize / 2f
         val radius = canvasSize / 2f
         path.addCircle(centerX, centerY, radius, Path.Direction.CW)
-        canvas.clipPath(path)
+        val paint = Paint();
+        paint.color = Color.BLACK;
+        canvas.drawPath(path,paint)
 
-        // Calculate the positioning of the bitmap within the circle
+        // Calculate the positioning of the bitmap within the heart
         val bitmapWidth = bitmap.width
         val bitmapHeight = bitmap.height
-        val scale = radius * 2 / Math.max(bitmapWidth, bitmapHeight)
+        val scale = radius * 2 / bitmapWidth.coerceAtLeast(bitmapHeight)
         val scaledWidth = (bitmapWidth * scale).toInt()
         val scaledHeight = (bitmapHeight * scale).toInt()
         val left = (centerX - scaledWidth / 2f).toInt()
         val top = (centerY - scaledHeight / 2f).toInt()
 
-        // Draw the bitmap onto the canvas
+        canvas.clipPath(path)
         canvas.drawBitmap(
             bitmap,
             null,
             Rect(left, top, left + scaledWidth, top + scaledHeight),
             null
         )
-
         return output
     }
 
@@ -186,25 +203,27 @@ private fun compressBitmap(bitmap: Bitmap, maxSizeBytes: Long): Bitmap {
         )
         path.close()
 
-        // Clip the canvas with the heart-shaped path
-        canvas.clipPath(path)
+        val paint = Paint();
+        paint.color = Color.BLACK;
+        canvas.drawPath(path,paint)
 
         // Calculate the positioning of the bitmap within the heart
         val bitmapWidth = bitmap.width
         val bitmapHeight = bitmap.height
-        val scale = radius * 2 / Math.max(bitmapWidth, bitmapHeight)
+        val scale = radius * 2 / bitmapWidth.coerceAtLeast(bitmapHeight)
         val scaledWidth = (bitmapWidth * scale).toInt()
         val scaledHeight = (bitmapHeight * scale).toInt()
         val left = (centerX - scaledWidth / 2f).toInt()
         val top = (centerY - scaledHeight / 2f).toInt()
 
-        // Draw the bitmap onto the canvas
+        canvas.clipPath(path)
         canvas.drawBitmap(
             bitmap,
             null,
             Rect(left, top, left + scaledWidth, top + scaledHeight),
             null
         )
+
 
         return output
     }

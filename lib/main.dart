@@ -9,7 +9,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import "package:flutter/rendering.dart";
 import "package:home_widget/home_widget.dart";
-
 import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:photos/app.dart';
@@ -66,8 +65,8 @@ void main() async {
   debugRepaintRainbowEnabled = false;
   WidgetsFlutterBinding.ensureInitialized();
   final savedThemeMode = await AdaptiveTheme.getThemeMode();
+  HomeWidget.registerBackgroundCallback(backgroundHomeWidgetCallback);
   await _runInForeground(savedThemeMode);
-  HomeWidget.registerBackgroundCallback(backgroundCallback);
   BackgroundFetch.registerHeadlessTask(_headlessTaskHandler);
 }
 
@@ -154,7 +153,7 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
   await _logFGHeartBeatInfo();
   _scheduleHeartBeat(preferences, isBackground);
   if (isBackground) {
-    AppLifecycleService.instance.onAppInBackground('init via: $via');
+    AppLifecycleService.instance.onAppInBackground("init via: $via");
   } else {
     AppLifecycleService.instance.onAppInForeground('init via: $via');
   }

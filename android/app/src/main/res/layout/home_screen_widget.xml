@@ -3,15 +3,19 @@
     android:id="@+id/widget_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
+
     <ImageView
         android:id="@+id/thumbnail"
-        android:layout_width="300dp"
-        android:layout_height="300dp"
-        android:src="@drawable/edit" />
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitXY"
+        android:contentDescription="@string/app_name"
+        android:src="@drawable/notification_icon" />
+
     <ImageButton
         android:id="@+id/edit"
-        android:layout_width="65dp"
-        android:layout_height="65dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         android:layout_alignParentEnd="true"
         android:layout_alignParentBottom="true"
         android:layout_margin="2dp"
@@ -19,15 +23,18 @@
         android:clickable="true"
         android:contentDescription="@string/app_name"
         android:focusable="true"
-        android:gravity="end|bottom"
         android:src="@drawable/edit" />
+
     <ImageButton
         android:id="@+id/refresh"
-        android:layout_width="65dp"
-        android:layout_height="65dp"
-        android:layout_alignParentStart="true"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_alignParentEnd="true"
         android:layout_alignParentBottom="true"
-        android:layout_margin="2dp"
+        android:layout_marginStart="2dp"
+        android:layout_marginTop="2dp"
+        android:layout_marginEnd="60dp"
+        android:layout_marginBottom="2dp"
         android:background="@drawable/round_button"
         android:clickable="true"
         android:contentDescription="@string/app_name"
