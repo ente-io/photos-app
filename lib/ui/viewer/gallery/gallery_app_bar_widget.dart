@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:photos/core/configuration.dart';
 import 'package:photos/core/event_bus.dart';
+import "package:photos/db/files_db.dart";
 import 'package:photos/events/subscription_purchased_event.dart';
 import "package:photos/generated/l10n.dart";
 import 'package:photos/models/backup_status.dart';
@@ -22,6 +22,8 @@ import 'package:photos/ui/components/action_sheet_widget.dart';
 import 'package:photos/ui/components/buttons/button_widget.dart';
 import 'package:photos/ui/components/dialog_widget.dart';
 import 'package:photos/ui/components/models/button_type.dart';
+import "package:photos/ui/map/enable_map.dart";
+import "package:photos/ui/map/map_screen.dart";
 import 'package:photos/ui/sharing/album_participants_page.dart';
 import 'package:photos/ui/sharing/share_collection_page.dart';
 import 'package:photos/ui/tools/free_space_page.dart';
@@ -244,6 +246,9 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
 
   List<Widget> _getDefaultActions(BuildContext context) {
     final List<Widget> actions = <Widget>[];
+    if (widget.selectedFiles.files.isNotEmpty) {
+      return actions;
+    }
     if (Configuration.instance.hasConfiguredAccount() &&
         widget.selectedFiles.files.isEmpty &&
         (widget.type == GalleryType.ownedCollection ||
@@ -274,6 +279,23 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
                   padding: EdgeInsets.all(8),
                 ),
                 Text(S.of(context).renameAlbum),
+              ],
+            ),
+          ),
+        );
+      }
+      if (widget.type == GalleryType.ownedCollection ||
+          widget.type == GalleryType.sharedCollection) {
+        items.add(
+          PopupMenuItem(
+            value: 8,
+            child: Row(
+              children: [
+                const Icon(Icons.map_outlined),
+                const Padding(
+                  padding: EdgeInsets.all(8),
+                ),
+                Text(S.of(context).map),
               ],
             ),
           ),
@@ -426,6 +448,8 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
               if (mounted) {
                 setState(() {});
               }
+            } else if (value == 8) {
+              await showOnMap();
             } else {
               showToast(context, S.of(context).somethingWentWrong);
             }
@@ -435,6 +459,23 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
     }
 
     return actions;
+  }
+
+  Future<void> showOnMap() async {
+    final bool result = await requestForMapEnable(context);
+    if (result) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => MapScreen(
+            filesFutureFn: () async {
+              return FilesDB.instance.getAllFilesCollection(
+                widget.collection!.id,
+              );
+            },
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _showSortOption(BuildContext bContext) async {
@@ -463,14 +504,9 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
   }
 
   Future<void> _trashCollection() async {
-    final collectionWithThumbnail =
-        await CollectionsService.instance.getCollectionsWithThumbnails();
-    final bool isEmptyCollection = collectionWithThumbnail
-            .firstWhereOrNull(
-              (element) => element.collection.id == widget.collection!.id,
-            )
-            ?.thumbnail ==
-        null;
+    final int count =
+        await FilesDB.instance.collectionFileCount(widget.collection!.id);
+    final bool isEmptyCollection = count == 0;
     if (isEmptyCollection) {
       final dialog = createProgressDialog(
         context,
