@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:photos/core/configuration.dart';
 import 'package:photos/core/event_bus.dart';
+import "package:photos/db/files_db.dart";
 import 'package:photos/events/subscription_purchased_event.dart';
 import "package:photos/generated/l10n.dart";
 import 'package:photos/models/backup_status.dart';
@@ -22,9 +22,12 @@ import 'package:photos/ui/components/action_sheet_widget.dart';
 import 'package:photos/ui/components/buttons/button_widget.dart';
 import 'package:photos/ui/components/dialog_widget.dart';
 import 'package:photos/ui/components/models/button_type.dart';
+import "package:photos/ui/map/enable_map.dart";
+import "package:photos/ui/map/map_screen.dart";
 import 'package:photos/ui/sharing/album_participants_page.dart';
 import 'package:photos/ui/sharing/share_collection_page.dart';
 import 'package:photos/ui/tools/free_space_page.dart';
+import "package:photos/ui/viewer/gallery/pick_cover_photo.dart";
 import 'package:photos/utils/data_util.dart';
 import 'package:photos/utils/dialog_util.dart';
 import 'package:photos/utils/magic_util.dart';
@@ -49,6 +52,18 @@ class GalleryAppBarWidget extends StatefulWidget {
 
   @override
   State<GalleryAppBarWidget> createState() => _GalleryAppBarWidgetState();
+}
+
+enum AlbumPopupAction {
+  rename,
+  delete,
+  map,
+  ownedArchive,
+  sharedArchive,
+  sort,
+  leave,
+  freeUpSpace,
+  setCover,
 }
 
 class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
@@ -244,6 +259,9 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
 
   List<Widget> _getDefaultActions(BuildContext context) {
     final List<Widget> actions = <Widget>[];
+    if (widget.selectedFiles.files.isNotEmpty) {
+      return actions;
+    }
     if (Configuration.instance.hasConfiguredAccount() &&
         widget.selectedFiles.files.isEmpty &&
         (widget.type == GalleryType.ownedCollection ||
@@ -261,12 +279,12 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
         ),
       );
     }
-    final List<PopupMenuItem> items = [];
+    final List<PopupMenuItem<AlbumPopupAction>> items = [];
     if (widget.type == GalleryType.ownedCollection) {
       if (widget.collection!.type != CollectionType.favorites) {
         items.add(
           PopupMenuItem(
-            value: 1,
+            value: AlbumPopupAction.rename,
             child: Row(
               children: [
                 const Icon(Icons.edit),
@@ -278,6 +296,37 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
             ),
           ),
         );
+        items.add(
+          PopupMenuItem(
+            value: AlbumPopupAction.setCover,
+            child: Row(
+              children: [
+                const Icon(Icons.image_outlined),
+                const Padding(
+                  padding: EdgeInsets.all(8),
+                ),
+                Text(S.of(context).setCover),
+              ],
+            ),
+          ),
+        );
+      }
+      if (widget.type == GalleryType.ownedCollection ||
+          widget.type == GalleryType.sharedCollection) {
+        items.add(
+          PopupMenuItem(
+            value: AlbumPopupAction.map,
+            child: Row(
+              children: [
+                const Icon(Icons.map_outlined),
+                const Padding(
+                  padding: EdgeInsets.all(8),
+                ),
+                Text(S.of(context).map),
+              ],
+            ),
+          ),
+        );
       }
       final bool isArchived = widget.collection!.isArchived();
       // Do not show archive option for favorite collection. If collection is
@@ -285,7 +334,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
       if (isArchived || widget.collection!.type != CollectionType.favorites) {
         items.add(
           PopupMenuItem(
-            value: 6,
+            value: AlbumPopupAction.sort,
             child: Row(
               children: [
                 const Icon(Icons.sort_outlined),
@@ -301,7 +350,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
         );
         items.add(
           PopupMenuItem(
-            value: 2,
+            value: AlbumPopupAction.ownedArchive,
             child: Row(
               children: [
                 Icon(isArchived ? Icons.unarchive : Icons.archive_outlined),
@@ -321,7 +370,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
       if (widget.collection!.type != CollectionType.favorites) {
         items.add(
           PopupMenuItem(
-            value: 3,
+            value: AlbumPopupAction.delete,
             child: Row(
               children: [
                 const Icon(Icons.delete_outline),
@@ -340,7 +389,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
       final bool hasShareeArchived = widget.collection!.hasShareeArchived();
       items.add(
         PopupMenuItem(
-          value: 4,
+          value: AlbumPopupAction.leave,
           child: Row(
             children: [
               const Icon(Icons.logout),
@@ -354,7 +403,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
       );
       items.add(
         PopupMenuItem(
-          value: 7,
+          value: AlbumPopupAction.sharedArchive,
           child: Row(
             children: [
               Icon(
@@ -376,7 +425,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
     if (widget.type == GalleryType.localFolder) {
       items.add(
         PopupMenuItem(
-          value: 5,
+          value: AlbumPopupAction.freeUpSpace,
           child: Row(
             children: [
               const Icon(Icons.delete_sweep_outlined),
@@ -395,10 +444,10 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
           itemBuilder: (context) {
             return items;
           },
-          onSelected: (dynamic value) async {
-            if (value == 1) {
+          onSelected: (AlbumPopupAction value) async {
+            if (value == AlbumPopupAction.rename) {
               await _renameAlbum(context);
-            } else if (value == 2) {
+            } else if (value == AlbumPopupAction.ownedArchive) {
               await changeCollectionVisibility(
                 context,
                 widget.collection!,
@@ -406,15 +455,17 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
                     ? visibleVisibility
                     : archiveVisibility,
               );
-            } else if (value == 3) {
+            } else if (value == AlbumPopupAction.delete) {
               await _trashCollection();
-            } else if (value == 4) {
+            } else if (value == AlbumPopupAction.leave) {
               await _leaveAlbum(context);
-            } else if (value == 5) {
+            } else if (value == AlbumPopupAction.freeUpSpace) {
               await _deleteBackedUpFiles(context);
-            } else if (value == 6) {
+            } else if (value == AlbumPopupAction.setCover) {
+              await setCoverPhoto(context);
+            } else if (value == AlbumPopupAction.sort) {
               await _showSortOption(context);
-            } else if (value == 7) {
+            } else if (value == AlbumPopupAction.sharedArchive) {
               await changeCollectionVisibility(
                 context,
                 widget.collection!,
@@ -426,6 +477,8 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
               if (mounted) {
                 setState(() {});
               }
+            } else if (value == AlbumPopupAction.map) {
+              await showOnMap();
             } else {
               showToast(context, S.of(context).somethingWentWrong);
             }
@@ -435,6 +488,30 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
     }
 
     return actions;
+  }
+
+  Future<void> setCoverPhoto(BuildContext context) async {
+    final file = await showPickCoverPhotoSheet(context, widget.collection!);
+    if (file != null) {
+      changeCoverPhoto(context, widget.collection!, file);
+    }
+  }
+
+  Future<void> showOnMap() async {
+    final bool result = await requestForMapEnable(context);
+    if (result) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => MapScreen(
+            filesFutureFn: () async {
+              return FilesDB.instance.getAllFilesCollection(
+                widget.collection!.id,
+              );
+            },
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _showSortOption(BuildContext bContext) async {
@@ -463,14 +540,9 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
   }
 
   Future<void> _trashCollection() async {
-    final collectionWithThumbnail =
-        await CollectionsService.instance.getCollectionsWithThumbnails();
-    final bool isEmptyCollection = collectionWithThumbnail
-            .firstWhereOrNull(
-              (element) => element.collection.id == widget.collection!.id,
-            )
-            ?.thumbnail ==
-        null;
+    final int count =
+        await FilesDB.instance.collectionFileCount(widget.collection!.id);
+    final bool isEmptyCollection = count == 0;
     if (isEmptyCollection) {
       final dialog = createProgressDialog(
         context,

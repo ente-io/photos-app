@@ -300,6 +300,16 @@ class S {
     );
   }
 
+  /// `ente <i>needs permission to</i> preserve your photos`
+  String get entePhotosPerm {
+    return Intl.message(
+      'ente <i>needs permission to</i> preserve your photos',
+      name: 'entePhotosPerm',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Ok`
   String get ok {
     return Intl.message(
@@ -2908,6 +2918,28 @@ class S {
     );
   }
 
+  /// `{count, plural, =1 {Delete {count} item} other {Delete {count} items}}`
+  String deleteItemCount(num count) {
+    return Intl.plural(
+      count,
+      one: 'Delete $count item',
+      other: 'Delete $count items',
+      name: 'deleteItemCount',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `{count} files, {formattedSize} each`
+  String duplicateItemsGroup(int count, String formattedSize) {
+    return Intl.message(
+      '$count files, $formattedSize each',
+      name: 'duplicateItemsGroup',
+      desc: 'Display the number of duplicate files and their size',
+      args: [count, formattedSize],
+    );
+  }
+
   /// `{count, plural, one{{count} year ago} other{{count} years ago}}`
   String yearsAgo(num count) {
     return Intl.plural(
@@ -5283,6 +5315,16 @@ class S {
     );
   }
 
+  /// `Set cover`
+  String get setCover {
+    return Intl.message(
+      'Set cover',
+      name: 'setCover',
+      desc: 'Text to set cover photo for an album',
+      args: [],
+    );
+  }
+
   /// `Sort by`
   String get sortAlbumsBy {
     return Intl.message(
@@ -7219,6 +7261,66 @@ class S {
       name: 'iOSOkButton',
       desc:
           'Message showed on a button that the user can click to leave the current dialog. It is used on iOS side. Maximum 30 characters.',
+      args: [],
+    );
+  }
+
+  /// `OpenStreetMap contributors`
+  String get openstreetmapContributors {
+    return Intl.message(
+      'OpenStreetMap contributors',
+      name: 'openstreetmapContributors',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Hosted at OSM France`
+  String get hostedAtOsmFrance {
+    return Intl.message(
+      'Hosted at OSM France',
+      name: 'hostedAtOsmFrance',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Map`
+  String get map {
+    return Intl.message(
+      'Map',
+      name: 'map',
+      desc: 'Label for the map view',
+      args: [],
+    );
+  }
+
+  /// `Maps`
+  String get maps {
+    return Intl.message(
+      'Maps',
+      name: 'maps',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enable Maps`
+  String get enableMaps {
+    return Intl.message(
+      'Enable Maps',
+      name: 'enableMaps',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `This will show your photos on a world map.\n\nThis map is hosted by Open Street Map, and the exact locations of your photos are never shared.\n\nYou can disable this feature anytime from Settings.`
+  String get enableMapsDesc {
+    return Intl.message(
+      'This will show your photos on a world map.\n\nThis map is hosted by Open Street Map, and the exact locations of your photos are never shared.\n\nYou can disable this feature anytime from Settings.',
+      name: 'enableMapsDesc',
+      desc: '',
       args: [],
     );
   }

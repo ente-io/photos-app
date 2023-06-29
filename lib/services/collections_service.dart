@@ -26,7 +26,6 @@ import "package:photos/models/api/collection/public_url.dart";
 import "package:photos/models/api/collection/user.dart";
 import 'package:photos/models/collection.dart';
 import 'package:photos/models/collection_file_item.dart';
-import 'package:photos/models/collection_items.dart';
 import 'package:photos/models/file.dart';
 import "package:photos/models/metadata/collection_magic.dart";
 import 'package:photos/services/app_lifecycle_service.dart';
@@ -56,8 +55,9 @@ class CollectionsService {
   final _cachedKeys = <int, Uint8List>{};
   final _cachedUserIdToUser = <int, User>{};
   Collection? cachedDefaultHiddenCollection;
-  Future<List<File>>? _cachedLatestFiles;
+  Future<Map<int, int>>? _collectionIDToNewestFileTime;
   Collection? cachedUncategorizedCollection;
+  final Map<String, File> _coverCache = <String, File>{};
 
   CollectionsService._privateConstructor() {
     _db = CollectionsDB.instance;
@@ -73,15 +73,17 @@ class CollectionsService {
     final collections = await _db.getAllCollections();
 
     for (final collection in collections) {
+      // using deprecated method because the path is stored in encrypted
+      // format in the DB
       _cacheCollectionAttributes(collection);
     }
-    Bus.instance.on<LocalPhotosUpdatedEvent>().listen((event) {
-      _cachedLatestFiles = null;
-      getLatestCollectionFiles();
-    });
     Bus.instance.on<CollectionUpdatedEvent>().listen((event) {
-      _cachedLatestFiles = null;
-      getLatestCollectionFiles();
+      _collectionIDToNewestFileTime = null;
+      if (event.collectionID != null) {
+        _coverCache.removeWhere(
+          (key, value) => key.startsWith(event.collectionID!.toString()),
+        );
+      }
     });
   }
 
@@ -143,7 +145,7 @@ class CollectionsService {
     _prefs.setInt(_collectionsSyncTimeKey, maxUpdationTime);
     watch.logAndReset("till DB insertion ${updatedCollections.length}");
     for (final collection in fetchedCollections) {
-      _cacheCollectionAttributes(collection);
+      _cacheLocalPathAndCollection(collection);
     }
     _logger.info("Collections synced");
     watch.log("${fetchedCollections.length} collection cached refreshed ");
@@ -180,11 +182,11 @@ class CollectionsService {
     return result;
   }
 
-  Future<List<CollectionWithThumbnail>> getArchivedCollectionWithThumb() async {
-    final allCollections = await getCollectionsWithThumbnails();
+  Future<List<Collection>> getArchivedCollection() async {
+    final allCollections = getCollectionsForUI();
     return allCollections
         .where(
-          (c) => c.collection.isArchived() && !c.collection.isHidden(),
+          (c) => c.isArchived() && !c.isHidden(),
         )
         .toList();
   }
@@ -197,18 +199,15 @@ class CollectionsService {
         .toSet();
   }
 
-  Set<int> collectionsHiddenFromTimeline() {
+  Set<int> archivedOrHiddenCollections() {
     return _collectionIDToCollections.values
         .toList()
-        .where((element) => element.isHidden() || element.isArchived())
-        .map((e) => e.id)
-        .toSet();
-  }
-
-  Set<int> sharedColectionsHiddenFromTimeline() {
-    return _collectionIDToCollections.values
-        .toList()
-        .where((element) => element.hasShareeArchived())
+        .where(
+          (element) =>
+              element.hasShareeArchived() ||
+              element.isHidden() ||
+              element.isArchived(),
+        )
         .map((e) => e.id)
         .toSet();
   }
@@ -219,9 +218,38 @@ class CollectionsService {
         0;
   }
 
-  Future<List<File>> getLatestCollectionFiles() {
-    _cachedLatestFiles ??= _filesDB.getLatestCollectionFiles();
-    return _cachedLatestFiles!;
+  Future<Map<int, int>> getCollectionIDToNewestFileTime() {
+    _collectionIDToNewestFileTime ??=
+        _filesDB.getCollectionIDToMaxCreationTime();
+    return _collectionIDToNewestFileTime!;
+  }
+
+  Future<File?> getCover(Collection c) async {
+    final int localSyncTime = getCollectionSyncTime(c.id);
+    final String coverKey = '${c.id}_${localSyncTime}_${c.updationTime}';
+    if (_coverCache.containsKey(coverKey)) {
+      return Future.value(_coverCache[coverKey]!);
+    }
+    if (kDebugMode) {
+      debugPrint("getCover for collection ${c.id} ${c.displayName}");
+    }
+    final coverID = c.pubMagicMetadata.coverID;
+    if (coverID != null) {
+      final File? cover = await filesDB.getUploadedFile(coverID, c.id);
+      if (cover != null) {
+        _coverCache[coverKey] = cover;
+        return Future.value(cover);
+      }
+    }
+    final coverFile = await filesDB.getCollectionFileFirstOrLast(
+      c.id,
+      c.pubMagicMetadata.asc ?? false,
+    );
+    if (coverFile != null) {
+      _coverCache[coverKey] = coverFile;
+      return Future.value(coverFile);
+    }
+    return null;
   }
 
   Future<bool> setCollectionSyncTime(int collectionID, int? time) async {
@@ -237,6 +265,33 @@ class CollectionsService {
     return _collectionIDToCollections.values
         .toList()
         .where((element) => !element.isDeleted)
+        .toList();
+  }
+
+  // returns collections after removing deleted,uncategorized, and hidden
+  // collections
+  List<Collection> getCollectionsForUI({
+    bool includedShared = false,
+    bool includeCollab = false,
+  }) {
+    final Set<CollectionParticipantRole> allowedRoles = {
+      CollectionParticipantRole.owner,
+    };
+    if (includedShared) {
+      allowedRoles.add(CollectionParticipantRole.viewer);
+    }
+    if (includedShared || includeCollab) {
+      allowedRoles.add(CollectionParticipantRole.collaborator);
+    }
+    final int userID = _config.getUserID()!;
+    return _collectionIDToCollections.values
+        .where(
+          (c) =>
+              !c.isDeleted &&
+              c.type != CollectionType.uncategorized &&
+              !c.isHidden() &&
+              allowedRoles.contains(c.getRole(userID)),
+        )
         .toList();
   }
 
@@ -264,40 +319,6 @@ class CollectionsService {
           id: userID,
           email: "unknown@unknown.com",
         );
-  }
-
-  Future<List<CollectionWithThumbnail>> getCollectionsWithThumbnails({
-    bool includedOwnedByOthers = false,
-    // includeCollabCollections will include collections where the current user
-    // is added as a collaborator
-    bool includeCollabCollections = false,
-  }) async {
-    final List<CollectionWithThumbnail> collectionsWithThumbnail = [];
-    final usersCollection = getActiveCollections();
-    // remove any hidden collection to avoid accidental rendering on UI
-    usersCollection.removeWhere((element) => element.isHidden());
-    if (!includedOwnedByOthers) {
-      final userID = Configuration.instance.getUserID();
-      if (includeCollabCollections) {
-        usersCollection.removeWhere(
-          (c) =>
-              (c.owner?.id != userID) &&
-              (c.getSharees().any((u) => (u.id ?? -1) == userID && u.isViewer)),
-        );
-      } else {
-        usersCollection.removeWhere((c) => c.owner?.id != userID);
-      }
-    }
-    final latestCollectionFiles = await getLatestCollectionFiles();
-    final Map<int, File> collectionToThumbnailMap = Map.fromEntries(
-      latestCollectionFiles.map((e) => MapEntry(e.collectionID!, e)),
-    );
-
-    for (final c in usersCollection) {
-      final File? thumbnail = collectionToThumbnailMap[c.id];
-      collectionsWithThumbnail.add(CollectionWithThumbnail(c, thumbnail));
-    }
-    return collectionsWithThumbnail;
   }
 
   Future<List<User>> getSharees(int collectionID) {
@@ -656,7 +677,7 @@ class CollectionsService {
       collection.pubMagicMetadata =
           CollectionPubMagicMetadata.fromJson(jsonToUpdate);
       collection.mMbPubVersion = currentVersion + 1;
-      _cacheCollectionAttributes(collection);
+      _cacheLocalPathAndCollection(collection);
       // trigger sync to fetch the latest collection state from server
       sync().ignore();
     } on DioError catch (e) {
@@ -716,7 +737,7 @@ class CollectionsService {
       collection.sharedMagicMetadata =
           ShareeMagicMetadata.fromJson(jsonToUpdate);
       collection.sharedMmdVersion = currentVersion + 1;
-      _cacheCollectionAttributes(collection);
+      _cacheLocalPathAndCollection(collection);
       // trigger sync to fetch the latest collection state from server
       sync().ignore();
     } on DioError catch (e) {
