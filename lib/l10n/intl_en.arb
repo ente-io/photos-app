@@ -24,6 +24,7 @@
   "sendEmail": "Send email",
   "deleteRequestSLAText": "Your request will be processed within 72 hours.",
   "deleteEmailRequest": "Please send an email to <warning>account-deletion@ente.io</warning> from your registered email address.",
+  "entePhotosPerm": "ente <i>needs permission to</i> preserve your photos",
   "ok": "Ok",
   "createAccount": "Create account",
   "createNewAccount": "Create new account",
@@ -417,6 +418,22 @@
   "skip": "Skip",
   "updatingFolderSelection": "Updating folder selection...",
   "itemCount": "{count, plural, one{{count} item} other{{count} items}}",
+  "deleteItemCount": "{count, plural, =1 {Delete {count} item} other {Delete {count} items}}",
+  "duplicateItemsGroup": "{count} files, {formattedSize} each",
+  "@duplicateItemsGroup" : {
+    "description": "Display the number of duplicate files and their size",
+    "type": "text",
+    "placeholders": {
+      "count": {
+        "example": "12",
+        "type": "int"
+      },
+      "formattedSize": {
+        "example": "2.3 MB",
+        "type": "String"
+      }
+    }
+  },
   "yearsAgo": "{count, plural, one{{count} year ago} other{{count} years ago}}",
   "backupSettings": "Backup settings",
   "backupOverMobileData": "Backup over mobile data",
@@ -538,6 +555,7 @@
   "faqs": "FAQs",
   "renewsOn": "Renews on {endDate}",
   "freeTrialValidTill": "Free trial valid till {endDate}",
+  "playStoreFreeTrialValidTill": "Free trial valid till {endDate}.\nYou can choose a paid plan afterwards.",
   "subWillBeCancelledOn": "Your subscription will be cancelled on {endDate}",
   "subscription": "Subscription",
   "paymentDetails": "Payment details",
@@ -753,6 +771,10 @@
   },
   "deleteAll": "Delete All",
   "renameAlbum": "Rename album",
+  "setCover" : "Set cover",
+  "@setCover": {
+    "description": "Text to set cover photo for an album"
+  },
   "sortAlbumsBy": "Sort by",
   "sortNewestFirst": "Newest first",
   "sortOldestFirst": "Oldest first",
@@ -1045,6 +1067,17 @@
   "iOSOkButton": "OK",
   "@iOSOkButton": {
     "description": "Message showed on a button that the user can click to leave the current dialog. It is used on iOS side. Maximum 30 characters."
-  }
+  },
+  "openstreetmapContributors": "OpenStreetMap contributors",
+  "hostedAtOsmFrance": "Hosted at OSM France",
+  "map": "Map",
+  "@map": {
+    "description": "Label for the map view"
+  },
+  "maps" : "Maps",
+  "enableMaps": "Enable Maps",
+  "enableMapsDesc" : "This will show your photos on a world map.\n\nThis map is hosted by Open Street Map, and the exact locations of your photos are never shared.\n\nYou can disable this feature anytime from Settings.",
+  "unpinAlbum": "Unpin album",
+  "pinAlbum": "Pin album"
 }
 

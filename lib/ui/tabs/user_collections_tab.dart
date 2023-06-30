@@ -9,12 +9,10 @@ import 'package:photos/core/event_bus.dart';
 import 'package:photos/events/collection_updated_event.dart';
 import 'package:photos/events/local_photos_updated_event.dart';
 import 'package:photos/events/user_logged_out_event.dart';
-import 'package:photos/extensions/list.dart';
 import "package:photos/generated/l10n.dart";
 import 'package:photos/models/collection.dart';
-import 'package:photos/models/collection_items.dart';
 import 'package:photos/services/collections_service.dart';
-import "package:photos/services/remote_sync_service.dart";
+import "package:photos/services/favorites_service.dart";
 import "package:photos/ui/collections/button/archived_button.dart";
 import "package:photos/ui/collections/button/hidden_button.dart";
 import "package:photos/ui/collections/button/trash_button.dart";
@@ -69,7 +67,7 @@ class _UserCollectionsTabState extends State<UserCollectionsTab>
   Widget build(BuildContext context) {
     super.build(context);
     _logger.info("Building, trigger: $_loadReason");
-    return FutureBuilder<List<CollectionWithThumbnail>>(
+    return FutureBuilder<List<Collection>>(
       future: _getCollections(),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
@@ -83,64 +81,67 @@ class _UserCollectionsTabState extends State<UserCollectionsTab>
     );
   }
 
-  Future<List<CollectionWithThumbnail>> _getCollections() async {
-    final List<CollectionWithThumbnail> collectionsWithThumbnail =
-        await CollectionsService.instance.getCollectionsWithThumbnails();
-
-    // Remove uncategorized collection
-    collectionsWithThumbnail.removeWhere(
-      (t) => t.collection.type == CollectionType.uncategorized,
-    );
-    final ListMatch<CollectionWithThumbnail> favMathResult =
-        collectionsWithThumbnail.splitMatch(
-      (element) => element.collection.type == CollectionType.favorites,
-    );
-
-    // Hide fav collection if it's empty and not shared
-    favMathResult.matched.removeWhere(
-      (element) =>
-          element.thumbnail == null &&
-          (element.collection.publicURLs?.isEmpty ?? false),
-    );
-
-    favMathResult.unmatched.sort(
+  Future<List<Collection>> _getCollections() async {
+    final List<Collection> collections =
+        CollectionsService.instance.getCollectionsForUI();
+    final bool hasFavorites = FavoritesService.instance.hasFavorites();
+    late Map<int, int> collectionIDToNewestPhotoTime;
+    if (sortKey == AlbumSortKey.newestPhoto) {
+      collectionIDToNewestPhotoTime =
+          await CollectionsService.instance.getCollectionIDToNewestFileTime();
+    }
+    collections.sort(
       (first, second) {
         if (sortKey == AlbumSortKey.albumName) {
           return compareAsciiLowerCaseNatural(
-            first.collection.displayName,
-            second.collection.displayName,
+            first.displayName,
+            second.displayName,
           );
         } else if (sortKey == AlbumSortKey.newestPhoto) {
-          return (second.thumbnail?.creationTime ?? -1 * intMaxValue)
-              .compareTo(first.thumbnail?.creationTime ?? -1 * intMaxValue);
+          return (collectionIDToNewestPhotoTime[second.id] ?? -1 * intMaxValue)
+              .compareTo(
+            collectionIDToNewestPhotoTime[first.id] ?? -1 * intMaxValue,
+          );
         } else {
-          return second.collection.updationTime
-              .compareTo(first.collection.updationTime);
+          return second.updationTime.compareTo(first.updationTime);
         }
       },
     );
-    // This is a way to identify collection which were automatically created
-    // during create link flow for selected files
-    final ListMatch<CollectionWithThumbnail> potentialSharedLinkCollection =
-        favMathResult.unmatched.splitMatch(
-      (e) => (e.collection.isSharedFilesCollection()),
-    );
+    final List<Collection> favorites = [];
+    final List<Collection> pinned = [];
+    final List<Collection> rest = [];
+    for (final collection in collections) {
+      if (collection.type == CollectionType.uncategorized ||
+          collection.isSharedFilesCollection() ||
+          collection.isHidden()) {
+        continue;
+      }
+      if (collection.type == CollectionType.favorites) {
+        // Hide fav collection if it's empty
+        if (hasFavorites) {
+          favorites.add(collection);
+        }
+      } else if (collection.isPinned) {
+        pinned.add(collection);
+      } else {
+        rest.add(collection);
+      }
+    }
 
-    return favMathResult.matched + potentialSharedLinkCollection.unmatched;
+    return favorites + pinned + rest;
   }
 
   Widget _getCollectionsGalleryWidget(
-    List<CollectionWithThumbnail>? collections,
+    List<Collection>? collections,
   ) {
-    final bool showDeleteAlbumsButton =
-        RemoteSyncService.instance.isFirstRemoteSyncDone() &&
-            collections!.where((c) => c.thumbnail == null).length >= 3;
-    final TextStyle trashAndHiddenTextStyle = Theme.of(context)
-        .textTheme
-        .titleMedium!
-        .copyWith(
-          color: Theme.of(context).textTheme.titleMedium!.color!.withOpacity(0.5),
-        );
+    final TextStyle trashAndHiddenTextStyle =
+        Theme.of(context).textTheme.titleMedium!.copyWith(
+              color: Theme.of(context)
+                  .textTheme
+                  .titleMedium!
+                  .color!
+                  .withOpacity(0.5),
+            );
 
     return SingleChildScrollView(
       child: Container(
@@ -158,12 +159,7 @@ class _UserCollectionsTabState extends State<UserCollectionsTab>
                 _sortMenu(),
               ],
             ),
-            showDeleteAlbumsButton
-                ? const Padding(
-                    padding: EdgeInsets.only(top: 2, left: 8.5, right: 48),
-                    child: DeleteEmptyAlbums(),
-                  )
-                : const SizedBox.shrink(),
+            DeleteEmptyAlbums(collections ?? []),
             Configuration.instance.hasConfiguredAccount()
                 ? RemoteCollectionsGridViewWidget(collections)
                 : const EmptyState(),

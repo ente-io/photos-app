@@ -11,7 +11,6 @@ import 'package:photos/events/user_logged_out_event.dart';
 import "package:photos/generated/l10n.dart";
 import 'package:photos/models/collection.dart';
 import 'package:photos/models/collection_items.dart';
-import "package:photos/models/file.dart";
 import 'package:photos/services/collections_service.dart';
 import 'package:photos/ui/common/loading_widget.dart';
 import 'package:photos/ui/tabs/section_title.dart';
@@ -56,11 +55,7 @@ class _SharedCollectionsTabState extends State<SharedCollectionsTab>
   Widget build(BuildContext context) {
     super.build(context);
     return FutureBuilder<SharedCollections>(
-      future:
-          Future.value(CollectionsService.instance.getLatestCollectionFiles())
-              .then((files) async {
-        return _getSharedCollections(files);
-      }),
+      future: Future.value(_getSharedCollections()),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
           if ((snapshot.data?.incoming.length ?? 0) == 0 &&
@@ -145,56 +140,32 @@ class _SharedCollectionsTabState extends State<SharedCollectionsTab>
     );
   }
 
-  SharedCollections _getSharedCollections(List<File> recentFileForCollections) {
-    final List<CollectionWithThumbnail> outgoing = [];
-    final List<CollectionWithThumbnail> incoming = [];
-    for (final file in recentFileForCollections) {
-      if (file.collectionID == null) {
-        _logger.severe("collection id should not be null");
-        continue;
-      }
-      final Collection? c =
-          CollectionsService.instance.getCollectionByID(file.collectionID!);
-      if (c == null) {
-        _logger.severe("shared collection is not cached ${file.collectionID}");
-        CollectionsService.instance
-            .fetchCollectionByID(file.collectionID!)
-            .ignore();
-        continue;
-      }
+  SharedCollections _getSharedCollections() {
+    final List<Collection> outgoing = [];
+    final List<Collection> incoming = [];
+    final List<Collection> collections =
+        CollectionsService.instance.getCollectionsForUI(includedShared: true);
+    for (final c in collections) {
       if (c.owner!.id == Configuration.instance.getUserID()) {
         if (c.hasSharees || c.hasLink || c.isSharedFilesCollection()) {
-          outgoing.add(
-            CollectionWithThumbnail(
-              c,
-              file,
-            ),
-          );
+          outgoing.add(c);
         }
       } else {
-        incoming.add(
-          CollectionWithThumbnail(
-            c,
-            file,
-          ),
-        );
+        incoming.add(c);
       }
     }
     outgoing.sort((first, second) {
-      if (second.collection.isSharedFilesCollection() ==
-          first.collection.isSharedFilesCollection()) {
-        return second.collection.updationTime
-            .compareTo(first.collection.updationTime);
+      if (second.isSharedFilesCollection() == first.isSharedFilesCollection()) {
+        return second.updationTime.compareTo(first.updationTime);
       } else {
-        if (first.collection.isSharedFilesCollection()) {
+        if (first.isSharedFilesCollection()) {
           return 1;
         }
         return -1;
       }
     });
     incoming.sort((first, second) {
-      return second.collection.updationTime
-          .compareTo(first.collection.updationTime);
+      return second.updationTime.compareTo(first.updationTime);
     });
     return SharedCollections(outgoing, incoming);
   }

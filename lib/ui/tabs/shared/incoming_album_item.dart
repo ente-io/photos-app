@@ -2,15 +2,20 @@ import "dart:math";
 
 import "package:flutter/material.dart";
 import "package:photos/db/files_db.dart";
+import "package:photos/models/collection.dart";
 import "package:photos/models/collection_items.dart";
+import "package:photos/models/file.dart";
 import "package:photos/models/gallery_type.dart";
+import "package:photos/services/collections_service.dart";
 import "package:photos/ui/sharing/user_avator_widget.dart";
+import "package:photos/ui/viewer/file/no_thumbnail_widget.dart";
 import "package:photos/ui/viewer/file/thumbnail_widget.dart";
 import "package:photos/ui/viewer/gallery/collection_page.dart";
 import "package:photos/utils/navigation_util.dart";
 
 class IncomingAlbumItem extends StatelessWidget {
-  final CollectionWithThumbnail c;
+  final Collection c;
+  static const String heroTagPrefix = "shared_collection";
 
   const IncomingAlbumItem(
     this.c, {
@@ -29,6 +34,7 @@ class IncomingAlbumItem extends StatelessWidget {
         (albumsCountInOneRow - 1) * crossAxisSpacingOfGrid;
     final double sideOfThumbnail = (size.width / albumsCountInOneRow) -
         (totalWhiteSpaceOfRow / albumsCountInOneRow);
+
     return GestureDetector(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -40,21 +46,31 @@ class IncomingAlbumItem extends StatelessWidget {
               width: sideOfThumbnail,
               child: Stack(
                 children: [
-                  Hero(
-                    tag: "shared_collection" + c.thumbnail!.tag,
-                    child: ThumbnailWidget(
-                      c.thumbnail,
-                      key: Key("shared_collection" + c.thumbnail!.tag),
-                      shouldShowArchiveStatus: c.collection.hasShareeArchived(),
-                      shouldShowSyncStatus: false,
-                    ),
+                  FutureBuilder<File?>(
+                    future: CollectionsService.instance.getCover(c),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData) {
+                        final heroTag = heroTagPrefix + snapshot.data!.tag;
+                        return Hero(
+                          tag: heroTag,
+                          child: ThumbnailWidget(
+                            snapshot.data!,
+                            key: Key(heroTag),
+                            shouldShowArchiveStatus: c.hasShareeArchived(),
+                            shouldShowSyncStatus: false,
+                          ),
+                        );
+                      } else {
+                        return const NoThumbnailWidget();
+                      }
+                    },
                   ),
                   Align(
                     alignment: Alignment.bottomRight,
                     child: Padding(
                       padding: const EdgeInsets.only(right: 8.0, bottom: 8.0),
                       child: UserAvatarWidget(
-                        c.collection.owner!,
+                        c.owner!,
                         thumbnailView: true,
                       ),
                     ),
@@ -69,13 +85,13 @@ class IncomingAlbumItem extends StatelessWidget {
               Container(
                 constraints: BoxConstraints(maxWidth: sideOfThumbnail - 40),
                 child: Text(
-                  c.collection.displayName,
+                  c.displayName,
                   style: albumTitleTextStyle,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               FutureBuilder<int>(
-                future: FilesDB.instance.collectionFileCount(c.collection.id),
+                future: FilesDB.instance.collectionFileCount(c.id),
                 builder: (context, snapshot) {
                   if (snapshot.hasData && snapshot.data! > 0) {
                     return RichText(
@@ -98,13 +114,17 @@ class IncomingAlbumItem extends StatelessWidget {
           ),
         ],
       ),
-      onTap: () {
+      onTap: () async {
+        final thumbnail = await CollectionsService.instance.getCover(c);
         routeToPage(
           context,
           CollectionPage(
-            c,
+            CollectionWithThumbnail(
+              c,
+              thumbnail,
+            ),
             appBarType: GalleryType.sharedCollection,
-            tagPrefix: "shared_collection",
+            tagPrefix: heroTagPrefix,
           ),
         );
       },
