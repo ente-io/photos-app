@@ -3844,6 +3844,16 @@ class S {
     );
   }
 
+  /// `Free trial valid till {endDate}.\nYou can choose a paid plan afterwards.`
+  String playStoreFreeTrialValidTill(Object endDate) {
+    return Intl.message(
+      'Free trial valid till $endDate.\nYou can choose a paid plan afterwards.',
+      name: 'playStoreFreeTrialValidTill',
+      desc: '',
+      args: [endDate],
+    );
+  }
+
   /// `Your subscription will be cancelled on {endDate}`
   String subWillBeCancelledOn(Object endDate) {
     return Intl.message(
@@ -7320,6 +7330,26 @@ class S {
     return Intl.message(
       'This will show your photos on a world map.\n\nThis map is hosted by Open Street Map, and the exact locations of your photos are never shared.\n\nYou can disable this feature anytime from Settings.',
       name: 'enableMapsDesc',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unpin album`
+  String get unpinAlbum {
+    return Intl.message(
+      'Unpin album',
+      name: 'unpinAlbum',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Pin album`
+  String get pinAlbum {
+    return Intl.message(
+      'Pin album',
+      name: 'pinAlbum',
       desc: '',
       args: [],
     );
