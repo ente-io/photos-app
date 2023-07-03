@@ -9,9 +9,11 @@ import 'package:photos/core/configuration.dart';
 import 'package:photos/core/constants.dart';
 import "package:photos/generated/l10n.dart";
 import 'package:photos/models/file.dart';
+import "package:photos/services/feature_flag_service.dart";
 import 'package:photos/services/files_service.dart';
 import 'package:photos/ui/viewer/file/thumbnail_widget.dart';
 import 'package:photos/ui/viewer/file/video_controls.dart';
+import "package:photos/utils/dialog_util.dart";
 import 'package:photos/utils/file_util.dart';
 import 'package:photos/utils/toast_util.dart';
 import 'package:video_player/video_player.dart';
@@ -135,12 +137,30 @@ class _VideoWidgetState extends State<VideoWidget> {
     } else {
       videoPlayerController = VideoPlayerController.file(file!);
     }
-    return _videoPlayerController = videoPlayerController
+
+    debugPrint("videoPlayerController: $videoPlayerController");
+    _videoPlayerController = videoPlayerController
       ..initialize().whenComplete(() {
         if (mounted) {
           setState(() {});
         }
-      });
+      }).onError(
+        (error, stackTrace) {
+          if (mounted &&
+              FeatureFlagService.instance.isInternalUserOrDebugBuild()) {
+            if (error is Exception) {
+              showErrorDialogForException(
+                context: context,
+                exception: error,
+                message: "Failed to play video\n ${error.toString()}",
+              );
+            } else {
+              showToast(context, "Failed to play video");
+            }
+          }
+        },
+      );
+    return videoPlayerController;
   }
 
   @override
