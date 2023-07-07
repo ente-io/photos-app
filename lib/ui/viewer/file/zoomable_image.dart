@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:io';
+import 'dart:io' as io;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -19,6 +19,7 @@ import 'package:photos/ui/common/loading_widget.dart';
 import 'package:photos/utils/file_util.dart';
 import 'package:photos/utils/image_util.dart';
 import 'package:photos/utils/thumbnail_util.dart';
+import "package:photos/utils/toast_util.dart";
 
 class ZoomableImage extends StatefulWidget {
   final File photo;
@@ -189,10 +190,12 @@ class _ZoomableImageState extends State<ZoomableImage>
       _loadingFinalImage = true;
       getFile(
         _photo,
-        isOrigin: Platform.isIOS &&
+        isOrigin: io.Platform.isIOS &&
             _isGIF(), // since on iOS GIFs playback only when origin-files are loaded
       ).then((file) {
         if (file != null && file.existsSync()) {
+
+          process_for_face_detection(file).ignore();
           _onFinalImageLoaded(Image.file(file).image);
         } else {
           _logger.info("File was deleted " + _photo.toString());
@@ -232,6 +235,7 @@ class _ZoomableImageState extends State<ZoomableImage>
   }
 
   void _onFinalImageLoaded(ImageProvider imageProvider) {
+
     if (mounted) {
       precacheImage(imageProvider, context).then((value) async {
         if (mounted) {
@@ -243,6 +247,18 @@ class _ZoomableImageState extends State<ZoomableImage>
           });
         }
       });
+    }
+  }
+
+  Future<void> process_for_face_detection(io.File actualFile) async {
+    try {
+      throw Exception("Not implemented");
+    } catch (e, s) {
+      showToast(
+        context,
+        "Failed to process file ${e.toString()}",
+      );
+      _logger.warning("Error in processing file for face detection", e, s);
     }
   }
 
