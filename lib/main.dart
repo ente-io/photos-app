@@ -23,6 +23,7 @@ import 'package:photos/services/app_lifecycle_service.dart';
 import 'package:photos/services/billing_service.dart';
 import 'package:photos/services/collections_service.dart';
 import "package:photos/services/entity_service.dart";
+import "package:photos/services/face_ml/face_ml_service.dart";
 import 'package:photos/services/favorites_service.dart';
 import 'package:photos/services/feature_flag_service.dart';
 import 'package:photos/services/local_file_update_service.dart';
@@ -192,6 +193,7 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
   // See https://gitlab.com/fdroid/fdroiddata/-/merge_requests/12671#note_1294346819
   if (!UpdateService.instance.isFdroidFlavor()) {
     unawaited(ObjectDetectionService.instance.init());
+    unawaited(FaceMlService.instance.init());
   }
 
   _logger.info("Initialization done");

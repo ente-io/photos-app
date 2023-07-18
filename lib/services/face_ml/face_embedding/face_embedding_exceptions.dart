@@ -1,0 +1,3 @@
+class MobileFaceNetInterpreterInitializationException implements Exception {}
+
+class MobileFaceNetInterpreterRunException implements Exception {}

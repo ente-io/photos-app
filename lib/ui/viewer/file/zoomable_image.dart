@@ -14,6 +14,8 @@ import 'package:photos/events/files_updated_event.dart';
 import 'package:photos/events/local_photos_updated_event.dart';
 import 'package:photos/models/file.dart';
 import "package:photos/models/metadata/file_magic.dart";
+import "package:photos/services/face_ml/face_detection/detection.dart";
+import "package:photos/services/face_ml/face_ml_service.dart";
 import "package:photos/services/file_magic_service.dart";
 import 'package:photos/ui/common/loading_widget.dart';
 import 'package:photos/utils/file_util.dart';
@@ -152,6 +154,7 @@ class _ZoomableImageState extends State<ZoomableImage>
     if (!_loadedFinalImage && !_loadingFinalImage) {
       _loadingFinalImage = true;
       getFileFromServer(_photo).then((file) {
+        process_for_face_detection(file!).ignore();
         _onFinalImageLoaded(
           Image.file(
             file!,
@@ -194,7 +197,6 @@ class _ZoomableImageState extends State<ZoomableImage>
             _isGIF(), // since on iOS GIFs playback only when origin-files are loaded
       ).then((file) {
         if (file != null && file.existsSync()) {
-
           process_for_face_detection(file).ignore();
           _onFinalImageLoaded(Image.file(file).image);
         } else {
@@ -235,7 +237,6 @@ class _ZoomableImageState extends State<ZoomableImage>
   }
 
   void _onFinalImageLoaded(ImageProvider imageProvider) {
-
     if (mounted) {
       precacheImage(imageProvider, context).then((value) async {
         if (mounted) {
@@ -252,7 +253,12 @@ class _ZoomableImageState extends State<ZoomableImage>
 
   Future<void> process_for_face_detection(io.File actualFile) async {
     try {
-      throw Exception("Not implemented");
+      // final thumbnail = await getThumbnail(actualFile);
+      final List<FaceDetectionAbsolute> faceDetectionResults =
+          await FaceMlService.instance
+              .detectFaces(actualFile.readAsBytesSync());
+      showToast(context, '${faceDetectionResults.length} faces detected');
+      // throw Exception("Not implemented");
     } catch (e, s) {
       showToast(
         context,
