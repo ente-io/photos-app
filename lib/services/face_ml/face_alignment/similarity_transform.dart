@@ -3,6 +3,7 @@ import 'dart:typed_data' show Uint8List;
 import 'package:image/image.dart' as image_lib;
 import 'package:ml_linalg/linalg.dart';
 import 'package:photos/extensions/ml_linalg_extensions.dart';
+import "package:photos/models/ml_typedefs.dart";
 import "package:photos/utils/image.dart";
 
 /// Class to compute the similarity transform between two sets of points.
@@ -126,12 +127,12 @@ class SimilarityTransform {
   /// Function to warp an image with an affine transformation using the estimated parameters.
   /// Returns the warped image in the specified width and height, in Uint8List format.
   ///
-  /// Runs efficiently in about 3-9 ms after initial warm-up.
+  /// WARNING: This function is not efficient due to encoding with the image package. Use the [warpAffineToMatrix] function instead.
   Uint8List warpAffine({
     required Uint8List imageData,
     required Matrix transformationMatrix,
-    required int width,
-    required int height,
+    int width = 112,
+    int height = 112,
   }) {
     final image_lib.Image outputImage = image_lib.Image(width, height);
     final image_lib.Image inputImage = image_lib.decodeImage(imageData)!;
@@ -194,7 +195,7 @@ class SimilarityTransform {
         final fy1 = 1.0 - fy;
 
         // Calculate the weighted sum of pixels
-        final int r = SimilarityTransform._bilinearInterpolation(
+        final int r = _bilinearInterpolation(
           pixel1.r,
           pixel2.r,
           pixel3.r,
@@ -204,7 +205,7 @@ class SimilarityTransform {
           fx1,
           fy1,
         );
-        final int g = SimilarityTransform._bilinearInterpolation(
+        final int g = _bilinearInterpolation(
           pixel1.g,
           pixel2.g,
           pixel3.g,
@@ -214,7 +215,7 @@ class SimilarityTransform {
           fx1,
           fy1,
         );
-        final int b = SimilarityTransform._bilinearInterpolation(
+        final int b = _bilinearInterpolation(
           pixel1.b,
           pixel2.b,
           pixel3.b,
@@ -229,7 +230,7 @@ class SimilarityTransform {
         outputImage.setPixel(
           xTrans,
           yTrans,
-          encodeColor(r, g, b),
+          _encodeColor(r, g, b),
         );
       }
     }
@@ -239,38 +240,27 @@ class SimilarityTransform {
     return outputData;
   }
 
-  static int _bilinearInterpolation(
-    num val1,
-    num val2,
-    num val3,
-    num val4,
-    num fx,
-    num fy,
-    num fx1,
-    num fy1,
-  ) {
-    return (val1 * fx1 * fy1 +
-            val2 * fx * fy1 +
-            val3 * fx1 * fy +
-            val4 * fx * fy)
-        .round();
-  }
-
-  // TODO: properly test, document and implement this function for MobileFaceNet (currently not used anywhere)
-  List<List<List<num>>> warpAffineToList({
-    required Uint8List imageData,
+  /// Function to warp an image with an affine transformation using the estimated parameters.
+  /// 
+  /// 'inputImage': The image to warp, in the image package format [image_lib.Image].
+  /// 'transformationMatrix': The transformation matrix, in the format of a 3x3 matrix.
+  /// 
+  /// Returns the warped face in the specified width and height, in [Int3DInputMatrix].
+  ///
+  /// Runs efficiently in about 3-9 ms after initial warm-up.
+  Int3DInputMatrix warpAffineToMatrix({
+    required image_lib.Image inputImage,
     required Matrix transformationMatrix,
-    required int width,
-    required int height,
+    int width = 112,
+    int height = 112,
   }) {
-    final List<List<List<num>>> outputMatrix = List.generate(
+    final Int3DInputMatrix outputMatrix = List.generate(
       height,
       (y) => List.generate(
         width,
-        (_) => List.filled(3, 0.0),
+        (_) => List.filled(3, 0),
       ),
     );
-    final image_lib.Image inputImage = image_lib.decodeImage(imageData)!;
 
     if (width != 112 || height != 112) {
       throw Exception(
@@ -368,8 +358,25 @@ class SimilarityTransform {
 
     return outputMatrix;
   }
-}
 
-int encodeColor(int red, int green, int blue, {int alpha = 0xFF}) {
-  return (alpha << 24) | (blue << 16) | (green << 8) | red;
+  static int _bilinearInterpolation(
+    num val1,
+    num val2,
+    num val3,
+    num val4,
+    num fx,
+    num fy,
+    num fx1,
+    num fy1,
+  ) {
+    return (val1 * fx1 * fy1 +
+            val2 * fx * fy1 +
+            val3 * fx1 * fy +
+            val4 * fx * fy)
+        .round();
+  }
+
+  static int _encodeColor(int red, int green, int blue, {int alpha = 0xFF}) {
+    return (alpha << 24) | (blue << 16) | (green << 8) | red;
+  }
 }
