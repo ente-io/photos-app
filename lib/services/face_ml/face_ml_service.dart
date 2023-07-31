@@ -1,6 +1,9 @@
-import 'dart:typed_data' show Uint8List;
+import "dart:io" as io;
+import "dart:typed_data" show Uint8List;
 
+import "package:image/image.dart" as image_lib;
 import "package:logging/logging.dart";
+import "package:photos/models/ml_typedefs.dart";
 import "package:photos/services/face_ml/face_alignment/similarity_transform.dart";
 import "package:photos/services/face_ml/face_detection/detection.dart";
 import "package:photos/services/face_ml/face_detection/face_detection_exceptions.dart";
@@ -8,6 +11,7 @@ import "package:photos/services/face_ml/face_detection/face_detection_service.da
 import "package:photos/services/face_ml/face_embedding/face_embedding_exceptions.dart";
 import "package:photos/services/face_ml/face_embedding/face_embedding_service.dart";
 import "package:photos/services/face_ml/face_ml_exceptions.dart";
+import "package:photos/services/face_ml/face_ml_result.dart";
 
 class FaceMlService {
   final _logger = Logger("FaceMlService");
@@ -18,7 +22,7 @@ class FaceMlService {
   FaceMlService._privateConstructor();
   static final instance = FaceMlService._privateConstructor();
 
-  bool inInitiated = false;
+  bool initialized = false;
 
   Future<void> init() async {
     try {
@@ -36,7 +40,47 @@ class FaceMlService {
     } catch (e, s) {
       _logger.severe("Could not initialize mobilefacenet", e, s);
     }
-    inInitiated = true;
+    initialized = true;
+  }
+
+  /// Analyzes the given image data by running the full pipeline (face detection, face alignment, face embedding).
+  ///
+  /// 'imageFile': The image file to analyze.
+  ///
+  /// Returns an immutable [FaceMlResult] instance containing the results of the analysis.
+  Future<FaceMlResult> analyzeImage(io.File imageFile) async {
+    final imageData = await imageFile.readAsBytes();
+
+    final resultBuilder = FaceMlResultBuilder.createWithMlMethods();
+
+    try {
+      // Get the faces
+      final List<FaceDetectionAbsolute> faceDetectionResult =
+          await detectFaces(imageData, resultBuilder: resultBuilder);
+
+      // If no faces were detected, return a result with no faces. Otherwise, continue.
+      if (faceDetectionResult.isEmpty) {
+        return resultBuilder.buildNoFaceDetected();
+      }
+
+      // Align the faces
+      final faceAlignmentResult = alignFaces(
+        imageData,
+        faceDetectionResult,
+        resultBuilder: resultBuilder,
+      );
+
+      // Get the embeddings of the faces
+      await embedBatchFaces(
+        faceAlignmentResult,
+        resultBuilder: resultBuilder,
+      );
+
+      return resultBuilder.build();
+    } catch (e, s) {
+      _logger.severe("Could not analyze image", e, s);
+      throw GeneralFaceMlException("Could not analyze image");
+    }
   }
 
   /// Detects faces in the given image data.
@@ -45,12 +89,20 @@ class FaceMlService {
   ///
   /// Returns a list of face detection results.
   ///
-  /// Throws `CouldNotInitializeFaceDetector`, `CouldNotRunFaceDetector` or `GeneralFaceMlException` if something goes wrong.
-  Future<List<FaceDetectionAbsolute>> detectFaces(Uint8List imageData) async {
+  /// Throws [CouldNotInitializeFaceDetector], [CouldNotRunFaceDetector] or [GeneralFaceMlException] if something goes wrong.
+  Future<List<FaceDetectionAbsolute>> detectFaces(
+    Uint8List imageData, {
+    FaceMlResultBuilder? resultBuilder,
+  }) async {
     try {
       // Get the bounding boxes of the faces
       final List<FaceDetectionAbsolute> faces =
           FaceDetection.instance.predict(imageData);
+
+      // Add detected faces to the resultBuilder
+      if (resultBuilder != null) {
+        resultBuilder.addNewlyDetectedFaces(faces);
+      }
 
       return faces;
     } on BlazeFaceInterpreterInitializationException {
@@ -64,14 +116,95 @@ class FaceMlService {
     }
   }
 
+  /// Aligns multiple faces from the given image data.
+  ///
+  /// `imageData`: The image data in [Uint8List] that contains the faces.
+  /// `faces`: The face detection results in a list of [FaceDetectionAbsolute] for the faces to align.
+  ///
+  /// Returns a list of the aligned faces as image data.
+  ///
+  /// Throws [CouldNotEstimateSimilarityTransform] or [GeneralFaceMlException] if the face alignment fails.
+  List<Double3DInputMatrix> alignFaces(
+    Uint8List imageData,
+    List<FaceDetectionAbsolute> faces, {
+    FaceMlResultBuilder? resultBuilder,
+  }) {
+    // TODO: the image conversion below is what makes the whole pipeline slow, so come up with different solution
+    final image_lib.Image inputImage = image_lib.decodeImage(imageData)!;
+
+    final alignedFaces = <Double3DInputMatrix>[];
+    for (int i = 0; i < faces.length; ++i) {
+      final alignedFace = alignFaceToMatrix(
+        inputImage,
+        faces[i],
+        resultBuilder: resultBuilder,
+        faceIndex: i,
+      );
+      alignedFaces.add(alignedFace);
+    }
+
+    return alignedFaces;
+  }
+
   /// Aligns a single face from the given image data.
+  ///
+  /// `inputImage`: The image in [image_lib.Image] format that contains the face.
+  /// `face`: The face detection [FaceDetectionAbsolute] result for the face to align.
+  ///
+  /// Returns the aligned face as a matrix [Double3DInputMatrix].
+  ///
+  /// Throws [CouldNotEstimateSimilarityTransform], [CouldNotWarpAffine] or [GeneralFaceMlException] if the face alignment fails.
+  Double3DInputMatrix alignFaceToMatrix(
+    image_lib.Image inputImage,
+    FaceDetectionAbsolute face, {
+    FaceMlResultBuilder? resultBuilder,
+    int? faceIndex,
+  }) {
+    try {
+      final faceLandmarks = face.allKeypoints.sublist(0, 4);
+      final isNoNanInParam = _similarityTransform.estimate(faceLandmarks);
+      if (!isNoNanInParam) {
+        throw CouldNotEstimateSimilarityTransform();
+      }
+
+      final transformMatrix = _similarityTransform.params;
+      final transformMatrixList = _similarityTransform.paramsList;
+      if (resultBuilder != null && faceIndex != null) {
+        resultBuilder.addAlignmentToExistingFace(
+          transformMatrixList,
+          faceIndex,
+        );
+      }
+
+      Double3DInputMatrix? faceAlignedData;
+      try {
+        faceAlignedData = _similarityTransform.warpAffineToMatrix(
+          inputImage: inputImage,
+          transformationMatrix: transformMatrix,
+          normalize: true,
+        ) as Double3DInputMatrix;
+      } catch (e) {
+        throw CouldNotWarpAffine();
+      }
+
+      return faceAlignedData;
+      // ignore: avoid_catches_without_on_clauses
+    } catch (e) {
+      _logger.severe('Face alignment failed: $e');
+      throw GeneralFaceMlException('Face alignment failed: $e');
+    }
+  }
+
+  /// Aligns a single face from the given image data.
+  ///
+  /// WARNING: This function is not efficient for multiple faces. Use [alignFaceToMatrix] in pipelines instead.
   ///
   /// `imageData`: The image data that contains the face.
   /// `face`: The face detection result for the face to align.
   ///
   /// Returns the aligned face as image data.
   ///
-  /// Throws `CouldNotEstimateSimilarityTransform` or `GeneralFaceMlException` if the face alignment fails.
+  /// Throws [CouldNotEstimateSimilarityTransform], [CouldNotWarpAffine] or [GeneralFaceMlException] if the face alignment fails.
   Uint8List alignSingleFace(Uint8List imageData, FaceDetectionAbsolute face) {
     try {
       final faceLandmarks = face.allKeypoints.sublist(0, 4);
@@ -82,12 +215,15 @@ class FaceMlService {
 
       final transformMatrix = _similarityTransform.params;
 
-      final Uint8List faceAlignedData = _similarityTransform.warpAffine(
-        imageData: imageData,
-        transformationMatrix: transformMatrix,
-        width: 112,
-        height: 112,
-      );
+      Uint8List? faceAlignedData;
+      try {
+        faceAlignedData = _similarityTransform.warpAffine(
+          imageData: imageData,
+          transformationMatrix: transformMatrix,
+        );
+      } catch (e) {
+        throw CouldNotWarpAffine();
+      }
 
       return faceAlignedData;
       // ignore: avoid_catches_without_on_clauses
@@ -97,35 +233,13 @@ class FaceMlService {
     }
   }
 
-  /// Aligns multiple faces from the given image data.
-  ///
-  /// `imageData`: The image data that contains the faces.
-  /// `faces`: The face detection results for the faces to align.
-  ///
-  /// Returns a list of the aligned faces as image data.
-  ///
-  /// Throws `CouldNotEstimateSimilarityTransform` or `GeneralFaceMlException` if the face alignment fails.
-  // TODO: Make this function more efficient so that it only has to do the Image.Image conversion once
-  List<Uint8List> alignFaces(
-    Uint8List imageData,
-    List<FaceDetectionAbsolute> faces,
-  ) {
-    final alignedFaces = <Uint8List>[];
-    for (int i = 0; i < faces.length; ++i) {
-      final alignedFace = alignSingleFace(imageData, faces[i]);
-      alignedFaces.add(alignedFace);
-    }
-
-    return alignedFaces;
-  }
-
   /// Embeds a single face from the given image data.
   ///
   /// `faceData`: The image data of the face to embed.
   ///
   /// Returns the face embedding as a list of doubles.
   ///
-  /// Throws `CouldNotInitializeFaceEmbeddor`, `CouldNotRunFaceEmbeddor` or `GeneralFaceMlException` if the face embedding fails.
+  /// Throws [CouldNotInitializeFaceEmbeddor], [CouldNotRunFaceEmbeddor], [InputProblemFaceEmbeddor] or [GeneralFaceMlException] if the face embedding fails.
   Future<List<double>> embedSingleFace(Uint8List faceData) async {
     try {
       // Get the embedding of the face
@@ -136,6 +250,12 @@ class FaceMlService {
       throw CouldNotInitializeFaceEmbeddor();
     } on MobileFaceNetInterpreterRunException {
       throw CouldNotRunFaceEmbeddor();
+    } on MobileFaceNetEmptyInput {
+      throw InputProblemFaceEmbeddor("Input is empty");
+    } on MobileFaceNetWrongInputSize {
+      throw InputProblemFaceEmbeddor("Input size is wrong");
+    } on MobileFaceNetWrongInputRange {
+      throw InputProblemFaceEmbeddor("Input range is wrong");
       // ignore: avoid_catches_without_on_clauses
     } catch (e) {
       _logger.severe('Face embedding failed: $e');
@@ -143,12 +263,42 @@ class FaceMlService {
     }
   }
 
-  // TODO: implement `embedBatchFaces
-  // Future<List<double>> embedBatchFaces(List<Uint8List> faceData) async {
+  /// Embeds multiple faces from the given input matrices.
+  ///
+  /// `facesMatrices`: The input matrices of the faces to embed.
+  ///
+  /// Returns a list of the face embeddings as lists of doubles.
+  ///
+  /// Throws [CouldNotInitializeFaceEmbeddor], [CouldNotRunFaceEmbeddor], [InputProblemFaceEmbeddor] or [GeneralFaceMlException] if the face embedding fails.
+  Future<List<List<double>>> embedBatchFaces(
+    List<Double3DInputMatrix> facesMatrices, {
+    FaceMlResultBuilder? resultBuilder,
+  }) async {
+    try {
+      // Get the embedding of the faces
+      final List<List<double>> embeddings =
+          FaceEmbedding.instance.predictBatch(facesMatrices);
 
-  //   // Get the embedding of the face
-  //   final List<double> embedding = FaceEmbedding.instance.predict(faceData);
+      // Add the embeddings to the resultBuilder
+      if (resultBuilder != null) {
+        resultBuilder.addEmbeddingsToExistingFaces(embeddings);
+      }
 
-  //   return embedding;
-  // }
+      return embeddings;
+    } on MobileFaceNetInterpreterInitializationException {
+      throw CouldNotInitializeFaceEmbeddor();
+    } on MobileFaceNetInterpreterRunException {
+      throw CouldNotRunFaceEmbeddor();
+    } on MobileFaceNetEmptyInput {
+      throw InputProblemFaceEmbeddor("Input is empty");
+    } on MobileFaceNetWrongInputSize {
+      throw InputProblemFaceEmbeddor("Input size is wrong");
+    } on MobileFaceNetWrongInputRange {
+      throw InputProblemFaceEmbeddor("Input range is wrong");
+      // ignore: avoid_catches_without_on_clauses
+    } catch (e) {
+      _logger.severe('Face embedding (batch) failed: $e');
+      throw GeneralFaceMlException('Face embedding (batch) failed: $e');
+    }
+  }
 }

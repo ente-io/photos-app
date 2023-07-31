@@ -17,7 +17,7 @@ extension SetVectorValues on Vector {
   }
 }
 
-extension ChangeMatrixValues on Matrix {
+extension SetMatrixValues on Matrix {
   Matrix setSubMatrix(
     int startRow,
     int endRow,
@@ -178,5 +178,16 @@ extension MatrixCalculations on Matrix {
     final Vector S = svdResult['S']!;
     final rank = S.toList().where((element) => element > 1e-10).length;
     return rank;
+  }
+}
+
+extension TransformMatrix on Matrix {
+  List<List<double>> to2DList() {
+    final List<List<double>> outerList = [];
+    for (var i = 0; i < rowCount; i++) {
+      final innerList = this[i].toList();
+      outerList.add(innerList);
+    }
+    return outerList;
   }
 }

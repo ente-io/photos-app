@@ -3,6 +3,8 @@ abstract class Detection {
 
   Detection({required this.score});
 
+  const Detection.empty() : score = 0;
+
   get width;
   get height;
 
@@ -96,7 +98,7 @@ class FaceDetectionAbsolute extends Detection {
         rightEar = allKeypoints[5],
         super(score: score);
 
-  factory FaceDetectionAbsolute.zero() {
+  factory FaceDetectionAbsolute._zero() {
     return FaceDetectionAbsolute(
       score: 0,
       box: <int>[0, 0, 0, 0],
@@ -111,12 +113,62 @@ class FaceDetectionAbsolute extends Detection {
     );
   }
 
+  const FaceDetectionAbsolute.defaultInitialization()
+      : box = const <int>[0, 0, 0, 0],
+        allKeypoints = const <List<int>>[
+          [0, 0],
+          [0, 0],
+          [0, 0],
+          [0, 0],
+          [0, 0],
+          [0, 0]
+        ],
+        xMinBox = 0,
+        yMinBox = 0,
+        xMaxBox = 0,
+        yMaxBox = 0,
+        leftEye = const <int>[0, 0],
+        rightEye = const <int>[0, 0],
+        nose = const <int>[0, 0],
+        mouth = const <int>[0, 0],
+        leftEar = const <int>[0, 0],
+        rightEar = const <int>[0, 0],
+        super.empty();
+
   @override
   String toString() {
     return 'FaceDetectionRelative( with relative coordinates: \n score: $score \n Box: xMinBox: $xMinBox, yMinBox: $yMinBox, xMaxBox: $xMaxBox, yMaxBox: $yMaxBox, \n Keypoints: leftEye: $leftEye, rightEye: $rightEye, nose: $nose, mouth: $mouth, leftEar: $leftEar, rightEar: $rightEar \n )';
   }
 
-  static FaceDetectionAbsolute empty = FaceDetectionAbsolute.zero();
+  Map<String, dynamic> toJson() {
+    return {
+      'score': score,
+      'box': box,
+      'allKeypoints': allKeypoints,
+      'xMinBox': xMinBox,
+      'yMinBox': yMinBox,
+      'xMaxBox': xMaxBox,
+      'yMaxBox': yMaxBox,
+      'leftEye': leftEye,
+      'rightEye': rightEye,
+      'nose': nose,
+      'mouth': mouth,
+      'leftEar': leftEar,
+      'rightEar': rightEar,
+      'width': width,
+      'height': height,
+    };
+  }
+
+  factory FaceDetectionAbsolute.fromJson(Map<String, dynamic> json) {
+    return FaceDetectionAbsolute(
+      score: json['score'],
+      box: json['box'],
+      allKeypoints: json['allKeypoints'],
+    );
+  }
+
+  static FaceDetectionAbsolute empty = FaceDetectionAbsolute._zero();
 
   @override
   int get width => xMaxBox - xMinBox;
@@ -132,7 +184,7 @@ List<FaceDetectionAbsolute> relativeToAbsoluteDetections({
   final numberOfDetections = detections.length;
   final intDetections = List<FaceDetectionAbsolute>.filled(
     numberOfDetections,
-    FaceDetectionAbsolute.zero(),
+    FaceDetectionAbsolute._zero(),
   );
   for (var i = 0; i < detections.length; i++) {
     final detection = detections[i];

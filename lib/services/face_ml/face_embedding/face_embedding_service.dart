@@ -1,9 +1,11 @@
 import 'dart:io';
+import "dart:math" show min, max;
 // import 'dart:math' as math show min, max;
 import 'dart:typed_data' show Uint8List;
 
 import 'package:image/image.dart' as image_lib;
 import "package:logging/logging.dart";
+import "package:photos/models/ml_typedefs.dart";
 import "package:photos/services/face_ml/face_embedding/face_embedding_exceptions.dart";
 import "package:photos/services/face_ml/face_embedding/mobilefacenet_model_config.dart";
 import "package:photos/utils/image.dart";
@@ -36,11 +38,118 @@ class FaceEmbedding {
   /// Check if the interpreter is initialized, if not initialize it with `loadModel()`
   Future<void> init() async {
     if (_interpreter == null) {
-      await loadModel();
+      await _loadModel();
     }
   }
 
-  Future<void> loadModel() async {
+  // TODO: Make the predict function asynchronous with use of isolate-interpreter: https://github.com/tensorflow/flutter-tflite/issues/52
+  List<double> predict(Uint8List imageData) {
+    assert(_interpreter != null);
+
+    final dataConversionStopwatch = Stopwatch()..start();
+    final image = convertUint8ListToImagePackageImage(imageData);
+    dataConversionStopwatch.stop();
+    _logger.info(
+      'image data conversion is finished, in ${dataConversionStopwatch.elapsedMilliseconds}ms',
+    );
+
+    final stopwatch = Stopwatch()..start();
+
+    final inputImageMatrix =
+        _getPreprocessedFace(image); // [inputHeight, inputWidth, 3]
+    final input = [inputImageMatrix];
+
+    final output = createEmptyOutputMatrix(outputShapes[0]);
+
+    _logger.info('interpreter.run is called');
+    // Run inference
+    try {
+      _interpreter!.run(input, output);
+      // ignore: avoid_catches_without_on_clauses
+    } catch (e) {
+      _logger.severe('Error while running inference: $e');
+      throw MobileFaceNetInterpreterRunException();
+    }
+    _logger.info('interpreter.run is finished');
+
+    // Get output tensors
+    final embedding = output[0] as List<double>;
+
+    stopwatch.stop();
+    _logger.info(
+      'predict() executed in ${stopwatch.elapsedMilliseconds}ms',
+    );
+
+    // _logger.info(
+    //   'results (only first few numbers): embedding ${embedding.sublist(0, 5)}',
+    // );
+    // _logger.info(
+    //   'Mean of embedding: ${embedding.reduce((a, b) => a + b) / embedding.length}',
+    // );
+    // _logger.info(
+    //   'Max of embedding: ${embedding.reduce(math.max)}',
+    // );
+    // _logger.info(
+    //   'Min of embedding: ${embedding.reduce(math.min)}',
+    // );
+
+    return embedding;
+  }
+
+  // TODO: Make the predict function asynchronous with use of isolate-interpreter: https://github.com/tensorflow/flutter-tflite/issues/52
+  List<List<double>> predictBatch(List<Double3DInputMatrix> faces) {
+    assert(_interpreter != null);
+
+    final stopwatch = Stopwatch()..start();
+
+    final inputImageMatrix =
+        _checkPreprocessedInput(faces); // [inputHeight, inputWidth, 3]
+    final input = [inputImageMatrix];
+
+    final output = <int, Object>{};
+    for (int i = 0; i < faces.length; i++) {
+      output[i] = createEmptyOutputMatrix(outputShapes[0]);
+    }
+
+    _logger.info('interpreter.run is called');
+    // Run inference
+    try {
+      _interpreter!.runForMultipleInputs(input, output);
+      // ignore: avoid_catches_without_on_clauses
+    } catch (e) {
+      _logger.severe('Error while running inference: $e');
+      throw MobileFaceNetInterpreterRunException();
+    }
+    _logger.info('interpreter.run is finished');
+
+    // Get output tensors
+    final embeddings = <List<double>>[];
+    for (int i = 0; i < faces.length; i++) {
+      embeddings.add(output[i] as List<double>);
+    }
+
+    stopwatch.stop();
+    _logger.info(
+      'predictBatch() executed in ${stopwatch.elapsedMilliseconds}ms',
+    );
+
+    // _logger.info(
+    //   'results (only first few numbers): embedding ${embedding.sublist(0, 5)}',
+    // );
+    // _logger.info(
+    //   'Mean of embedding: ${embedding.reduce((a, b) => a + b) / embedding.length}',
+    // );
+    // _logger.info(
+    //   'Max of embedding: ${embedding.reduce(math.max)}',
+    // );
+    // _logger.info(
+    //   'Min of embedding: ${embedding.reduce(math.min)}',
+    // );
+
+    return embeddings;
+  }
+
+  Future<void> _loadModel() async {
     _logger.info('loadModel is called');
 
     try {
@@ -80,6 +189,7 @@ class FaceEmbedding {
         outputShapes.add(tensor.shape);
         outputTypes.add(tensor.type);
       }
+      _logger.info('outputShapes: $outputShapes');
       _logger.info('loadModel is finished');
       // ignore: avoid_catches_without_on_clauses
     } catch (e) {
@@ -88,7 +198,7 @@ class FaceEmbedding {
     }
   }
 
-  List<List<List<num>>> getPreprocessedImage(
+  Double3DInputMatrix _getPreprocessedFace(
     image_lib.Image image,
   ) {
     final embeddingOptions = config.faceEmbeddingOptions;
@@ -106,64 +216,38 @@ class FaceEmbedding {
     }
 
     // Get image matrix representation [inputWidt, inputHeight, 3]
-    final imageMatrix = createInputMatrixFromImage(image, normalize: true);
+    final imageMatrix =
+        createInputMatrixFromImage(image) as Double3DInputMatrix;
 
-    return imageMatrix;
+    final checkedImageMatrix = _checkPreprocessedInput([imageMatrix]);
+
+    return checkedImageMatrix[0];
   }
 
-  // TODO: Make the predict function asynchronous with use of isolate-interpreter: https://github.com/tensorflow/flutter-tflite/issues/52
-  List<double> predict(Uint8List imageData) {
-    assert(_interpreter != null);
+  List<Double3DInputMatrix> _checkPreprocessedInput(
+    List<Double3DInputMatrix> inputMatrix,
+  ) {
+    final embeddingOptions = config.faceEmbeddingOptions;
 
-    final dataConversionStopwatch = Stopwatch()..start();
-    final image = convertUint8ListToImagePackageImage(imageData);
-    dataConversionStopwatch.stop();
-    _logger.info(
-      'image data conversion is finished, in ${dataConversionStopwatch.elapsedMilliseconds}ms',
-    );
-
-    _logger.info('outputShapes: $outputShapes');
-
-    final stopwatch = Stopwatch()..start();
-
-    final inputImageMatrix =
-        getPreprocessedImage(image); // [inputWidt, inputHeight, 3]
-    final input = [inputImageMatrix];
-
-    final output = createEmptyOutputMatrix(outputShapes[0]);
-
-    _logger.info('interpreter.run is called');
-    // Run inference
-    try {
-      _interpreter!.run(input, output);
-      // ignore: avoid_catches_without_on_clauses
-    } catch (e) {
-      _logger.severe('Error while running inference: $e');
-      throw MobileFaceNetInterpreterRunException();
+    if (inputMatrix.isEmpty) {
+      // Check if the input is empty
+      throw MobileFaceNetEmptyInput();
     }
-    _logger.info('interpreter.run is finished');
 
-    // Get output tensors
-    final embedding = output[0] as List<double>;
+    // Check if the input is the correct size
+    if (inputMatrix[0].length != embeddingOptions.inputHeight ||
+        inputMatrix[0][0].length != embeddingOptions.inputWidth) {
+      throw MobileFaceNetWrongInputSize();
+    }
 
-    stopwatch.stop();
-    _logger.info(
-      'predict() executed in ${stopwatch.elapsedMilliseconds}ms',
-    );
+    final flattened = inputMatrix[0].expand((i) => i).expand((i) => i);
+    final minValue = flattened.reduce(min);
+    final maxValue = flattened.reduce(max);
 
-    // _logger.info(
-    //   'results (only first few numbers): embedding ${embedding.sublist(0, 5)}',
-    // );
-    // _logger.info(
-    //   'Mean of embedding: ${embedding.reduce((a, b) => a + b) / embedding.length}',
-    // );
-    // _logger.info(
-    //   'Max of embedding: ${embedding.reduce(math.max)}',
-    // );
-    // _logger.info(
-    //   'Min of embedding: ${embedding.reduce(math.min)}',
-    // );
+    if (minValue < -1 || maxValue > 1) {
+      throw MobileFaceNetWrongInputRange();
+    }
 
-    return embedding;
+    return inputMatrix;
   }
 }

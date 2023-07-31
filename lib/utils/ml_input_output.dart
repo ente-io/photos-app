@@ -1,4 +1,5 @@
 import 'package:image/image.dart';
+import "package:photos/models/ml_typedefs.dart";
 import "package:photos/utils/image.dart";
 
 /// Creates an empty matrix with the specified shape.
@@ -25,69 +26,61 @@ List createEmptyOutputMatrix(List<int> shape) {
 
 /// Creates an input matrix from the specified image, which can be used for inference
 /// 
+/// Returns a matrix with the shape `[image.height, image.width, 3]`, where the third dimension represents the RGB channels, as [Num3DInputMatrix].
+/// In fact, this is either a [Double3DInputMatrix] or a [Int3DInputMatrix] depending on the `normalize` argument.
+/// If `normalize` is true, the pixel values are normalized doubles in range [-1, 1]. Otherwise, they are integers in range [0, 255].
+///
 /// The `image` argument must be an [Image] object. The function returns a matrix
 /// with the shape `[image.height, image.width, 3]`, where the third dimension
 /// represents the RGB channels.
-/// 
+///
 /// bool `normalize`: Normalize the image to range [-1, 1]
-List<List<List<num>>> createInputMatrixFromImage(
+Num3DInputMatrix createInputMatrixFromImage(
   Image image, {
   bool normalize = true,
 }) {
-  List<List<List<num>>> imageMatrix;
-  if (normalize) {
-    imageMatrix = List.generate(
-      image.height,
-      (y) => List.generate(
-        image.width,
-        (x) {
-          final pixel = image.getPixel(x, y);
-          return [
-            normalizePixel(pixel.r), // Normalize the image to range [-1, 1]
-            normalizePixel(pixel.g), // Normalize the image to range [-1, 1]
-            normalizePixel(pixel.b), // Normalize the image to range [-1, 1]
-          ];
-        },
-      ),
-    );
-  } else {
-    imageMatrix = List.generate(
-      image.height,
-      (y) => List.generate(
-        image.width,
-        (x) {
-          final pixel = image.getPixel(x, y);
-          return [
-            pixel.r, // Normalize the image to range [-1, 1]
-            pixel.g, // Normalize the image to range [-1, 1]
-            pixel.b, // Normalize the image to range [-1, 1]
-          ];
-        },
-      ),
-    );
-  }
-  return imageMatrix;
+  return List.generate(
+    image.height,
+    (y) => List.generate(
+      image.width,
+      (x) {
+        final pixel = image.getPixel(x, y);
+        return [
+          normalize ? normalizePixel(pixel.r) : pixel.r,
+          normalize ? normalizePixel(pixel.g) : pixel.g,
+          normalize ? normalizePixel(pixel.b) : pixel.b,
+        ];
+      },
+    ),
+  );
 }
 
 /// Creates an input matrix from the specified image, which can be used for inference
+/// 
+/// Returns a matrix with the shape `[3, image.height, image.width]`, where the first dimension represents the RGB channels, as [Num3DInputMatrix].
+/// In fact, this is either a [Double3DInputMatrix] or a [Int3DInputMatrix] depending on the `normalize` argument.
+/// If `normalize` is true, the pixel values are normalized doubles in range [-1, 1]. Otherwise, they are integers in range [0, 255].
 ///
 /// The `image` argument must be an [Image] object. The function returns a matrix
 /// with the shape `[3, image.height, image.width]`, where the first dimension
 /// represents the RGB channels.
 ///
 /// bool `normalize`: Normalize the image to range [-1, 1]
-List<List<List<num>>> createInputMatrixFromImageChannelsFirst(
+Num3DInputMatrix createInputMatrixFromImageChannelsFirst(
   Image image, {
   bool normalize = true,
 }) {
   // Create an empty 3D list.
-  final List<List<List<num>>> imageMatrix = List.generate(
+  final Num3DInputMatrix imageMatrix = List.generate(
     3,
     (i) => List.generate(
       image.height,
-      (j) => List.filled(image.width, 0.0),
+      (j) => List.filled(image.width, 0),
     ),
   );
+
+  // Determine which function to use to get the pixel value.
+  final pixelValue = normalize ? normalizePixel : (int value) => value;
 
   for (int y = 0; y < image.height; y++) {
     for (int x = 0; x < image.width; x++) {
@@ -95,15 +88,9 @@ List<List<List<num>>> createInputMatrixFromImageChannelsFirst(
       final pixel = image.getPixel(x, y);
 
       // Assign the color channels to the respective lists.
-      if (normalize) {
-        imageMatrix[0][y][x] = normalizePixel(pixel.r);
-        imageMatrix[1][y][x] = normalizePixel(pixel.g);
-        imageMatrix[2][y][x] = normalizePixel(pixel.b);
-      } else {
-        imageMatrix[0][y][x] = pixel.r;
-        imageMatrix[1][y][x] = pixel.g;
-        imageMatrix[2][y][x] = pixel.b;
-      }
+      imageMatrix[0][y][x] = pixelValue(pixel.r);
+      imageMatrix[1][y][x] = pixelValue(pixel.g);
+      imageMatrix[2][y][x] = pixelValue(pixel.b);
     }
   }
   return imageMatrix;
@@ -112,6 +99,6 @@ List<List<List<num>>> createInputMatrixFromImageChannelsFirst(
 /// Function normalizes the pixel value to be in range [-1, 1].
 ///
 /// It assumes that the pixel value is originally in range [0, 255]
-num normalizePixel(num pixelValue) {
+double normalizePixel(int pixelValue) {
   return (pixelValue / 127.5) - 1;
 }

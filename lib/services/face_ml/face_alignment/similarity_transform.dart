@@ -5,6 +5,7 @@ import 'package:ml_linalg/linalg.dart';
 import 'package:photos/extensions/ml_linalg_extensions.dart';
 import "package:photos/models/ml_typedefs.dart";
 import "package:photos/utils/image.dart";
+import "package:photos/utils/ml_input_output.dart";
 
 /// Class to compute the similarity transform between two sets of points.
 ///
@@ -22,6 +23,8 @@ class SimilarityTransform {
     <double>[56.0252, 71.7366],
     <double>[56.1396, 92.2848],
   ];
+
+  List<List<double>> get paramsList => params.to2DList();
 
   SimilarityTransform();
 
@@ -241,20 +244,23 @@ class SimilarityTransform {
   }
 
   /// Function to warp an image with an affine transformation using the estimated parameters.
-  /// 
+  ///
   /// 'inputImage': The image to warp, in the image package format [image_lib.Image].
   /// 'transformationMatrix': The transformation matrix, in the format of a 3x3 matrix.
-  /// 
-  /// Returns the warped face in the specified width and height, in [Int3DInputMatrix].
+  ///
+  /// Returns the warped face in the specified width and height, in [Num3DInputMatrix].
+  /// In fact, this is either a [Double3DInputMatrix] or a [Int3DInputMatrix] depending on the `normalize` argument.
+  /// If `normalize` is true, the pixel values are normalized doubles in range [-1, 1]. Otherwise, they are integers in range [0, 255].
   ///
   /// Runs efficiently in about 3-9 ms after initial warm-up.
-  Int3DInputMatrix warpAffineToMatrix({
+  Num3DInputMatrix warpAffineToMatrix({
     required image_lib.Image inputImage,
     required Matrix transformationMatrix,
+    bool normalize = true,
     int width = 112,
     int height = 112,
   }) {
-    final Int3DInputMatrix outputMatrix = List.generate(
+    final Num3DInputMatrix outputMatrix = List.generate(
       height,
       (y) => List.generate(
         width,
@@ -351,8 +357,12 @@ class SimilarityTransform {
           fy1,
         );
 
+        // Determine which function to use to get the pixel value.
+        final pixelValue = normalize ? normalizePixel : (int value) => value;
+
         // Set the new pixel
-        outputMatrix[xTrans][yTrans] = [r, g, b];
+        outputMatrix[xTrans]
+            [yTrans] = [pixelValue(r), pixelValue(g), pixelValue(b)];
       }
     }
 

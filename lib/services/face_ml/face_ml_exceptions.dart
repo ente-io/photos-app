@@ -14,6 +14,17 @@ class CouldNotRunFaceDetector implements Exception {}
 
 class CouldNotEstimateSimilarityTransform implements Exception {}
 
+class CouldNotWarpAffine implements Exception {}
+
 class CouldNotInitializeFaceEmbeddor implements Exception {}
+
+class InputProblemFaceEmbeddor implements Exception {
+  final String message;
+
+  InputProblemFaceEmbeddor(this.message);
+
+  @override
+  String toString() => 'InputProblemFaceEmbeddor: $message';
+}
 
 class CouldNotRunFaceEmbeddor implements Exception {}
