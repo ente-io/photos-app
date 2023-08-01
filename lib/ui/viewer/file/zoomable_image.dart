@@ -14,7 +14,8 @@ import 'package:photos/events/files_updated_event.dart';
 import 'package:photos/events/local_photos_updated_event.dart';
 import 'package:photos/models/file.dart';
 import "package:photos/models/metadata/file_magic.dart";
-import "package:photos/services/face_ml/face_detection/detection.dart";
+// import "package:photos/services/face_ml/face_detection/detection.dart";
+import "package:photos/services/face_ml/face_ml_result.dart";
 import "package:photos/services/face_ml/face_ml_service.dart";
 import "package:photos/services/file_magic_service.dart";
 import 'package:photos/ui/common/loading_widget.dart';
@@ -254,11 +255,22 @@ class _ZoomableImageState extends State<ZoomableImage>
   Future<void> process_for_face_detection(io.File actualFile) async {
     try {
       // final thumbnail = await getThumbnail(actualFile);
-      final List<FaceDetectionAbsolute> faceDetectionResults =
-          await FaceMlService.instance
-              .detectFaces(actualFile.readAsBytesSync());
-      showToast(context, '${faceDetectionResults.length} faces detected');
-      // throw Exception("Not implemented");
+
+      // To test face detection
+      // final List<FaceDetectionAbsolute> faceDetectionResults =
+      //     await FaceMlService.instance
+      //         .detectFaces(actualFile.readAsBytesSync());
+      // showToast(context, '${faceDetectionResults.length} faces detected');
+
+      // To test the full pipeline
+      final FaceMlResult faceMlResult =
+          await FaceMlService.instance.analyzeImage(
+        actualFile,
+      );
+      showToast(
+        context,
+        'Image successfully analyzed: ${faceMlResult.faces.length} faces and a total result: ${faceMlResult.toJson()}',
+      );
     } catch (e, s) {
       showToast(
         context,

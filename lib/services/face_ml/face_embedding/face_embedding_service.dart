@@ -111,7 +111,7 @@ class FaceEmbedding {
       output[i] = createEmptyOutputMatrix(outputShapes[0]);
     }
 
-    _logger.info('interpreter.run is called');
+    _logger.info('interpreter.run is called, output: $output');
     // Run inference
     try {
       _interpreter!.runForMultipleInputs(input, output);
@@ -121,11 +121,15 @@ class FaceEmbedding {
       throw MobileFaceNetInterpreterRunException();
     }
     _logger.info('interpreter.run is finished');
+    _logger.info('output: $output');
 
     // Get output tensors
     final embeddings = <List<double>>[];
     for (int i = 0; i < faces.length; i++) {
-      embeddings.add(output[i] as List<double>);
+      final outerEmbedding = output[i]! as Iterable<dynamic>;
+      final embedding = List<double>.from(outerEmbedding.toList()[0]);
+      _logger.info("The i-th embedding: $embedding");
+      embeddings.add(embedding);
     }
 
     stopwatch.stop();

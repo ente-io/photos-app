@@ -3,8 +3,8 @@ class AlignmentResult {
 
   AlignmentResult({required this.affineMatrix});
 
-  const AlignmentResult.empty()
-      : affineMatrix = const <List<double>>[
+  AlignmentResult.empty()
+      : affineMatrix = <List<double>>[
           [1, 0, 0],
           [0, 1, 0],
           [0, 0, 1]

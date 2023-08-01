@@ -53,10 +53,14 @@ class FaceMlService {
 
     final resultBuilder = FaceMlResultBuilder.createWithMlMethods();
 
+    _logger.info("Analyzing image ${imageFile.path}");
+
     try {
       // Get the faces
       final List<FaceDetectionAbsolute> faceDetectionResult =
           await detectFaces(imageData, resultBuilder: resultBuilder);
+
+      _logger.info("Completed `detectFaces` function");
 
       // If no faces were detected, return a result with no faces. Otherwise, continue.
       if (faceDetectionResult.isEmpty) {
@@ -70,11 +74,15 @@ class FaceMlService {
         resultBuilder: resultBuilder,
       );
 
+      _logger.info("Completed `alignFaces` function");
+
       // Get the embeddings of the faces
       await embedBatchFaces(
         faceAlignmentResult,
         resultBuilder: resultBuilder,
       );
+
+      _logger.info("Completed `embedBatchFaces` function");
 
       return resultBuilder.build();
     } catch (e, s) {
@@ -181,8 +189,7 @@ class FaceMlService {
         faceAlignedData = _similarityTransform.warpAffineToMatrix(
           inputImage: inputImage,
           transformationMatrix: transformMatrix,
-          normalize: true,
-        ) as Double3DInputMatrix;
+        );
       } catch (e) {
         throw CouldNotWarpAffine();
       }

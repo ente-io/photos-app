@@ -113,7 +113,7 @@ class FaceDetectionAbsolute extends Detection {
     );
   }
 
-  const FaceDetectionAbsolute.defaultInitialization()
+  FaceDetectionAbsolute.defaultInitialization()
       : box = const <int>[0, 0, 0, 0],
         allKeypoints = const <List<int>>[
           [0, 0],
@@ -127,12 +127,12 @@ class FaceDetectionAbsolute extends Detection {
         yMinBox = 0,
         xMaxBox = 0,
         yMaxBox = 0,
-        leftEye = const <int>[0, 0],
-        rightEye = const <int>[0, 0],
-        nose = const <int>[0, 0],
-        mouth = const <int>[0, 0],
-        leftEar = const <int>[0, 0],
-        rightEar = const <int>[0, 0],
+        leftEye = <int>[0, 0],
+        rightEye = <int>[0, 0],
+        nose = <int>[0, 0],
+        mouth = <int>[0, 0],
+        leftEar = <int>[0, 0],
+        rightEar = <int>[0, 0],
         super.empty();
 
   @override

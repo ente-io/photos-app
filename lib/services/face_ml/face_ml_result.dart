@@ -45,7 +45,7 @@ class FaceMlResult {
         'mlVersion': mlVersion,
       };
 
-  FaceMlResult fromJson(Map<String, dynamic> json) {
+  static FaceMlResult fromJson(Map<String, dynamic> json) {
     return FaceMlResult(
       faceDetectionMethod: json['faceDetectionMethod'],
       faceAlignmentMethod: json['faceAlignmentMethod'],
@@ -62,43 +62,36 @@ class FaceMlResult {
 }
 
 class FaceMlResultBuilder {
-  FaceDetectionMethod faceDetectionMethod;
-  FaceAlignmentMethod faceAlignmentMethod;
-  FaceEmbeddingMethod faceEmbeddingMethod;
+  FaceDetectionMethod faceDetectionMethod = const FaceDetectionMethod.empty();
+  FaceAlignmentMethod faceAlignmentMethod = const FaceAlignmentMethod.empty();
+  FaceEmbeddingMethod faceEmbeddingMethod = const FaceEmbeddingMethod.empty();
 
-  List<FaceResultBuilder> faces;
+  List<FaceResultBuilder> faces = <FaceResultBuilder>[];
 
   int fileId;
   Size imageDimensions;
   String imageSource;
   String lastErrorMessage;
-  int errorCount;
+  int errorCount = 0;
   int mlVersion;
 
   FaceMlResultBuilder({
-    this.faceDetectionMethod = const FaceDetectionMethod.empty(),
-    this.faceAlignmentMethod = const FaceAlignmentMethod.empty(),
-    this.faceEmbeddingMethod = const FaceEmbeddingMethod.empty(),
-    this.faces = const <FaceResultBuilder>[],
     this.fileId = -1,
     this.imageDimensions = const Size(0, 0),
     this.imageSource = '',
     this.lastErrorMessage = '',
-    this.errorCount = 0,
-    this.mlVersion = -1,
+    this.mlVersion = 0,
   });
 
-  FaceMlResultBuilder.createWithMlMethods()
-      : faceDetectionMethod = FaceDetectionMethod.blazeFace(),
+  FaceMlResultBuilder.createWithMlMethods({
+    this.fileId = -1,
+    this.imageDimensions = const Size(0, 0),
+    this.imageSource = '',
+    this.lastErrorMessage = '',
+    this.mlVersion = 0,
+  })  : faceDetectionMethod = FaceDetectionMethod.blazeFace(),
         faceAlignmentMethod = FaceAlignmentMethod.arcFace(),
-        faceEmbeddingMethod = FaceEmbeddingMethod.mobileFaceNet(),
-        faces = const <FaceResultBuilder>[],
-        fileId = -1,
-        imageDimensions = const Size(0, 0),
-        imageSource = '',
-        lastErrorMessage = '',
-        errorCount = 0,
-        mlVersion = -1;
+        faceEmbeddingMethod = FaceEmbeddingMethod.mobileFaceNet();
 
   /// Adds the ML methods to the FaceMlResultBuilder
   ///
@@ -211,7 +204,7 @@ class FaceResult {
         'personId': personId,
       };
 
-  FaceResult fromJson(Map<String, dynamic> json) {
+  static FaceResult fromJson(Map<String, dynamic> json) {
     return FaceResult(
       detection: json['detection'],
       alignment: json['alignment'],
@@ -224,29 +217,26 @@ class FaceResult {
 }
 
 class FaceResultBuilder {
-  FaceDetectionAbsolute detection;
-  AlignmentResult alignment;
-  Embedding embedding;
+  FaceDetectionAbsolute detection =
+      FaceDetectionAbsolute.defaultInitialization();
+  AlignmentResult alignment = AlignmentResult.empty();
+  Embedding embedding = <double>[];
   int fileId;
   String id;
   int personId;
 
   FaceResultBuilder({
-    this.detection = const FaceDetectionAbsolute.defaultInitialization(),
-    this.alignment = const AlignmentResult.empty(),
-    this.embedding = const <double>[],
     this.fileId = -1,
     this.id = '',
     this.personId = -1,
   });
 
-  FaceResultBuilder.fromFaceDetection(FaceDetectionAbsolute faceDetection)
-      : detection = faceDetection,
-        alignment = const AlignmentResult.empty(),
-        embedding = const <double>[],
-        fileId = -1,
-        id = '',
-        personId = -1;
+  FaceResultBuilder.fromFaceDetection(
+    FaceDetectionAbsolute faceDetection, {
+    this.fileId = -1,
+    this.id = '',
+    this.personId = -1,
+  }) : detection = faceDetection;
 
   FaceResult build() {
     return FaceResult(

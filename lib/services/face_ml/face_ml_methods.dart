@@ -7,12 +7,18 @@ class FaceDetectionMethod extends VersionedMethod {
       : super(method, version);
 
   /// Creates a [FaceDetectionMethod] instance with 'Empty method' as the method, and a specific `version` (default `0`)
-  const FaceDetectionMethod.empty()
-      : super.empty();
+  const FaceDetectionMethod.empty() : super.empty();
 
   /// Creates a [FaceDetectionMethod] instance with 'BlazeFace' as the method, and a specific `version` (default `0`)
   FaceDetectionMethod.blazeFace({int version = 0})
       : super('BlazeFace', version);
+
+  static FaceDetectionMethod fromJson(Map<String, dynamic> json) {
+    return FaceDetectionMethod(
+      json['method'],
+      version: json['version'],
+    );
+  }
 }
 
 /// Represents a face alignment method with a specific version.
@@ -22,11 +28,17 @@ class FaceAlignmentMethod extends VersionedMethod {
       : super(method, version);
 
   /// Creates a [FaceAlignmentMethod] instance with 'Empty method' as the method, and a specific `version` (default `0`)
-  const FaceAlignmentMethod.empty()
-      : super.empty();
+  const FaceAlignmentMethod.empty() : super.empty();
 
   /// Creates a [FaceAlignmentMethod] instance with 'ArcFace' as the method, and a specific `version` (default `0`)
   FaceAlignmentMethod.arcFace({int version = 0}) : super('ArcFace', version);
+
+  static FaceAlignmentMethod fromJson(Map<String, dynamic> json) {
+    return FaceAlignmentMethod(
+      json['method'],
+      version: json['version'],
+    );
+  }
 }
 
 /// Represents a face embedding method with a specific version.
@@ -36,10 +48,16 @@ class FaceEmbeddingMethod extends VersionedMethod {
       : super(method, version);
 
   /// Creates a [FaceEmbeddingMethod] instance with 'Empty method' as the method, and a specific `version` (default `0`)
-  const FaceEmbeddingMethod.empty()
-      : super.empty();
+  const FaceEmbeddingMethod.empty() : super.empty();
 
   /// Creates a [FaceEmbeddingMethod] instance with 'MobileFaceNet' as the method, and a specific `version` (default `0`)
   FaceEmbeddingMethod.mobileFaceNet({int version = 0})
       : super('MobileFaceNet', version);
+
+  static FaceEmbeddingMethod fromJson(Map<String, dynamic> json) {
+    return FaceEmbeddingMethod(
+      json['method'],
+      version: json['version'],
+    );
+  }
 }
