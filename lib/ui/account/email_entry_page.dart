@@ -189,7 +189,6 @@ class _EmailEntryPageState extends State<EmailEntryPage> {
                     controller: _passwordController1,
                     obscureText: !_password1Visible,
                     enableSuggestions: true,
-                    autofillHints: const [AutofillHints.newPassword],
                     decoration: InputDecoration(
                       fillColor:
                           _passwordIsValid ? _validFieldValueColor : null,
@@ -256,7 +255,6 @@ class _EmailEntryPageState extends State<EmailEntryPage> {
                     keyboardType: TextInputType.visiblePassword,
                     controller: _passwordController2,
                     obscureText: !_password2Visible,
-                    autofillHints: const [AutofillHints.newPassword],
                     onEditingComplete: () => TextInput.finishAutofillContext(),
                     decoration: InputDecoration(
                       fillColor: _passwordsMatch && _passwordIsValid
