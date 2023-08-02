@@ -14,8 +14,10 @@ import "package:photos/core/configuration.dart";
 import 'package:photos/core/constants.dart';
 import "package:photos/db/device_files_db.dart";
 import "package:photos/db/files_db.dart";
-import "package:photos/models/device_collection.dart";
+import "package:photos/models/file.dart";
+import "package:photos/services/collections_service.dart";
 import "package:photos/theme/text_style.dart";
+import "package:photos/ui/collections/remote_collections_grid_view_widget.dart";
 import "package:photos/ui/viewer/file/thumbnail_widget.dart";
 import "package:photos/utils/file_util.dart";
 
@@ -26,46 +28,59 @@ const collectionKey = 'collection';
 const thumbnailKey = 'thumbnail';
 const thumbnailIdKey = 'thumbnail_id';
 const widgetIdKey = 'widget_id';
+const widgetSizeKey = 'widget_size';
 
 /// Called when Doing Background Work initiated from Widget
 @pragma("vm:entry-point")
-void backgroundHomeWidgetCallback(Uri? data) async {
-  if (data?.host == 'refresh') {
-    Logger('refresh').info('refreshing widget');
-    final widgetId = await HomeWidget.getWidgetData<int>(
-      widgetIdKey,
-      defaultValue: 0,
-    );
-    final collectionId = await HomeWidget.getWidgetData<String>(
+Future<void> backgroundHomeWidgetCallback() async {
+  final widgetSize = (await HomeWidget.getWidgetData<int>(
+    widgetSizeKey,
+    defaultValue: 0,
+  ))!;
+
+  for (var widgetId = 0; widgetId < widgetSize; ++widgetId) {
+    final collectionId = (await HomeWidget.getWidgetData<String>(
       '${widgetId}_$collectionKey',
-      defaultValue: '-1',
-    );
-
-    final isRecent = await HomeWidget.getWidgetData<bool>(
+      defaultValue: "",
+    ))!;
+    if (collectionId == "") continue;
+    final isRecent = (await HomeWidget.getWidgetData<bool>(
       '${widgetId}_$recentKey',
-      defaultValue: false,
-    );
+      defaultValue: true,
+    ))!;
 
-    final collections = await FilesDB.instance.getDeviceCollections();
-    DeviceCollection? deviceCollection;
-    for (var e in collections) {
-      if (e.id == collectionId) {
-        deviceCollection = e;
-      }
-    }
+    final collections = await _AppWidgetState.getAppWidgetCollection();
     PhotoManager.setIgnorePermissionCheck(true);
     await Configuration.instance.init();
+    File temp;
+    final currentCollection =
+        collections.firstWhere((col) => col.id == collectionId);
+    if (isRecent) {
+      temp = currentCollection.thumbnail;
+    } else {
+      final rand = Random();
+      if (!currentCollection.isRemote) {
+        final res = await FilesDB.instance.getDeviceCollections();
+        final deviceCollection =
+            res.firstWhere((col) => col.id == collectionId);
+        final fileLoad = await FilesDB.instance.getFilesInDeviceCollection(
+          deviceCollection,
+          Configuration.instance.getUserID(),
+          galleryLoadStartTime,
+          galleryLoadEndTime,
+        );
+        temp = fileLoad.files[rand.nextInt(fileLoad.files.length)];
+      } else {
+        final fileLoad = await FilesDB.instance.getFilesInCollection(
+          int.parse(collectionId),
+          galleryLoadStartTime,
+          galleryLoadEndTime,
+        );
+        temp = fileLoad.files[rand.nextInt(fileLoad.files.length)];
+      }
+    }
 
-    final fileloader = await FilesDB.instance.getFilesInDeviceCollection(
-      deviceCollection!,
-      Configuration.instance.getUserID(),
-      galleryLoadStartTime,
-      galleryLoadEndTime,
-    );
-    final files = fileloader.files;
-    final file =
-        isRecent! ? files.first : files[Random().nextInt(files.length) + 1];
-    final ioFile = await getFile(file);
+    final ioFile = await getFile(temp);
     final bytes = await ioFile!.readAsBytes();
     final base64 = base64Encode(bytes);
 
@@ -75,7 +90,7 @@ void backgroundHomeWidgetCallback(Uri? data) async {
     );
     await HomeWidget.saveWidgetData<int>(
       '${widgetId}_$thumbnailIdKey',
-      file.generatedID,
+      temp.generatedID,
     );
     await HomeWidget.updateWidget(
       name: 'HomeScreenWidget',
@@ -83,6 +98,14 @@ void backgroundHomeWidgetCallback(Uri? data) async {
       qualifiedAndroidName: 'io.ente.photos.HomeScreenWidget',
     );
   }
+}
+
+class AppWidgetCollection {
+  final File thumbnail;
+  final String id;
+  final String name;
+  final bool isRemote;
+  AppWidgetCollection(this.thumbnail, this.id, this.name, this.isRemote);
 }
 
 class AppWidget extends StatefulWidget {
@@ -96,16 +119,17 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
   int selectedShape = 0;
   int selectedType = 0;
   int widgetId = 0;
-  String collectionId = '-1';
+  String collectionId = "";
   bool isRecent = false;
   bool isLoading = true;
-  List<DeviceCollection> collections = [];
+  File thumbnail = File();
+  List<AppWidgetCollection> collections = [];
+
   final _logger = Logger('_APPWIDGET');
 
   @override
   void initState() {
     super.initState();
-    _logger.info("init State");
     WidgetsBinding.instance.addObserver(this);
     _loadData();
   }
@@ -114,14 +138,6 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      _logger.info("resumed");
-      _loadData();
-    }
   }
 
   Future _sendData() async {
@@ -139,16 +155,21 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
         selectedType,
       );
       await HomeWidget.saveWidgetData<bool>('${widgetId}_$recentKey', isRecent);
+
+      await HomeWidget.saveWidgetData<bool>(
+        '${widgetId}_remote',
+        collections
+            .firstWhere((element) => element.id == collectionId)
+            .isRemote,
+      );
     } catch (exception) {
       _logger.info('Error Sending Data. $exception');
     }
   }
 
-  Future setThumbnail() async {
+  Future _setThumbnail() async {
     try {
-      final file =
-          collections.firstWhere((e) => e.id == collectionId).thumbnail!;
-      final bytes = (await getFile(file))!.readAsBytesSync();
+      final bytes = (await getFile(thumbnail))!.readAsBytesSync();
       final base64 = base64Encode(bytes);
       await HomeWidget.saveWidgetData<String>(
         '${widgetId}_$thumbnailKey',
@@ -156,7 +177,7 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
       );
       await HomeWidget.saveWidgetData<int>(
         '${widgetId}_$thumbnailIdKey',
-        file.generatedID,
+        thumbnail.generatedID,
       );
     } catch (exception) {
       _logger.info('Error Setting Thumbnail. $exception');
@@ -175,10 +196,41 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
     }
   }
 
+  static Future<List<AppWidgetCollection>> getAppWidgetCollection() async {
+    final List<AppWidgetCollection> collects = [];
+    final remote =
+        await CollectionsService.instance.getCollectionsWithThumbnails();
+    for (var col in remote) {
+      if (col.thumbnail != null) {
+        final appWidgetCollection = AppWidgetCollection(
+          col.thumbnail!,
+          col.collection.id.toString(),
+          col.collection.displayName,
+          true,
+        );
+        collects.add(appWidgetCollection);
+      }
+    }
+    final device = await FilesDB.instance
+        .getDeviceCollections(includeCoverThumbnail: true);
+    for (var col in device) {
+      if (col.thumbnail != null) {
+        final appWidgetCollection = AppWidgetCollection(
+          col.thumbnail!,
+          col.id.toString(),
+          col.name,
+          false,
+        );
+        collects.add(appWidgetCollection);
+      }
+    }
+    return collects;
+  }
+
   Future _loadData() async {
     try {
-      collections = await FilesDB.instance
-          .getDeviceCollections(includeCoverThumbnail: true);
+      collections = await getAppWidgetCollection();
+      _logger.info('Collection Size: ${collections.length}');
       int shape, type, id;
       String collection;
       bool recent;
@@ -187,27 +239,27 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
         widgetIdKey,
         defaultValue: 0,
       ))!;
-
+      _logger.info(id);
       shape = (await HomeWidget.getWidgetData<int>(
-        '${widgetId}_$shapeKey',
+        '${id}_$shapeKey',
         defaultValue: 0,
       ))!;
 
       type = (await HomeWidget.getWidgetData<int>(
-        '${widgetId}_$typeKey',
+        '${id}_$typeKey',
         defaultValue: 0,
       ))!;
 
       recent = (await HomeWidget.getWidgetData<bool>(
-        '${widgetId}_$recentKey',
+        '${id}_$recentKey',
         defaultValue: false,
       ))!;
 
       collection = (await HomeWidget.getWidgetData<String>(
-        '${widgetId}_$collectionKey',
-        defaultValue: '-1',
+        '${id}_$collectionKey',
+        defaultValue: collections.first.id,
       ))!;
-      _logger.info("widgetId: $id");
+
       setState(() {
         widgetId = id;
         selectedShape = shape;
@@ -215,15 +267,16 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
         isRecent = recent;
         collectionId = collection;
         isLoading = false;
+        thumbnail = collections.firstWhere((e) => e.id == collection).thumbnail;
       });
-    } catch (exception) {
-      debugPrint('Error Getting Data. $exception');
+    } catch (exception, stackTrace) {
+      _logger.severe('Error Getting Data. $stackTrace');
     }
   }
 
   Future<void> _sendAndUpdate() async {
     await _sendData();
-    await setThumbnail();
+    await _setThumbnail();
     await _updateWidget();
     SystemNavigator.pop();
   }
@@ -241,8 +294,61 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
     'Open Viewer',
   ];
 
+  Future refresh() async {
+    File temp;
+    final currentCollection =
+        collections.firstWhere((col) => col.id == collectionId);
+    if (isRecent) {
+      temp = currentCollection.thumbnail;
+    } else {
+      final rand = Random();
+      if (!currentCollection.isRemote) {
+        final res = await FilesDB.instance.getDeviceCollections();
+        final deviceCollection =
+            res.firstWhere((col) => col.id == collectionId);
+        final fileLoad = await FilesDB.instance.getFilesInDeviceCollection(
+          deviceCollection,
+          Configuration.instance.getUserID(),
+          galleryLoadStartTime,
+          galleryLoadEndTime,
+        );
+        temp = fileLoad.files[rand.nextInt(fileLoad.files.length)];
+      } else {
+        final fileLoad = await FilesDB.instance.getFilesInCollection(
+          int.parse(collectionId),
+          galleryLoadStartTime,
+          galleryLoadEndTime,
+        );
+        temp = fileLoad.files[rand.nextInt(fileLoad.files.length)];
+      }
+    }
+    setState(() {
+      thumbnail = temp;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final int albumsCountInOneRow = max(
+      screenWidth ~/ RemoteCollectionsGridViewWidget.maxThumbnailWidth,
+      2,
+    );
+    final double gapBetweenAlbums = (albumsCountInOneRow - 1) *
+        RemoteCollectionsGridViewWidget.fixedGapBetweenAlbum;
+
+    final double gapOnSizeOfAlbums =
+        RemoteCollectionsGridViewWidget.minGapForHorizontalPadding +
+            (screenWidth -
+                    gapBetweenAlbums -
+                    (2 *
+                        RemoteCollectionsGridViewWidget
+                            .minGapForHorizontalPadding)) %
+                albumsCountInOneRow;
+
+    final double sideOfThumbnail =
+        (screenWidth - gapOnSizeOfAlbums - gapBetweenAlbums) /
+            albumsCountInOneRow;
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
@@ -252,7 +358,7 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
         body: Center(
           child: isLoading
               ? const CircularProgressIndicator(color: Colors.green)
-              : Column(
+              : ListView(
                   children: [
                     ListTile(
                       title: const Text('Photo Frame'),
@@ -303,48 +409,12 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
                       ),
                     ),
                     ListTile(
-                      title: const Text('Displayed Content'),
-                      subtitle: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: isRecent ? 'Recent' : 'Random',
-                          isExpanded: true,
-                          items: ['Recent', 'Random'].map((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(
-                                value,
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              isRecent = value! == 'Recent';
-                            });
-                          },
-                        ),
-                      ),
-                    ),
-                    ListTile(
                       title: const Text('Choose a Collection'),
                       subtitle: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
                           value: collectionId,
                           isExpanded: true,
                           items: [
-                            DropdownMenuItem<String>(
-                              value: '-1',
-                              child: Container(
-                                margin: const EdgeInsets.only(
-                                  right: 8,
-                                  bottom: 10,
-                                ),
-                                child: Text(
-                                  'All',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ),
-                            ),
                             ...collections.map((collection) {
                               return DropdownMenuItem<String>(
                                 value: collection.id,
@@ -369,7 +439,8 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
                                           collection.thumbnail,
                                           shouldShowLivePhotoOverlay: false,
                                           shouldShowSyncStatus: false,
-                                          thumbnailSize: 200,
+                                          thumbnailSize:
+                                              sideOfThumbnail.toInt(),
                                         ),
                                       ),
                                     ],
@@ -378,15 +449,66 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
                               );
                             }).toList()
                           ],
-                          onChanged: (value) {
+                          onChanged: (value) async {
                             setState(() {
                               collectionId = value!;
+                            });
+                            await refresh();
+                          },
+                        ),
+                      ),
+                    ),
+                    ListTile(
+                      title: const Text('Displayed Content'),
+                      subtitle: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: isRecent ? 'Recent' : 'Random',
+                          isExpanded: true,
+                          items: ['Recent', 'Random'].map((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(
+                                value,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              isRecent = value! == 'Recent';
                             });
                           },
                         ),
                       ),
                     ),
-                    const Spacer(),
+                    ListTile(
+                      title: Row(
+                        children: [
+                          const Text('Preview'),
+                          const Spacer(),
+                          IconButton(
+                            onPressed: () async {
+                              await refresh();
+                            },
+                            icon: const Icon(Icons.refresh),
+                          ),
+                        ],
+                      ),
+                      subtitle: Container(
+                        margin: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        width: double.infinity,
+                        height: 300,
+                        child: ThumbnailWidget(
+                          thumbnail,
+                          fit: BoxFit.fill,
+                          shouldShowSyncStatus: false,
+                          thumbnailSize: 500,
+                        ),
+                      ),
+                    ),
                     Container(
                       margin: const EdgeInsets.all(16),
                       width: double.infinity,

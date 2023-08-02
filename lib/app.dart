@@ -6,6 +6,7 @@ import 'package:background_fetch/background_fetch.dart';
 import "package:collection/collection.dart";
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import "package:flutter/services.dart";
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import "package:home_widget/home_widget.dart" as hw;
@@ -19,10 +20,9 @@ import "package:photos/db/files_db.dart";
 import 'package:photos/ente_theme_data.dart';
 import "package:photos/generated/l10n.dart";
 import "package:photos/l10n/l10n.dart";
-import "package:photos/models/device_collection.dart";
 import "package:photos/models/file_load_result.dart";
 import 'package:photos/services/app_lifecycle_service.dart';
-import 'package:photos/services/search_service.dart';
+import "package:photos/services/collections_service.dart";
 import 'package:photos/services/sync_service.dart';
 import 'package:photos/ui/tabs/home_widget.dart';
 import "package:photos/ui/viewer/actions/file_viewer.dart";
@@ -55,11 +55,12 @@ class EnteApp extends StatefulWidget {
 }
 
 class _EnteAppState extends State<EnteApp> with WidgetsBindingObserver {
+  final appWidgetChannel = const MethodChannel('io.ente.app');
+
   final _logger = Logger("EnteAppState");
   late Locale locale;
   bool isLaunchedByWidget = false;
-  final StreamController<bool> isHomeWidgetController =
-      StreamController<bool>.broadcast();
+  bool isConfigureMode = false;
 
   @override
   void initState() {
@@ -76,12 +77,36 @@ class _EnteAppState extends State<EnteApp> with WidgetsBindingObserver {
     });
   }
 
+  Future<bool> getWidget() async {
+    final Completer<bool> completer = Completer<bool>();
+    try {
+      appWidgetChannel.setMethodCallHandler((call) async {
+        if (call.method == 'config') {
+          final appWidgetId = call.arguments;
+          _logger.info('appwidgetId: $appWidgetId');
+          if (appWidgetId != 0) {
+            completer.complete(true);
+          } else {
+            completer.complete(false);
+          }
+        }
+      });
+    } catch (e) {
+      _logger.info(e);
+    }
+    return completer.future;
+  }
+
   void setupIntentAction() async {
     final mediaExtentionAction = Platform.isAndroid
         ? await initIntentAction()
         : MediaExtentionAction(action: IntentAction.main);
     _logger.info(mediaExtentionAction.action);
     _logger.info(mediaExtentionAction.data ?? 'null');
+    final ans = await getWidget();
+    setState(() {
+      isConfigureMode = ans;
+    });
     AppLifecycleService.instance.setMediaExtensionAction(mediaExtentionAction);
     if (mediaExtentionAction.action == IntentAction.main) {
       _configureBackgroundFetch();
@@ -100,20 +125,12 @@ class _EnteAppState extends State<EnteApp> with WidgetsBindingObserver {
           themeMode: ThemeMode.system,
           theme: lightTheme,
           darkTheme: dartTheme,
-          home: StreamBuilder<bool>(
-            stream: isHomeWidgetController.stream,
-            builder: (context, snapshot) {
-              if (snapshot.data != null && snapshot.data!) {
-                return const AppWidget();
-              } else {
-                return (AppLifecycleService
-                            .instance.mediaExtensionAction.action ==
-                        IntentAction.view
-                    ? const FileViewer()
-                    : const HomeWidget());
-              }
-            },
-          ),
+          home: isConfigureMode
+              ? const AppWidget()
+              : (AppLifecycleService.instance.mediaExtensionAction.action ==
+                      IntentAction.view
+                  ? const FileViewer()
+                  : const HomeWidget()),
           debugShowCheckedModeBanner: false,
           builder: EasyLoading.init(),
           locale: locale,
@@ -158,9 +175,7 @@ class _EnteAppState extends State<EnteApp> with WidgetsBindingObserver {
 
   void _launchedFromWidget(Uri? uri) {
     if (uri != null) {
-      if (uri.host == "configure") {
-        isHomeWidgetController.sink.add(true);
-      } else if (uri.host == "view") {
+      if (uri.host == "view") {
         _onHomeWigetClicked(context, uri);
       }
     }
@@ -215,41 +230,51 @@ void _onHomeWigetClicked(BuildContext context, Uri uri) async {
   final type = int.parse(params['type']!);
   final thumbnailId = int.parse(params['id']!);
   final collectionId = params['collection'];
-  final collections = await FilesDB.instance.getDeviceCollections();
-  DeviceCollection? deviceCollection;
-  for (var e in collections) {
-    if (e.id == collectionId) {
-      deviceCollection = e;
-    }
-  }
+  final isRemoteString = params['remote'];
+  final isRemote = isRemoteString!.toLowerCase() != "false";
+
   if (type == 0) {
-    final collectionName = deviceCollection!.name;
-    final allResults =
-        await SearchService.instance.getCollectionSearchResults(collectionName);
+    final colls =
+        await CollectionsService.instance.getCollectionsWithThumbnails();
+    final col = colls.firstWhere(
+      (element) => element.collection.id == int.parse(collectionId!),
+    );
+
     routeToPage(
       context,
       CollectionPage(
-        allResults[0].collectionWithThumbnail,
+        col,
       ),
     );
   } else {
-    final fileloader = await FilesDB.instance.getFilesInDeviceCollection(
-      deviceCollection!,
-      Configuration.instance.getUserID(),
-      galleryLoadStartTime,
-      galleryLoadEndTime,
-    );
+    FileLoadResult fileLoad;
+    if (!isRemote) {
+      final res = await FilesDB.instance.getDeviceCollections();
+      final deviceCollection = res.firstWhere((col) => col.id == collectionId);
+      fileLoad = await FilesDB.instance.getFilesInDeviceCollection(
+        deviceCollection,
+        Configuration.instance.getUserID(),
+        galleryLoadStartTime,
+        galleryLoadEndTime,
+      );
+    } else {
+      fileLoad = await FilesDB.instance.getFilesInCollection(
+        int.parse(collectionId!),
+        galleryLoadStartTime,
+        galleryLoadEndTime,
+      );
+    }
     int selectedIndex = 0;
-    fileloader.files.forEachIndexed((index, element) {
+    fileLoad.files.forEachIndexed((index, element) {
       if (element.generatedID == thumbnailId) {
         selectedIndex = index;
       }
     });
     final page = DetailPage(
       DetailPageConfiguration(
-        fileloader.files,
+        fileLoad.files,
         (creationStartTime, creationEndTime, {asc, limit}) async {
-          final result = FileLoadResult(fileloader.files, false);
+          final result = FileLoadResult(fileLoad.files, false);
           return result;
         },
         selectedIndex,

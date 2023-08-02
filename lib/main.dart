@@ -8,11 +8,9 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import "package:flutter/rendering.dart";
-import "package:home_widget/home_widget.dart";
 import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:photos/app.dart';
-import "package:photos/appwidget/app_widget.dart";
 import 'package:photos/core/configuration.dart';
 import 'package:photos/core/constants.dart';
 import 'package:photos/core/error-reporting/super_logging.dart';
@@ -64,8 +62,8 @@ void main() async {
   debugRepaintRainbowEnabled = false;
   WidgetsFlutterBinding.ensureInitialized();
   final savedThemeMode = await AdaptiveTheme.getThemeMode();
-  HomeWidget.registerBackgroundCallback(backgroundHomeWidgetCallback);
   await _runInForeground(savedThemeMode);
+
   BackgroundFetch.registerHeadlessTask(_headlessTaskHandler);
 }
 

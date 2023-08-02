@@ -1,10 +1,16 @@
 package io.ente.photos
 
+
+import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.*
 import android.net.Uri
+import android.os.Build
+import android.os.Bundle
 import android.util.Base64
 import android.util.Log
 import android.view.LayoutInflater
@@ -12,53 +18,44 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.RemoteViews
 import androidx.core.content.edit
-import es.antonborri.home_widget.HomeWidgetBackgroundIntent
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetProvider
+import io.flutter.FlutterInjector
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.embedding.engine.dart.DartExecutor
+import kotlinx.coroutines.*
 import java.io.ByteArrayOutputStream
 
 class HomeScreenWidget : HomeWidgetProvider() {
-
-
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray,
         widgetData: SharedPreferences
     ) {
-        appWidgetIds.forEach { widgetId ->
-            Log.d("APPWIDGET",widgetId.toString())
-            val views = RemoteViews(context.packageName, R.layout.home_screen_widget).apply {
-                // Open App on Widget Click
-                val pendingIntent = HomeWidgetLaunchIntent.getActivity(
-                    context,
-                    MainActivity::class.java,
-                    uri = Uri.parse("homescreenwidget://configure")
-                )
 
-                setOnClickPendingIntent(R.id.edit, pendingIntent)
+        appWidgetIds.forEach { widgetId ->
+            val views = RemoteViews(context.packageName, R.layout.home_screen_widget).apply {
 
                 widgetData.edit {
                     this.putInt("widget_id",widgetId)
+                    this.putInt("widget_size",appWidgetIds.size)
                 }
 
-                val collection = widgetData.getString("${widgetId}_collection","-1")
+                val collection = widgetData.getString("${widgetId}_collection","")
                 val type = widgetData.getInt("${widgetId}_type",0)
                 val thumbnailID = widgetData.getInt("${widgetId}_thumbnail_id",0)
-                val pendingIntent2 = HomeWidgetLaunchIntent.getActivity(
+                val isRemote = widgetData.getBoolean("${widgetId}_remote",false)
+
+                val pendingIntent = HomeWidgetLaunchIntent.getActivity(
                     context,
                     MainActivity::class.java,
-                    uri = Uri.parse("homescreenwidget://view?type=$type&id=$thumbnailID&collection=$collection")
+                    uri = Uri.parse("homescreenwidget://view?type=$type&id=$thumbnailID&collection=$collection&remote=$isRemote")
                 )
 
-                setOnClickPendingIntent(R.id.thumbnail, pendingIntent2)
-                // Swap Title Text by calling Dart Code in the Background
-                val shape = widgetData.getInt("${widgetId}_shape", 0)
+                setOnClickPendingIntent(R.id.thumbnail, pendingIntent)
 
-                // Pending intent to update counter on button click
-                val backgroundIntent = HomeWidgetBackgroundIntent.getBroadcast(context,
-                    Uri.parse("homescreenwidget://refresh"))
-                setOnClickPendingIntent(R.id.refresh, backgroundIntent)
+                val shape = widgetData.getInt("${widgetId}_shape", 0)
 
                 val thumbnailString = widgetData.getString(
                     "${widgetId}_thumbnail",
@@ -99,29 +96,27 @@ class HomeScreenWidget : HomeWidgetProvider() {
                 }
 
                 setImageViewBitmap(R.id.thumbnail, thumbnailBitmap)
+
             }
+
             appWidgetManager.updateAppWidget(widgetId, views)
         }
     }
 
-  
+
 private fun base64ToBitmap(base64String: String, maxSizeBytes: Long): Bitmap? {
-    // Remove data prefix from the Base64 string if present
     val base64Image = if (base64String.startsWith("data")) {
         base64String.substring(base64String.indexOf(",") + 1)
     } else {
         base64String
     }
-    // Decode the Base64 string into a byte array
     val imageBytes = Base64.decode(base64Image, Base64.DEFAULT)
 
-    // Decode the byte array into a Bitmap
     val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
 
-    // Compress the bitmap if its size exceeds the maximum allowed limit
     if (bitmap.byteCount > maxSizeBytes) {
         val compressedBitmap = compressBitmap(bitmap, maxSizeBytes)
-        bitmap.recycle() // Release the original bitmap from memory
+        bitmap.recycle()
         return compressedBitmap
     }
 
@@ -129,13 +124,12 @@ private fun base64ToBitmap(base64String: String, maxSizeBytes: Long): Bitmap? {
 }
 
 private fun compressBitmap(bitmap: Bitmap, maxSizeBytes: Long): Bitmap {
-    var compressedBitmap = bitmap
     var quality = 100
     val stream = ByteArrayOutputStream()
 
     do {
         stream.reset()
-        compressedBitmap.compress(Bitmap.CompressFormat.JPEG, quality, stream)
+        bitmap.compress(Bitmap.CompressFormat.JPEG, quality, stream)
         quality -= 10
     } while (stream.toByteArray().size > maxSizeBytes && quality > 0)
 
@@ -227,5 +221,4 @@ private fun compressBitmap(bitmap: Bitmap, maxSizeBytes: Long): Bitmap {
 
         return output
     }
-
 }
