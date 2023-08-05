@@ -17,7 +17,7 @@ import "package:photos/db/files_db.dart";
 import "package:photos/models/file.dart";
 import "package:photos/services/collections_service.dart";
 import "package:photos/theme/text_style.dart";
-import "package:photos/ui/collections/remote_collections_grid_view_widget.dart";
+import "package:photos/ui/collections/flex_grid_view.dart";
 import "package:photos/ui/viewer/file/thumbnail_widget.dart";
 import "package:photos/utils/file_util.dart";
 
@@ -198,13 +198,14 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
   static Future<List<AppWidgetCollection>> getAppWidgetCollection() async {
     final List<AppWidgetCollection> collects = [];
     final remote =
-        await CollectionsService.instance.getCollectionsWithThumbnails();
+        await CollectionsService.instance.getCollectionForOnEnteSection();
     for (var col in remote) {
-      if (col.thumbnail != null) {
+      final thumbnail = await CollectionsService.instance.getCover(col);
+      if (thumbnail != null) {
         final appWidgetCollection = AppWidgetCollection(
-          col.thumbnail!,
-          col.collection.id.toString(),
-          col.collection.displayName,
+          thumbnail,
+          col.id.toString(),
+          col.displayName,
           true,
         );
         collects.add(appWidgetCollection);
@@ -330,18 +331,18 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;
     final int albumsCountInOneRow = max(
-      screenWidth ~/ RemoteCollectionsGridViewWidget.maxThumbnailWidth,
+      screenWidth ~/ CollectionsFlexiGridViewWidget.maxThumbnailWidth,
       2,
     );
     final double gapBetweenAlbums = (albumsCountInOneRow - 1) *
-        RemoteCollectionsGridViewWidget.fixedGapBetweenAlbum;
+        CollectionsFlexiGridViewWidget.fixedGapBetweenAlbum;
 
     final double gapOnSizeOfAlbums =
-        RemoteCollectionsGridViewWidget.minGapForHorizontalPadding +
+        CollectionsFlexiGridViewWidget.minGapForHorizontalPadding +
             (screenWidth -
                     gapBetweenAlbums -
                     (2 *
-                        RemoteCollectionsGridViewWidget
+                        CollectionsFlexiGridViewWidget
                             .minGapForHorizontalPadding)) %
                 albumsCountInOneRow;
 

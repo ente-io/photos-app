@@ -20,6 +20,7 @@ import "package:photos/db/files_db.dart";
 import 'package:photos/ente_theme_data.dart';
 import "package:photos/generated/l10n.dart";
 import "package:photos/l10n/l10n.dart";
+import "package:photos/models/collection_items.dart";
 import "package:photos/models/file_load_result.dart";
 import 'package:photos/services/app_lifecycle_service.dart';
 import "package:photos/services/collections_service.dart";
@@ -234,16 +235,15 @@ void _onHomeWigetClicked(BuildContext context, Uri uri) async {
   final isRemote = isRemoteString!.toLowerCase() != "false";
 
   if (type == 0) {
-    final colls =
-        await CollectionsService.instance.getCollectionsWithThumbnails();
-    final col = colls.firstWhere(
-      (element) => element.collection.id == int.parse(collectionId!),
+    final cols = CollectionsService.instance.getCollectionsForUI();
+    final c = cols.firstWhere(
+      (collection) => collection.id == int.parse(collectionId!),
     );
-
+    final thumbnail = await CollectionsService.instance.getCover(c);
     routeToPage(
       context,
       CollectionPage(
-        col,
+        CollectionWithThumbnail(c, thumbnail),
       ),
     );
   } else {
