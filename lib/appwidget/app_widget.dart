@@ -51,7 +51,6 @@ Future<void> backgroundHomeWidgetCallback() async {
 
     final collections = await _AppWidgetState.getAppWidgetCollection();
     PhotoManager.setIgnorePermissionCheck(true);
-    await Configuration.instance.init();
     File temp;
     final currentCollection =
         collections.firstWhere((col) => col.id == collectionId);
