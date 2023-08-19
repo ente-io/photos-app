@@ -43,6 +43,8 @@ class FaceEmbedding {
   }
 
   // TODO: Make the predict function asynchronous with use of isolate-interpreter: https://github.com/tensorflow/flutter-tflite/issues/52
+
+  /// WARNING: This function only works for one face at a time. it's better to use [predictBatch], which can handle both single and multiple faces.
   List<double> predict(Uint8List imageData) {
     assert(_interpreter != null);
 
@@ -107,12 +109,16 @@ class FaceEmbedding {
     final input = [inputImageMatrix];
 
     final output = <int, Object>{};
-    for (int i = 0; i < faces.length; i++) {
-      output[i] = createEmptyOutputMatrix(outputShapes[0]);
-    }
+    final outputShape = outputShapes[0];
+    outputShape[0] = faces.length;
+    output[0] = createEmptyOutputMatrix(outputShape);
+    // for (int i = 0; i < faces.length; i++) {
+    //   output[i] = createEmptyOutputMatrix(outputShapes[0]);
+    // }
 
-    _logger.info('interpreter.run is called, output: $output');
+    _logger.info('interpreter.run is called');
     // Run inference
+    final stopwatchInterpreter = Stopwatch()..start();
     try {
       _interpreter!.runForMultipleInputs(input, output);
       // ignore: avoid_catches_without_on_clauses
@@ -120,15 +126,17 @@ class FaceEmbedding {
       _logger.severe('Error while running inference: $e');
       throw MobileFaceNetInterpreterRunException();
     }
-    _logger.info('interpreter.run is finished');
-    _logger.info('output: $output');
+    stopwatchInterpreter.stop();
+    _logger.info('interpreter.run is finished, in ${stopwatchInterpreter.elapsedMilliseconds}ms');
+    // _logger.info('output: $output');
 
     // Get output tensors
+    // TODO: continue here, adapt the code below since map has only one entry, which is a list of dimension [faces.length, 192]
     final embeddings = <List<double>>[];
+    final outerEmbedding = output[0]! as Iterable<dynamic>;
     for (int i = 0; i < faces.length; i++) {
-      final outerEmbedding = output[i]! as Iterable<dynamic>;
-      final embedding = List<double>.from(outerEmbedding.toList()[0]);
-      _logger.info("The i-th embedding: $embedding");
+      final embedding = List<double>.from(outerEmbedding.toList()[i]);
+      // _logger.info("The $i-th embedding: $embedding");
       embeddings.add(embedding);
     }
 
@@ -136,19 +144,6 @@ class FaceEmbedding {
     _logger.info(
       'predictBatch() executed in ${stopwatch.elapsedMilliseconds}ms',
     );
-
-    // _logger.info(
-    //   'results (only first few numbers): embedding ${embedding.sublist(0, 5)}',
-    // );
-    // _logger.info(
-    //   'Mean of embedding: ${embedding.reduce((a, b) => a + b) / embedding.length}',
-    // );
-    // _logger.info(
-    //   'Max of embedding: ${embedding.reduce(math.max)}',
-    // );
-    // _logger.info(
-    //   'Min of embedding: ${embedding.reduce(math.min)}',
-    // );
 
     return embeddings;
   }
@@ -180,6 +175,8 @@ class FaceEmbedding {
             config.modelPath,
             options: interpreterOptions,
           );
+
+      _logger.info('Interpreter created from asset: ${config.modelPath}');
 
       // Get tensor input shape [1, 112, 112, 3]
       final inputTensors = _interpreter!.getInputTensors().first;

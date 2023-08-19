@@ -84,6 +84,8 @@ class FaceMlService {
 
       _logger.info("Completed `embedBatchFaces` function");
 
+      _logger.info("Completed analyzing image ${imageFile.path}");
+
       return resultBuilder.build();
     } catch (e, s) {
       _logger.severe("Could not analyze image", e, s);
