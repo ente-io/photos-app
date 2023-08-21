@@ -54,6 +54,7 @@ class FaceMlService {
     final resultBuilder = FaceMlResultBuilder.createWithMlMethods();
 
     _logger.info("Analyzing image ${imageFile.path}");
+    final stopwatch = Stopwatch()..start();
 
     try {
       // Get the faces
@@ -84,7 +85,9 @@ class FaceMlService {
 
       _logger.info("Completed `embedBatchFaces` function");
 
-      _logger.info("Completed analyzing image ${imageFile.path}");
+      stopwatch.stop();
+      _logger.info("Completed analyzing image ${imageFile.path}, in "
+          "${stopwatch.elapsedMilliseconds} ms");
 
       return resultBuilder.build();
     } catch (e, s) {
