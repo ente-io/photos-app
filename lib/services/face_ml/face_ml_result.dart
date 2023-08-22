@@ -49,7 +49,6 @@ class FaceMlResult {
 
   String toJsonString() => jsonEncode(_toJson());
 
-  // TODO: dubble check the fromJson methods of the methods and FaceResult!!
   static FaceMlResult _fromJson(Map<String, dynamic> json) {
     return FaceMlResult(
       faceDetectionMethod: FaceDetectionMethod.fromJson(json['faceDetectionMethod']),
