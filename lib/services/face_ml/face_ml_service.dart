@@ -3,6 +3,7 @@ import "dart:typed_data" show Uint8List;
 
 import "package:image/image.dart" as image_lib;
 import "package:logging/logging.dart";
+import "package:photos/db/ml_data_db.dart";
 import "package:photos/models/ml_typedefs.dart";
 import "package:photos/services/face_ml/face_alignment/similarity_transform.dart";
 import "package:photos/services/face_ml/face_detection/detection.dart";
@@ -94,6 +95,36 @@ class FaceMlService {
       _logger.severe("Could not analyze image", e, s);
       throw GeneralFaceMlException("Could not analyze image");
     }
+  }
+
+  /// Analyzes the given image data by running the full pipeline using [analyzeImage] and stores the result in the database [MlDataDB].
+  /// This function first checks if the image has already been analyzed (with latest ml version) and stored in the database. If so, it returns the stored result.
+  ///
+  /// 'imageFile': The image file to analyze.
+  ///
+  /// Returns an immutable [FaceMlResult] instance containing the results of the analysis. The result is also stored in the database.
+  Future<FaceMlResult> processFacesImage(io.File imageFile) async {
+    // Check if the image has already been analyzed and stored in the database
+    // TODO: should not using hashcode, but instead the actual fileID!!!!!!!!!!!!!!!!!!!!!!!!
+    final existingResult = await MlDataDB.instance.getFaceMlResult(imageFile.path.hashCode);
+
+    // If the image has already been analyzed and stored in the database, return the stored result
+    if (existingResult != null) {
+      if (existingResult.mlVersion >= faceMlVersion) {
+        _logger.info(
+          "Image ${imageFile.path} has already been analyzed and stored in the database with the latest ml version. Returning the stored result.",
+        );
+        return existingResult;
+      }
+    }
+
+    // If the image has not been analyzed and stored in the database, analyze it and store the result in the database
+    final result = await analyzeImage(imageFile);
+
+    // Store the result in the database
+    await MlDataDB.instance.createFaceMlResult(result);
+
+    return result;
   }
 
   /// Detects faces in the given image data.

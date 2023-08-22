@@ -6,6 +6,8 @@ import "package:photos/services/face_ml/face_alignment/alignment_result.dart";
 import "package:photos/services/face_ml/face_detection/detection.dart";
 import "package:photos/services/face_ml/face_ml_methods.dart";
 
+const faceMlVersion = 0;
+
 @immutable
 class FaceMlResult {
   final FaceDetectionMethod faceDetectionMethod;
@@ -88,7 +90,7 @@ class FaceMlResultBuilder {
     this.imageDimensions = const Size(0, 0),
     this.imageSource = '',
     this.lastErrorMessage = '',
-    this.mlVersion = 0,
+    this.mlVersion = faceMlVersion,
   });
 
   FaceMlResultBuilder.createWithMlMethods({
@@ -96,7 +98,7 @@ class FaceMlResultBuilder {
     this.imageDimensions = const Size(0, 0),
     this.imageSource = '',
     this.lastErrorMessage = '',
-    this.mlVersion = 0,
+    this.mlVersion = faceMlVersion,
   })  : faceDetectionMethod = FaceDetectionMethod.blazeFace(),
         faceAlignmentMethod = FaceAlignmentMethod.arcFace(),
         faceEmbeddingMethod = FaceEmbeddingMethod.mobileFaceNet();
