@@ -162,9 +162,11 @@ class FaceDetectionAbsolute extends Detection {
 
   factory FaceDetectionAbsolute.fromJson(Map<String, dynamic> json) {
     return FaceDetectionAbsolute(
-      score: json['score'],
-      box: json['box'],
-      allKeypoints: json['allKeypoints'],
+      score: (json['score'] as num).toDouble(),
+      box: List<int>.from(json['box']),
+      allKeypoints: (json['allKeypoints'] as List)
+          .map((item) => List<int>.from(item))
+          .toList(),
     );
   }
 

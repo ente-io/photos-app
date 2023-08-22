@@ -1,3 +1,5 @@
+import "dart:convert" show jsonEncode, jsonDecode;
+
 import "package:flutter/material.dart" show Size, immutable;
 import "package:photos/models/ml_typedefs.dart";
 import "package:photos/services/face_ml/face_alignment/alignment_result.dart";
@@ -32,32 +34,39 @@ class FaceMlResult {
     required this.mlVersion,
   });
 
-  Map<String, dynamic> toJson() => {
+  Map<String, dynamic> _toJson() => {
         'faceDetectionMethod': faceDetectionMethod.toJson(),
         'faceAlignmentMethod': faceAlignmentMethod.toJson(),
         'faceEmbeddingMethod': faceEmbeddingMethod.toJson(),
-        'faces': faces,
+        'faces': faces.map((face) => face.toJson()).toList(),
         'fileId': fileId,
-        'imageDimensions': imageDimensions,
+        'imageDimensions': {'width': imageDimensions.width, 'height': imageDimensions.height},
         'imageSource': imageSource,
         'lastErrorMessage': lastErrorMessage,
         'errorCount': errorCount,
         'mlVersion': mlVersion,
       };
 
-  static FaceMlResult fromJson(Map<String, dynamic> json) {
+  String toJsonString() => jsonEncode(_toJson());
+
+  // TODO: dubble check the fromJson methods of the methods and FaceResult!!
+  static FaceMlResult _fromJson(Map<String, dynamic> json) {
     return FaceMlResult(
-      faceDetectionMethod: json['faceDetectionMethod'],
-      faceAlignmentMethod: json['faceAlignmentMethod'],
-      faceEmbeddingMethod: json['faceEmbeddingMethod'],
-      faces: json['faces'],
+      faceDetectionMethod: FaceDetectionMethod.fromJson(json['faceDetectionMethod']),
+      faceAlignmentMethod: FaceAlignmentMethod.fromJson(json['faceAlignmentMethod']),
+      faceEmbeddingMethod: FaceEmbeddingMethod.fromJson(json['faceEmbeddingMethod']),
+      faces: (json['faces'] as List).map((item) => FaceResult.fromJson(item as Map<String, dynamic>)).toList(),
       fileId: json['fileId'],
-      imageDimensions: json['imageDimensions'],
+      imageDimensions: Size(json['imageDimensions']['width'], json['imageDimensions']['height']),
       imageSource: json['imageSource'],
       lastErrorMessage: json['lastErrorMessage'],
       errorCount: json['errorCount'],
       mlVersion: json['mlVersion'],
     );
+  }
+
+  static FaceMlResult fromJsonString(String jsonString) {
+    return _fromJson(jsonDecode(jsonString));
   }
 }
 
@@ -206,9 +215,9 @@ class FaceResult {
 
   static FaceResult fromJson(Map<String, dynamic> json) {
     return FaceResult(
-      detection: json['detection'],
-      alignment: json['alignment'],
-      embedding: json['embedding'],
+      detection: FaceDetectionAbsolute.fromJson(json['detection']),
+      alignment: AlignmentResult.fromJson(json['alignment']),
+      embedding: Embedding.from(json['embedding']),
       fileId: json['fileId'],
       id: json['id'],
       personId: json['personId'],

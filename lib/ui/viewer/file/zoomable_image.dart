@@ -269,7 +269,7 @@ class _ZoomableImageState extends State<ZoomableImage>
       );
       showToast(
         context,
-        'Image successfully analyzed: ${faceMlResult.faces.length} faces and a total result: ${faceMlResult.toJson()}',
+        'Image successfully analyzed: ${faceMlResult.faces.length} faces and a total result: ${faceMlResult.toJsonString()}',
       );
     } catch (e, s) {
       showToast(

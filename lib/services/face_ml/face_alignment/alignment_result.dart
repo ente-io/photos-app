@@ -12,7 +12,9 @@ class AlignmentResult {
 
   factory AlignmentResult.fromJson(Map<String, dynamic> json) {
     return AlignmentResult(
-      affineMatrix: json['affineMatrix'],
+      affineMatrix: (json['affineMatrix'] as List)
+          .map((item) => List<double>.from(item))
+          .toList(),
     );
   }
 
