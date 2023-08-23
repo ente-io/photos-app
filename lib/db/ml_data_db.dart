@@ -143,6 +143,13 @@ class MlDataDB {
     );
   }
 
+  // getFileIDs return set of fileID from the facesTable
+  Future<Set<int>> getFileIDs() async {
+    final db = await instance.database;
+    final results = await db.query(facesTable);
+    return results.map((result) => result[fileIDColumn] as int).toSet();
+  }
+
   Future<int> deleteFaceMlResult(int fileId) async {
     _logger.fine('deleteFaceMlResult called');
     final db = await instance.database;

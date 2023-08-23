@@ -1,9 +1,14 @@
 import "dart:io" as io;
 import "dart:typed_data" show Uint8List;
 
+import "package:flutter/foundation.dart";
+import "package:flutter_image_compress/flutter_image_compress.dart";
 import "package:image/image.dart" as image_lib;
 import "package:logging/logging.dart";
+import "package:photos/core/configuration.dart";
 import "package:photos/db/ml_data_db.dart";
+import "package:photos/models/file.dart";
+import "package:photos/models/file_type.dart";
 import "package:photos/models/ml_typedefs.dart";
 import "package:photos/services/face_ml/face_alignment/similarity_transform.dart";
 import "package:photos/services/face_ml/face_detection/detection.dart";
@@ -13,6 +18,9 @@ import "package:photos/services/face_ml/face_embedding/face_embedding_exceptions
 import "package:photos/services/face_ml/face_embedding/face_embedding_service.dart";
 import "package:photos/services/face_ml/face_ml_exceptions.dart";
 import "package:photos/services/face_ml/face_ml_result.dart";
+import "package:photos/services/search_service.dart";
+import "package:photos/utils/file_util.dart";
+import "package:photos/utils/thumbnail_util.dart";
 
 class FaceMlService {
   final _logger = Logger("FaceMlService");
@@ -97,13 +105,63 @@ class FaceMlService {
     }
   }
 
+  Future<void> analyseData() async {
+    final List<File> enteFiles = await SearchService.instance.getAllFiles();
+    final Set<int> alreadyIndexedIDs = await MlDataDB.instance.getFileIDs();
+    for (final enteFile in enteFiles) {
+      if (!enteFile.isUploaded || enteFile.fileType == FileType.video) {
+        continue;
+      }
+      final id = enteFile.uploadedFileID!;
+      if (alreadyIndexedIDs.contains(id)) {
+        continue;
+      }
+      try {
+        final io.File? actualIoFile = await getFileForML(enteFile, );
+        if (actualIoFile == null) {
+          _logger.finest("Failed to get enteFile for ${enteFile.toString()}");
+          continue;
+        }
+        final FaceMlResult mlResult = await analyzeImage(actualIoFile);
+      } catch (e, s) {
+        _logger.severe("Could not analyze image", e, s);
+      }
+    }
+  }
+
+  Future<io.File?> getFileForML(
+    File enteFile, {
+    bool thumbnail = false,
+    bool compressOriginalFile = false,
+  }) async {
+    if(thumbnail) {
+      final Uint8List? thumbnailData = await getThumbnail(enteFile);
+      // todo:
+    }
+    final io.File? actualIoFile = await getFile(enteFile);
+    if (actualIoFile == null) {
+      return null;
+    }
+    if (compressOriginalFile) {
+      final String tempPath = Configuration.instance.getTempDirectory() +
+          "${enteFile.uploadedFileID!}";
+      final compressResult = await FlutterImageCompress.compressAndGetFile(
+        actualIoFile.path,
+        tempPath + ".jpg",
+      );
+      return compressResult;
+    }
+    return actualIoFile;
+  }
+
   /// Analyzes the given image data by running the full pipeline using [analyzeImage] and stores the result in the database [MlDataDB].
   /// This function first checks if the image has already been analyzed (with latest ml version) and stored in the database. If so, it returns the stored result.
   ///
   /// 'imageFile': The image file to analyze.
   ///
   /// Returns an immutable [FaceMlResult] instance containing the results of the analysis. The result is also stored in the database.
-  Future<FaceMlResult> processFacesImage(io.File imageFile) async {
+  Future<FaceMlResult> processFacesImage(io.File imageFile, int identifier)
+  async {
     // Check if the image has already been analyzed and stored in the database
     // TODO: should not using hashcode, but instead the actual fileID!!!!!!!!!!!!!!!!!!!!!!!!
     final existingResult = await MlDataDB.instance.getFaceMlResult(imageFile.path.hashCode);
