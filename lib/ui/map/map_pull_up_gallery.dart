@@ -121,7 +121,7 @@ class _MapPullUpGalleryState extends State<MapPullUpGallery> {
                   logger.info("Visible images: ${images.length}");
                   //To retain only selected files that are in view (visible)
                   WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-                    _selectedFiles.filesToRetain(images.toSet());
+                    _selectedFiles.retainFiles(images.toSet());
                   });
 
                   if (images.isEmpty) {
@@ -141,7 +141,7 @@ class _MapPullUpGalleryState extends State<MapPullUpGallery> {
                               Text(
                                 S.of(context).zoomOutToSeePhotos,
                                 style: textTheme.smallFaint,
-                              )
+                              ),
                             ],
                           ),
                         ),
@@ -179,7 +179,7 @@ class _MapPullUpGalleryState extends State<MapPullUpGallery> {
                 },
               ),
             ),
-          )
+          ),
         ],
       ),
     );

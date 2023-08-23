@@ -1,32 +1,36 @@
 import "dart:math";
 
+import "package:flutter/foundation.dart";
 import "package:flutter/material.dart";
 import "package:modal_bottom_sheet/modal_bottom_sheet.dart";
-import "package:photos/core/event_bus.dart";
+import "package:photos/core/configuration.dart";
 import "package:photos/db/files_db.dart";
-import "package:photos/events/collection_updated_event.dart";
 import "package:photos/generated/l10n.dart";
+import "package:photos/l10n/l10n.dart";
 import "package:photos/models/collection.dart";
-import "package:photos/models/file.dart";
-import "package:photos/models/file_load_result.dart";
 import "package:photos/models/selected_files.dart";
-import "package:photos/services/ignored_files_service.dart";
+import "package:photos/services/collections_service.dart";
+import "package:photos/services/filter/db_filters.dart";
 import "package:photos/theme/colors.dart";
 import "package:photos/theme/ente_theme.dart";
+import "package:photos/ui/actions/collection/collection_file_actions.dart";
+import "package:photos/ui/actions/collection/collection_sharing_actions.dart";
 import "package:photos/ui/components/bottom_of_title_bar_widget.dart";
 import "package:photos/ui/components/buttons/button_widget.dart";
 import "package:photos/ui/components/models/button_type.dart";
 import "package:photos/ui/components/title_bar_title_widget.dart";
 import "package:photos/ui/viewer/gallery/gallery.dart";
+import "package:photos/utils/dialog_util.dart";
+import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
-Future<File?> showPickCoverPhotoSheet(
+Future<dynamic> showAddPhotosSheet(
   BuildContext context,
   Collection collection,
 ) async {
   return await showBarModalBottomSheet(
     context: context,
     builder: (context) {
-      return PickCoverPhotoWidget(collection);
+      return AddPhotosPhotoWidget(collection);
     },
     shape: const RoundedRectangleBorder(
       side: BorderSide(width: 0),
@@ -41,10 +45,10 @@ Future<File?> showPickCoverPhotoSheet(
   );
 }
 
-class PickCoverPhotoWidget extends StatelessWidget {
+class AddPhotosPhotoWidget extends StatelessWidget {
   final Collection collection;
 
-  const PickCoverPhotoWidget(
+  const AddPhotosPhotoWidget(
     this.collection, {
     super.key,
   });
@@ -56,6 +60,10 @@ class PickCoverPhotoWidget extends StatelessWidget {
     selectedFiles.addListener(() {
       isFileSelected.value = selectedFiles.files.isNotEmpty;
     });
+    final Set<int> hiddenCollectionIDs =
+        CollectionsService.instance.getHiddenCollectionIds();
+    // Hide the current collection files from suggestions
+    hiddenCollectionIDs.add(collection.id);
 
     return Padding(
       padding: const EdgeInsets.all(0),
@@ -75,49 +83,40 @@ class PickCoverPhotoWidget extends StatelessWidget {
                     child: Column(
                       children: [
                         BottomOfTitleBarWidget(
-                          title: const TitleBarTitleWidget(
-                            title: "Select cover photo",
+                          title: TitleBarTitleWidget(
+                            title: S.of(context).addMore,
                           ),
-                          caption: collection.displayName,
+                          caption: S.of(context).selectItemsToAdd,
+                          showCloseButton: true,
                         ),
                         Expanded(
                           child: Gallery(
+                            inSelectionMode: true,
                             asyncLoader: (
                               creationStartTime,
                               creationEndTime, {
                               limit,
                               asc,
-                            }) async {
-                              final FileLoadResult result =
-                                  await FilesDB.instance.getFilesInCollection(
-                                collection.id,
+                            }) {
+                              return FilesDB.instance
+                                  .getAllPendingOrUploadedFiles(
                                 creationStartTime,
                                 creationEndTime,
+                                Configuration.instance.getUserID()!,
                                 limit: limit,
                                 asc: asc,
+                                filterOptions: DBFilterOptions(
+                                  hideIgnoredForUpload: true,
+                                  dedupeUploadID: true,
+                                  ignoredCollectionIDs: hiddenCollectionIDs,
+                                ),
+                                applyOwnerCheck: true,
                               );
-                              // hide ignored files from home page UI
-                              final ignoredIDs =
-                                  await IgnoredFilesService.instance.ignoredIDs;
-                              result.files.removeWhere(
-                                (f) =>
-                                    f.uploadedFileID == null &&
-                                    IgnoredFilesService.instance
-                                        .shouldSkipUpload(ignoredIDs, f),
-                              );
-                              return result;
                             },
-                            reloadEvent:
-                                Bus.instance.on<CollectionUpdatedEvent>().where(
-                                      (event) =>
-                                          event.collectionID == collection.id,
-                                    ),
-                            tagPrefix: "pick_center_point_gallery",
+                            tagPrefix: "pick_add_photos_gallery",
                             selectedFiles: selectedFiles,
-                            limitSelectionToOne: true,
-                            showSelectAllByDefault: false,
-                            sortAsyncFn: () =>
-                                collection.pubMagicMetadata.asc ?? false,
+                            showSelectAllByDefault: true,
+                            sortAsyncFn: () => false,
                           ),
                         ),
                       ],
@@ -145,12 +144,20 @@ class PickCoverPhotoWidget extends StatelessWidget {
                                 switchOutCurve: Curves.easeInOutExpo,
                                 child: ButtonWidget(
                                   key: ValueKey(value),
-                                  isDisabled: !value,
-                                  buttonType: ButtonType.neutral,
-                                  labelText: S.of(context).useSelectedPhoto,
+                                  // isDisabled: !value,
+                                  buttonType: ButtonType.primary,
+                                  labelText: S.of(context).addSelected,
                                   onTap: () async {
-                                    final selectedFile =
-                                        selectedFiles.files.first;
+                                    final selectedFile = selectedFiles.files;
+                                    final ca = CollectionActions(
+                                      CollectionsService.instance,
+                                    );
+                                    await ca.addToCollection(
+                                      context,
+                                      collection.id,
+                                      false,
+                                      selectedFiles: selectedFile.toList(),
+                                    );
                                     Navigator.pop(context, selectedFile);
                                   },
                                 ),
@@ -160,16 +167,16 @@ class PickCoverPhotoWidget extends StatelessWidget {
                           const SizedBox(height: 8),
                           ButtonWidget(
                             buttonType: ButtonType.secondary,
-                            buttonAction: ButtonAction.cancel,
-                            labelText: S.of(context).cancel,
+                            buttonAction: ButtonAction.second,
+                            labelText: S.of(context).addFromDevice,
                             onTap: () async {
-                              Navigator.of(context).pop();
+                              await _onPickFromDeviceClicked(context);
                             },
                           ),
                         ],
                       ),
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
@@ -177,5 +184,45 @@ class PickCoverPhotoWidget extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _onPickFromDeviceClicked(BuildContext context) async {
+    try {
+      final List<AssetEntity>? result = await AssetPicker.pickAssets(context);
+      if (result != null && result.isNotEmpty) {
+        final ca = CollectionActions(
+          CollectionsService.instance,
+        );
+        await ca.addToCollection(
+          context,
+          collection.id,
+          false,
+          picketAssets: result,
+        );
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (e is StateError) {
+        final PermissionState ps = await PhotoManager.requestPermissionExtend();
+        if (ps != PermissionState.authorized && ps != PermissionState.limited) {
+          showChoiceDialog(
+            context,
+            title: context.l10n.grantPermission,
+            body: context.l10n.pleaseGrantPermissions,
+            firstButtonLabel: context.l10n.ok,
+            secondButtonLabel: context.l10n.cancel,
+            firstButtonOnTap: () async {
+              await PhotoManager.openSetting();
+            },
+          );
+        } else {
+          showErrorDialog(
+            context,
+            context.l10n.oops,
+            context.l10n.somethingWentWrong + (kDebugMode ? "\n$e" : ""),
+          );
+        }
+      }
+    }
   }
 }

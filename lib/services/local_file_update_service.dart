@@ -2,12 +2,13 @@ import 'dart:async';
 import 'dart:core';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
+import "package:photos/core/configuration.dart";
 import 'package:photos/core/errors.dart';
 import 'package:photos/db/file_updation_db.dart';
 import 'package:photos/db/files_db.dart';
 import 'package:photos/models/file.dart' as ente;
+import "package:photos/models/file_type.dart";
 import 'package:photos/utils/file_uploader_util.dart';
 import 'package:photos/utils/file_util.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -114,10 +115,17 @@ class LocalFileUpdateService {
     List<String> localIDsToProcess,
   ) async {
     _logger.info("files to process ${localIDsToProcess.length} for reupload");
-    final List<ente.File> localFiles =
+    final int userID = Configuration.instance.getUserID()!;
+    final List<ente.File> result =
         await FilesDB.instance.getLocalFiles(localIDsToProcess);
+    final List<ente.File> localFilesForUser = [];
+    for (ente.File file in result) {
+      if (file.ownerID == null || file.ownerID == userID) {
+        localFilesForUser.add(file);
+      }
+    }
     final Set<String> processedIDs = {};
-    for (ente.File file in localFiles) {
+    for (ente.File file in localFilesForUser) {
       if (processedIDs.contains(file.localID)) {
         continue;
       }
@@ -134,24 +142,46 @@ class LocalFileUpdateService {
             "Marking for file update as hash did not match ${file.tag}",
           );
           await clearCache(file);
-          await FilesDB.instance.updateUploadedFile(
+          await FilesDB.instance.markFilesForReUpload(
+            userID,
             file.localID!,
             file.title,
             file.location,
             file.creationTime!,
             file.modificationTime!,
-            null,
+            file.fileType,
           );
         }
         processedIDs.add(file.localID!);
-      } on InvalidFileError {
-        // if we fail to get the file, we can ignore the update
+      } on InvalidFileError catch (e) {
+        if (e.reason == InvalidReason.livePhotoToImageTypeChanged ||
+            e.reason == InvalidReason.imageToLivePhotoTypeChanged) {
+
+          late FileType fileType;
+          if (e.reason == InvalidReason.livePhotoToImageTypeChanged) {
+            fileType = FileType.image;
+          } else if (e.reason == InvalidReason.imageToLivePhotoTypeChanged) {
+            fileType = FileType.livePhoto;
+          }
+          final int count = await FilesDB.instance.markFilesForReUpload(
+            userID,
+            file.localID!,
+            file.title,
+            file.location,
+            file.creationTime!,
+            file.modificationTime!,
+            fileType,
+          );
+          _logger.fine('fileType changed for ${file.tag} to ${e.reason} for '
+              '$count files');
+        } else {
+          _logger.severe("failed to check hash: invalid file ${file.tag}", e);
+        }
         processedIDs.add(file.localID!);
       } catch (e) {
-        _logger.severe("Failed to get file uploadData", e);
+        _logger.severe("Failed to check hash", e);
       } finally {}
     }
-    debugPrint("Deleting files ${processedIDs.length}");
     await _fileUpdationDB.deleteByLocalIDs(
       processedIDs.toList(),
       FileUpdationDB.modificationTimeUpdated,

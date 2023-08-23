@@ -32,7 +32,7 @@ class FilesService {
       final response = await _enteDio.post(
         "/files/size",
         data: {
-          "fileIDs": [uploadedFileID]
+          "fileIDs": [uploadedFileID],
         },
       );
       return response.data["size"];
@@ -139,7 +139,7 @@ class FilesService {
   }
 
   Future<void> removeIgnoredFiles(Future<FileLoadResult> result) async {
-    final ignoredIDs = await IgnoredFilesService.instance.ignoredIDs;
+    final ignoredIDs = await IgnoredFilesService.instance.idToIgnoreReasonMap;
     (await result).files.removeWhere(
           (f) =>
               f.uploadedFileID == null &&

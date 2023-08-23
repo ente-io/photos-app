@@ -240,10 +240,10 @@ class S {
     );
   }
 
-  /// `The app or a certain feature does not \nbehave as I think it should`
+  /// `The app or a certain feature does not behave as I think it should`
   String get deleteReason2 {
     return Intl.message(
-      'The app or a certain feature does not \nbehave as I think it should',
+      'The app or a certain feature does not behave as I think it should',
       name: 'deleteReason2',
       desc: '',
       args: [],
@@ -545,6 +545,16 @@ class S {
     return Intl.message(
       'Verify email',
       name: 'verifyEmail',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `To reset your password, please verify your email first.`
+  String get toResetVerifyEmail {
+    return Intl.message(
+      'To reset your password, please verify your email first.',
+      name: 'toResetVerifyEmail',
       desc: '',
       args: [],
     );
@@ -3122,6 +3132,26 @@ class S {
     );
   }
 
+  /// `Email verification`
+  String get emailVerificationToggle {
+    return Intl.message(
+      'Email verification',
+      name: 'emailVerificationToggle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please authenticate to change email verification`
+  String get authToChangeEmailVerificationSetting {
+    return Intl.message(
+      'Please authenticate to change email verification',
+      name: 'authToChangeEmailVerificationSetting',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Export your data`
   String get exportYourData {
     return Intl.message(
@@ -5017,16 +5047,6 @@ class S {
     );
   }
 
-  /// `{count} selected`
-  String itemSelectedCount(int count) {
-    return Intl.message(
-      '$count selected',
-      name: 'itemSelectedCount',
-      desc: 'Text to indicate number of items selected',
-      args: [count],
-    );
-  }
-
   /// `Share`
   String get share {
     return Intl.message(
@@ -5350,6 +5370,16 @@ class S {
     return Intl.message(
       'Rename album',
       name: 'renameAlbum',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Convert to album`
+  String get convertToAlbum {
+    return Intl.message(
+      'Convert to album',
+      name: 'convertToAlbum',
       desc: '',
       args: [],
     );
@@ -6859,6 +6889,16 @@ class S {
     );
   }
 
+  /// `Reset to default`
+  String get resetToDefault {
+    return Intl.message(
+      'Reset to default',
+      name: 'resetToDefault',
+      desc: 'Button text to reset cover photo to default',
+      args: [],
+    );
+  }
+
   /// `Edit`
   String get edit {
     return Intl.message(
@@ -7365,6 +7405,56 @@ class S {
     );
   }
 
+  /// `Quick links`
+  String get quickLinks {
+    return Intl.message(
+      'Quick links',
+      name: 'quickLinks',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Select items to add`
+  String get selectItemsToAdd {
+    return Intl.message(
+      'Select items to add',
+      name: 'selectItemsToAdd',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add selected`
+  String get addSelected {
+    return Intl.message(
+      'Add selected',
+      name: 'addSelected',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add from device`
+  String get addFromDevice {
+    return Intl.message(
+      'Add from device',
+      name: 'addFromDevice',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add photos`
+  String get addPhotos {
+    return Intl.message(
+      'Add photos',
+      name: 'addPhotos',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `No photos found here`
   String get noPhotosFoundHere {
     return Intl.message(
@@ -7410,6 +7500,136 @@ class S {
     return Intl.message(
       'Pin album',
       name: 'pinAlbum',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Create`
+  String get create {
+    return Intl.message(
+      'Create',
+      name: 'create',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `View all`
+  String get viewAll {
+    return Intl.message(
+      'View all',
+      name: 'viewAll',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nothing shared with you yet`
+  String get nothingSharedWithYouYet {
+    return Intl.message(
+      'Nothing shared with you yet',
+      name: 'nothingSharedWithYouYet',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No albums shared by you yet`
+  String get noAlbumsSharedByYouYet {
+    return Intl.message(
+      'No albums shared by you yet',
+      name: 'noAlbumsSharedByYouYet',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Shared with you`
+  String get sharedWithYou {
+    return Intl.message(
+      'Shared with you',
+      name: 'sharedWithYou',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Shared by you`
+  String get sharedByYou {
+    return Intl.message(
+      'Shared by you',
+      name: 'sharedByYou',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Invite your friends to ente`
+  String get inviteYourFriendsToEnte {
+    return Intl.message(
+      'Invite your friends to ente',
+      name: 'inviteYourFriendsToEnte',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to download video`
+  String get failedToDownloadVideo {
+    return Intl.message(
+      'Failed to download video',
+      name: 'failedToDownloadVideo',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Hiding...`
+  String get hiding {
+    return Intl.message(
+      'Hiding...',
+      name: 'hiding',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unhiding...`
+  String get unhiding {
+    return Intl.message(
+      'Unhiding...',
+      name: 'unhiding',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Successfully hid`
+  String get successfullyHid {
+    return Intl.message(
+      'Successfully hid',
+      name: 'successfullyHid',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Successfully unhid`
+  String get successfullyUnhid {
+    return Intl.message(
+      'Successfully unhid',
+      name: 'successfullyUnhid',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Crash reporting`
+  String get crashReporting {
+    return Intl.message(
+      'Crash reporting',
+      name: 'crashReporting',
       desc: '',
       args: [],
     );

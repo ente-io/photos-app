@@ -140,7 +140,7 @@ class _LocationGalleryWidgetState extends State<LocationGalleryWidget> {
   @override
   void initState() {
     final collectionsToHide =
-        CollectionsService.instance.archivedOrHiddenCollections();
+        CollectionsService.instance.archivedOrHiddenCollectionIds();
     fileLoadResult =
         FilesDB.instance.fetchAllUploadedAndSharedFilesWithLocation(
       galleryLoadStartTime,
@@ -234,7 +234,7 @@ class _LocationGalleryWidgetState extends State<LocationGalleryWidget> {
               FileSelectionOverlayBar(
                 GalleryType.locationTag,
                 _selectedFiles,
-              )
+              ),
             ],
           );
         } else {
@@ -307,7 +307,7 @@ class _GalleryHeaderWidgetState extends State<GalleryHeaderWidget> {
                   );
                 }
               },
-            )
+            ),
           ],
         ),
       ),

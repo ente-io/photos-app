@@ -191,7 +191,9 @@ class RemoteSyncService {
     unawaited(_notifyNewFiles(idsToRemoteUpdationTimeMap.keys.toList()));
   }
 
-  Future<void> _syncUpdatedCollections(final idsToRemoteUpdationTimeMap) async {
+  Future<void> _syncUpdatedCollections(
+    final Map<int, int> idsToRemoteUpdationTimeMap,
+  ) async {
     for (final cid in idsToRemoteUpdationTimeMap.keys) {
       await _syncCollectionDiff(
         cid,
@@ -220,9 +222,8 @@ class RemoteSyncService {
 
   Future<void> _syncCollectionDiff(int collectionID, int sinceTime) async {
     _logger.info(
-      "Syncing collection #" +
-          collectionID.toString() +
-          (_isExistingSyncSilent ? " silently" : ""),
+      "[Collection-$collectionID] fetch diff silently: $_isExistingSyncSilent "
+      "since: $sinceTime",
     );
     if (!_isExistingSyncSilent) {
       Bus.instance.fire(SyncStatusUpdate(SyncStatus.applyingRemoteDiff));
@@ -235,10 +236,8 @@ class RemoteSyncService {
     if (diff.updatedFiles.isNotEmpty) {
       await _storeDiff(diff.updatedFiles, collectionID);
       _logger.info(
-        "Updated " +
-            diff.updatedFiles.length.toString() +
-            " files in collection " +
-            collectionID.toString(),
+        "[Collection-$collectionID] Updated ${diff.updatedFiles.length} files"
+        " from remote",
       );
       Bus.instance.fire(
         LocalPhotosUpdatedEvent(
@@ -266,9 +265,8 @@ class RemoteSyncService {
         collectionID,
         _collectionsService.getCollectionSyncTime(collectionID),
       );
-    } else {
-      _logger.info("Collection #" + collectionID.toString() + " synced");
     }
+    _logger.info("[Collection-$collectionID] synced");
   }
 
   Future<void> _syncCollectionDiffDelete(Diff diff, int collectionID) async {
@@ -489,31 +487,37 @@ class RemoteSyncService {
   }
 
   Future<List<File>> _getFilesToBeUploaded() async {
-    final deviceCollections = await _db.getDeviceCollections();
-    deviceCollections.removeWhere((element) => !element.shouldBackup);
-    final List<File> filesToBeUploaded = await _db.getFilesPendingForUpload();
-    if (!_config.shouldBackupVideos() || _shouldThrottleSync()) {
-      filesToBeUploaded
-          .removeWhere((element) => element.fileType == FileType.video);
+    final List<File> originalFiles = await _db.getFilesPendingForUpload();
+    if (originalFiles.isEmpty) {
+      return originalFiles;
     }
-    if (filesToBeUploaded.isNotEmpty) {
-      final int prevCount = filesToBeUploaded.length;
-      final ignoredIDs = await IgnoredFilesService.instance.ignoredIDs;
-      filesToBeUploaded.removeWhere(
-        (file) =>
-            IgnoredFilesService.instance.shouldSkipUpload(ignoredIDs, file),
-      );
-      if (prevCount != filesToBeUploaded.length) {
-        _logger.info(
-          (prevCount - filesToBeUploaded.length).toString() +
-              " files were ignored for upload",
-        );
+    final bool shouldRemoveVideos =
+        !_config.shouldBackupVideos() || _shouldThrottleSync();
+    final ignoredIDs = await IgnoredFilesService.instance.idToIgnoreReasonMap;
+    bool shouldSkipUploadFunc(File file) {
+      return IgnoredFilesService.instance.shouldSkipUpload(ignoredIDs, file);
+    }
+
+    final List<File> filesToBeUploaded = [];
+    int ignoredForUpload = 0;
+    int skippedVideos = 0;
+    for (var file in originalFiles) {
+      if (shouldRemoveVideos && file.fileType == FileType.video) {
+        skippedVideos++;
+        continue;
       }
+      if (shouldSkipUploadFunc(file)) {
+        ignoredForUpload++;
+        continue;
+      }
+      filesToBeUploaded.add(file);
+    }
+    if (skippedVideos > 0 || ignoredForUpload > 0) {
+      _logger.info("Skipped $skippedVideos videos and $ignoredForUpload "
+          "ignored files for upload");
     }
     _sortByTimeAndType(filesToBeUploaded);
-    _logger.info(
-      filesToBeUploaded.length.toString() + " new files to be uploaded.",
-    );
+    _logger.info("${filesToBeUploaded.length} new files to be uploaded.");
     return filesToBeUploaded;
   }
 
@@ -662,7 +666,10 @@ class RemoteSyncService {
         // Case [1] Check and clear local cache when uploadedFile already exist
         // Note: Existing file can be null here if it's replaced by the time we
         // reach here
-        existingFile = await _db.getFile(remoteFile.generatedID!);
+        existingFile = await _db.getUploadedFile(
+          remoteFile.uploadedFileID!,
+          remoteFile.collectionID!,
+        );
         if (existingFile != null &&
             _shouldClearCache(remoteFile, existingFile)) {
           needsGalleryReload = true;
@@ -856,26 +863,44 @@ class RemoteSyncService {
   bool _shouldShowNotification(int collectionID) {
     // TODO: Add option to opt out of notifications for a specific collection
     // Screen: https://www.figma.com/file/SYtMyLBs5SAOkTbfMMzhqt/ente-Visual-Design?type=design&node-id=7689-52943&t=IyWOfh0Gsb0p7yVC-4
-    return NotificationService.instance
-            .shouldShowNotificationsForSharedPhotos() &&
-        isFirstRemoteSyncDone() &&
-        !AppLifecycleService.instance.isForeground;
+    final isForeground = AppLifecycleService.instance.isForeground;
+    final bool showNotification =
+        NotificationService.instance.shouldShowNotificationsForSharedPhotos() &&
+            isFirstRemoteSyncDone() &&
+            !isForeground;
+    _logger.info(
+      "[Collection-$collectionID] shouldShow notification: $showNotification, "
+      "isAppInForeground: $isForeground",
+    );
+    return showNotification;
   }
 
   Future<void> _notifyNewFiles(List<int> collectionIDs) async {
     final userID = Configuration.instance.getUserID();
     final appOpenTime = AppLifecycleService.instance.getLastAppOpenTime();
     for (final collectionID in collectionIDs) {
-      final collection = _collectionsService.getCollectionByID(collectionID);
+      if (!_shouldShowNotification(collectionID)) {
+        continue;
+      }
       final files =
           await _db.getNewFilesInCollection(collectionID, appOpenTime);
-      final sharedFileCount =
-          files.where((file) => file.ownerID != userID).length;
-      final collectedFileCount = files
-          .where((file) => file.pubMagicMetadata!.uploaderName != null)
-          .length;
-      final totalCount = sharedFileCount + collectedFileCount;
-      if (totalCount > 0 && _shouldShowNotification(collectionID)) {
+      final Set<int> sharedFilesIDs = {};
+      final Set<int> collectedFilesIDs = {};
+      for (final file in files) {
+        if (file.isUploaded && file.ownerID != userID) {
+          sharedFilesIDs.add(file.uploadedFileID!);
+        } else if (file.isUploaded &&
+            file.pubMagicMetadata!.uploaderName != null) {
+          collectedFilesIDs.add(file.uploadedFileID!);
+        }
+      }
+      final totalCount = sharedFilesIDs.length + collectedFilesIDs.length;
+      if (totalCount > 0) {
+        final collection = _collectionsService.getCollectionByID(collectionID);
+        _logger.finest(
+          'creating notification for ${collection?.displayName} '
+          'shared: $sharedFilesIDs, collected: $collectedFilesIDs files',
+        );
         NotificationService.instance.showNotification(
           collection!.displayName,
           totalCount.toString() + " new 📸",

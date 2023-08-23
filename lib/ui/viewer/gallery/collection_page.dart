@@ -5,7 +5,6 @@ import 'package:photos/db/files_db.dart';
 import "package:photos/events/collection_meta_event.dart";
 import 'package:photos/events/collection_updated_event.dart';
 import 'package:photos/events/files_updated_event.dart';
-import 'package:photos/models/collection.dart';
 import 'package:photos/models/collection_items.dart';
 import 'package:photos/models/file.dart';
 import 'package:photos/models/file_load_result.dart';
@@ -13,6 +12,7 @@ import 'package:photos/models/gallery_type.dart';
 import 'package:photos/models/selected_files.dart';
 import 'package:photos/services/ignored_files_service.dart';
 import 'package:photos/ui/viewer/actions/file_selection_overlay_bar.dart';
+import "package:photos/ui/viewer/gallery/empty_album_state.dart";
 import 'package:photos/ui/viewer/gallery/empty_state.dart';
 import 'package:photos/ui/viewer/gallery/gallery.dart';
 import 'package:photos/ui/viewer/gallery/gallery_app_bar_widget.dart';
@@ -20,13 +20,11 @@ import 'package:photos/ui/viewer/gallery/gallery_app_bar_widget.dart';
 class CollectionPage extends StatelessWidget {
   final CollectionWithThumbnail c;
   final String tagPrefix;
-  final GalleryType appBarType;
-  final bool hasVerifiedLock;
+  final bool? hasVerifiedLock;
 
   CollectionPage(
     this.c, {
     this.tagPrefix = "collection",
-    this.appBarType = GalleryType.ownedCollection,
     this.hasVerifiedLock = false,
     Key? key,
   }) : super(key: key);
@@ -36,12 +34,15 @@ class CollectionPage extends StatelessWidget {
   final GlobalKey shareButtonKey = GlobalKey();
 
   @override
-  Widget build(Object context) {
+  Widget build(BuildContext context) {
     if (hasVerifiedLock == false && c.collection.isHidden()) {
       return const EmptyState();
     }
 
-    final galleryType = _getGalleryType(c.collection);
+    final galleryType = getGalleryType(
+      c.collection,
+      Configuration.instance.getUserID()!,
+    );
     final List<File>? initialFiles =
         c.thumbnail != null ? [c.thumbnail!] : null;
     final gallery = Gallery(
@@ -55,7 +56,8 @@ class CollectionPage extends StatelessWidget {
           asc: asc,
         );
         // hide ignored files from home page UI
-        final ignoredIDs = await IgnoredFilesService.instance.ignoredIDs;
+        final ignoredIDs =
+            await IgnoredFilesService.instance.idToIgnoreReasonMap;
         result.files.removeWhere(
           (f) =>
               f.uploadedFileID == null &&
@@ -71,7 +73,7 @@ class CollectionPage extends StatelessWidget {
               (event) =>
                   event.id == c.collection.id &&
                   event.type == CollectionMetaEventType.sortChanged,
-            )
+            ),
       ],
       removalEventTypes: const {
         EventType.deletedFromRemote,
@@ -84,6 +86,9 @@ class CollectionPage extends StatelessWidget {
       albumName: c.collection.displayName,
       sortAsyncFn: () => c.collection.pubMagicMetadata.asc ?? false,
       showSelectAllByDefault: galleryType != GalleryType.sharedCollection,
+      emptyState: galleryType == GalleryType.ownedCollection
+          ? EmptyAlbumState(c.collection)
+          : const EmptyState(),
     );
     return Scaffold(
       appBar: PreferredSize(
@@ -103,24 +108,9 @@ class CollectionPage extends StatelessWidget {
             galleryType,
             _selectedFiles,
             collection: c.collection,
-          )
+          ),
         ],
       ),
     );
-  }
-
-  GalleryType _getGalleryType(Collection c) {
-    final currentUserID = Configuration.instance.getUserID()!;
-    if (!c.isOwner(currentUserID)) {
-      return GalleryType.sharedCollection;
-    }
-    if (c.isDefaultHidden()) {
-      return GalleryType.hidden;
-    } else if (c.type == CollectionType.uncategorized) {
-      return GalleryType.uncategorized;
-    } else if (c.type == CollectionType.favorites) {
-      return GalleryType.favorite;
-    }
-    return appBarType;
   }
 }

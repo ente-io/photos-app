@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
+import "package:flutter_datetime_picker_bdaya/flutter_datetime_picker_bdaya.dart";
 import 'package:photos/theme/colors.dart';
 import 'package:photos/theme/ente_theme.dart';
 
@@ -93,6 +93,7 @@ final darkThemeData = ThemeData(
   colorScheme: const ColorScheme.dark(
     primary: Colors.white,
     background: Color.fromRGBO(0, 0, 0, 1),
+    secondary: Color.fromARGB(255, 163, 163, 163),
   ),
   buttonTheme: const ButtonThemeData().copyWith(
     buttonColor: const Color.fromRGBO(45, 194, 98, 1.0),
@@ -277,13 +278,13 @@ extension CustomColorScheme on ColorScheme {
       ? const Color.fromARGB(255, 238, 238, 238)
       : const Color.fromRGBO(255, 255, 255, 1).withOpacity(0.1);
 
-  DatePickerTheme get dateTimePickertheme => brightness == Brightness.light
-      ? const DatePickerTheme(
+  DatePickerThemeBdaya get dateTimePickertheme => brightness == Brightness.light
+      ? const DatePickerThemeBdaya(
           backgroundColor: Colors.white,
           itemStyle: TextStyle(color: Colors.black),
           cancelStyle: TextStyle(color: Colors.black),
         )
-      : const DatePickerTheme(
+      : const DatePickerThemeBdaya(
           backgroundColor: Colors.black,
           itemStyle: TextStyle(color: Colors.white),
           cancelStyle: TextStyle(color: Colors.white),
@@ -391,9 +392,7 @@ ElevatedButtonThemeData buildElevatedButtonThemeData({
 }) {
   return ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
-      elevation: elevation,
-      onPrimary: onPrimary,
-      primary: primary,
+      foregroundColor: onPrimary, backgroundColor: primary, elevation: elevation,
       alignment: Alignment.center,
       textStyle: const TextStyle(
         fontWeight: FontWeight.w600,

@@ -9,7 +9,6 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
-import 'package:path/path.dart';
 import 'package:photos/core/configuration.dart';
 import 'package:photos/core/errors.dart';
 import 'package:photos/core/event_bus.dart';
@@ -36,6 +35,7 @@ import 'package:photos/utils/file_download_util.dart';
 import 'package:photos/utils/file_uploader_util.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tuple/tuple.dart';
+import "package:uuid/uuid.dart";
 
 class FileUploader {
   static const kMaximumConcurrentUploads = 4;
@@ -111,7 +111,10 @@ class FileUploader {
             }
             return false;
           },
-          InvalidFileError("File already deleted"),
+          InvalidFileError(
+            "File already deleted",
+            InvalidReason.assetDeletedEvent,
+          ),
         );
       }
     });
@@ -298,20 +301,26 @@ class FileUploader {
     }
   }
 
+  Future<File> forceUpload(File file, int collectionID) async {
+    return _tryToUpload(file, collectionID, true);
+  }
+
   Future<File> _tryToUpload(
     File file,
     int collectionID,
     bool forcedUpload,
   ) async {
     await checkNetworkForUpload(isForceUpload: forcedUpload);
-    final fileOnDisk = await FilesDB.instance.getFile(file.generatedID!);
-    final wasAlreadyUploaded = fileOnDisk != null &&
-        fileOnDisk.uploadedFileID != null &&
-        (fileOnDisk.updationTime ?? -1) != -1 &&
-        (fileOnDisk.collectionID ?? -1) == collectionID;
-    if (wasAlreadyUploaded) {
-      debugPrint("File is already uploaded ${fileOnDisk.tag}");
-      return fileOnDisk;
+    if (!forcedUpload) {
+      final fileOnDisk = await FilesDB.instance.getFile(file.generatedID!);
+      final wasAlreadyUploaded = fileOnDisk != null &&
+          fileOnDisk.uploadedFileID != null &&
+          (fileOnDisk.updationTime ?? -1) != -1 &&
+          (fileOnDisk.collectionID ?? -1) == collectionID;
+      if (wasAlreadyUploaded) {
+        debugPrint("File is already uploaded ${fileOnDisk.tag}");
+        return fileOnDisk;
+      }
     }
     if ((file.localID ?? '') == '') {
       _logger.severe('Trying to upload file with missing localID');
@@ -332,15 +341,9 @@ class FileUploader {
     }
 
     final tempDirectory = Configuration.instance.getTempDirectory();
-    final encryptedFilePath = tempDirectory +
-        file.generatedID.toString() +
-        (_isBackground ? "_bg" : "") +
-        ".encrypted";
-    final encryptedThumbnailPath = tempDirectory +
-        file.generatedID.toString() +
-        "_thumbnail" +
-        (_isBackground ? "_bg" : "") +
-        ".encrypted";
+    final String uniqueID = const Uuid().v4().toString();
+    final encryptedFilePath = '$tempDirectory${uniqueID}_file.encrypted';
+    final encryptedThumbnailPath = '$tempDirectory${uniqueID}_thumb.encrypted';
     MediaUploadData? mediaUploadData;
     var uploadCompleted = false;
     // This flag is used to decide whether to clear the iOS origin file cache
@@ -348,11 +351,11 @@ class FileUploader {
     var uploadHardFailure = false;
 
     try {
+      final bool isUpdatedFile =
+          file.uploadedFileID != null && file.updationTime == -1;
       _logger.info(
-        "Trying to upload " +
-            file.toString() +
-            ", isForced: " +
-            forcedUpload.toString(),
+        'starting ${forcedUpload ? 'forced' : ''} '
+        '${isUpdatedFile ? 're-upload' : 'upload'} of ${file.toString()}',
       );
       try {
         mediaUploadData = await getUploadDataFromEnteFile(file);
@@ -363,12 +366,8 @@ class FileUploader {
           rethrow;
         }
       }
-
       Uint8List? key;
-      final bool isUpdatedFile =
-          file.uploadedFileID != null && file.updationTime == -1;
       if (isUpdatedFile) {
-        _logger.info("File was updated " + file.toString());
         key = getFileKey(file);
       } else {
         key = null;
@@ -396,7 +395,7 @@ class FileUploader {
       await _checkIfWithinStorageLimit(mediaUploadData!.sourceFile!);
       final encryptedFile = io.File(encryptedFilePath);
       final EncryptionResult fileAttributes = await CryptoUtil.encryptFile(
-        mediaUploadData!.sourceFile!.path,
+        mediaUploadData.sourceFile!.path,
         encryptedFilePath,
         key: key,
       );
@@ -467,7 +466,7 @@ class FileUploader {
             (mediaUploadData.width ?? 0) != 0) {
           final pubMetadata = {
             heightKey: mediaUploadData.height,
-            widthKey: mediaUploadData.width
+            widthKey: mediaUploadData.width,
           };
           if (mediaUploadData.motionPhotoStartIndex != null) {
             pubMetadata[motionVideoIndexKey] =
@@ -593,7 +592,9 @@ class FileUploader {
         "\n existing: ${sameLocalSameCollection.tag}",
       );
       // should delete the fileToUploadEntry
-      await FilesDB.instance.deleteByGeneratedID(fileToUpload.generatedID!);
+      if (fileToUpload.generatedID != null) {
+        await FilesDB.instance.deleteByGeneratedID(fileToUpload.generatedID!);
+      }
 
       Bus.instance.fire(
         LocalPhotosUpdatedEvent(
@@ -622,7 +623,11 @@ class FileUploader {
         fileMissingLocal.uploadedFileID!,
         fileToUpload.localID!,
       );
-      await FilesDB.instance.deleteByGeneratedID(fileToUpload.generatedID!);
+      // For files selected from device, during collaborative upload, we don't
+      // insert entries in the FilesDB. So, we don't need to delete the entry
+      if (fileToUpload.generatedID != null) {
+        await FilesDB.instance.deleteByGeneratedID(fileToUpload.generatedID!);
+      }
       Bus.instance.fire(
         LocalPhotosUpdatedEvent(
           [fileToUpload],
@@ -729,13 +734,23 @@ class FileUploader {
   }
 
   Future _onInvalidFileError(File file, InvalidFileError e) async {
-    final String ext = file.title == null ? "no title" : extension(file.title!);
-    _logger.severe(
-      "Invalid file: (ext: $ext) encountered: " + file.toString(),
-      e,
-    );
-    await FilesDB.instance.deleteLocalFile(file);
-    await LocalSyncService.instance.trackInvalidFile(file);
+    final bool canIgnoreFile = file.localID != null &&
+        file.deviceFolder != null &&
+        file.title != null &&
+        !file.isSharedMediaToAppSandbox;
+    final bool deleteEntry = !file.isUploaded && !canIgnoreFile;
+    if (e.reason != InvalidReason.thumbnailMissing || !canIgnoreFile) {
+      _logger.severe(
+        "Invalid file, localDelete: $deleteEntry, ignored: $canIgnoreFile",
+        e,
+      );
+    }
+    if (deleteEntry) {
+      await FilesDB.instance.deleteLocalFile(file);
+    }
+    if (canIgnoreFile) {
+      await LocalSyncService.instance.ignoreUpload(file, e);
+    }
     throw e;
   }
 
@@ -773,7 +788,7 @@ class FileUploader {
       "metadata": {
         "encryptedData": encryptedMetadata,
         "decryptionHeader": metadataDecryptionHeader,
-      }
+      },
     };
     if (pubMetadata != null) {
       request["pubMagicMetadata"] = pubMetadata;
@@ -848,7 +863,7 @@ class FileUploader {
       "metadata": {
         "encryptedData": encryptedMetadata,
         "decryptionHeader": metadataDecryptionHeader,
-      }
+      },
     };
     try {
       final response = await _enteDio.put("/files/update", data: request);
@@ -884,7 +899,9 @@ class FileUploader {
 
   Future<UploadURL> _getUploadURL() async {
     if (_uploadURLs.isEmpty) {
-      await fetchUploadURLs(_queue.length);
+      // the queue is empty, fetch at least for one file to handle force uploads
+      // that are not in the queue. This is to also avoid
+      await fetchUploadURLs(max(_queue.length, 1));
     }
     try {
       return _uploadURLs.removeFirst();

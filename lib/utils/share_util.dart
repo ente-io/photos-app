@@ -4,6 +4,7 @@ import 'dart:io' as dartio;
 import 'package:flutter/widgets.dart';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart';
+import "package:photo_manager/photo_manager.dart";
 import 'package:photos/core/configuration.dart';
 import 'package:photos/core/constants.dart';
 import 'package:photos/models/file.dart';
@@ -16,6 +17,18 @@ import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:share_plus/share_plus.dart';
 
 final _logger = Logger("ShareUtil");
+// Set of possible image extensions
+final _imageExtension = {"jpg", "jpeg", "png", "heic", "heif", "webp", ".gif"};
+final _videoExtension = {
+  "mp4",
+  "mov",
+  "avi",
+  "mkv",
+  "webm",
+  "wmv",
+  "flv",
+  "3gp",
+};
 // share is used to share media/files from ente to other apps
 Future<void> share(
   BuildContext context,
@@ -131,6 +144,18 @@ Future<List<File>> convertIncomingSharedMediaToFile(
       }
     }
     enteFile.modificationTime = enteFile.creationTime;
+    localFiles.add(enteFile);
+  }
+  return localFiles;
+}
+
+Future<List<File>> convertPicketAssets(
+  List<AssetEntity> pickedAssets,
+  int collectionID,
+) async {
+  final List<File> localFiles = [];
+  for (var asset in pickedAssets) {
+    final enteFile = await File.fromAsset('', asset);
     localFiles.add(enteFile);
   }
   return localFiles;

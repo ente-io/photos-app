@@ -18,7 +18,7 @@ import 'package:photos/utils/file_util.dart';
 import 'package:photos/utils/toast_util.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
-import 'package:wakelock/wakelock.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 class VideoWidget extends StatefulWidget {
   final File file;
@@ -42,7 +42,7 @@ class _VideoWidgetState extends State<VideoWidget> {
   final _logger = Logger("VideoWidget");
   VideoPlayerController? _videoPlayerController;
   ChewieController? _chewieController;
-  double? _progress;
+  final _progressNotifier = ValueNotifier<double?>(null);
   bool _isPlaying = false;
   bool _wakeLockEnabledHere = false;
 
@@ -93,19 +93,19 @@ class _VideoWidgetState extends State<VideoWidget> {
     getFileFromServer(
       widget.file,
       progressCallback: (count, total) {
-        if (mounted) {
-          setState(() {
-            _progress = count / (widget.file.fileSize ?? total);
-            if (_progress == 1) {
-              showShortToast(context, S.of(context).decryptingVideo);
-            }
-          });
+        _progressNotifier.value = count / (widget.file.fileSize ?? total);
+        if (_progressNotifier.value == 1) {
+          if (mounted) {
+            showShortToast(context, S.of(context).decryptingVideo);
+          }
         }
       },
     ).then((file) {
       if (file != null) {
         _setVideoPlayerController(file: file);
       }
+    }).onError((error, stackTrace) {
+      showErrorDialog(context, "Error", S.of(context).failedToDownloadVideo);
     });
   }
 
@@ -115,18 +115,24 @@ class _VideoWidgetState extends State<VideoWidget> {
     _chewieController?.dispose();
     if (_wakeLockEnabledHere) {
       unawaited(
-        Wakelock.enabled.then((isEnabled) {
-          isEnabled ? Wakelock.disable() : null;
+        WakelockPlus.enabled.then((isEnabled) {
+          isEnabled ? WakelockPlus.disable() : null;
         }),
       );
     }
     super.dispose();
   }
 
-  VideoPlayerController _setVideoPlayerController({
+  void _setVideoPlayerController({
     String? url,
     io.File? file,
   }) {
+    if (!mounted) {
+      // Note: Do not initiale video player if widget is not mounted.
+      // On Android, if multiple instance of ExoPlayer is created, it will start
+      // resulting in playback errors for videos. See https://github.com/google/ExoPlayer/issues/6168
+      return;
+    }
     VideoPlayerController videoPlayerController;
     if (url != null) {
       videoPlayerController = VideoPlayerController.network(url);
@@ -156,7 +162,6 @@ class _VideoWidgetState extends State<VideoWidget> {
           }
         },
       );
-    return videoPlayerController;
   }
 
   @override
@@ -168,7 +173,7 @@ class _VideoWidgetState extends State<VideoWidget> {
     final contentWithDetector = GestureDetector(
       child: content,
       onVerticalDragUpdate: (d) => {
-        if (d.delta.dy > dragSensitivity) {Navigator.of(context).pop()}
+        if (d.delta.dy > dragSensitivity) {Navigator.of(context).pop()},
       },
     );
     return VisibilityDetector(
@@ -198,17 +203,22 @@ class _VideoWidgetState extends State<VideoWidget> {
         Center(
           child: SizedBox.fromSize(
             size: const Size.square(20),
-            child: _progress == null || _progress == 1
-                ? const CupertinoActivityIndicator(
-                    color: Colors.white,
-                  )
-                : CircularProgressIndicator(
-                    backgroundColor: Colors.black,
-                    value: _progress,
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      Color.fromRGBO(45, 194, 98, 1.0),
-                    ),
-                  ),
+            child: ValueListenableBuilder(
+              valueListenable: _progressNotifier,
+              builder: (BuildContext context, double? progress, _) {
+                return progress == null || progress == 1
+                    ? const CupertinoActivityIndicator(
+                        color: Colors.white,
+                      )
+                    : CircularProgressIndicator(
+                        backgroundColor: Colors.black,
+                        value: progress,
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          Color.fromRGBO(45, 194, 98, 1.0),
+                        ),
+                      );
+              },
+            ),
           ),
         ),
       ],
@@ -228,9 +238,9 @@ class _VideoWidgetState extends State<VideoWidget> {
 
   Future<void> _keepScreenAliveOnPlaying(bool isPlaying) async {
     if (isPlaying) {
-      return Wakelock.enabled.then((value) {
+      return WakelockPlus.enabled.then((value) {
         if (value == false) {
-          Wakelock.enable();
+          WakelockPlus.enable();
           //wakeLockEnabledHere will not be set to true if wakeLock is already enabled from settings on iOS.
           //We shouldn't disable when video is not playing if it was enabled manually by the user from ente settings by user.
           _wakeLockEnabledHere = true;
@@ -238,7 +248,7 @@ class _VideoWidgetState extends State<VideoWidget> {
       });
     }
     if (_wakeLockEnabledHere && !isPlaying) {
-      return Wakelock.disable();
+      return WakelockPlus.disable();
     }
   }
 
