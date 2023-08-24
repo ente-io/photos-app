@@ -17,7 +17,7 @@ import "package:photos/ui/common/loading_widget.dart";
 import "package:photos/utils/toast_util.dart";
 
 class UploadIconWidget extends StatefulWidget {
-  final File file;
+  final EnteFile file;
 
   const UploadIconWidget({super.key, required this.file});
 
@@ -84,12 +84,13 @@ class _UpdateIconWidgetState extends State<UploadIconWidget> {
       }
       return const SizedBox.shrink();
     }
-    return FutureBuilder<Map<String,String>>(
+    return FutureBuilder<Map<String, String>>(
       future: ignoreService.idToIgnoreReasonMap,
       builder: (context, snapshot) {
         if (snapshot.hasData) {
-          final Map<String,String> idsToReasonMap = snapshot.data!;
-          final ignoreReason = ignoreService.getUploadSkipReason(idsToReasonMap, widget.file);
+          final Map<String, String> idsToReasonMap = snapshot.data!;
+          final ignoreReason =
+              ignoreService.getUploadSkipReason(idsToReasonMap, widget.file);
           final bool isIgnored = ignoreReason != null;
           final bool isQueuedForUpload =
               !isIgnored && widget.file.collectionID != null;
@@ -105,7 +106,7 @@ class _UpdateIconWidgetState extends State<UploadIconWidget> {
           return Tooltip(
             message: isIgnored
                 ? "Tap to upload, upload is currently ignored due "
-                "to $ignoreReason"
+                    "to $ignoreReason"
                 : "Tap to upload",
             child: IconButton(
               icon: const Icon(

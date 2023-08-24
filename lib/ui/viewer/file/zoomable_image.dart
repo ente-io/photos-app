@@ -25,7 +25,7 @@ import 'package:photos/utils/thumbnail_util.dart';
 import "package:photos/utils/toast_util.dart";
 
 class ZoomableImage extends StatefulWidget {
-  final File photo;
+  final EnteFile photo;
   final Function(bool)? shouldDisableScroll;
   final String? tagPrefix;
   final Decoration? backgroundDecoration;
@@ -47,7 +47,7 @@ class ZoomableImage extends StatefulWidget {
 class _ZoomableImageState extends State<ZoomableImage>
     with SingleTickerProviderStateMixin {
   late Logger _logger;
-  late File _photo;
+  late EnteFile _photo;
   ImageProvider? _imageProvider;
   bool _loadedSmallThumbnail = false;
   bool _loadingLargeThumbnail = false;

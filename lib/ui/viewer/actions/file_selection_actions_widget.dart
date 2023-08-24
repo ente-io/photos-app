@@ -63,7 +63,7 @@ class _FileSelectionActionsWidgetState
   @override
   void initState() {
     currentUserID = Configuration.instance.getUserID()!;
-    split = FilesSplit.split(<File>[], currentUserID);
+    split = FilesSplit.split(<EnteFile>[], currentUserID);
     widget.selectedFiles.addListener(_selectFileChangeListener);
     collectionActions = CollectionActions(CollectionsService.instance);
     isCollectionOwner =
@@ -111,6 +111,9 @@ class _FileSelectionActionsWidgetState
             CollageCreatorPage.collageItemsMin &&
         widget.selectedFiles.files.length <= CollageCreatorPage.collageItemsMax;
 
+    //To animate adding and removing of [SelectedActionButton], add all items
+    //and set [shouldShow] to false for items that should not be shown and true
+    //for items that should be shown.
     final List<SelectionActionButton> items = [];
 
     if (widget.type.showCreateLink()) {
@@ -294,6 +297,9 @@ class _FileSelectionActionsWidgetState
         width: double.infinity,
         child: Center(
           child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(
+              decelerationRate: ScrollDecelerationRate.fast,
+            ),
             scrollDirection: Axis.horizontal,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
