@@ -106,7 +106,7 @@ class FaceMlService {
   }
 
   Future<void> analyseData() async {
-    final List<File> enteFiles = await SearchService.instance.getAllFiles();
+    final List<EnteFile> enteFiles = await SearchService.instance.getAllFiles();
     final Set<int> alreadyIndexedIDs = await MlDataDB.instance.getFileIDs();
     for (final enteFile in enteFiles) {
       if (!enteFile.isUploaded || enteFile.fileType == FileType.video) {
@@ -130,7 +130,7 @@ class FaceMlService {
   }
 
   Future<io.File?> getFileForML(
-    File enteFile, {
+    EnteFile enteFile, {
     bool thumbnail = false,
     bool compressOriginalFile = false,
   }) async {
