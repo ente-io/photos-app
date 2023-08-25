@@ -12,7 +12,7 @@ import 'package:photos/core/event_bus.dart';
 import 'package:photos/db/files_db.dart';
 import 'package:photos/events/files_updated_event.dart';
 import 'package:photos/events/local_photos_updated_event.dart';
-import 'package:photos/models/file.dart';
+import 'package:photos/models/file/file.dart';
 import "package:photos/models/metadata/file_magic.dart";
 // import "package:photos/services/face_ml/face_detection/detection.dart";
 import "package:photos/services/face_ml/face_ml_result.dart";
