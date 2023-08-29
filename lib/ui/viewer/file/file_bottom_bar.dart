@@ -3,10 +3,10 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import "package:photos/generated/l10n.dart";
-import 'package:photos/models/file.dart';
-import 'package:photos/models/file_type.dart';
+import 'package:photos/models/file/file.dart';
+import 'package:photos/models/file/file_type.dart';
+import 'package:photos/models/file/trash_file.dart';
 import 'package:photos/models/selected_files.dart';
-import 'package:photos/models/trash_file.dart';
 import 'package:photos/theme/colors.dart';
 import 'package:photos/theme/ente_theme.dart';
 import "package:photos/ui/actions/file/file_actions.dart";
@@ -14,45 +14,34 @@ import 'package:photos/ui/collections/collection_action_sheet.dart';
 import 'package:photos/utils/delete_file_util.dart';
 import 'package:photos/utils/share_util.dart';
 
-class FadingBottomBar extends StatefulWidget {
-  final File file;
-  final Function(File) onEditRequested;
-  final Function(File) onFileRemoved;
+class FileBottomBar extends StatefulWidget {
+  final EnteFile file;
+  final Function(EnteFile) onEditRequested;
+  final Function(EnteFile) onFileRemoved;
   final bool showOnlyInfoButton;
   final int? userID;
+  final ValueNotifier<bool> enableFullScreenNotifier;
 
-  const FadingBottomBar(
+  const FileBottomBar(
     this.file,
     this.onEditRequested,
     this.showOnlyInfoButton, {
     required this.onFileRemoved,
+    required this.enableFullScreenNotifier,
     this.userID,
     Key? key,
   }) : super(key: key);
 
   @override
-  FadingBottomBarState createState() => FadingBottomBarState();
+  FileBottomBarState createState() => FileBottomBarState();
 }
 
-class FadingBottomBarState extends State<FadingBottomBar> {
-  bool _shouldHide = false;
+class FileBottomBarState extends State<FileBottomBar> {
   final GlobalKey shareButtonKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
     return _getBottomBar();
-  }
-
-  void hide() {
-    setState(() {
-      _shouldHide = true;
-    });
-  }
-
-  void show() {
-    setState(() {
-      _shouldHide = false;
-    });
   }
 
   void safeRefresh() {
@@ -155,64 +144,69 @@ class FadingBottomBarState extends State<FadingBottomBar> {
       );
     }
     final safeAreaBottomPadding = MediaQuery.of(context).padding.bottom * .5;
-    return IgnorePointer(
-      ignoring: _shouldHide,
-      child: AnimatedOpacity(
-        opacity: _shouldHide ? 0 : 1,
-        duration: const Duration(milliseconds: 150),
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.6),
-                  Colors.black.withOpacity(0.72),
-                ],
-                stops: const [0, 0.8, 1],
-              ),
-            ),
-            child: Padding(
-              padding: EdgeInsets.only(bottom: safeAreaBottomPadding),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  widget.file.caption?.isNotEmpty ?? false
-                      ? Padding(
-                          padding: const EdgeInsets.fromLTRB(
-                            16,
-                            28,
-                            16,
-                            12,
-                          ),
-                          child: Text(
-                            widget.file.caption!,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 4,
-                            style: getEnteTextTheme(context)
-                                .small
-                                .copyWith(color: textBaseDark),
-                            textAlign: TextAlign.center,
-                          ),
-                        )
-                      : const SizedBox.shrink(),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: children,
+    return ValueListenableBuilder(
+      valueListenable: widget.enableFullScreenNotifier,
+      builder: (BuildContext context, bool isFullScreen, _) {
+        return IgnorePointer(
+          ignoring: isFullScreen,
+          child: AnimatedOpacity(
+            opacity: isFullScreen ? 0 : 1,
+            duration: const Duration(milliseconds: 150),
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.6),
+                      Colors.black.withOpacity(0.72),
+                    ],
+                    stops: const [0, 0.8, 1],
                   ),
-                ],
+                ),
+                child: Padding(
+                  padding: EdgeInsets.only(bottom: safeAreaBottomPadding),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      widget.file.caption?.isNotEmpty ?? false
+                          ? Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                16,
+                                28,
+                                16,
+                                12,
+                              ),
+                              child: Text(
+                                widget.file.caption!,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 4,
+                                style: getEnteTextTheme(context)
+                                    .small
+                                    .copyWith(color: textBaseDark),
+                                textAlign: TextAlign.center,
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: children,
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Future<void> _showSingleFileDeleteSheet(File file) async {
+  Future<void> _showSingleFileDeleteSheet(EnteFile file) async {
     await showSingleFileDeleteSheet(
       context,
       file,
@@ -268,7 +262,7 @@ class FadingBottomBarState extends State<FadingBottomBar> {
     );
   }
 
-  Future<void> _displayDetails(File file) async {
+  Future<void> _displayDetails(EnteFile file) async {
     await showDetailsSheet(context, file);
   }
 }

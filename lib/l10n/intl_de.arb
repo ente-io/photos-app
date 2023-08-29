@@ -219,7 +219,7 @@
   "after1Month": "Nach 1 Monat",
   "after1Year": "Nach 1 Jahr",
   "manageParticipants": "Verwalten",
-  "albumParticipantsCount": "{count, plural, one {}=0 {Keine Teilnehmer} =1 {1 Teilnehmer} other {{count} Teilnehmer}}",
+  "albumParticipantsCount": "{count, plural, =0 {Keine Teilnehmer} =1 {1 Teilnehmer} other {{count} Teilnehmer}}",
   "@albumParticipantsCount": {
     "placeholders": {
       "count": {
@@ -695,16 +695,6 @@
   "addToAlbum": "Zum Album hinzufügen",
   "delete": "Löschen",
   "hide": "Ausblenden",
-  "itemSelectedCount": "{count} ausgewählt",
-  "@itemSelectedCount": {
-    "description": "Text to indicate number of items selected",
-    "placeholders": {
-      "count": {
-        "example": "1|2|3",
-        "type": "int"
-      }
-    }
-  },
   "share": "Teilen",
   "unhideToAlbum": "Im Album anzeigen",
   "restoreToAlbum": "Album wiederherstellen",
@@ -1057,5 +1047,7 @@
   },
   "maps": "Karten",
   "enableMaps": "Karten aktivieren",
-  "enableMapsDesc": "Dies zeigt Ihre Fotos auf einer Weltkarte.\n\nDiese Karte wird von OpenStreetMap gehostet und die genauen Standorte Ihrer Fotos werden niemals geteilt.\n\nSie können diese Funktion jederzeit in den Einstellungen deaktivieren."
+  "enableMapsDesc": "Dies zeigt Ihre Fotos auf einer Weltkarte.\n\nDiese Karte wird von OpenStreetMap gehostet und die genauen Standorte Ihrer Fotos werden niemals geteilt.\n\nSie können diese Funktion jederzeit in den Einstellungen deaktivieren.",
+  "addToHiddenAlbum": "Add to hidden album",
+  "moveToHiddenAlbum": "Move to hidden album"
 }

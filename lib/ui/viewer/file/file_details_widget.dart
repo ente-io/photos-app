@@ -3,8 +3,8 @@ import "package:flutter/material.dart";
 import "package:logging/logging.dart";
 import "package:photos/core/configuration.dart";
 import "package:photos/generated/l10n.dart";
-import "package:photos/models/file.dart";
-import "package:photos/models/file_type.dart";
+import 'package:photos/models/file/file.dart';
+import 'package:photos/models/file/file_type.dart';
 import "package:photos/models/metadata/file_magic.dart";
 import "package:photos/services/file_magic_service.dart";
 import "package:photos/services/update_service.dart";
@@ -24,7 +24,7 @@ import "package:photos/ui/viewer/file_details/objects_item_widget.dart";
 import "package:photos/utils/exif_util.dart";
 
 class FileDetailsWidget extends StatefulWidget {
-  final File file;
+  final EnteFile file;
 
   const FileDetailsWidget(
     this.file, {
@@ -159,7 +159,7 @@ class _FileDetailsWidgetState extends State<FileDetailsWidget> {
                 )
               : const SizedBox.shrink();
         },
-      )
+      ),
     ]);
     if (_isImage) {
       fileDetailsTiles.addAll([
@@ -173,7 +173,7 @@ class _FileDetailsWidgetState extends State<FileDetailsWidget> {
               ],
             );
           },
-        )
+        ),
       ]);
     }
 
@@ -217,12 +217,7 @@ class _FileDetailsWidgetState extends State<FileDetailsWidget> {
                   onTap: () => Navigator.pop(context),
                 ),
               ),
-              SliverToBoxAdapter(
-                child: AddedByWidget(
-                  widget.file,
-                  _currentUserID,
-                ),
-              ),
+              SliverToBoxAdapter(child: AddedByWidget(widget.file)),
               SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
@@ -230,7 +225,7 @@ class _FileDetailsWidgetState extends State<FileDetailsWidget> {
                   },
                   childCount: fileDetailsTiles.length,
                 ),
-              )
+              ),
             ],
           ),
         ),
@@ -253,10 +248,10 @@ class _FileDetailsWidgetState extends State<FileDetailsWidget> {
           locationDataFromExif?.longitude != null) {
         widget.file.location = locationDataFromExif;
         await FileMagicService.instance.updatePublicMagicMetadata([
-          widget.file
+          widget.file,
         ], {
           latKey: locationDataFromExif!.latitude,
-          longKey: locationDataFromExif.longitude
+          longKey: locationDataFromExif.longitude,
         });
         hasLocationData.value = true;
       }

@@ -3,25 +3,25 @@ import "package:flutter/services.dart";
 import "package:media_extension/media_extension.dart";
 import "package:media_extension/media_extension_action_types.dart";
 import "package:photos/core/constants.dart";
-import "package:photos/models/file.dart";
+import 'package:photos/models/file/file.dart';
 import "package:photos/models/selected_files.dart";
 import "package:photos/services/app_lifecycle_service.dart";
 import "package:photos/theme/ente_theme.dart";
 import "package:photos/ui/viewer/file/detail_page.dart";
 import "package:photos/ui/viewer/file/thumbnail_widget.dart";
 import "package:photos/ui/viewer/gallery/gallery.dart";
-import "package:photos/ui/viewer/gallery/state/gallery_sort_order.dart";
+import "package:photos/ui/viewer/gallery/state/gallery_context_state.dart";
 import "package:photos/utils/file_util.dart";
 import "package:photos/utils/navigation_util.dart";
 
 class GalleryFileWidget extends StatelessWidget {
-  final File file;
+  final EnteFile file;
   final SelectedFiles? selectedFiles;
   final bool limitSelectionToOne;
   final String tag;
   final int photoGridSize;
   final int? currentUserID;
-  final List<File> filesInGroup;
+  final List<EnteFile> filesInGroup;
   final GalleryLoader asyncLoader;
   const GalleryFileWidget({
     required this.file,
@@ -73,6 +73,7 @@ class GalleryFileWidget extends StatelessWidget {
             borderRadius: BorderRadius.circular(1),
             child: Hero(
               tag: heroTag,
+              transitionOnUserGestures: true,
               child: isFileSelected
                   ? ColorFiltered(
                       colorFilter: ColorFilter.mode(
@@ -102,19 +103,22 @@ class GalleryFileWidget extends StatelessWidget {
     );
   }
 
-  void _toggleFileSelection(File file) {
+  void _toggleFileSelection(EnteFile file) {
     selectedFiles!.toggleSelection(file);
   }
 
-  void _onTapWithSelectionLimit(File file) {
+  void _onTapWithSelectionLimit(EnteFile file) {
     if (selectedFiles!.files.isNotEmpty && selectedFiles!.files.first != file) {
       selectedFiles!.clearAll();
     }
     _toggleFileSelection(file);
   }
 
-  void _onTapNoSelectionLimit(BuildContext context, File file) async {
-    if (selectedFiles?.files.isNotEmpty ?? false) {
+  void _onTapNoSelectionLimit(BuildContext context, EnteFile file) async {
+    final bool shouldToggleSelection =
+        (selectedFiles?.files.isNotEmpty ?? false) ||
+            GalleryContextState.of(context)!.inSelectionMode;
+    if (shouldToggleSelection) {
       _toggleFileSelection(file);
     } else {
       if (AppLifecycleService.instance.mediaExtensionAction.action ==
@@ -127,7 +131,7 @@ class GalleryFileWidget extends StatelessWidget {
     }
   }
 
-  void _onLongPressNoSelectionLimit(BuildContext context, File file) {
+  void _onLongPressNoSelectionLimit(BuildContext context, EnteFile file) {
     if (selectedFiles!.files.isNotEmpty) {
       _routeToDetailPage(file, context);
     } else if (AppLifecycleService.instance.mediaExtensionAction.action ==
@@ -139,7 +143,7 @@ class GalleryFileWidget extends StatelessWidget {
 
   Future<void> _onLongPressWithSelectionLimit(
     BuildContext context,
-    File file,
+    EnteFile file,
   ) async {
     if (AppLifecycleService.instance.mediaExtensionAction.action ==
         IntentAction.pick) {
@@ -150,14 +154,14 @@ class GalleryFileWidget extends StatelessWidget {
     }
   }
 
-  void _routeToDetailPage(File file, BuildContext context) {
+  void _routeToDetailPage(EnteFile file, BuildContext context) {
     final page = DetailPage(
       DetailPageConfiguration(
         List.unmodifiable(filesInGroup),
         asyncLoader,
         filesInGroup.indexOf(file),
         tag,
-        sortOrderAsc: GallerySortOrder.of(context)!.sortOrderAsc,
+        sortOrderAsc: GalleryContextState.of(context)!.sortOrderAsc,
       ),
     );
     routeToPage(context, page, forceCustomPageRoute: true);

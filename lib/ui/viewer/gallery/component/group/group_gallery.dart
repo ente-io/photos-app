@@ -2,19 +2,17 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:photos/core/constants.dart';
-import 'package:photos/models/file.dart';
+import 'package:photos/models/file/file.dart';
 import 'package:photos/models/selected_files.dart';
 import "package:photos/ui/viewer/gallery/component/grid/lazy_grid_view.dart";
 import 'package:photos/ui/viewer/gallery/gallery.dart';
 
 class GroupGallery extends StatelessWidget {
   final int photoGridSize;
-  final List<File> files;
+  final List<EnteFile> files;
   final String tag;
   final GalleryLoader asyncLoader;
   final SelectedFiles? selectedFiles;
-  final ValueNotifier<bool> toggleSelectAllFromDay;
-  final ValueNotifier<bool> areAllFromDaySelected;
   final bool limitSelectionToOne;
 
   const GroupGallery({
@@ -23,8 +21,6 @@ class GroupGallery extends StatelessWidget {
     required this.tag,
     required this.asyncLoader,
     required this.selectedFiles,
-    required this.toggleSelectAllFromDay,
-    required this.areAllFromDaySelected,
     required this.limitSelectionToOne,
     super.key,
   });
@@ -47,8 +43,6 @@ class GroupGallery extends StatelessWidget {
           selectedFiles,
           index == 0,
           files.length > kRecycleLimit,
-          toggleSelectAllFromDay,
-          areAllFromDaySelected,
           photoGridSize,
           limitSelectionToOne: limitSelectionToOne,
         ),

@@ -1,4 +1,4 @@
-import "package:photos/models/file.dart";
+import 'package:photos/models/file/file.dart';
 import "package:photos/services/filter/collection_ignore.dart";
 import "package:photos/services/filter/dedupe_by_upload_id.dart";
 import "package:photos/services/filter/filter.dart";
@@ -24,8 +24,8 @@ class DBFilterOptions {
   );
 }
 
-Future<List<File>> applyDBFilters(
-  List<File> files,
+Future<List<EnteFile>> applyDBFilters(
+  List<EnteFile> files,
   DBFilterOptions? options,
 ) async {
   if (options == null) {
@@ -33,10 +33,10 @@ Future<List<File>> applyDBFilters(
   }
   final List<Filter> filters = [];
   if (options.hideIgnoredForUpload) {
-    final Set<String> ignoredIDs =
-        await IgnoredFilesService.instance.ignoredIDs;
-    if (ignoredIDs.isNotEmpty) {
-      filters.add(UploadIgnoreFilter(ignoredIDs));
+    final Map<String, String> idToReasonMap =
+        await IgnoredFilesService.instance.idToIgnoreReasonMap;
+    if (idToReasonMap.isNotEmpty) {
+      filters.add(UploadIgnoreFilter(idToReasonMap));
     }
   }
   if (options.dedupeUploadID) {
@@ -48,7 +48,7 @@ Future<List<File>> applyDBFilters(
         CollectionsIgnoreFilter(options.ignoredCollectionIDs!, files);
     filters.add(collectionIgnoreFilter);
   }
-  final List<File> filterFiles = [];
+  final List<EnteFile> filterFiles = [];
   for (final file in files) {
     if (filters.every((f) => f.filter(file))) {
       filterFiles.add(file);

@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:io' as io;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -11,12 +10,13 @@ import 'package:photos/core/event_bus.dart';
 import 'package:photos/db/files_db.dart';
 import 'package:photos/events/local_photos_updated_event.dart';
 import "package:photos/generated/l10n.dart";
-import 'package:photos/models/file.dart';
-import 'package:photos/models/file_type.dart';
+import "package:photos/models/file/extensions/file_props.dart";
+import 'package:photos/models/file/file.dart';
+import 'package:photos/models/file/file_type.dart';
+import 'package:photos/models/file/trash_file.dart';
 import 'package:photos/models/ignored_file.dart';
 import "package:photos/models/metadata/common_keys.dart";
 import 'package:photos/models/selected_files.dart';
-import 'package:photos/models/trash_file.dart';
 import 'package:photos/services/collections_service.dart';
 import 'package:photos/services/hidden_service.dart';
 import 'package:photos/services/ignored_files_service.dart';
@@ -30,74 +30,61 @@ import 'package:photos/utils/file_util.dart';
 import "package:photos/utils/magic_util.dart";
 import 'package:photos/utils/toast_util.dart';
 
-class FadingAppBar extends StatefulWidget implements PreferredSizeWidget {
-  final File file;
-  final Function(File) onFileRemoved;
+class FileAppBar extends StatefulWidget {
+  final EnteFile file;
+  final Function(EnteFile) onFileRemoved;
   final double height;
   final bool shouldShowActions;
-  final int? userID;
+  final ValueNotifier<bool> enableFullScreenNotifier;
 
-  const FadingAppBar(
+  const FileAppBar(
     this.file,
     this.onFileRemoved,
-    this.userID,
     this.height,
     this.shouldShowActions, {
+    required this.enableFullScreenNotifier,
     Key? key,
   }) : super(key: key);
 
   @override
-  Size get preferredSize => Size.fromHeight(height);
-
-  @override
-  FadingAppBarState createState() => FadingAppBarState();
+  FileAppBarState createState() => FileAppBarState();
 }
 
-class FadingAppBarState extends State<FadingAppBar> {
+class FileAppBarState extends State<FileAppBar> {
   final _logger = Logger("FadingAppBar");
-  bool _shouldHide = false;
 
   @override
   Widget build(BuildContext context) {
     return CustomAppBar(
-      IgnorePointer(
-        ignoring: _shouldHide,
-        child: AnimatedOpacity(
-          opacity: _shouldHide ? 0 : 1,
-          duration: const Duration(milliseconds: 150),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withOpacity(0.72),
-                  Colors.black.withOpacity(0.6),
-                  Colors.transparent,
-                ],
-                stops: const [0, 0.2, 1],
+      ValueListenableBuilder(
+        valueListenable: widget.enableFullScreenNotifier,
+        builder: (context, bool isFullScreen, _) {
+          return IgnorePointer(
+            ignoring: isFullScreen,
+            child: AnimatedOpacity(
+              opacity: isFullScreen ? 0 : 1,
+              duration: const Duration(milliseconds: 150),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.72),
+                      Colors.black.withOpacity(0.6),
+                      Colors.transparent,
+                    ],
+                    stops: const [0, 0.2, 1],
+                  ),
+                ),
+                child: _buildAppBar(),
               ),
             ),
-            child: _buildAppBar(),
-          ),
-        ),
+          );
+        },
       ),
       Size.fromHeight(Platform.isAndroid ? 80 : 96),
     );
-  }
-
-  void hide() {
-    setState(() {
-      _shouldHide = true;
-    });
-  }
-
-  void show() {
-    if (mounted) {
-      setState(() {
-        _shouldHide = false;
-      });
-    }
   }
 
   AppBar _buildAppBar() {
@@ -106,8 +93,7 @@ class FadingAppBarState extends State<FadingAppBar> {
     final List<Widget> actions = [];
     final isTrashedFile = widget.file is TrashFile;
     final shouldShowActions = widget.shouldShowActions && !isTrashedFile;
-    final bool isOwnedByUser =
-        widget.file.ownerID == null || widget.file.ownerID == widget.userID;
+    final bool isOwnedByUser = widget.file.isOwner;
     final bool isFileUploaded = widget.file.isUploaded;
     bool isFileHidden = false;
     if (isOwnedByUser && isFileUploaded) {
@@ -115,6 +101,16 @@ class FadingAppBarState extends State<FadingAppBar> {
               .getCollectionByID(widget.file.collectionID!)
               ?.isHidden() ??
           false;
+    }
+    if (widget.file.isLiveOrMotionPhoto) {
+      actions.add(
+        IconButton(
+          icon: const Icon(Icons.album_outlined),
+          onPressed: () {
+            showShortToast(context, S.of(context).pressAndHoldToPlayVideoDetailed);
+          },
+        ),
+      );
     }
     // only show fav option for files owned by the user
     if (isOwnedByUser && !isFileHidden && isFileUploaded) {
@@ -154,7 +150,7 @@ class FadingAppBarState extends State<FadingAppBar> {
             );
           }
           // options for files owned by the user
-          if (isOwnedByUser && !isFileHidden) {
+          if (isOwnedByUser && !isFileHidden && isFileUploaded) {
             final bool isArchived =
                 widget.file.magicMetadata.visibility == archiveVisibility;
             items.add(
@@ -288,7 +284,7 @@ class FadingAppBarState extends State<FadingAppBar> {
     );
   }
 
-  Future<void> _toggleFileArchiveStatus(File file) async {
+  Future<void> _toggleFileArchiveStatus(EnteFile file) async {
     final bool isArchived =
         widget.file.magicMetadata.visibility == archiveVisibility;
     await changeVisibility(
@@ -301,7 +297,7 @@ class FadingAppBarState extends State<FadingAppBar> {
     }
   }
 
-  Future<void> _download(File file) async {
+  Future<void> _download(EnteFile file) async {
     final dialog = createProgressDialog(context, "Downloading...");
     await dialog.show();
     try {
@@ -309,7 +305,7 @@ class FadingAppBarState extends State<FadingAppBar> {
       final bool downloadLivePhotoOnDroid =
           type == FileType.livePhoto && Platform.isAndroid;
       AssetEntity? savedAsset;
-      final io.File? fileToSave = await getFile(file);
+      final File? fileToSave = await getFile(file);
       //Disabling notifications for assets changing to insert the file into
       //files db before triggering a sync.
       PhotoManager.stopChangeNotify();
@@ -320,7 +316,7 @@ class FadingAppBarState extends State<FadingAppBar> {
         savedAsset = await PhotoManager.editor
             .saveVideo(fileToSave!, title: file.title!);
       } else if (type == FileType.livePhoto) {
-        final io.File? liveVideoFile =
+        final File? liveVideoFile =
             await getFileFromServer(file, liveVideo: true);
         if (liveVideoFile == null) {
           throw AssertionError("Live video can not be null");
@@ -361,9 +357,9 @@ class FadingAppBarState extends State<FadingAppBar> {
   }
 
   Future<void> _saveLivePhotoOnDroid(
-    io.File image,
-    io.File video,
-    File enteFile,
+    File image,
+    File video,
+    EnteFile enteFile,
   ) async {
     debugPrint("Downloading LivePhoto on Droid");
     AssetEntity? savedAsset = await (PhotoManager.editor
@@ -397,11 +393,11 @@ class FadingAppBarState extends State<FadingAppBar> {
     await IgnoredFilesService.instance.cacheAndInsert([ignoreVideoFile]);
   }
 
-  Future<void> _setAs(File file) async {
+  Future<void> _setAs(EnteFile file) async {
     final dialog = createProgressDialog(context, S.of(context).pleaseWait);
     await dialog.show();
     try {
-      final io.File? fileToSave = await (getFile(file));
+      final File? fileToSave = await (getFile(file));
       if (fileToSave == null) {
         throw Exception("Fail to get file for setAs operation");
       }

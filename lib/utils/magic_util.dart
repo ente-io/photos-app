@@ -7,8 +7,8 @@ import "package:photos/events/collection_updated_event.dart";
 import "package:photos/events/files_updated_event.dart";
 import 'package:photos/events/force_reload_home_gallery_event.dart';
 import "package:photos/generated/l10n.dart";
-import 'package:photos/models/collection.dart';
-import 'package:photos/models/file.dart';
+import 'package:photos/models/collection/collection.dart';
+import 'package:photos/models/file/file.dart';
 import "package:photos/models/metadata/collection_magic.dart";
 import "package:photos/models/metadata/common_keys.dart";
 import "package:photos/models/metadata/file_magic.dart";
@@ -20,9 +20,11 @@ import 'package:photos/utils/toast_util.dart';
 
 final _logger = Logger('MagicUtil');
 
+enum _VisibilityAction { hide, unHide, archive, unarchive }
+
 Future<void> changeVisibility(
   BuildContext context,
-  List<File> files,
+  List<EnteFile> files,
   int newVisibility,
 ) async {
   final dialog = createProgressDialog(
@@ -50,17 +52,22 @@ Future<void> changeVisibility(
 }
 
 Future<void> changeCollectionVisibility(
-  BuildContext context,
-  Collection collection,
-  int newVisibility, {
+  BuildContext context, {
+  required Collection collection,
+  required int newVisibility,
+  required int prevVisibility,
   bool isOwner = true,
 }) async {
+  final visibilityAction =
+      _getVisibilityAction(context, newVisibility, prevVisibility);
   final dialog = createProgressDialog(
     context,
-    newVisibility == archiveVisibility
-        ? S.of(context).archiving
-        : S.of(context).unarchiving,
+    _visActionProgressDialogText(
+      context,
+      visibilityAction,
+    ),
   );
+
   await dialog.show();
   try {
     final Map<String, dynamic> update = {magicKeyVisibility: newVisibility};
@@ -70,13 +77,19 @@ Future<void> changeCollectionVisibility(
       await CollectionsService.instance
           .updateShareeMagicMetadata(collection, update);
     }
-    // Force reload home gallery to pull in the now unarchived files
-    Bus.instance.fire(ForceReloadHomeGalleryEvent("CollectionArchiveChange"));
+    // Force reload home gallery to pull in/remove the now visibility changed
+    // files
+    Bus.instance.fire(
+      ForceReloadHomeGalleryEvent(
+        "CollectionVisibilityChange: $visibilityAction",
+      ),
+    );
     showShortToast(
       context,
-      newVisibility == archiveVisibility
-          ? S.of(context).successfullyArchived
-          : S.of(context).successfullyUnarchived,
+      _visActionSuccessfulText(
+        context,
+        visibilityAction,
+      ),
     );
 
     await dialog.hide();
@@ -126,19 +139,21 @@ Future<void> updateOrder(
   }
 }
 
+// changeCoverPhoto is used to change cover photo for a collection. To reset to
+// default cover photo, pass uploadedFileID as 0
 Future<void> changeCoverPhoto(
   BuildContext context,
   Collection collection,
-  File file,
+  int uploadedFileID,
 ) async {
   try {
-    final Map<String, dynamic> update = {"coverID": file.uploadedFileID};
+    final Map<String, dynamic> update = {"coverID": uploadedFileID};
     await CollectionsService.instance
         .updatePublicMagicMetadata(collection, update);
     Bus.instance.fire(
       CollectionUpdatedEvent(
         collection.id,
-        <File>[],
+        <EnteFile>[],
         "cover_change",
         type: EventType.coverChanged,
       ),
@@ -152,7 +167,7 @@ Future<void> changeCoverPhoto(
 
 Future<bool> editTime(
   BuildContext context,
-  List<File> files,
+  List<EnteFile> files,
   int editedTime,
 ) async {
   try {
@@ -171,7 +186,7 @@ Future<bool> editTime(
 
 Future<void> editFilename(
   BuildContext context,
-  File file,
+  EnteFile file,
 ) async {
   final fileName = file.displayName;
   final nameWithoutExt = basenameWithoutExtension(fileName);
@@ -209,7 +224,7 @@ Future<void> editFilename(
 
 Future<bool> editFileCaption(
   BuildContext? context,
-  File file,
+  EnteFile file,
   String caption,
 ) async {
   try {
@@ -231,7 +246,7 @@ Future<bool> editFileCaption(
 
 Future<void> _updatePublicMetadata(
   BuildContext? context,
-  List<File> files,
+  List<EnteFile> files,
   String key,
   dynamic value, {
   bool showDoneToast = true,
@@ -269,4 +284,47 @@ Future<void> _updatePublicMetadata(
 
 bool _shouldReloadGallery(String key) {
   return key == editTimeKey;
+}
+
+_visActionProgressDialogText(BuildContext context, _VisibilityAction action) {
+  switch (action) {
+    case _VisibilityAction.archive:
+      return S.of(context).archiving;
+    case _VisibilityAction.hide:
+      return S.of(context).hiding;
+    case _VisibilityAction.unarchive:
+      return S.of(context).unarchiving;
+    case _VisibilityAction.unHide:
+      return S.of(context).unhiding;
+  }
+}
+
+_visActionSuccessfulText(BuildContext context, _VisibilityAction action) {
+  switch (action) {
+    case _VisibilityAction.archive:
+      return S.of(context).successfullyArchived;
+    case _VisibilityAction.hide:
+      return S.of(context).successfullyHid;
+    case _VisibilityAction.unarchive:
+      return S.of(context).successfullyUnarchived;
+    case _VisibilityAction.unHide:
+      return S.of(context).successfullyUnhid;
+  }
+}
+
+_VisibilityAction _getVisibilityAction(
+  context,
+  int newVisibility,
+  int prevVisibility,
+) {
+  if (newVisibility == archiveVisibility) {
+    return _VisibilityAction.archive;
+  } else if (newVisibility == hiddenVisibility) {
+    return _VisibilityAction.hide;
+  } else if (newVisibility == visibleVisibility &&
+      prevVisibility == archiveVisibility) {
+    return _VisibilityAction.unarchive;
+  } else {
+    return _VisibilityAction.unHide;
+  }
 }

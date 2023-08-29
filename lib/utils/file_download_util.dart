@@ -1,4 +1,4 @@
-import 'dart:io' as io;
+import 'dart:io';
 import 'dart:typed_data';
 
 import "package:computer/computer.dart";
@@ -6,21 +6,23 @@ import 'package:dio/dio.dart';
 import 'package:logging/logging.dart';
 import 'package:photos/core/configuration.dart';
 import 'package:photos/core/network/network.dart';
-import 'package:photos/models/file.dart' as ente;
+import 'package:photos/models/file/file.dart';
 import 'package:photos/services/collections_service.dart';
 import 'package:photos/utils/crypto_util.dart';
+import "package:photos/utils/data_util.dart";
 
 final _logger = Logger("file_download_util");
 
-Future<io.File?> downloadAndDecrypt(
-  ente.File file, {
+Future<File?> downloadAndDecrypt(
+  EnteFile file, {
   ProgressCallback? progressCallback,
 }) {
-  _logger.info("Downloading file " + file.uploadedFileID.toString());
+  final String logPrefix = 'File-${file.uploadedFileID}:';
+  _logger.info('$logPrefix starting download');
   final encryptedFilePath = Configuration.instance.getTempDirectory() +
       file.generatedID.toString() +
       ".encrypted";
-  final encryptedFile = io.File(encryptedFilePath);
+  final encryptedFile = File(encryptedFilePath);
   final startTime = DateTime.now().millisecondsSinceEpoch;
   return NetworkClient.instance
       .getDio()
@@ -34,37 +36,43 @@ Future<io.File?> downloadAndDecrypt(
       )
       .then((response) async {
     if (response.statusCode != 200) {
-      _logger.warning("Could not download file: ", response.toString());
+      _logger.warning('$logPrefix download failed  ${response.toString()}');
       return null;
     } else if (!encryptedFile.existsSync()) {
-      _logger.warning("File was not downloaded correctly.");
+      _logger.warning('$logPrefix incomplete download, file not found');
       return null;
     }
-    _logger.info("File downloaded: " + file.uploadedFileID.toString());
+    final int sizeInBytes = ((file.fileSize ?? 0) > 0)
+        ? file.fileSize!
+        : await encryptedFile.length();
+    final double speedInKBps = sizeInBytes /
+        1024.0 /
+        ((DateTime.now().millisecondsSinceEpoch - startTime) / 1000);
     _logger.info(
-      "Download speed: " +
-          (await io.File(encryptedFilePath).length() /
-                  (DateTime.now().millisecondsSinceEpoch - startTime))
-              .toString() +
-          "kBps",
+      "$logPrefix download completed: ${formatBytes(sizeInBytes)}, avg speed: ${speedInKBps.toStringAsFixed(2)} KB/s",
     );
+
     final decryptedFilePath = Configuration.instance.getTempDirectory() +
         file.generatedID.toString() +
         ".decrypted";
-    final decryptedFile = io.File(decryptedFilePath);
-    await CryptoUtil.decryptFile(
-      encryptedFilePath,
-      decryptedFilePath,
-      CryptoUtil.base642bin(file.fileDecryptionHeader!),
-      getFileKey(file),
-    );
-    _logger.info("File decrypted: " + file.uploadedFileID.toString());
+    try {
+      await CryptoUtil.decryptFile(
+        encryptedFilePath,
+        decryptedFilePath,
+        CryptoUtil.base642bin(file.fileDecryptionHeader!),
+        getFileKey(file),
+      );
+    } catch (e, s) {
+      _logger.severe("failed to decrypt file", e, s);
+      return null;
+    }
+    _logger.info('$logPrefix decryption completed');
     await encryptedFile.delete();
-    return decryptedFile;
+    return File(decryptedFilePath);
   });
 }
 
-Uint8List getFileKey(ente.File file) {
+Uint8List getFileKey(EnteFile file) {
   final encryptedKey = CryptoUtil.base642bin(file.encryptedKey!);
   final nonce = CryptoUtil.base642bin(file.keyDecryptionNonce!);
   final collectionKey =
@@ -72,7 +80,7 @@ Uint8List getFileKey(ente.File file) {
   return CryptoUtil.decryptSync(encryptedKey, collectionKey, nonce);
 }
 
-Future<Uint8List> getFileKeyUsingBgWorker(ente.File file) async {
+Future<Uint8List> getFileKeyUsingBgWorker(EnteFile file) async {
   final collectionKey =
       CollectionsService.instance.getCollectionKey(file.collectionID!);
   return await Computer.shared().compute(

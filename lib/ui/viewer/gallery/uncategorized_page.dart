@@ -4,7 +4,7 @@ import 'package:photos/db/files_db.dart';
 import 'package:photos/events/collection_updated_event.dart';
 import 'package:photos/events/files_updated_event.dart';
 import "package:photos/generated/l10n.dart";
-import 'package:photos/models/collection.dart';
+import 'package:photos/models/collection/collection.dart';
 import 'package:photos/models/file_load_result.dart';
 import 'package:photos/models/gallery_type.dart';
 import 'package:photos/models/selected_files.dart';
@@ -41,7 +41,8 @@ class UnCategorizedPage extends StatelessWidget {
           asc: asc,
         );
         // hide ignored files from home page UI
-        final ignoredIDs = await IgnoredFilesService.instance.ignoredIDs;
+        final ignoredIDs =
+            await IgnoredFilesService.instance.idToIgnoreReasonMap;
         result.files.removeWhere(
           (f) =>
               f.uploadedFileID == null &&
@@ -69,6 +70,7 @@ class UnCategorizedPage extends StatelessWidget {
           appBarType,
           S.of(context).uncategorized,
           _selectedFiles,
+          collection: collection,
         ),
       ),
       body: Stack(

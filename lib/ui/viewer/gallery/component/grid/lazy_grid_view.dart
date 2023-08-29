@@ -5,7 +5,7 @@ import "package:flutter/material.dart";
 import "package:photos/core/configuration.dart";
 import "package:photos/core/event_bus.dart";
 import "package:photos/events/clear_selections_event.dart";
-import "package:photos/models/file.dart";
+import 'package:photos/models/file/file.dart';
 import "package:photos/models/selected_files.dart";
 import "package:photos/ui/viewer/gallery/component/grid/non_recyclable_grid_view_widget.dart";
 import "package:photos/ui/viewer/gallery/component/grid/recyclable_grid_view_widget.dart";
@@ -13,29 +13,25 @@ import "package:photos/ui/viewer/gallery/gallery.dart";
 
 class LazyGridView extends StatefulWidget {
   final String tag;
-  final List<File> filesInGroup;
+  final List<EnteFile> filesInGroup;
   final GalleryLoader asyncLoader;
   final SelectedFiles? selectedFiles;
   final bool shouldRender;
   final bool shouldRecycle;
-  final ValueNotifier toggleSelectAllFromDay;
-  final ValueNotifier areAllFilesSelected;
   final int? photoGridSize;
   final bool limitSelectionToOne;
 
-  LazyGridView(
+  const LazyGridView(
     this.tag,
     this.filesInGroup,
     this.asyncLoader,
     this.selectedFiles,
     this.shouldRender,
     this.shouldRecycle,
-    this.toggleSelectAllFromDay,
-    this.areAllFilesSelected,
     this.photoGridSize, {
     this.limitSelectionToOne = false,
     Key? key,
-  }) : super(key: key ?? UniqueKey());
+  }) : super(key: key);
 
   @override
   State<LazyGridView> createState() => _LazyGridViewState();
@@ -57,7 +53,6 @@ class _LazyGridViewState extends State<LazyGridView> {
         setState(() {});
       }
     });
-    widget.toggleSelectAllFromDay.addListener(_toggleSelectAllFromDayListener);
     super.initState();
   }
 
@@ -65,8 +60,7 @@ class _LazyGridViewState extends State<LazyGridView> {
   void dispose() {
     widget.selectedFiles?.removeListener(_selectedFilesListener);
     _clearSelectionsEvent.cancel();
-    widget.toggleSelectAllFromDay
-        .removeListener(_toggleSelectAllFromDayListener);
+
     super.dispose();
   }
 
@@ -106,13 +100,6 @@ class _LazyGridViewState extends State<LazyGridView> {
   }
 
   void _selectedFilesListener() {
-    if (widget.selectedFiles!.files
-        .toSet()
-        .containsAll(widget.filesInGroup.toSet())) {
-      widget.areAllFilesSelected.value = true;
-    } else {
-      widget.areAllFilesSelected.value = false;
-    }
     bool shouldRefresh = false;
     for (final file in widget.filesInGroup) {
       if (widget.selectedFiles!.isPartOfLastSelected(file)) {
@@ -121,18 +108,6 @@ class _LazyGridViewState extends State<LazyGridView> {
     }
     if (shouldRefresh && mounted) {
       setState(() {});
-    }
-  }
-
-  void _toggleSelectAllFromDayListener() {
-    if (widget.selectedFiles!.files
-        .toSet()
-        .containsAll(widget.filesInGroup.toSet())) {
-      setState(() {
-        widget.selectedFiles!.unSelectAll(widget.filesInGroup.toSet());
-      });
-    } else {
-      widget.selectedFiles!.selectAll(widget.filesInGroup.toSet());
     }
   }
 }

@@ -97,6 +97,8 @@ class Collection {
   // including expired links
   bool get hasLink => publicURLs != null && publicURLs!.isNotEmpty;
 
+  bool get hasCover => (pubMagicMetadata.coverID ?? 0) > 0;
+
   // hasSharees returns true if the collection is shared with other ente users
   bool get hasSharees => sharees != null && sharees!.isNotEmpty;
 
@@ -113,8 +115,9 @@ class Collection {
     return (magicMetadata.subType ?? 0) == subTypeDefaultHidden;
   }
 
-  bool isSharedFilesCollection() {
-    return (magicMetadata.subType ?? 0) == subTypeSharedFilesCollection;
+  bool isQuickLinkCollection() {
+    return (magicMetadata.subType ?? 0) == subTypeSharedFilesCollection &&
+        !hasSharees;
   }
 
   List<User> getSharees() {
