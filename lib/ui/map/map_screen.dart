@@ -7,7 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import "package:latlong2/latlong.dart";
 import "package:logging/logging.dart";
-import "package:photos/models/file.dart";
+import "package:photos/generated/l10n.dart";
+import 'package:photos/models/file/file.dart';
 import "package:photos/theme/ente_theme.dart";
 import "package:photos/ui/common/loading_widget.dart";
 import "package:photos/ui/map/image_marker.dart";
@@ -19,7 +20,7 @@ import "package:photos/utils/toast_util.dart";
 class MapScreen extends StatefulWidget {
   // Add a function parameter where the function returns a Future<List<File>>
 
-  final Future<List<File>> Function() filesFutureFn;
+  final Future<List<EnteFile>> Function() filesFutureFn;
 
   const MapScreen({
     super.key,
@@ -34,9 +35,9 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   List<ImageMarker> imageMarkers = [];
-  List<File> allImages = [];
-  StreamController<List<File>> visibleImages =
-      StreamController<List<File>>.broadcast();
+  List<EnteFile> allImages = [];
+  StreamController<List<EnteFile>> visibleImages =
+      StreamController<List<EnteFile>>.broadcast();
   MapController mapController = MapController();
   bool isLoading = true;
   double initialZoom = 4.5;
@@ -48,7 +49,7 @@ class _MapScreenState extends State<MapScreen> {
   StreamSubscription? _mapMoveSubscription;
   Isolate? isolate;
   static const bottomSheetDraggableAreaHeight = 32.0;
-  List<File>? prevMessage;
+  List<EnteFile>? prevMessage;
 
   @override
   void initState() {
@@ -72,10 +73,10 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  Future<void> processFiles(List<File> files) async {
+  Future<void> processFiles(List<EnteFile> files) async {
     final List<ImageMarker> tempMarkers = [];
     bool hasAnyLocation = false;
-    File? mostRecentFile;
+    EnteFile? mostRecentFile;
     for (var file in files) {
       if (file.hasLocation && file.location != null) {
         hasAnyLocation = true;
@@ -108,7 +109,7 @@ class _MapScreenState extends State<MapScreen> {
         debugPrint("Info for map: center $center, initialZoom $initialZoom");
       }
     } else {
-      showShortToast(context, "No images with location");
+      showShortToast(context, S.of(context).noImagesWithLocation);
     }
 
     setState(() {
@@ -140,7 +141,7 @@ class _MapScreenState extends State<MapScreen> {
     );
 
     _mapMoveSubscription = receivePort.listen((dynamic message) async {
-      if (message is List<File>) {
+      if (message is List<EnteFile>) {
         if (!message.equals(prevMessage ?? [])) {
           visibleImages.sink.add(message);
         }
@@ -159,7 +160,7 @@ class _MapScreenState extends State<MapScreen> {
     final imageMarkers = message.imageMarkers;
     final SendPort sendPort = message.sendPort;
     try {
-      final List<File> visibleFiles = [];
+      final List<EnteFile> visibleFiles = [];
       for (var imageMarker in imageMarkers) {
         final point = LatLng(imageMarker.latitude, imageMarker.longitude);
         if (bounds.contains(point)) {

@@ -12,7 +12,7 @@ import 'package:photos/db/files_db.dart';
 import 'package:photos/ente_theme_data.dart';
 import 'package:photos/generated/l10n.dart';
 import 'package:photos/models/device_collection.dart';
-import 'package:photos/models/file.dart';
+import 'package:photos/models/file/file.dart';
 import 'package:photos/services/remote_sync_service.dart';
 import 'package:photos/ui/common/loading_widget.dart';
 import 'package:photos/ui/viewer/file/thumbnail_widget.dart';
@@ -78,14 +78,14 @@ class _BackupFolderSelectionPageState extends State<BackupFolderSelectionPage> {
               title: const Text(""),
             ),
       body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           const SizedBox(
             height: 0,
           ),
           SafeArea(
             child: Container(
-              padding: const EdgeInsets.fromLTRB(24, 32, 24, 8),
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
               child: Text(
                 S.of(context).selectFoldersForBackup,
                 textAlign: TextAlign.left,
@@ -159,7 +159,7 @@ class _BackupFolderSelectionPageState extends State<BackupFolderSelectionPage> {
                       blurRadius: 24,
                       offset: const Offset(0, -8),
                       spreadRadius: 4,
-                    )
+                    ),
                   ],
                 ),
                 padding: widget.isOnboarding
@@ -313,7 +313,7 @@ class _BackupFolderSelectionPageState extends State<BackupFolderSelectionPage> {
               : LinearGradient(
                   colors: [
                     Theme.of(context).colorScheme.boxUnSelectColor,
-                    Theme.of(context).colorScheme.boxUnSelectColor
+                    Theme.of(context).colorScheme.boxUnSelectColor,
                   ],
                 ),
         ),
@@ -407,7 +407,7 @@ class _BackupFolderSelectionPageState extends State<BackupFolderSelectionPage> {
     });
   }
 
-  Widget _getThumbnail(File file, bool isSelected) {
+  Widget _getThumbnail(EnteFile file, bool isSelected) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: SizedBox(

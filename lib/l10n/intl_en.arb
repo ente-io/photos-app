@@ -18,7 +18,7 @@
   "yourAccountHasBeenDeleted": "Your account has been deleted",
   "selectReason": "Select reason",
   "deleteReason1": "It’s missing a key feature that I need",
-  "deleteReason2": "The app or a certain feature does not \nbehave as I think it should",
+  "deleteReason2": "The app or a certain feature does not behave as I think it should",
   "deleteReason3": "I found another service that I like better",
   "deleteReason4": "My reason isn’t listed",
   "sendEmail": "Send email",
@@ -49,6 +49,7 @@
   "sorry": "Sorry",
   "noRecoveryKeyNoDecryption": "Due to the nature of our end-to-end encryption protocol, your data cannot be decrypted without your password or recovery key",
   "verifyEmail": "Verify email",
+  "toResetVerifyEmail": "To reset your password, please verify your email first.",
   "checkInboxAndSpamFolder": "Please check your inbox (and spam) to complete verification",
   "tapToEnterCode": "Tap to enter code",
   "resendEmail": "Resend email",
@@ -420,7 +421,7 @@
   "itemCount": "{count, plural, one{{count} item} other{{count} items}}",
   "deleteItemCount": "{count, plural, =1 {Delete {count} item} other {Delete {count} items}}",
   "duplicateItemsGroup": "{count} files, {formattedSize} each",
-  "@duplicateItemsGroup" : {
+  "@duplicateItemsGroup": {
     "description": "Display the number of duplicate files and their size",
     "type": "text",
     "placeholders": {
@@ -434,6 +435,7 @@
       }
     }
   },
+  "showMemories": "Show memories",
   "yearsAgo": "{count, plural, one{{count} year ago} other{{count} years ago}}",
   "backupSettings": "Backup settings",
   "backupOverMobileData": "Backup over mobile data",
@@ -452,6 +454,8 @@
   "authToChangeYourEmail": "Please authenticate to change your email",
   "changePassword": "Change password",
   "authToChangeYourPassword": "Please authenticate to change your password",
+  "emailVerificationToggle": "Email verification",
+  "authToChangeEmailVerificationSetting": "Please authenticate to change email verification",
   "exportYourData": "Export your data",
   "logout": "Logout",
   "authToInitiateAccountDeletion": "Please authenticate to initiate account deletion",
@@ -640,6 +644,9 @@
   "startBackup": "Start backup",
   "noPhotosAreBeingBackedUpRightNow": "No photos are being backed up right now",
   "preserveMore": "Preserve more",
+  "grantFullAccessPrompt": "Please allow access to all photos in the Settings app",
+  "openSettings": "Open Settings",
+  "selectMorePhotos": "Select more photos",
   "existingUser": "Existing user",
   "privateBackups": "Private backups",
   "forYourMemories": "for your memories",
@@ -716,16 +723,6 @@
   "addToAlbum": "Add to album",
   "delete": "Delete",
   "hide": "Hide",
-  "itemSelectedCount": "{count} selected",
-  "@itemSelectedCount": {
-    "description": "Text to indicate number of items selected",
-    "placeholders": {
-      "count": {
-        "example": "1|2|3",
-        "type": "int"
-      }
-    }
-  },
   "share": "Share",
   "unhideToAlbum": "Unhide to album",
   "restoreToAlbum": "Restore to album",
@@ -773,6 +770,7 @@
   },
   "deleteAll": "Delete All",
   "renameAlbum": "Rename album",
+  "convertToAlbum": "Convert to album",
   "setCover": "Set cover",
   "@setCover": {
     "description": "Text to set cover photo for an album"
@@ -819,6 +817,7 @@
   "fileFailedToSaveToGallery": "Failed to save file to gallery",
   "download": "Download",
   "pressAndHoldToPlayVideo": "Press and hold to play video",
+  "pressAndHoldToPlayVideoDetailed": "Press and hold on the image to  play video",
   "downloadFailed": "Download failed",
   "deduplicateFiles": "Deduplicate Files",
   "deselectAll": "Deselect all",
@@ -976,6 +975,10 @@
   "centerPoint": "Center point",
   "pickCenterPoint": "Pick center point",
   "useSelectedPhoto": "Use selected photo",
+  "resetToDefault": "Reset to default",
+  "@resetToDefault": {
+    "description": "Button text to reset cover photo to default"
+  },
   "edit": "Edit",
   "deleteLocation": "Delete location",
   "rotateLeft": "Rotate left",
@@ -1079,6 +1082,29 @@
   "maps": "Maps",
   "enableMaps": "Enable Maps",
   "enableMapsDesc": "This will show your photos on a world map.\n\nThis map is hosted by Open Street Map, and the exact locations of your photos are never shared.\n\nYou can disable this feature anytime from Settings.",
+  "quickLinks": "Quick links",
+  "selectItemsToAdd": "Select items to add",
+  "addSelected": "Add selected",
+  "addFromDevice": "Add from device",
+  "addPhotos": "Add photos",
+  "noPhotosFoundHere": "No photos found here",
+  "zoomOutToSeePhotos": "Zoom out to see photos",
+  "noImagesWithLocation": "No images with location",
   "unpinAlbum": "Unpin album",
-  "pinAlbum": "Pin album"
+  "pinAlbum": "Pin album",
+  "create": "Create",
+  "viewAll": "View all",
+  "nothingSharedWithYouYet": "Nothing shared with you yet",
+  "noAlbumsSharedByYouYet": "No albums shared by you yet",
+  "sharedWithYou": "Shared with you",
+  "sharedByYou": "Shared by you",
+  "inviteYourFriendsToEnte": "Invite your friends to ente",
+  "failedToDownloadVideo": "Failed to download video",
+  "hiding": "Hiding...",
+  "unhiding": "Unhiding...",
+  "successfullyHid": "Successfully hid",
+  "successfullyUnhid": "Successfully unhid",
+  "crashReporting": "Crash reporting",
+  "addToHiddenAlbum": "Add to hidden album",
+  "moveToHiddenAlbum": "Move to hidden album"
 }

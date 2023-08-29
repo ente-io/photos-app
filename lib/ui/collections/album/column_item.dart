@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import "package:intl/intl.dart";
 import 'package:logging/logging.dart';
-import 'package:photos/db/files_db.dart';
 import "package:photos/generated/l10n.dart";
-import "package:photos/models/collection.dart";
-import "package:photos/models/file.dart";
+import 'package:photos/models/collection/collection.dart';
+import 'package:photos/models/file/file.dart';
 import "package:photos/services/collections_service.dart";
 import 'package:photos/theme/ente_theme.dart';
 import 'package:photos/ui/viewer/file/no_thumbnail_widget.dart';
@@ -38,7 +37,7 @@ class AlbumColumnItemWidget extends StatelessWidget {
                   child: SizedBox(
                     height: sideOfThumbnail,
                     width: sideOfThumbnail,
-                    child: FutureBuilder<File?>(
+                    child: FutureBuilder<EnteFile?>(
                       future: CollectionsService.instance.getCover(collection),
                       builder: (context, snapshot) {
                         if (snapshot.hasData) {
@@ -65,9 +64,8 @@ class AlbumColumnItemWidget extends StatelessWidget {
                     children: [
                       Text(collection.displayName),
                       FutureBuilder<int>(
-                        future: FilesDB.instance.collectionFileCount(
-                          collection.id,
-                        ),
+                        future: CollectionsService.instance.getFileCount
+                          (collection),
                         builder: (context, snapshot) {
                           if (snapshot.hasData) {
                             return Text(
@@ -94,7 +92,7 @@ class AlbumColumnItemWidget extends StatelessWidget {
                             );
                           }
                         },
-                      )
+                      ),
                     ],
                   ),
                 ),

@@ -6,7 +6,8 @@ import "package:logging/logging.dart";
 import "package:photos/core/event_bus.dart";
 import "package:photos/events/files_updated_event.dart";
 import "package:photos/events/local_photos_updated_event.dart";
-import "package:photos/models/file.dart";
+import "package:photos/generated/l10n.dart";
+import 'package:photos/models/file/file.dart';
 import "package:photos/models/file_load_result.dart";
 import "package:photos/models/gallery_type.dart";
 import "package:photos/models/selected_files.dart";
@@ -16,7 +17,7 @@ import "package:photos/ui/viewer/actions/file_selection_overlay_bar.dart";
 import "package:photos/ui/viewer/gallery/gallery.dart";
 
 class MapPullUpGallery extends StatefulWidget {
-  final StreamController<List<File>> visibleImages;
+  final StreamController<List<EnteFile>> visibleImages;
   final double bottomUnsafeArea;
   final double bottomSheetDraggableAreaHeight;
   static const gridCrossAxisSpacing = 4.0;
@@ -103,11 +104,11 @@ class _MapPullUpGalleryState extends State<MapPullUpGallery> {
               duration: const Duration(milliseconds: 200),
               switchInCurve: Curves.easeInOutExpo,
               switchOutCurve: Curves.easeInOutExpo,
-              child: StreamBuilder<List<File>>(
+              child: StreamBuilder<List<EnteFile>>(
                 stream: widget.visibleImages.stream,
                 builder: (
                   BuildContext context,
-                  AsyncSnapshot<List<File>> snapshot,
+                  AsyncSnapshot<List<EnteFile>> snapshot,
                 ) {
                   if (!snapshot.hasData) {
                     return SizedBox(
@@ -120,7 +121,7 @@ class _MapPullUpGalleryState extends State<MapPullUpGallery> {
                   logger.info("Visible images: ${images.length}");
                   //To retain only selected files that are in view (visible)
                   WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-                    _selectedFiles.filesToRetain(images.toSet());
+                    _selectedFiles.retainFiles(images.toSet());
                   });
 
                   if (images.isEmpty) {
@@ -133,14 +134,14 @@ class _MapPullUpGalleryState extends State<MapPullUpGallery> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                "No photos found here",
+                                S.of(context).noPhotosFoundHere,
                                 style: textTheme.large,
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                "Zoom out to see photos",
+                                S.of(context).zoomOutToSeePhotos,
                                 style: textTheme.smallFaint,
-                              )
+                              ),
                             ],
                           ),
                         ),
@@ -178,7 +179,7 @@ class _MapPullUpGalleryState extends State<MapPullUpGallery> {
                 },
               ),
             ),
-          )
+          ),
         ],
       ),
     );

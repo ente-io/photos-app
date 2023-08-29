@@ -4,7 +4,7 @@ import "package:logging/logging.dart";
 import "package:photos/core/event_bus.dart";
 import "package:photos/ente_theme_data.dart";
 import "package:photos/events/files_updated_event.dart";
-import "package:photos/models/file.dart";
+import 'package:photos/models/file/file.dart';
 import "package:photos/models/selected_files.dart";
 import "package:photos/ui/common/loading_widget.dart";
 import "package:photos/ui/huge_listview/huge_listview.dart";
@@ -22,9 +22,8 @@ If a group has more than 400 files, LazyGroupGallery internally divides the
 group into multiple grid views during rendering.
  */
 class MultipleGroupsGalleryView extends StatelessWidget {
-  final GlobalKey<HugeListViewState<dynamic>> hugeListViewKey;
   final ItemScrollController itemScroller;
-  final List<List<File>> groupedFiles;
+  final List<List<EnteFile>> groupedFiles;
   final bool disableScroll;
   final Widget? header;
   final Widget? footer;
@@ -43,7 +42,6 @@ class MultipleGroupsGalleryView extends StatelessWidget {
   final bool isScrollablePositionedList;
 
   const MultipleGroupsGalleryView({
-    required this.hugeListViewKey,
     required this.itemScroller,
     required this.groupedFiles,
     required this.disableScroll,
@@ -67,8 +65,7 @@ class MultipleGroupsGalleryView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return HugeListView<List<File>>(
-      key: hugeListViewKey,
+    return HugeListView<List<EnteFile>>(
       controller: itemScroller,
       startIndex: 0,
       totalCount: groupedFiles.length,
