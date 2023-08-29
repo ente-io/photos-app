@@ -19,7 +19,7 @@ import "package:photos/services/collections_service.dart";
 import "package:photos/theme/text_style.dart";
 import "package:photos/ui/collections/flex_grid_view.dart";
 import "package:photos/ui/viewer/file/thumbnail_widget.dart";
-import "package:photos/utils/file_util.dart";
+import "package:photos/utils/thumbnail_util.dart";
 
 const shapeKey = 'shape';
 const typeKey = 'type';
@@ -79,9 +79,8 @@ Future<void> backgroundHomeWidgetCallback() async {
       }
     }
 
-    final ioFile = await getFile(temp);
-    final bytes = await ioFile!.readAsBytes();
-    final base64 = base64Encode(bytes);
+    final ioFile = await getThumbnail(temp);
+    final base64 = base64Encode(ioFile!);
 
     await HomeWidget.saveWidgetData<String>(
       '${widgetId}_$thumbnailKey',
@@ -168,8 +167,8 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
 
   Future _setThumbnail() async {
     try {
-      final bytes = (await getFile(thumbnail))!.readAsBytesSync();
-      final base64 = base64Encode(bytes);
+      final bytes = await getThumbnail(thumbnail);
+      final base64 = base64Encode(bytes!);
       await HomeWidget.saveWidgetData<String>(
         '${widgetId}_$thumbnailKey',
         base64,
@@ -486,12 +485,14 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
                         children: [
                           const Text('Preview'),
                           const Spacer(),
-                          IconButton(
-                            onPressed: () async {
-                              await refresh();
-                            },
-                            icon: const Icon(Icons.refresh),
-                          ),
+                          isRecent
+                              ? const SizedBox()
+                              : IconButton(
+                                  onPressed: () async {
+                                    await refresh();
+                                  },
+                                  icon: const Icon(Icons.refresh),
+                                ),
                         ],
                       ),
                       subtitle: Container(
@@ -499,13 +500,11 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        width: double.infinity,
-                        height: 300,
+                        width: sideOfThumbnail,
+                        height: sideOfThumbnail,
                         child: ThumbnailWidget(
                           thumbnail,
-                          fit: BoxFit.fill,
                           shouldShowSyncStatus: false,
-                          thumbnailSize: 500,
                         ),
                       ),
                     ),
