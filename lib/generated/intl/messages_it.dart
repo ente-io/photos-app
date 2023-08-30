@@ -229,6 +229,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "addToAlbum":
             MessageLookupByLibrary.simpleMessage("Aggiungi all\'album"),
         "addToEnte": MessageLookupByLibrary.simpleMessage("Aggiungi su ente"),
+        "addToHiddenAlbum":
+            MessageLookupByLibrary.simpleMessage("Aggiungi ad album nascosto"),
         "addViewer":
             MessageLookupByLibrary.simpleMessage("Aggiungi in sola lettura"),
         "addedAs": MessageLookupByLibrary.simpleMessage("Aggiunto come"),
@@ -705,6 +707,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "goToSettings":
             MessageLookupByLibrary.simpleMessage("Vai alle impostazioni"),
         "googlePlayId": MessageLookupByLibrary.simpleMessage("Google Play ID"),
+        "grantFullAccessPrompt": MessageLookupByLibrary.simpleMessage(
+            "Consenti l\'accesso a tutte le foto nelle Impostazioni"),
         "grantPermission":
             MessageLookupByLibrary.simpleMessage("Concedi il permesso"),
         "groupNearbyPhotos": MessageLookupByLibrary.simpleMessage(
@@ -858,6 +862,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "moveItem": m29,
         "moveToAlbum":
             MessageLookupByLibrary.simpleMessage("Sposta nell\'album"),
+        "moveToHiddenAlbum":
+            MessageLookupByLibrary.simpleMessage("Sposta in album nascosto"),
         "movedSuccessfullyTo": m30,
         "movedToTrash":
             MessageLookupByLibrary.simpleMessage("Spostato nel cestino"),
@@ -906,6 +912,8 @@ class MessageLookup extends MessageLookupByLibrary {
             "Ops, impossibile salvare le modifiche"),
         "oopsSomethingWentWrong": MessageLookupByLibrary.simpleMessage(
             "Oops! Qualcosa è andato storto"),
+        "openSettings":
+            MessageLookupByLibrary.simpleMessage("Apri Impostazioni"),
         "openTheItem":
             MessageLookupByLibrary.simpleMessage("• Apri la foto o il video"),
         "openstreetmapContributors": MessageLookupByLibrary.simpleMessage(
@@ -976,6 +984,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "preserveMore": MessageLookupByLibrary.simpleMessage("Salva più foto"),
         "pressAndHoldToPlayVideo": MessageLookupByLibrary.simpleMessage(
             "Tieni premuto per riprodurre il video"),
+        "pressAndHoldToPlayVideoDetailed": MessageLookupByLibrary.simpleMessage(
+            "Tieni premuto sull\'immagine per riprodurre il video"),
         "privacy": MessageLookupByLibrary.simpleMessage("Privacy"),
         "privacyPolicyTitle":
             MessageLookupByLibrary.simpleMessage("Privacy Policy"),
@@ -1112,6 +1122,8 @@ class MessageLookup extends MessageLookupByLibrary {
             "Seleziona gli elementi da aggiungere"),
         "selectLanguage":
             MessageLookupByLibrary.simpleMessage("Seleziona una lingua"),
+        "selectMorePhotos":
+            MessageLookupByLibrary.simpleMessage("Seleziona più foto"),
         "selectReason":
             MessageLookupByLibrary.simpleMessage("Seleziona un motivo"),
         "selectYourPlan":
@@ -1176,6 +1188,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Condivise con te"),
         "sharing":
             MessageLookupByLibrary.simpleMessage("Condivisione in corso..."),
+        "showMemories": MessageLookupByLibrary.simpleMessage("Mostra ricordi"),
         "signUpTerms": MessageLookupByLibrary.simpleMessage(
             "Accetto i <u-terms>termini di servizio</u-terms> e la <u-policy>politica sulla privacy</u-policy>"),
         "singleFileDeleteFromDevice": m47,

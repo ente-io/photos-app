@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
+import "package:flutter/foundation.dart";
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:media_extension/media_extension.dart';
@@ -10,6 +11,7 @@ import 'package:photos/core/event_bus.dart';
 import 'package:photos/db/files_db.dart';
 import 'package:photos/events/local_photos_updated_event.dart';
 import "package:photos/generated/l10n.dart";
+import "package:photos/models/file/extensions/file_props.dart";
 import 'package:photos/models/file/file.dart';
 import 'package:photos/models/file/file_type.dart';
 import 'package:photos/models/file/trash_file.dart';
@@ -34,13 +36,11 @@ class FileAppBar extends StatefulWidget {
   final Function(EnteFile) onFileRemoved;
   final double height;
   final bool shouldShowActions;
-  final int? userID;
   final ValueNotifier<bool> enableFullScreenNotifier;
 
   const FileAppBar(
     this.file,
     this.onFileRemoved,
-    this.userID,
     this.height,
     this.shouldShowActions, {
     required this.enableFullScreenNotifier,
@@ -89,13 +89,12 @@ class FileAppBarState extends State<FileAppBar> {
   }
 
   AppBar _buildAppBar() {
-    debugPrint("building app bar");
+    _logger.fine("building app bar ${widget.file.generatedID?.toString()}");
 
     final List<Widget> actions = [];
     final isTrashedFile = widget.file is TrashFile;
     final shouldShowActions = widget.shouldShowActions && !isTrashedFile;
-    final bool isOwnedByUser =
-        widget.file.ownerID == null || widget.file.ownerID == widget.userID;
+    final bool isOwnedByUser = widget.file.isOwner;
     final bool isFileUploaded = widget.file.isUploaded;
     bool isFileHidden = false;
     if (isOwnedByUser && isFileUploaded) {
@@ -103,6 +102,24 @@ class FileAppBarState extends State<FileAppBar> {
               .getCollectionByID(widget.file.collectionID!)
               ?.isHidden() ??
           false;
+    }
+      if (kDebugMode) {
+        actions.add(
+          Text(
+            widget.file.generatedID?.toString() ?? 'null',
+            style: TextStyle(color: Colors.white),
+          ),
+        );
+      }
+    if (widget.file.isLiveOrMotionPhoto) {
+      actions.add(
+        IconButton(
+          icon: const Icon(Icons.album_outlined),
+          onPressed: () {
+            showShortToast(context, S.of(context).pressAndHoldToPlayVideoDetailed);
+          },
+        ),
+      );
     }
     // only show fav option for files owned by the user
     if (isOwnedByUser && !isFileHidden && isFileUploaded) {
@@ -142,7 +159,7 @@ class FileAppBarState extends State<FileAppBar> {
             );
           }
           // options for files owned by the user
-          if (isOwnedByUser && !isFileHidden) {
+          if (isOwnedByUser && !isFileHidden && isFileUploaded) {
             final bool isArchived =
                 widget.file.magicMetadata.visibility == archiveVisibility;
             items.add(

@@ -225,6 +225,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "addSelected": MessageLookupByLibrary.simpleMessage("Add selected"),
         "addToAlbum": MessageLookupByLibrary.simpleMessage("Add to album"),
         "addToEnte": MessageLookupByLibrary.simpleMessage("Add to ente"),
+        "addToHiddenAlbum":
+            MessageLookupByLibrary.simpleMessage("Add to hidden album"),
         "addViewer": MessageLookupByLibrary.simpleMessage("Add viewer"),
         "addedAs": MessageLookupByLibrary.simpleMessage("Added as"),
         "addedBy": m1,
@@ -685,6 +687,8 @@ class MessageLookup extends MessageLookupByLibrary {
             "Generating encryption keys..."),
         "goToSettings": MessageLookupByLibrary.simpleMessage("Go to settings"),
         "googlePlayId": MessageLookupByLibrary.simpleMessage("Google Play ID"),
+        "grantFullAccessPrompt": MessageLookupByLibrary.simpleMessage(
+            "Please allow access to all photos in the Settings app"),
         "grantPermission":
             MessageLookupByLibrary.simpleMessage("Grant permission"),
         "groupNearbyPhotos":
@@ -827,6 +831,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "monthly": MessageLookupByLibrary.simpleMessage("Monthly"),
         "moveItem": m29,
         "moveToAlbum": MessageLookupByLibrary.simpleMessage("Move to album"),
+        "moveToHiddenAlbum":
+            MessageLookupByLibrary.simpleMessage("Move to hidden album"),
         "movedSuccessfullyTo": m30,
         "movedToTrash": MessageLookupByLibrary.simpleMessage("Moved to trash"),
         "movingFilesToAlbum":
@@ -873,6 +879,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Oops, could not save edits"),
         "oopsSomethingWentWrong":
             MessageLookupByLibrary.simpleMessage("Oops, something went wrong"),
+        "openSettings": MessageLookupByLibrary.simpleMessage("Open Settings"),
         "openTheItem": MessageLookupByLibrary.simpleMessage("• Open the item"),
         "openstreetmapContributors":
             MessageLookupByLibrary.simpleMessage("OpenStreetMap contributors"),
@@ -941,6 +948,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "preserveMore": MessageLookupByLibrary.simpleMessage("Preserve more"),
         "pressAndHoldToPlayVideo": MessageLookupByLibrary.simpleMessage(
             "Press and hold to play video"),
+        "pressAndHoldToPlayVideoDetailed": MessageLookupByLibrary.simpleMessage(
+            "Press and hold on the image to  play video"),
         "privacy": MessageLookupByLibrary.simpleMessage("Privacy"),
         "privacyPolicyTitle":
             MessageLookupByLibrary.simpleMessage("Privacy Policy"),
@@ -1074,6 +1083,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Select items to add"),
         "selectLanguage":
             MessageLookupByLibrary.simpleMessage("Select Language"),
+        "selectMorePhotos":
+            MessageLookupByLibrary.simpleMessage("Select more photos"),
         "selectReason": MessageLookupByLibrary.simpleMessage("Select reason"),
         "selectYourPlan":
             MessageLookupByLibrary.simpleMessage("Select your plan"),

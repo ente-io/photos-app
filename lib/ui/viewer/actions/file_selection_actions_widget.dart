@@ -99,17 +99,12 @@ class _FileSelectionActionsWidgetState
         split.pendingUploads.isNotEmpty || split.ownedByCurrentUser.isNotEmpty;
 
     final bool anyUploadedFiles = split.ownedByCurrentUser.isNotEmpty;
-
-    bool hasVideoFile = false;
-    for (final file in widget.selectedFiles.files) {
-      if (file.fileType == FileType.video) {
-        hasVideoFile = true;
-      }
-    }
-    final showCollageOption = !hasVideoFile &&
-        widget.selectedFiles.files.length >=
-            CollageCreatorPage.collageItemsMin &&
-        widget.selectedFiles.files.length <= CollageCreatorPage.collageItemsMax;
+    final showCollageOption = CollageCreatorPage.isValidCount(
+          widget.selectedFiles.files.length,
+        ) &&
+        !widget.selectedFiles.files.any(
+          (element) => element.fileType == FileType.video,
+        );
 
     //To animate adding and removing of [SelectedActionButton], add all items
     //and set [shouldShow] to false for items that should not be shown and true
@@ -139,7 +134,7 @@ class _FileSelectionActionsWidgetState
 
     items.add(
       SelectionActionButton(
-        labelText: "Share",
+        labelText: S.of(context).share,
         icon: Icons.adaptive.share_outlined,
         onTap: () => shareSelected(
           context,
@@ -171,6 +166,17 @@ class _FileSelectionActionsWidgetState
         );
       }
     }
+
+    if (widget.type.showAddtoHiddenAlbum()) {
+      items.add(
+        SelectionActionButton(
+          icon: Icons.add_outlined,
+          labelText: S.of(context).addToAlbum,
+          onTap: _addToHiddenAlbum,
+        ),
+      );
+    }
+
     if (widget.type.showMoveToAlbum()) {
       items.add(
         SelectionActionButton(
@@ -182,6 +188,16 @@ class _FileSelectionActionsWidgetState
       );
     }
 
+    if (widget.type.showMovetoHiddenAlbum()) {
+      items.add(
+        SelectionActionButton(
+          icon: Icons.arrow_forward_outlined,
+          labelText: S.of(context).moveToAlbum,
+          onTap: _moveFilesToHiddenAlbum,
+        ),
+      );
+    }
+
     if (widget.type.showRemoveFromAlbum()) {
       items.add(
         SelectionActionButton(
@@ -189,6 +205,16 @@ class _FileSelectionActionsWidgetState
           labelText: S.of(context).removeFromAlbum,
           onTap: removeCount > 0 ? _removeFilesFromAlbum : null,
           shouldShow: removeCount > 0,
+        ),
+      );
+    }
+
+    if (widget.type.showRemoveFromHiddenAlbum()) {
+      items.add(
+        SelectionActionButton(
+          icon: Icons.remove_outlined,
+          labelText: S.of(context).removeFromAlbum,
+          onTap: _removeFilesFromHiddenAlbum,
         ),
       );
     }
@@ -332,12 +358,28 @@ class _FileSelectionActionsWidgetState
     );
   }
 
+  Future<void> _moveFilesToHiddenAlbum() async {
+    showCollectionActionSheet(
+      context,
+      selectedFiles: widget.selectedFiles,
+      actionType: CollectionActionType.moveToHiddenCollection,
+    );
+  }
+
   Future<void> _addToAlbum() async {
     if (split.ownedByOtherUsers.isNotEmpty) {
       widget.selectedFiles
           .unSelectAll(split.ownedByOtherUsers.toSet(), skipNotify: true);
     }
     showCollectionActionSheet(context, selectedFiles: widget.selectedFiles);
+  }
+
+  Future<void> _addToHiddenAlbum() async {
+    showCollectionActionSheet(
+      context,
+      selectedFiles: widget.selectedFiles,
+      actionType: CollectionActionType.addToHiddenAlbum,
+    );
   }
 
   Future<void> _onDeleteClick() async {
@@ -360,6 +402,16 @@ class _FileSelectionActionsWidgetState
       widget.collection!,
       widget.selectedFiles,
       removingOthersFile,
+    );
+  }
+
+  Future<void> _removeFilesFromHiddenAlbum() async {
+    await collectionActions.showRemoveFromCollectionSheetV2(
+      context,
+      widget.collection!,
+      widget.selectedFiles,
+      false,
+      isHidden: true,
     );
   }
 

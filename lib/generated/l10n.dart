@@ -4455,6 +4455,36 @@ class S {
     );
   }
 
+  /// `Please allow access to all photos in the Settings app`
+  String get grantFullAccessPrompt {
+    return Intl.message(
+      'Please allow access to all photos in the Settings app',
+      name: 'grantFullAccessPrompt',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Open Settings`
+  String get openSettings {
+    return Intl.message(
+      'Open Settings',
+      name: 'openSettings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Select more photos`
+  String get selectMorePhotos {
+    return Intl.message(
+      'Select more photos',
+      name: 'selectMorePhotos',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Existing user`
   String get existingUser {
     return Intl.message(
@@ -5820,6 +5850,16 @@ class S {
     return Intl.message(
       'Press and hold to play video',
       name: 'pressAndHoldToPlayVideo',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Press and hold on the image to  play video`
+  String get pressAndHoldToPlayVideoDetailed {
+    return Intl.message(
+      'Press and hold on the image to  play video',
+      name: 'pressAndHoldToPlayVideoDetailed',
       desc: '',
       args: [],
     );
@@ -7640,6 +7680,26 @@ class S {
     return Intl.message(
       'Crash reporting',
       name: 'crashReporting',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add to hidden album`
+  String get addToHiddenAlbum {
+    return Intl.message(
+      'Add to hidden album',
+      name: 'addToHiddenAlbum',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Move to hidden album`
+  String get moveToHiddenAlbum {
+    return Intl.message(
+      'Move to hidden album',
+      name: 'moveToHiddenAlbum',
       desc: '',
       args: [],
     );
