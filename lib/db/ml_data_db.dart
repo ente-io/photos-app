@@ -12,7 +12,7 @@ import 'package:sqflite/sqflite.dart';
 /// [facesTable] - Stores all the detected faces and its embeddings in the images.
 /// [peopleTable] - Stores all the clusters of faces which are considered to be the same person.
 class MlDataDB {
-  static final Logger _logger = Logger("MlDataDB")..level = Level.FINEST;
+  static final Logger _logger = Logger("MlDataDB");
 
   static const _databaseName = "ente.ml_data.db";
   static const _databaseVersion = 1;

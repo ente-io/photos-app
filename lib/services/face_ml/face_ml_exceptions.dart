@@ -8,6 +8,8 @@ class GeneralFaceMlException implements Exception {
   String toString() => 'GeneralFaceMlException: $message';
 }
 
+class CouldNotRetrieveAnyFileData implements Exception {}
+
 class CouldNotInitializeFaceDetector implements Exception {}
 
 class CouldNotRunFaceDetector implements Exception {}

@@ -155,7 +155,7 @@ class _ZoomableImageState extends State<ZoomableImage>
     if (!_loadedFinalImage && !_loadingFinalImage) {
       _loadingFinalImage = true;
       getFileFromServer(_photo).then((file) {
-        process_for_face_detection(file!).ignore();
+        // process_for_face_detection(file!).ignore();
         _onFinalImageLoaded(
           Image.file(
             file!,
@@ -190,6 +190,9 @@ class _ZoomableImageState extends State<ZoomableImage>
       });
     }
 
+    process_for_face_detection(_photo)
+        .ignore(); // This calls it twice for some reason. TODO: remove this line
+
     if (!_loadingFinalImage && !_loadedFinalImage) {
       _loadingFinalImage = true;
       getFile(
@@ -198,7 +201,7 @@ class _ZoomableImageState extends State<ZoomableImage>
             _isGIF(), // since on iOS GIFs playback only when origin-files are loaded
       ).then((file) {
         if (file != null && file.existsSync()) {
-          process_for_face_detection(file).ignore();
+          // process_for_face_detection(file).ignore();
           _onFinalImageLoaded(Image.file(file).image);
         } else {
           _logger.info("File was deleted " + _photo.toString());
@@ -252,7 +255,7 @@ class _ZoomableImageState extends State<ZoomableImage>
     }
   }
 
-  Future<void> process_for_face_detection(io.File actualFile) async {
+  Future<void> process_for_face_detection(EnteFile enteFile) async {
     try {
       // final thumbnail = await getThumbnail(actualFile);
 
@@ -264,13 +267,29 @@ class _ZoomableImageState extends State<ZoomableImage>
 
       // To test the full pipeline
       final FaceMlResult faceMlResult =
-          await FaceMlService.instance.analyzeImage(
-        actualFile,
+          await FaceMlService.instance.processFacesImage(
+        enteFile,
       );
       showToast(
         context,
         'Image successfully analyzed: ${faceMlResult.faces.length} faces and a total result: ${faceMlResult.toJsonString()}',
       );
+
+      // final String faceMlResultJsonString = faceMlResult.toJsonString();
+      // final FaceMlResult faceMlResultFromJson =
+      //     FaceMlResult.fromJsonString(faceMlResultJsonString);
+      // final String faceMlResultJsonString2 =
+      //     faceMlResultFromJson.toJsonString();
+
+      // debugPrint("FaceMlResult String 1:" + faceMlResultJsonString);
+      // debugPrint(
+      //   "Character length of string 1:" +
+      //       faceMlResultJsonString.length.toString(),
+      // );
+      // debugPrint("FaceMlResult String 2:" + faceMlResultJsonString2);
+      // final bool isEqual = faceMlResultJsonString == faceMlResultJsonString2;
+      // debugPrint("FaceMlResult Strings are equal:" + isEqual.toString());
+      _logger.info(faceMlResult.toJsonString());
     } catch (e, s) {
       showToast(
         context,

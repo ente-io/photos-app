@@ -1,10 +1,12 @@
 import "dart:convert" show jsonEncode, jsonDecode;
 
 import "package:flutter/material.dart" show Size, immutable;
+import "package:photos/models/file/file.dart";
 import "package:photos/models/ml_typedefs.dart";
 import "package:photos/services/face_ml/face_alignment/alignment_result.dart";
 import "package:photos/services/face_ml/face_detection/detection.dart";
 import "package:photos/services/face_ml/face_ml_methods.dart";
+import "package:uuid/uuid.dart";
 
 const faceMlVersion = 0;
 
@@ -42,7 +44,10 @@ class FaceMlResult {
         'faceEmbeddingMethod': faceEmbeddingMethod.toJson(),
         'faces': faces.map((face) => face.toJson()).toList(),
         'fileId': fileId,
-        'imageDimensions': {'width': imageDimensions.width, 'height': imageDimensions.height},
+        'imageDimensions': {
+          'width': imageDimensions.width,
+          'height': imageDimensions.height
+        },
         'imageSource': imageSource,
         'lastErrorMessage': lastErrorMessage,
         'errorCount': errorCount,
@@ -53,12 +58,20 @@ class FaceMlResult {
 
   static FaceMlResult _fromJson(Map<String, dynamic> json) {
     return FaceMlResult(
-      faceDetectionMethod: FaceDetectionMethod.fromJson(json['faceDetectionMethod']),
-      faceAlignmentMethod: FaceAlignmentMethod.fromJson(json['faceAlignmentMethod']),
-      faceEmbeddingMethod: FaceEmbeddingMethod.fromJson(json['faceEmbeddingMethod']),
-      faces: (json['faces'] as List).map((item) => FaceResult.fromJson(item as Map<String, dynamic>)).toList(),
+      faceDetectionMethod:
+          FaceDetectionMethod.fromJson(json['faceDetectionMethod']),
+      faceAlignmentMethod:
+          FaceAlignmentMethod.fromJson(json['faceAlignmentMethod']),
+      faceEmbeddingMethod:
+          FaceEmbeddingMethod.fromJson(json['faceEmbeddingMethod']),
+      faces: (json['faces'] as List)
+          .map((item) => FaceResult.fromJson(item as Map<String, dynamic>))
+          .toList(),
       fileId: json['fileId'],
-      imageDimensions: Size(json['imageDimensions']['width'], json['imageDimensions']['height']),
+      imageDimensions: Size(
+        json['imageDimensions']['width'],
+        json['imageDimensions']['height'],
+      ),
       imageSource: json['imageSource'],
       lastErrorMessage: json['lastErrorMessage'],
       errorCount: json['errorCount'],
@@ -94,12 +107,13 @@ class FaceMlResultBuilder {
   });
 
   FaceMlResultBuilder.createWithMlMethods({
-    this.fileId = -1,
-    this.imageDimensions = const Size(0, 0),
+    required EnteFile file,
     this.imageSource = '',
     this.lastErrorMessage = '',
     this.mlVersion = faceMlVersion,
-  })  : faceDetectionMethod = FaceDetectionMethod.blazeFace(),
+  })  : fileId = file.uploadedFileID ?? -1,
+        imageDimensions = Size(file.width.toDouble(), file.height.toDouble()),
+        faceDetectionMethod = FaceDetectionMethod.blazeFace(),
         faceAlignmentMethod = FaceAlignmentMethod.arcFace(),
         faceEmbeddingMethod = FaceEmbeddingMethod.mobileFaceNet();
 
@@ -122,7 +136,12 @@ class FaceMlResultBuilder {
 
   void addNewlyDetectedFaces(List<FaceDetectionAbsolute> faceDetections) {
     for (var i = 0; i < faceDetections.length; i++) {
-      faces.add(FaceResultBuilder.fromFaceDetection(faceDetections[i]));
+      faces.add(
+        FaceResultBuilder.fromFaceDetection(
+          faceDetections[i],
+          resultBuilder: this,
+        ),
+      );
     }
   }
 
@@ -153,7 +172,6 @@ class FaceMlResultBuilder {
   }
 
   FaceMlResult build() {
-    _noProperFileAcces();
     final faceResults = <FaceResult>[];
     for (var i = 0; i < faces.length; i++) {
       faceResults.add(faces[i].build());
@@ -178,13 +196,13 @@ class FaceMlResultBuilder {
     return build();
   }
 
-  void _noProperFileAcces() {
-    fileId = -1;
-    imageDimensions = const Size(0, 0);
-    imageSource = '';
-    lastErrorMessage = "No proper file access";
-    mlVersion = -1;
-  }
+  // void _noProperFileAcces() {
+  //   fileId = -1;
+  //   imageDimensions = const Size(0, 0);
+  //   imageSource = '';
+  //   lastErrorMessage = "No proper file access";
+  //   mlVersion = -1;
+  // }
 }
 
 @immutable
@@ -243,10 +261,11 @@ class FaceResultBuilder {
 
   FaceResultBuilder.fromFaceDetection(
     FaceDetectionAbsolute faceDetection, {
-    this.fileId = -1,
-    this.id = '',
+    required FaceMlResultBuilder resultBuilder,
     this.personId = -1,
-  }) : detection = faceDetection;
+  })  : fileId = resultBuilder.fileId,
+        id = const Uuid().v4(),
+        detection = faceDetection;
 
   FaceResult build() {
     return FaceResult(
