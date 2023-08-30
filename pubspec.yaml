@@ -129,10 +129,10 @@ dependencies:
   styled_text: ^7.0.0
   syncfusion_flutter_core: ^19.2.49
   syncfusion_flutter_sliders: ^19.2.49
-  tflite_flutter: ^0.9.0
-  tflite_flutter_helper:
-    git:
-      url: https://github.com/pnyompen/tflite_flutter_helper.git  # Fixes https://github.com/am15h/tflite_flutter_helper/issues/57
+  tflite_flutter: ^0.10.1
+#  tflite_flutter_helper:
+#    git:
+#      url: https://github.com/pnyompen/tflite_flutter_helper.git  # Fixes https://github.com/am15h/tflite_flutter_helper/issues/57
   tuple: ^2.0.0
   uni_links: ^0.5.1
   url_launcher: ^6.0.3
@@ -154,6 +154,7 @@ dependency_overrides:
   # but we need ffi: ^2.0.1 for newer packages. The original tfite_flutter_helper
   #
   ffi: ^2.0.1
+  tflite_flutter: ^0.10.1
   video_player:
     git:
       url: https://github.com/ente-io/packages.git

@@ -193,46 +193,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.2"
-  camera:
-    dependency: transitive
-    description:
-      name: camera
-      sha256: f63f2687fb1795c36f7c57b18a03071880eabb0fd8b5291b0fcd3fb979cb0fb1
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.10.5+4"
-  camera_android:
-    dependency: transitive
-    description:
-      name: camera_android
-      sha256: ed4f645848074166fc3b8e20350f83ca07e09a2becc1e185040ee561f955d4df
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.10.8+8"
-  camera_avfoundation:
-    dependency: transitive
-    description:
-      name: camera_avfoundation
-      sha256: "1a416e452b30955b392f4efbf23291d3f2ba3660a85e1628859eb62d2a2bab26"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.9.13+2"
-  camera_platform_interface:
-    dependency: transitive
-    description:
-      name: camera_platform_interface
-      sha256: "60fa0bb62a4f3bf3a7c413e31e4cd01b69c779ccc8e4668904a24581b86c316b"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.5.1"
-  camera_web:
-    dependency: transitive
-    description:
-      name: camera_web
-      sha256: "012c82efeb6b69626f1cf7a37c5277c1032428bcae98c7ab6401ff5e91eca628"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.3.2+2"
   characters:
     dependency: transitive
     description:
@@ -1906,19 +1866,10 @@ packages:
     dependency: "direct main"
     description:
       name: tflite_flutter
-      sha256: "79e3271acd223e36c724fa6708e356191851011dbcddc2149f0e644a4879e055"
+      sha256: d5acf30411b6a4ee299be25bad5a44e7fc103231fefaecb1c27f42df48251eb9
       url: "https://pub.dev"
     source: hosted
-    version: "0.9.1"
-  tflite_flutter_helper:
-    dependency: "direct main"
-    description:
-      path: "."
-      ref: HEAD
-      resolved-ref: d66272aede7d0ee9006d8d3c5b08bea7cf7a8b2a
-      url: "https://github.com/pnyompen/tflite_flutter_helper.git"
-    source: git
-    version: "0.3.0"
+    version: "0.10.1"
   timezone:
     dependency: transitive
     description:

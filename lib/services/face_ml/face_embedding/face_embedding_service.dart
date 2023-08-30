@@ -18,7 +18,7 @@ class FaceEmbedding {
   int get getAddress => _interpreter!.address;
 
   final outputShapes = <List<int>>[];
-  final outputTypes = <TfLiteType>[];
+  final outputTypes = <TensorType>[];
 
   final _logger = Logger("FaceEmbeddingService");
 
