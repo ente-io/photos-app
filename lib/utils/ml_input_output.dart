@@ -1,6 +1,5 @@
 import 'package:image/image.dart';
 import "package:photos/models/ml_typedefs.dart";
-import "package:photos/utils/image.dart";
 
 /// Creates an empty matrix with the specified shape.
 ///
@@ -80,7 +79,7 @@ Num3DInputMatrix createInputMatrixFromImageChannelsFirst(
   );
 
   // Determine which function to use to get the pixel value.
-  final pixelValue = normalize ? normalizePixel : (int value) => value;
+  final pixelValue = normalize ? normalizePixel : (num value) => value;
 
   for (int y = 0; y < image.height; y++) {
     for (int x = 0; x < image.width; x++) {
@@ -99,6 +98,6 @@ Num3DInputMatrix createInputMatrixFromImageChannelsFirst(
 /// Function normalizes the pixel value to be in range [-1, 1].
 ///
 /// It assumes that the pixel value is originally in range [0, 255]
-double normalizePixel(int pixelValue) {
+double normalizePixel(num pixelValue) {
   return (pixelValue / 127.5) - 1;
 }

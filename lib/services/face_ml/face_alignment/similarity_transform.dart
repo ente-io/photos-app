@@ -5,7 +5,6 @@ import "package:logging/logging.dart";
 import 'package:ml_linalg/linalg.dart';
 import 'package:photos/extensions/ml_linalg_extensions.dart';
 import "package:photos/models/ml_typedefs.dart";
-import "package:photos/utils/image.dart";
 import "package:photos/utils/ml_input_output.dart";
 
 /// Class to compute the similarity transform between two sets of points.
@@ -140,7 +139,7 @@ class SimilarityTransform {
     int width = 112,
     int height = 112,
   }) {
-    final image_lib.Image outputImage = image_lib.Image(width, height);
+    final image_lib.Image outputImage = image_lib.Image(width:width, height: height);
     final image_lib.Image inputImage = image_lib.decodeImage(imageData)!;
 
     if (width != 112 || height != 112) {
@@ -236,12 +235,12 @@ class SimilarityTransform {
         outputImage.setPixel(
           xTrans,
           yTrans,
-          _encodeColor(r, g, b),
+          image_lib.ColorRgb8(r, g, b),
         );
       }
     }
 
-    final Uint8List outputData = image_lib.encodeJpg(outputImage) as Uint8List;
+    final Uint8List outputData = image_lib.encodeJpg(outputImage);
 
     return outputData;
   }
@@ -390,7 +389,7 @@ class SimilarityTransform {
         .round();
   }
 
-  static int _encodeColor(int red, int green, int blue, {int alpha = 0xFF}) {
-    return (alpha << 24) | (blue << 16) | (green << 8) | red;
-  }
+  // static int _encodeColor(int red, int green, int blue, {int alpha = 0xFF}) {
+  //   return (alpha << 24) | (blue << 16) | (green << 8) | red;
+  // }
 }
