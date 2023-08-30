@@ -37,6 +37,8 @@ class MlDataDB {
 	PRIMARY KEY($personIDColumn AUTOINCREMENT)
   );
   ''';
+  static const _deleteFacesTable = 'DROP TABLE IF EXISTS $facesTable';
+  static const _deletePeopleTable = 'DROP TABLE IF EXISTS $peopleTable';
 
   MlDataDB._privateConstructor();
   static final MlDataDB instance = MlDataDB._privateConstructor();
@@ -59,6 +61,10 @@ class MlDataDB {
   }
 
   Future _onCreate(Database db, int version) async {
+    // TODO: Remove this when the app is stable
+    await db.execute(_deleteFacesTable);
+    await db.execute(_deletePeopleTable);
+
     await db.execute(createFacesTable);
     await db.execute(createPeopleTable);
   }
