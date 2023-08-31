@@ -61,7 +61,14 @@ class MlDataDB {
   }
 
   Future _onCreate(Database db, int version) async {
-    // TODO: Remove this when the app is stable
+    await db.execute(createFacesTable);
+    await db.execute(createPeopleTable);
+  }
+
+  /// WARNING: This will delete ALL data in the database! Only use this for testing purposes!
+  Future<void> cleanTables() async {
+    final db = await instance.database;
+
     await db.execute(_deleteFacesTable);
     await db.execute(_deletePeopleTable);
 
