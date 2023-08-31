@@ -1,8 +1,8 @@
 mixin ModelFile {
   static const String faceDetectionBackWeb =
-      'models/blazeface/blazeface_back_ente_web.tflite';
+      'assets/models/blazeface/blazeface_back_ente_web.tflite';
   // static const String faceEmbeddingEnte =
-  //     'models/mobilefacenet/mobilefacenet_ente_web.tflite';
+      // 'assets/models/mobilefacenet/mobilefacenet_ente_web.tflite';
   static const String faceEmbeddingEnte =
-      'models/mobilefacenet/mobilefacenet_unq_TF211.tflite';
+      'assets/models/mobilefacenet/mobilefacenet_unq_TF211.tflite';
 }

@@ -154,7 +154,6 @@ dependency_overrides:
   # but we need ffi: ^2.0.1 for newer packages. The original tfite_flutter_helper
   #
   ffi: ^2.0.1
-  tflite_flutter: ^0.10.1
   video_player:
     git:
       url: https://github.com/ente-io/packages.git
