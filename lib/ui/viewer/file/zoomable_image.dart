@@ -155,7 +155,6 @@ class _ZoomableImageState extends State<ZoomableImage>
     if (!_loadedFinalImage && !_loadingFinalImage) {
       _loadingFinalImage = true;
       getFileFromServer(_photo).then((file) {
-        // process_for_face_detection(file!).ignore();
         _onFinalImageLoaded(
           Image.file(
             file!,
@@ -190,9 +189,6 @@ class _ZoomableImageState extends State<ZoomableImage>
       });
     }
 
-    process_for_face_detection(_photo)
-        .ignore(); // This calls it twice for some reason. TODO: remove this line
-
     if (!_loadingFinalImage && !_loadedFinalImage) {
       _loadingFinalImage = true;
       getFile(
@@ -201,7 +197,6 @@ class _ZoomableImageState extends State<ZoomableImage>
             _isGIF(), // since on iOS GIFs playback only when origin-files are loaded
       ).then((file) {
         if (file != null && file.existsSync()) {
-          // process_for_face_detection(file).ignore();
           _onFinalImageLoaded(Image.file(file).image);
         } else {
           _logger.info("File was deleted " + _photo.toString());
@@ -241,6 +236,7 @@ class _ZoomableImageState extends State<ZoomableImage>
   }
 
   void _onFinalImageLoaded(ImageProvider imageProvider) {
+    process_for_face_detection(_photo).ignore();
     if (mounted) {
       precacheImage(imageProvider, context).then((value) async {
         if (mounted) {
