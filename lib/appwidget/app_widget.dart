@@ -14,10 +14,11 @@ import "package:photos/core/configuration.dart";
 import 'package:photos/core/constants.dart';
 import "package:photos/db/device_files_db.dart";
 import "package:photos/db/files_db.dart";
-import "package:photos/models/file.dart";
+import "package:photos/models/file/file.dart";
 import "package:photos/services/collections_service.dart";
 import "package:photos/theme/text_style.dart";
 import "package:photos/ui/collections/flex_grid_view.dart";
+import "package:photos/ui/viewer/file/no_thumbnail_widget.dart";
 import "package:photos/ui/viewer/file/thumbnail_widget.dart";
 import "package:photos/utils/thumbnail_util.dart";
 
@@ -51,11 +52,11 @@ Future<void> backgroundHomeWidgetCallback() async {
 
     final collections = await _AppWidgetState.getAppWidgetCollection();
     PhotoManager.setIgnorePermissionCheck(true);
-    File temp;
+    EnteFile temp;
     final currentCollection =
         collections.firstWhere((col) => col.id == collectionId);
     if (isRecent) {
-      temp = currentCollection.thumbnail;
+      temp = currentCollection.widgetFile;
     } else {
       final rand = Random();
       if (!currentCollection.isRemote) {
@@ -99,11 +100,12 @@ Future<void> backgroundHomeWidgetCallback() async {
 }
 
 class AppWidgetCollection {
-  final File thumbnail;
+  final EnteFile widgetFile;
   final String id;
   final String name;
   final bool isRemote;
-  AppWidgetCollection(this.thumbnail, this.id, this.name, this.isRemote);
+
+  AppWidgetCollection(this.widgetFile, this.id, this.name, this.isRemote);
 }
 
 class AppWidget extends StatefulWidget {
@@ -120,7 +122,7 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
   String collectionId = "";
   bool isRecent = false;
   bool isLoading = true;
-  File thumbnail = File();
+  EnteFile? currentWidgetFile;
   List<AppWidgetCollection> collections = [];
 
   final _logger = Logger('_APPWIDGET');
@@ -166,19 +168,22 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
   }
 
   Future _setThumbnail() async {
-    try {
-      final bytes = await getThumbnail(thumbnail);
-      final base64 = base64Encode(bytes!);
-      await HomeWidget.saveWidgetData<String>(
-        '${widgetId}_$thumbnailKey',
-        base64,
-      );
-      await HomeWidget.saveWidgetData<int>(
-        '${widgetId}_$thumbnailIdKey',
-        thumbnail.generatedID,
-      );
-    } catch (exception) {
-      _logger.info('Error Setting Thumbnail. $exception');
+    final EnteFile? file = currentWidgetFile;
+    if (file != null) {
+      try {
+        final bytes = await getThumbnail(file);
+        final base64 = base64Encode(bytes!);
+        await HomeWidget.saveWidgetData<String>(
+          '${widgetId}_$thumbnailKey',
+          base64,
+        );
+        await HomeWidget.saveWidgetData<int>(
+          '${widgetId}_$thumbnailIdKey',
+          file.generatedID,
+        );
+      } catch (exception) {
+        _logger.info('Error Setting Thumbnail. $exception');
+      }
     }
   }
 
@@ -199,10 +204,10 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
     final remote =
         await CollectionsService.instance.getCollectionForOnEnteSection();
     for (var col in remote) {
-      final thumbnail = await CollectionsService.instance.getCover(col);
-      if (thumbnail != null) {
+      final cover = await CollectionsService.instance.getCover(col);
+      if (cover != null) {
         final appWidgetCollection = AppWidgetCollection(
-          thumbnail,
+          cover,
           col.id.toString(),
           col.displayName,
           true,
@@ -266,7 +271,8 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
         isRecent = recent;
         collectionId = collection;
         isLoading = false;
-        thumbnail = collections.firstWhere((e) => e.id == collection).thumbnail;
+        currentWidgetFile =
+            collections.firstWhere((e) => e.id == collection).widgetFile;
       });
     } catch (exception, stackTrace) {
       _logger.severe('Error Getting Data. $stackTrace');
@@ -294,11 +300,11 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
   ];
 
   Future refresh() async {
-    File temp;
+    EnteFile? temp;
     final currentCollection =
         collections.firstWhere((col) => col.id == collectionId);
     if (isRecent) {
-      temp = currentCollection.thumbnail;
+      temp = currentCollection.widgetFile;
     } else {
       final rand = Random();
       if (!currentCollection.isRemote) {
@@ -322,7 +328,7 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
       }
     }
     setState(() {
-      thumbnail = temp;
+      currentWidgetFile = temp;
     });
   }
 
@@ -435,7 +441,7 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
                                         height: 45,
                                         width: 45,
                                         child: ThumbnailWidget(
-                                          collection.thumbnail,
+                                          collection.widgetFile,
                                           shouldShowLivePhotoOverlay: false,
                                           shouldShowSyncStatus: false,
                                           thumbnailSize:
@@ -502,10 +508,12 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
                         ),
                         width: sideOfThumbnail,
                         height: sideOfThumbnail,
-                        child: ThumbnailWidget(
-                          thumbnail,
-                          shouldShowSyncStatus: false,
-                        ),
+                        child: currentWidgetFile != null
+                            ? ThumbnailWidget(
+                                currentWidgetFile!,
+                                shouldShowSyncStatus: false,
+                              )
+                            : NoThumbnailWidget(),
                       ),
                     ),
                     Container(

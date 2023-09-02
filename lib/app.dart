@@ -20,7 +20,7 @@ import "package:photos/db/files_db.dart";
 import 'package:photos/ente_theme_data.dart';
 import "package:photos/generated/l10n.dart";
 import "package:photos/l10n/l10n.dart";
-import "package:photos/models/collection_items.dart";
+import "package:photos/models/collection/collection_items.dart";
 import "package:photos/models/file_load_result.dart";
 import 'package:photos/services/app_lifecycle_service.dart';
 import "package:photos/services/collections_service.dart";
