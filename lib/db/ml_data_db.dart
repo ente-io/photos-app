@@ -24,6 +24,7 @@ class MlDataDB {
   static const peopleTable = 'people';
   static const personIDColumn = 'person_id';
   static const clusterResultColumn = 'cluster_result';
+  static const centroidColumn = 'centroid';
 
   static const createFacesTable = '''CREATE TABLE IF NOT EXISTS $facesTable (
   $fileIDColumn	INTEGER NOT NULL UNIQUE,
@@ -34,6 +35,7 @@ class MlDataDB {
   static const createPeopleTable = '''CREATE TABLE IF NOT EXISTS $peopleTable (
   $personIDColumn	INTEGER NOT NULL UNIQUE,
 	$clusterResultColumn	TEXT NOT NULL,
+  $centroidColumn	TEXT NOT NULL,
 	PRIMARY KEY($personIDColumn AUTOINCREMENT)
   );
   ''';
