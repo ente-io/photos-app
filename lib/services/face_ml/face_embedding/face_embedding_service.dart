@@ -15,6 +15,7 @@ import 'package:tflite_flutter/tflite_flutter.dart';
 /// This class is responsible for running the MobileFaceNet model, and can be accessed through the singleton `FaceEmbedding.instance`.
 class FaceEmbedding {
   Interpreter? _interpreter;
+  IsolateInterpreter? _isolateInterpreter;
   int get getAddress => _interpreter!.address;
 
   final outputShapes = <List<int>>[];
@@ -37,16 +38,14 @@ class FaceEmbedding {
 
   /// Check if the interpreter is initialized, if not initialize it with `loadModel()`
   Future<void> init() async {
-    if (_interpreter == null) {
+    if (_interpreter == null || _isolateInterpreter == null) {
       await _loadModel();
     }
   }
 
-  // TODO: Make the predict function asynchronous with use of isolate-interpreter: https://github.com/tensorflow/flutter-tflite/issues/52
-
   /// WARNING: This function only works for one face at a time. it's better to use [predictBatch], which can handle both single and multiple faces.
-  List<double> predict(Uint8List imageData) {
-    assert(_interpreter != null);
+  Future<List<double>> predict(Uint8List imageData) async {
+    assert(_interpreter != null && _isolateInterpreter != null);
 
     final dataConversionStopwatch = Stopwatch()..start();
     final image = convertUint8ListToImagePackageImage(imageData);
@@ -66,7 +65,8 @@ class FaceEmbedding {
     _logger.info('interpreter.run is called');
     // Run inference
     try {
-      _interpreter!.run(input, output);
+      await _isolateInterpreter!.run(input, output);
+      // _interpreter!.run(input, output);
       // ignore: avoid_catches_without_on_clauses
     } catch (e) {
       _logger.severe('Error while running inference: $e');
@@ -98,9 +98,10 @@ class FaceEmbedding {
     return embedding;
   }
 
-  // TODO: Make the predict function asynchronous with use of isolate-interpreter: https://github.com/tensorflow/flutter-tflite/issues/52
-  List<List<double>> predictBatch(List<Double3DInputMatrix> faces) {
-    assert(_interpreter != null);
+  Future<List<List<double>>> predictBatch(
+    List<Double3DInputMatrix> faces,
+  ) async {
+    assert(_interpreter != null && _isolateInterpreter != null);
 
     final stopwatch = Stopwatch()..start();
 
@@ -120,18 +121,20 @@ class FaceEmbedding {
     // Run inference
     final stopwatchInterpreter = Stopwatch()..start();
     try {
-      _interpreter!.runForMultipleInputs(input, output);
+      await _isolateInterpreter!.runForMultipleInputs(input, output);
+      // _interpreter!.runForMultipleInputs(input, output);
       // ignore: avoid_catches_without_on_clauses
     } catch (e) {
       _logger.severe('Error while running inference: $e');
       throw MobileFaceNetInterpreterRunException();
     }
     stopwatchInterpreter.stop();
-    _logger.info('interpreter.run is finished, in ${stopwatchInterpreter.elapsedMilliseconds}ms');
+    _logger.info(
+      'interpreter.run is finished, in ${stopwatchInterpreter.elapsedMilliseconds}ms',
+    );
     // _logger.info('output: $output');
 
     // Get output tensors
-    // TODO: continue here, adapt the code below since map has only one entry, which is a list of dimension [faces.length, 192]
     final embeddings = <List<double>>[];
     final outerEmbedding = output[0]! as Iterable<dynamic>;
     for (int i = 0; i < faces.length; i++) {
@@ -170,11 +173,12 @@ class FaceEmbedding {
       }
 
       // Load model from assets
-      _interpreter = _interpreter ??
-          await Interpreter.fromAsset(
-            config.modelPath,
-            options: interpreterOptions,
-          );
+      _interpreter ??= await Interpreter.fromAsset(
+        config.modelPath,
+        options: interpreterOptions,
+      );
+      _isolateInterpreter ??=
+          IsolateInterpreter(address: _interpreter!.address);
 
       _logger.info('Interpreter created from asset: ${config.modelPath}');
 

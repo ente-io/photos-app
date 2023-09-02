@@ -252,7 +252,7 @@ class FaceMlService {
     try {
       // Get the bounding boxes of the faces
       final List<FaceDetectionAbsolute> faces =
-          FaceDetection.instance.predict(imageData);
+          await FaceDetection.instance.predict(imageData);
 
       // Add detected faces to the resultBuilder
       if (resultBuilder != null) {
@@ -397,7 +397,8 @@ class FaceMlService {
   Future<List<double>> embedSingleFace(Uint8List faceData) async {
     try {
       // Get the embedding of the face
-      final List<double> embedding = FaceEmbedding.instance.predict(faceData);
+      final List<double> embedding =
+          await FaceEmbedding.instance.predict(faceData);
 
       return embedding;
     } on MobileFaceNetInterpreterInitializationException {
@@ -431,7 +432,7 @@ class FaceMlService {
     try {
       // Get the embedding of the faces
       final List<List<double>> embeddings =
-          FaceEmbedding.instance.predictBatch(facesMatrices);
+          await FaceEmbedding.instance.predictBatch(facesMatrices);
 
       // Add the embeddings to the resultBuilder
       if (resultBuilder != null) {

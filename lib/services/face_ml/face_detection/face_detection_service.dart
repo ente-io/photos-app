@@ -16,6 +16,7 @@ import 'package:tflite_flutter/tflite_flutter.dart';
 
 class FaceDetection {
   Interpreter? _interpreter;
+  IsolateInterpreter? _isolateInterpreter;
   int get getAddress => _interpreter!.address;
 
   final outputShapes = <List<int>>[];
@@ -42,14 +43,13 @@ class FaceDetection {
 
   /// Check if the interpreter is initialized, if not initialize it with `loadModel()`
   Future<void> init() async {
-    if (_interpreter == null) {
+    if (_interpreter == null || _isolateInterpreter == null) {
       await _loadModel();
     }
   }
 
-  // TODO: Make the predict function asynchronous with use of isolate-interpreter: https://github.com/tensorflow/flutter-tflite/issues/52
-  List<FaceDetectionAbsolute> predict(Uint8List imageData) {
-    assert(_interpreter != null);
+  Future<List<FaceDetectionAbsolute>> predict(Uint8List imageData) async {
+    assert(_interpreter != null && _isolateInterpreter != null);
 
     final image = convertUint8ListToImagePackageImage(imageData);
 
@@ -72,8 +72,7 @@ class FaceDetection {
     // Run inference
     final stopwatchInterpreter = Stopwatch()..start();
     try {
-      _interpreter!.runForMultipleInputs([input], outputs);
-      // ignore: avoid_catches_without_on_clauses
+      await _isolateInterpreter!.runForMultipleInputs([input], outputs);
     } catch (e) {
       _logger.severe('Error while running inference: $e');
       throw BlazeFaceInterpreterRunException();
@@ -197,11 +196,12 @@ class FaceDetection {
       _anchors = generateAnchors(anchorOption);
 
       // Load model from assets
-      _interpreter = _interpreter ??
-          await Interpreter.fromAsset(
-            config.modelPath,
-            options: interpreterOptions,
-          );
+      _interpreter ??= await Interpreter.fromAsset(
+        config.modelPath,
+        options: interpreterOptions,
+      );
+      _isolateInterpreter ??=
+          IsolateInterpreter(address: _interpreter!.address);
 
       _logger.info('Interpreter created from asset: ${config.modelPath}');
 
