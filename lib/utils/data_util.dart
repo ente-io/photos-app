@@ -12,11 +12,19 @@ String convertBytesToReadableFormat(int bytes) {
 }
 
 String formatBytes(int bytes, [int decimals = 2]) {
-  if (bytes == 0) return '0 bytes';
+  if (bytes <= 0) return '0 bytes';
+
   const k = 1024;
   final int dm = decimals < 0 ? 0 : decimals;
   final int i = (log(bytes) / log(k)).floor();
-  return ((bytes / pow(k, i)).toStringAsFixed(dm)) + ' ' + storageUnits[i];
+
+  if (i >= storageUnits.length) {
+    // Ensure we don't go out of bounds in the storageUnits list
+    return '${bytes.toString()} bytes';
+  }
+
+  final formattedBytes = (bytes / pow(k, i)).toStringAsFixed(dm);
+  return '$formattedBytes ${storageUnits[i]}';
 }
 
 //shows 1st decimal only if less than 10GB & omits decimal if decimal is 0

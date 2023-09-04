@@ -1,18 +1,12 @@
 package io.ente.photos
 
 
-import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
-import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.*
 import android.net.Uri
-import android.os.Build
-import android.os.Bundle
 import android.util.Base64
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -20,10 +14,6 @@ import android.widget.RemoteViews
 import androidx.core.content.edit
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetProvider
-import io.flutter.FlutterInjector
-import io.flutter.embedding.engine.FlutterEngine
-import io.flutter.embedding.engine.dart.DartExecutor
-import kotlinx.coroutines.*
 import java.io.ByteArrayOutputStream
 
 class HomeScreenWidget : HomeWidgetProvider() {
@@ -61,9 +51,9 @@ class HomeScreenWidget : HomeWidgetProvider() {
                     "${widgetId}_thumbnail",
                     context.getText(R.string.default_thumbnail).toString()
                 )!!
-                var thumbnailBitmap: Bitmap = base64ToBitmap(thumbnailString,67392)!!
-                
-                // Inflate the layout to measure its dimensions
+
+                var thumbnailBitmap: Bitmap = base64ToBitmap(thumbnailString)!!
+
                 val inflater: LayoutInflater =
                     context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
                     
@@ -86,7 +76,7 @@ class HomeScreenWidget : HomeWidgetProvider() {
                 if (shape == 1) {
                     thumbnailBitmap = createCircularBitmap(
                         thumbnailBitmap,
-                        size
+
                     )
                 } else if (shape == 2) {
                     thumbnailBitmap = createHeartShapedBitmap(
@@ -104,7 +94,7 @@ class HomeScreenWidget : HomeWidgetProvider() {
     }
 
 
-private fun base64ToBitmap(base64String: String, maxSizeBytes: Long): Bitmap? {
+private fun base64ToBitmap(base64String: String): Bitmap? {
     val base64Image = if (base64String.startsWith("data")) {
         base64String.substring(base64String.indexOf(",") + 1)
     } else {
@@ -115,7 +105,7 @@ private fun base64ToBitmap(base64String: String, maxSizeBytes: Long): Bitmap? {
     val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
 
     if (bitmap.byteCount > maxSizeBytes) {
-        val compressedBitmap = compressBitmap(bitmap, maxSizeBytes)
+        val compressedBitmap = compressBitmap(bitmap)
         bitmap.recycle()
         return compressedBitmap
     }
@@ -123,14 +113,14 @@ private fun base64ToBitmap(base64String: String, maxSizeBytes: Long): Bitmap? {
     return bitmap
 }
 
-private fun compressBitmap(bitmap: Bitmap, maxSizeBytes: Long): Bitmap {
+private fun compressBitmap(bitmap: Bitmap): Bitmap {
     var quality = 100
     val stream = ByteArrayOutputStream()
 
     do {
         stream.reset()
         bitmap.compress(Bitmap.CompressFormat.JPEG, quality, stream)
-        quality -= 10
+        quality -= 2
     } while (stream.toByteArray().size > maxSizeBytes && quality > 0)
 
     val compressedImageBytes = stream.toByteArray()
@@ -139,50 +129,33 @@ private fun compressBitmap(bitmap: Bitmap, maxSizeBytes: Long): Bitmap {
     return BitmapFactory.decodeByteArray(compressedImageBytes, 0, compressedImageBytes.size)
 }
 
-    private fun createCircularBitmap(bitmap: Bitmap, canvasSize: Int): Bitmap {
-        // Create a circular bitmap with the given size
-        val output = Bitmap.createBitmap(canvasSize, canvasSize, Bitmap.Config.ARGB_8888)
+    private fun createCircularBitmap(bitmap: Bitmap): Bitmap {
+        val size = bitmap.width.coerceAtLeast(bitmap.height).coerceAtMost(1000)
+        val output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+
         val canvas = Canvas(output)
+        val paint = Paint()
 
-        // Create a circular path
-        val path = Path()
-        val centerX = canvasSize / 2f
-        val centerY = canvasSize / 2f
-        val radius = canvasSize / 2f
-        path.addCircle(centerX, centerY, radius, Path.Direction.CW)
-        val paint = Paint();
-        paint.color = Color.BLACK;
-        canvas.drawPath(path,paint)
+        val shader = BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
+        val rect = RectF(0f, 0f, size.toFloat(), size.toFloat())
 
-        // Calculate the positioning of the bitmap within the heart
-        val bitmapWidth = bitmap.width
-        val bitmapHeight = bitmap.height
-        val scale = radius * 2 / bitmapWidth.coerceAtLeast(bitmapHeight)
-        val scaledWidth = (bitmapWidth * scale).toInt()
-        val scaledHeight = (bitmapHeight * scale).toInt()
-        val left = (centerX - scaledWidth / 2f).toInt()
-        val top = (centerY - scaledHeight / 2f).toInt()
+        paint.isAntiAlias = true
+        paint.shader = shader
+        canvas.drawRoundRect(rect, size.toFloat() / 2, size.toFloat() / 2, paint)
 
-        canvas.clipPath(path)
-        canvas.drawBitmap(
-            bitmap,
-            null,
-            Rect(left, top, left + scaledWidth, top + scaledHeight),
-            null
-        )
         return output
     }
 
     private fun createHeartShapedBitmap(bitmap: Bitmap, canvasSize: Int): Bitmap {
-        // Create a heart-shaped bitmap with the given size
-        val output = Bitmap.createBitmap(canvasSize, canvasSize, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(output)
+        val size = bitmap.width.coerceAtLeast(bitmap.height).coerceAtMost(1000)
+        val output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
 
-        // Create a heart-shaped path
+        val canvas = Canvas(output)
         val path = Path()
-        val centerX = canvasSize / 2f
-        val centerY = canvasSize / 2f
-        val radius = canvasSize / 2f
+
+        val centerX = size / 2f
+        val centerY = size / 2f
+        val radius = size / 2f
         path.moveTo(centerX, centerY + radius * 0.15f)
         path.cubicTo(
             0f, -0.25f,
@@ -197,28 +170,38 @@ private fun compressBitmap(bitmap: Bitmap, maxSizeBytes: Long): Bitmap {
         )
         path.close()
 
-        val paint = Paint();
-        paint.color = Color.BLACK;
-        canvas.drawPath(path,paint)
+        val paint = Paint()
+        paint.isAntiAlias = true
+        paint.color = Color.BLACK
 
-        // Calculate the positioning of the bitmap within the heart
+        canvas.drawPath(path, paint)
+
         val bitmapWidth = bitmap.width
         val bitmapHeight = bitmap.height
-        val scale = radius * 2 / bitmapWidth.coerceAtLeast(bitmapHeight)
-        val scaledWidth = (bitmapWidth * scale).toInt()
-        val scaledHeight = (bitmapHeight * scale).toInt()
-        val left = (centerX - scaledWidth / 2f).toInt()
-        val top = (centerY - scaledHeight / 2f).toInt()
+        val scale = radius * 2 / size
 
-        canvas.clipPath(path)
-        canvas.drawBitmap(
+        val matrix = Matrix()
+        matrix.postScale(scale, scale)
+        val scaledBitmap = Bitmap.createBitmap(
             bitmap,
-            null,
-            Rect(left, top, left + scaledWidth, top + scaledHeight),
-            null
+            0,
+            0,
+            bitmapWidth,
+            bitmapHeight,
+            matrix,
+            true
         )
 
+        val left = (centerX - scaledBitmap.width / 2f).toInt()
+        val top = (centerY - scaledBitmap.height / 2f).toInt()
+
+        canvas.clipPath(path)
+        canvas.drawBitmap(scaledBitmap, left.toFloat(), top.toFloat(), null)
 
         return output
+    }
+
+    companion object {
+        const val maxSizeBytes: Long = 6739200
     }
 }

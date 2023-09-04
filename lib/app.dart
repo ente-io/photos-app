@@ -281,6 +281,9 @@ void _onHomeWigetClicked(BuildContext context, Uri uri) async {
         'HomeWidget',
       ),
     );
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
     routeToPage(
       context,
       page,

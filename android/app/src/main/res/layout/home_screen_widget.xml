@@ -8,7 +8,6 @@
         android:id="@+id/thumbnail"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:scaleType="fitCenter"
         android:contentDescription="@string/app_name"
         android:src="@drawable/notification_icon" />
 

@@ -3,15 +3,14 @@ import "package:flutter/material.dart";
 
 class SquarePainter extends CustomPainter {
   final bool isSelected;
-
   SquarePainter({required this.isSelected});
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white
+      ..color = Colors.green
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
+      ..strokeWidth = 3;
 
     final rect = Rect.fromLTWH(0, 1, size.width, size.height - 1);
 
