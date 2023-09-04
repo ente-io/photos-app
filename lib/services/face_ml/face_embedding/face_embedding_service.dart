@@ -8,7 +8,7 @@ import "package:logging/logging.dart";
 import "package:photos/models/ml_typedefs.dart";
 import "package:photos/services/face_ml/face_embedding/face_embedding_exceptions.dart";
 import "package:photos/services/face_ml/face_embedding/mobilefacenet_model_config.dart";
-import "package:photos/utils/image.dart";
+import 'package:photos/utils/image_package_util.dart';
 import "package:photos/utils/ml_input_output.dart";
 import 'package:tflite_flutter/tflite_flutter.dart';
 
@@ -48,7 +48,13 @@ class FaceEmbedding {
     assert(_interpreter != null && _isolateInterpreter != null);
 
     final dataConversionStopwatch = Stopwatch()..start();
-    final image = convertUint8ListToImagePackageImage(imageData);
+    final image = await ImageConversionIsolate.instance.convert(imageData);
+
+    if (image == null) {
+      _logger.severe('Error while converting Uint8List to Image');
+      throw CouldNotConvertToImageImage();
+    }
+
     dataConversionStopwatch.stop();
     _logger.info(
       'image data conversion is finished, in ${dataConversionStopwatch.elapsedMilliseconds}ms',

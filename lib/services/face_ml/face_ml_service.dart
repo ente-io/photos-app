@@ -20,6 +20,7 @@ import "package:photos/services/face_ml/face_ml_exceptions.dart";
 import "package:photos/services/face_ml/face_ml_result.dart";
 // import "package:photos/services/search_service.dart";
 import "package:photos/utils/file_util.dart";
+import 'package:photos/utils/image_package_util.dart';
 import "package:photos/utils/thumbnail_util.dart";
 
 enum FileDataForML { thumbnailData, fileData, compressedFileData }
@@ -54,6 +55,8 @@ class FaceMlService {
     initialized = true;
   }
 
+  // TODO: finish this function
+  // TODO: add `await ImageConversionIsolate.instance.init();` at beginning and `ImageConversionIsolate.instance.dispose();` at end
   Future<void> analyzeAllImages() async {
     // final List<EnteFile> enteFiles = await SearchService.instance.getAllFiles();
     // final Set<int> alreadyIndexedIDs = await MlDataDB.instance.getFileIDs();
@@ -162,7 +165,7 @@ class FaceMlService {
       }
 
       // Align the faces
-      final List<List<List<List<double>>>> faceAlignmentResult = alignFaces(
+      final List<List<List<List<double>>>> faceAlignmentResult = await alignFaces(
         largeData,
         faceDetectionResult,
         resultBuilder: resultBuilder,
@@ -279,13 +282,25 @@ class FaceMlService {
   /// Returns a list of the aligned faces as image data.
   ///
   /// Throws [CouldNotEstimateSimilarityTransform] or [GeneralFaceMlException] if the face alignment fails.
-  List<Double3DInputMatrix> alignFaces(
+  Future<List<Double3DInputMatrix>> alignFaces(
     Uint8List imageData,
     List<FaceDetectionAbsolute> faces, {
     FaceMlResultBuilder? resultBuilder,
-  }) {
+  }) async {
     // TODO: the image conversion below is what makes the whole pipeline slow, so come up with different solution
-    final image_lib.Image inputImage = image_lib.decodeImage(imageData)!;
+    
+    // Convert the image data to an image
+    final Stopwatch faceAlignmentImageDecodingStopwatch = Stopwatch()..start();
+    final image_lib.Image? inputImage = await ImageConversionIsolate.instance.convert(imageData);
+    faceAlignmentImageDecodingStopwatch.stop();
+    _logger.info(
+      'image decoding for alignment is finished, in ${faceAlignmentImageDecodingStopwatch.elapsedMilliseconds}ms',
+    );
+
+    if (inputImage == null) {
+      _logger.severe('Error while converting Uint8List to Image');
+      throw CouldNotConvertToImageImage();
+    }
 
     final alignedFaces = <Double3DInputMatrix>[];
     for (int i = 0; i < faces.length; ++i) {

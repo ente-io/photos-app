@@ -10,7 +10,7 @@ import "package:photos/services/face_ml/face_detection/face_detection_exceptions
 import "package:photos/services/face_ml/face_detection/filter_extract_detections.dart";
 import "package:photos/services/face_ml/face_detection/generate_anchors.dart";
 import "package:photos/services/face_ml/face_detection/naive_non_max_suppression.dart";
-import "package:photos/utils/image.dart";
+import "package:photos/utils/image_package_util.dart";
 import "package:photos/utils/ml_input_output.dart";
 import 'package:tflite_flutter/tflite_flutter.dart';
 
@@ -51,7 +51,16 @@ class FaceDetection {
   Future<List<FaceDetectionAbsolute>> predict(Uint8List imageData) async {
     assert(_interpreter != null && _isolateInterpreter != null);
 
-    final image = convertUint8ListToImagePackageImage(imageData);
+    final image = await ImageConversionIsolate.instance.convert(imageData);
+
+    if (image == null) {
+      _logger.severe('Error while converting Uint8List to Image');
+      throw CouldNotConvertToImageImage();
+    }
+
+    _logger.info(
+      'Thumbnail for face detection has size: ${image.width}x${image.height} pixels (W x H)',
+    );
 
     final faceOptions = config.faceOptions;
 
