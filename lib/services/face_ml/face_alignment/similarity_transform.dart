@@ -306,6 +306,8 @@ class SimilarityTransform {
           xOrigin = xOrigin.clamp(0, inputImage.width - 1);
           yOrigin = yOrigin.clamp(0, inputImage.height - 1);
 
+          // TODO: use `getPixelCubic` function from Image package with `xOrigin` and `yOrigin` instead of manually calculating the cubic interpolation
+
           // Bilinear interpolation
           final int x0 = xOrigin.floor();
           final int x1 = xOrigin.ceil();
