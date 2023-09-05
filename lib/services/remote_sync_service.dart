@@ -24,6 +24,7 @@ import 'package:photos/models/file/file_type.dart';
 import 'package:photos/models/upload_strategy.dart';
 import 'package:photos/services/app_lifecycle_service.dart';
 import 'package:photos/services/collections_service.dart';
+import "package:photos/services/face_ml/face_ml_service.dart";
 import "package:photos/services/feature_flag_service.dart";
 import 'package:photos/services/ignored_files_service.dart';
 import 'package:photos/services/local_file_update_service.dart';
@@ -100,6 +101,7 @@ class RemoteSyncService {
     );
 
     try {
+      await FaceMlService.instance.processAllImages();
       // use flag to decide if we should start marking files for upload before
       // remote-sync is done. This is done to avoid adding existing files to
       // the same or different collection when user had already uploaded them
