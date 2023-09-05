@@ -73,13 +73,18 @@ class HomeScreenWidget : HomeWidgetProvider() {
                 val height: Int = layoutView.measuredHeight
 
                 val size = width.coerceAtLeast(height)
-                if (shape == 1) {
-                    thumbnailBitmap = createCircularBitmap(
+                when (shape) {
+                  1 ->  thumbnailBitmap = createCircularBitmap(
                         thumbnailBitmap,
 
                     )
-                } else if (shape == 2) {
+                  2->
                     thumbnailBitmap = createHeartShapedBitmap(
+                        thumbnailBitmap,
+                        size
+                    )
+                else ->
+                    thumbnailBitmap = createRectangleBitmap(
                         thumbnailBitmap,
                         size
                     )
@@ -92,6 +97,8 @@ class HomeScreenWidget : HomeWidgetProvider() {
             appWidgetManager.updateAppWidget(widgetId, views)
         }
     }
+
+
 
 
 private fun base64ToBitmap(base64String: String): Bitmap? {
@@ -129,6 +136,23 @@ private fun compressBitmap(bitmap: Bitmap): Bitmap {
     return BitmapFactory.decodeByteArray(compressedImageBytes, 0, compressedImageBytes.size)
 }
 
+    private fun createRectangleBitmap(bitmap: Bitmap, canvasSize:Int): Bitmap {
+        val size = bitmap.width.coerceAtLeast(bitmap.height).coerceAtMost(1000)
+        val output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+
+        val canvas = Canvas(output)
+        val paint = Paint()
+
+        val shader = BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
+        val rect = RectF(0f, 0f, size.toFloat(), size.toFloat())
+
+        paint.isAntiAlias = true
+        paint.shader = shader
+        canvas.drawRect(rect, paint)
+
+        return output
+    }
+
     private fun createCircularBitmap(bitmap: Bitmap): Bitmap {
         val size = bitmap.width.coerceAtLeast(bitmap.height).coerceAtMost(1000)
         val output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
@@ -153,21 +177,27 @@ private fun compressBitmap(bitmap: Bitmap): Bitmap {
         val canvas = Canvas(output)
         val path = Path()
 
-        val centerX = size / 2f
-        val centerY = size / 2f
-        val radius = size / 2f
-        path.moveTo(centerX, centerY + radius * 0.15f)
+        val width = size
+        val height = size
+
+        path.moveTo(0.5F * width, height * 0.15F)
         path.cubicTo(
-            0f, -0.25f,
-            centerX - radius * 1.25f, centerY + radius * 0.6f,
-            centerX, centerY + radius
-        )
-        path.moveTo(centerX, centerY + radius * 0.15f)
+            0F,
+            height * -0.25F,
+            -0.25F * width,
+            height * 0.6F,
+            0.5F * width,
+            height * 1F,
+        );
+        path.moveTo(0.5F * width, height * 0.15F);
         path.cubicTo(
-            centerX + radius, 1 * 0.25f,
-            centerX + radius * 1.25f, centerY + radius * 0.6f,
-            centerX, centerY + radius
-        )
+            width * 1F,
+            height * -0.25F,
+            1.25F * width,
+            height * 0.6F,
+            0.5F * width,
+            height * 1F,
+        );
         path.close()
 
         val paint = Paint()
@@ -176,29 +206,14 @@ private fun compressBitmap(bitmap: Bitmap): Bitmap {
 
         canvas.drawPath(path, paint)
 
-        val bitmapWidth = bitmap.width
-        val bitmapHeight = bitmap.height
-        val scale = radius * 2 / size
 
-        val matrix = Matrix()
-        matrix.postScale(scale, scale)
-        val scaledBitmap = Bitmap.createBitmap(
-            bitmap,
-            0,
-            0,
-            bitmapWidth,
-            bitmapHeight,
-            matrix,
-            true
-        )
-
-        val left = (centerX - scaledBitmap.width / 2f).toInt()
-        val top = (centerY - scaledBitmap.height / 2f).toInt()
 
         canvas.clipPath(path)
-        canvas.drawBitmap(scaledBitmap, left.toFloat(), top.toFloat(), null)
+        canvas.drawBitmap(bitmap, 0F, 0F, null)
 
         return output
+
+
     }
 
     companion object {

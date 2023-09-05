@@ -1,7 +1,5 @@
 import "dart:convert";
-import "dart:io";
 import "dart:math";
-import 'dart:ui' as ui;
 
 import "package:collection/collection.dart";
 import "package:flutter/material.dart";
@@ -23,7 +21,6 @@ import "package:photos/theme/text_style.dart";
 import "package:photos/ui/collections/flex_grid_view.dart";
 import "package:photos/ui/viewer/file/no_thumbnail_widget.dart";
 import "package:photos/ui/viewer/file/thumbnail_widget.dart";
-import "package:photos/utils/file_util.dart";
 import "package:photos/utils/thumbnail_util.dart";
 
 const shapeKey = 'shape';
@@ -490,8 +487,9 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
                             );
                           }).toList(),
                           onChanged: (value) {
-                            setState(() {
+                            setState(() async {
                               isRecent = value! == 'Recent';
+                              await refresh();
                             });
                           },
                         ),
@@ -519,34 +517,34 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
                         ),
                         width: sideOfThumbnail,
                         height: sideOfThumbnail,
-                        child: FutureBuilder<File?>(
-                          future: currentWidgetFile != null
-                              ? getFile(currentWidgetFile!)
-                              : null,
-                          builder: (context, snapshot) {
-                            if (currentWidgetFile == null) {
-                              return const CircularProgressIndicator();
-                            } else if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const CircularProgressIndicator();
-                            } else if (snapshot.hasError) {
-                              print('Error loading file: ${snapshot.error}');
-                              return Text(
-                                'Error loading file: ${snapshot.error}',
-                              );
-                            } else if (snapshot.hasData &&
-                                snapshot.data != null) {
-                              return Center(
-                                child: selectedShapeWidget(
+                        child: Center(
+                          child: FutureBuilder<Uint8List?>(
+                            future: currentWidgetFile != null
+                                ? getThumbnail(currentWidgetFile!)
+                                : null,
+                            builder: (context, snapshot) {
+                              if (currentWidgetFile == null) {
+                                return const CircularProgressIndicator();
+                              } else if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return const CircularProgressIndicator();
+                              } else if (snapshot.hasError) {
+                                print('Error loading file: ${snapshot.error}');
+                                return Text(
+                                  'Error loading file: ${snapshot.error}',
+                                );
+                              } else if (snapshot.hasData &&
+                                  snapshot.data != null) {
+                                return selectedShapeWidget(
                                   selectedShape,
                                   sideOfThumbnail,
                                   snapshot.data!,
-                                ),
-                              );
-                            } else {
-                              return const NoThumbnailWidget();
-                            }
-                          },
+                                );
+                              } else {
+                                return const NoThumbnailWidget();
+                              }
+                            },
+                          ),
                         ),
                       ),
                     ),

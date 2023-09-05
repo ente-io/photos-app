@@ -1,9 +1,13 @@
-import "dart:io";
+import "dart:typed_data";
 
 import "package:flutter/material.dart";
 import "package:photos/appwidget/heart_painter.dart";
 
-Widget selectedShapeWidget(int id, double side, File file) {
+Widget selectedShapeWidget(int id, double side, Uint8List memory) {
+  final image = DecorationImage(
+    fit: BoxFit.fill,
+    image: MemoryImage(memory),
+  );
   switch (id) {
     case 1:
       return Container(
@@ -16,10 +20,7 @@ Widget selectedShapeWidget(int id, double side, File file) {
             color: Colors.green,
             strokeAlign: BorderSide.strokeAlignCenter,
           ),
-          image: DecorationImage(
-            fit: BoxFit.fill,
-            image: FileImage(file),
-          ),
+          image: image,
         ),
       );
     case 2:
@@ -32,7 +33,7 @@ Widget selectedShapeWidget(int id, double side, File file) {
             height: side,
             decoration: BoxDecoration(
               color: Colors.black,
-              image: DecorationImage(image: FileImage(file), fit: BoxFit.fill),
+              image: image,
             ),
             // child: Image.file(file),
           ),
@@ -49,10 +50,7 @@ Widget selectedShapeWidget(int id, double side, File file) {
             color: Colors.green,
             strokeAlign: BorderSide.strokeAlignCenter,
           ),
-          image: DecorationImage(
-            fit: BoxFit.fill,
-            image: FileImage(file),
-          ),
+          image: image,
         ),
       );
   }
