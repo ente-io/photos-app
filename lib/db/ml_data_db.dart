@@ -71,6 +71,8 @@ class MlDataDB {
 
   /// WARNING: This will delete ALL data in the database! Only use this for debug/testing purposes!
   Future<void> cleanTables() async {
+    _logger.fine('`cleanTables()` called');
+
     final db = await instance.database;
 
     await db.execute(_deleteFacesTable);
