@@ -20,6 +20,7 @@ class MlDataDB {
   static const facesTable = 'faces';
   static const fileIDColumn = 'file_id';
   static const faceMlResultColumn = 'face_ml_result';
+  static const mlVersionColumn = 'ml_version';
 
   static const peopleTable = 'people';
   static const personIDColumn = 'person_id';
@@ -29,6 +30,7 @@ class MlDataDB {
   static const createFacesTable = '''CREATE TABLE IF NOT EXISTS $facesTable (
   $fileIDColumn	INTEGER NOT NULL UNIQUE,
 	$faceMlResultColumn	TEXT NOT NULL,
+  $mlVersionColumn	INTEGER NOT NULL,
   PRIMARY KEY($fileIDColumn)
   );
   ''';
@@ -67,7 +69,7 @@ class MlDataDB {
     await db.execute(createPeopleTable);
   }
 
-  /// WARNING: This will delete ALL data in the database! Only use this for testing purposes!
+  /// WARNING: This will delete ALL data in the database! Only use this for debug/testing purposes!
   Future<void> cleanTables() async {
     final db = await instance.database;
 
@@ -97,30 +99,49 @@ class MlDataDB {
       {
         fileIDColumn: faceMlResult.fileId,
         faceMlResultColumn: faceMlResult.toJsonString(),
+        mlVersionColumn: faceMlResult.mlVersion,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 
-  Future<bool> doesFaceMlResultExist(int fileId) async {
+  Future<bool> doesFaceMlResultExist(int fileId, {int? mlVersion}) async {
     _logger.fine('doesFaceMlResultExist called');
     final db = await instance.database;
+
+    String whereString = '$fileIDColumn = ?';
+    final List<dynamic> whereArgs = [fileId];
+
+    if (mlVersion != null) {
+      whereString += ' AND $mlVersionColumn = ?';
+      whereArgs.add(mlVersion);
+    }
+
     final result = await db.query(
       facesTable,
-      where: '$fileIDColumn = ?',
-      whereArgs: [fileId],
+      where: whereString,
+      whereArgs: whereArgs,
       limit: 1,
     );
     return result.isNotEmpty;
   }
 
-  Future<FaceMlResult?> getFaceMlResult(int fileId) async {
+  Future<FaceMlResult?> getFaceMlResult(int fileId, {int? mlVersion}) async {
     _logger.fine('getFaceMlResult called');
     final db = await instance.database;
+
+    String whereString = '$fileIDColumn = ?';
+    final List<dynamic> whereArgs = [fileId];
+
+    if (mlVersion != null) {
+      whereString += ' AND $mlVersionColumn = ?';
+      whereArgs.add(mlVersion);
+    }
+
     final result = await db.query(
       facesTable,
-      where: '$fileIDColumn = ?',
-      whereArgs: [fileId],
+      where: whereString,
+      whereArgs: whereArgs,
       limit: 1,
     );
     if (result.isNotEmpty) {
@@ -128,14 +149,30 @@ class MlDataDB {
         result.first[faceMlResultColumn] as String,
       );
     }
-    _logger.fine('No faceMlResult found for fileID $fileId');
+    _logger.fine(
+      'No faceMlResult found for fileID $fileId and mlVersion $mlVersion (null if not specified)',
+    );
     return null;
   }
 
-  Future<List<FaceMlResult>> getAllFaceMlResults() async {
+  Future<List<FaceMlResult>> getAllFaceMlResults({int? mlVersion}) async {
     _logger.fine('getAllFaceMlResults called');
     final db = await instance.database;
-    final results = await db.query(facesTable);
+
+    String? whereString;
+    List<dynamic>? whereArgs;
+
+    if (mlVersion != null) {
+      whereString = '$mlVersionColumn = ?';
+      whereArgs = [mlVersion];
+    }
+
+    final results = await db.query(
+      facesTable,
+      where: whereString,
+      whereArgs: whereArgs,
+    );
+
     return results
         .map(
           (result) =>
@@ -152,16 +189,32 @@ class MlDataDB {
       {
         fileIDColumn: faceMlResult.fileId,
         faceMlResultColumn: faceMlResult.toJsonString(),
+        mlVersionColumn: faceMlResult.mlVersion,
       },
       where: '$fileIDColumn = ?',
       whereArgs: [faceMlResult.fileId],
     );
   }
 
-  // getFileIDs return set of fileID from the facesTable
-  Future<Set<int>> getFileIDs() async {
+  /// getAllFileIDs returns a set of all fileIDs from the facesTable, meaning all the fileIDs for which a FaceMlResult exists, optionally filtered by mlVersion.
+  Future<Set<int>> getAllFileIDs({int? mlVersion}) async {
+    _logger.fine('getAllFileIDs called');
     final db = await instance.database;
-    final results = await db.query(facesTable);
+
+    String? whereString;
+    List<dynamic>? whereArgs;
+
+    if (mlVersion != null) {
+      whereString = '$mlVersionColumn = ?';
+      whereArgs = [mlVersion];
+    }
+
+    final List<Map<String, Object?>> results = await db.query(
+      facesTable,
+      where: whereString,
+      whereArgs: whereArgs,
+    );
+
     return results.map((result) => result[fileIDColumn] as int).toSet();
   }
 
