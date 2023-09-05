@@ -228,15 +228,20 @@ class FaceMlService {
 
     switch (typeOfData) {
       case FileDataForML.fileData:
-        {
-          final io.File? actualIoFile = await getFile(enteFile);
-          if (actualIoFile != null) {
-            data = await actualIoFile.readAsBytes();
-          }
+        final stopwatch = Stopwatch()..start();
+        final io.File? actualIoFile = await getFile(enteFile);
+        if (actualIoFile != null) {
+          data = await actualIoFile.readAsBytes();
         }
+        stopwatch.stop();
+        _logger.info(
+          "Getting file data for uploadedFileID ${enteFile.uploadedFileID} took ${stopwatch.elapsedMilliseconds} ms",
+        );
+
         break;
 
       case FileDataForML.thumbnailData:
+        final stopwatch = Stopwatch()..start();
         data = await getThumbnail(enteFile);
         if (data == null) {
           final io.File? actualIoFile = await getFile(enteFile);
@@ -244,24 +249,30 @@ class FaceMlService {
             data = await actualIoFile.readAsBytes();
           }
         }
+        stopwatch.stop();
+        _logger.info(
+          "Getting thumbnail data for uploadedFileID ${enteFile.uploadedFileID} took ${stopwatch.elapsedMilliseconds} ms",
+        );
         break;
 
       case FileDataForML.compressedFileData:
-        {
-          final String tempPath = Configuration.instance.getTempDirectory() +
-              "${enteFile.uploadedFileID!}";
-          final io.File? actualIoFile = await getFile(enteFile);
-          if (actualIoFile != null) {
-            final compressResult =
-                await FlutterImageCompress.compressAndGetFile(
-              actualIoFile.path,
-              tempPath + ".jpg",
-            );
-            if (compressResult != null) {
-              data = await compressResult.readAsBytes();
-            }
+        final stopwatch = Stopwatch()..start();
+        final String tempPath = Configuration.instance.getTempDirectory() +
+            "${enteFile.uploadedFileID!}";
+        final io.File? actualIoFile = await getFile(enteFile);
+        if (actualIoFile != null) {
+          final compressResult = await FlutterImageCompress.compressAndGetFile(
+            actualIoFile.path,
+            tempPath + ".jpg",
+          );
+          if (compressResult != null) {
+            data = await compressResult.readAsBytes();
           }
         }
+        stopwatch.stop();
+        _logger.info(
+          "Getting compressed file data for uploadedFileID ${enteFile.uploadedFileID} took ${stopwatch.elapsedMilliseconds} ms",
+        );
         break;
     }
 
