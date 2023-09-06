@@ -195,7 +195,6 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
   if (!UpdateService.instance.isFdroidFlavor()) {
     // unawaited(ObjectDetectionService.instance.init());
     unawaited(FaceMlService.instance.init());
-    unawaited(ImageConversionIsolate.instance.init());
   }
 
   _logger.info("Initialization done");
