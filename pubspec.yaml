@@ -129,6 +129,7 @@ dependencies:
   styled_text: ^7.0.0
   syncfusion_flutter_core: ^19.2.49
   syncfusion_flutter_sliders: ^19.2.49
+  synchronized: ^3.1.0
   tflite_flutter: ^0.10.1
 #  tflite_flutter_helper:
 #    git:

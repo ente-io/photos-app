@@ -3,6 +3,7 @@ import 'dart:isolate';
 import 'dart:typed_data' show Uint8List;
 import 'package:image/image.dart' as image_lib;
 import "package:logging/logging.dart";
+import "package:synchronized/synchronized.dart";
 
 class CouldNotConvertToImageImage implements Exception {}
 
@@ -25,12 +26,14 @@ Uint8List _convertImagePackageImageToUint8List(image_lib.Image image) {
 // }
 
 /// This class is responsible for converting [Uint8List] to [image_lib.Image].
-/// 
+///
 /// Used primarily for ML applications.
 class ImageConversionIsolate {
   static const String debugName = "ImageConversionIsolate";
 
   final _logger = Logger("ImageConversionIsolate");
+
+  final _initLock = Lock();
 
   late Isolate _isolate;
   late ReceivePort _receivePort = ReceivePort();
@@ -50,22 +53,24 @@ class ImageConversionIsolate {
       ImageConversionIsolate._privateConstructor();
 
   Future<void> init() async {
-    if (isSpawned) return;
+    return _initLock.synchronized(() async {
+      if (isSpawned) return;
 
-    _receivePort = ReceivePort();
+      _receivePort = ReceivePort();
 
-    try {
-      _isolate = await Isolate.spawn(
-        isolateMain,
-        _receivePort.sendPort,
-        debugName: debugName,
-      );
-      _mainSendPort = await _receivePort.first as SendPort;
-      isSpawned = true;
-    } catch (e) {
-      _logger.severe("Could not spawn isolate", e);
-      isSpawned = false;
-    }
+      try {
+        _isolate = await Isolate.spawn(
+          _isolateMain,
+          _receivePort.sendPort,
+          debugName: debugName,
+        );
+        _mainSendPort = await _receivePort.first as SendPort;
+        isSpawned = true;
+      } catch (e) {
+        _logger.severe("Could not spawn isolate", e);
+        isSpawned = false;
+      }
+    });
   }
 
   Future<void> ensureSpawned() async {
@@ -74,7 +79,7 @@ class ImageConversionIsolate {
     }
   }
 
-  static void isolateMain(SendPort mainSendPort) {
+  static void _isolateMain(SendPort mainSendPort) {
     final receivePort = ReceivePort();
     mainSendPort.send(receivePort.sendPort);
 
@@ -91,6 +96,7 @@ class ImageConversionIsolate {
     });
   }
 
+  /// Converts a [Uint8List] to an [image_lib.Image] object inside a separate isolate.
   Future<image_lib.Image?> convert(Uint8List data) async {
     await ensureSpawned();
     final completer = Completer<image_lib.Image?>();

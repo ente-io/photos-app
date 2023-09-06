@@ -1823,7 +1823,7 @@ packages:
     source: hosted
     version: "19.4.56"
   synchronized:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: synchronized
       sha256: "5fcbd27688af6082f5abd611af56ee575342c30e87541d0245f7ff99faa02c60"
