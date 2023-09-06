@@ -1,9 +1,10 @@
 import "package:logging/logging.dart";
+import "package:photos/services/face_ml/face_clustering/dbscan_clustering_isolate.dart";
 import "package:photos/services/face_ml/face_clustering/dbscan_config.dart";
 import "package:simple_cluster/simple_cluster.dart";
 
 class FaceClustering {
-  final DBSCAN _dbscan;
+  DBSCAN _dbscan;
 
   final _logger = Logger("FaceClusteringService");
 
@@ -14,7 +15,7 @@ class FaceClustering {
   ///Index of points considered as noise
   List<int>? get noise {
     if (!_hasRun) {
-      return null; 
+      return null;
     }
     return _dbscan.noise;
   }
@@ -24,7 +25,7 @@ class FaceClustering {
   /// -1 means noise (doesn't belong in any cluster)
   List<int>? get label {
     if (!_hasRun) {
-      return null; 
+      return null;
     }
     return _dbscan.label;
   }
@@ -32,7 +33,7 @@ class FaceClustering {
   /// Result clusters
   List<List<int>>? get cluster {
     if (!_hasRun) {
-      return null; 
+      return null;
     }
     return _dbscan.cluster;
   }
@@ -44,19 +45,22 @@ class FaceClustering {
           minPoints: config.minPoints,
           distanceMeasure: config.distanceMeasure,
         );
-  /// Use this instance to access the FaceClustering service. 
+
+  /// Use this instance to access the FaceClustering service.
   /// e.g. `FaceClustering.instance.run(dataset)`
   ///
   /// config options: faceClusteringDBSCANConfig
   static final instance =
       FaceClustering._privateConstructor(config: faceClusteringDBSCANConfig);
 
-  List<List<int>> run(List<List<double>> dataset) {
+  Future<List<List<int>>> predict(List<List<double>> dataset) async {
+    ClusteringIsolate.instance.ensureSpawned();
+
+    _hasRun = false;
 
     final stopwatchClustering = Stopwatch()..start();
-
-    final clusterOutput = _dbscan.run(dataset);
-
+    _dbscan = await ClusteringIsolate.instance.runClustering(dataset, _dbscan);
+    final clusterOutput = _dbscan.cluster;
     stopwatchClustering.stop();
     _logger.info(
       'Clustering for ${dataset.length} embeddings (${dataset[0].length} size) executed in ${stopwatchClustering.elapsedMilliseconds}ms',
@@ -64,8 +68,8 @@ class FaceClustering {
 
     _hasRun = true;
 
+    ClusteringIsolate.instance.dispose();
+
     return clusterOutput;
   }
-
-
 }
