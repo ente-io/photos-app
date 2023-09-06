@@ -70,13 +70,28 @@ class MlDataDB {
   }
 
   /// WARNING: This will delete ALL data in the database! Only use this for debug/testing purposes!
-  Future<void> cleanTables() async {
+  Future<void> cleanTables({
+    bool cleanFaces = false,
+    bool cleanPeople = false,
+  }) async {
     _logger.fine('`cleanTables()` called');
-
     final db = await instance.database;
 
-    await db.execute(_deleteFacesTable);
-    await db.execute(_deletePeopleTable);
+    if (cleanFaces) {
+      _logger.fine('`cleanTables()`: Cleaning faces table');
+      await db.execute(_deleteFacesTable);
+    }
+
+    if (cleanPeople) {
+      _logger.fine('`cleanTables()`: Cleaning people table');
+      await db.execute(_deletePeopleTable);
+    }
+
+    if (!cleanFaces && !cleanPeople) {
+      _logger.fine(
+        '`cleanTables()`: No tables cleaned, since no table was specified. Please be careful with this function!',
+      );
+    }
 
     await db.execute(createFacesTable);
     await db.execute(createPeopleTable);
@@ -183,21 +198,6 @@ class MlDataDB {
         .toList();
   }
 
-  Future<void> updateFaceMlResult(FaceMlResult faceMlResult) async {
-    _logger.fine('updateFaceMlResult called');
-    final db = await instance.database;
-    await db.update(
-      facesTable,
-      {
-        fileIDColumn: faceMlResult.fileId,
-        faceMlResultColumn: faceMlResult.toJsonString(),
-        mlVersionColumn: faceMlResult.mlVersion,
-      },
-      where: '$fileIDColumn = ?',
-      whereArgs: [faceMlResult.fileId],
-    );
-  }
-
   /// getAllFileIDs returns a set of all fileIDs from the facesTable, meaning all the fileIDs for which a FaceMlResult exists, optionally filtered by mlVersion.
   Future<Set<int>> getAllFileIDs({int? mlVersion}) async {
     _logger.fine('getAllFileIDs called');
@@ -218,6 +218,21 @@ class MlDataDB {
     );
 
     return results.map((result) => result[fileIDColumn] as int).toSet();
+  }
+
+  Future<void> updateFaceMlResult(FaceMlResult faceMlResult) async {
+    _logger.fine('updateFaceMlResult called');
+    final db = await instance.database;
+    await db.update(
+      facesTable,
+      {
+        fileIDColumn: faceMlResult.fileId,
+        faceMlResultColumn: faceMlResult.toJsonString(),
+        mlVersionColumn: faceMlResult.mlVersion,
+      },
+      where: '$fileIDColumn = ?',
+      whereArgs: [faceMlResult.fileId],
+    );
   }
 
   Future<int> deleteFaceMlResult(int fileId) async {
