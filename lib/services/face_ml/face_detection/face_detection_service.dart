@@ -187,18 +187,19 @@ class FaceDetection {
       final interpreterOptions = InterpreterOptions();
 
       // Android Delegates
-      // TODO: Re-enable delegates on new version of tflite_flutter
+      // TODO: Make sure this works on both platforms: Android and iOS
       if (Platform.isAndroid) {
         // Use XNNPACK Delegate (CPU)
-        // interpreterOptions.addDelegate(XNNPackDelegate());
-        // Use GPU Delegate (GPU). WARNING: It doesn't work on emulator
+        interpreterOptions.addDelegate(XNNPackDelegate());
+        // Use GPU Delegate (GPU). WARNING: It doesn't work on emulator. And doesn't speed up current version of BlazeFace used.
         // interpreterOptions.addDelegate(GpuDelegateV2());
       }
 
       // iOS Delegates
       if (Platform.isIOS) {
-        // Use Metal Delegate (GPU)
-        interpreterOptions.addDelegate(GpuDelegate());
+        // Use Metal Delegate (GPU) WARNING: might be causing issues with loading the model, need to investigate further.
+        // interpreterOptions.addDelegate(GpuDelegate());
+        // interpreterOptions.addDelegate(GpuDelegateV2());
       }
 
       // Create anchor boxes for BlazeFace
