@@ -55,6 +55,56 @@ class FaceMlService {
     initialized = true;
   }
 
+  // TODO: implement this function. Don't forget to run it in an isolate.
+  Future<void> clusterAllImages() async {
+    // Run the analysis on all images to make sure everything is analyzed
+    await processAllImages();
+
+    final allFaceMlResults = await MlDataDB.instance.getAllFaceMlResults();
+
+    // Initialize all the lists that we will use
+    final allFaceEmbeddings = <Embedding>[];
+    final allFileIDs = <int>[];
+    final allFaceIDs = <String>[];
+
+    // Populate the lists for the clustering
+    for (final FaceMlResult faceMlResult in allFaceMlResults) {
+      allFaceEmbeddings.addAll(faceMlResult.allFaceEmbeddings);
+      allFileIDs.addAll(faceMlResult.fileIdForEveryFace);
+      allFaceIDs.addAll(faceMlResult.allFaceIds);
+    }
+
+    // Run the clustering
+    final clusteringResult =
+        await FaceClustering.instance.predict(allFaceEmbeddings);
+    final labels = FaceClustering.instance.labels;
+
+    if (labels == null) {
+      _logger.severe("Clustering failed");
+      throw GeneralFaceMlException("Clustering failed");
+    }
+
+    // Create the clusters
+    final List<ClusterResultBuilder> clusterResultBuilders = [];
+    final List<ClusterResult> clusterResults = [];
+    for (final List<int> clusterIndices in clusteringResult) {
+      final personId = labels[clusterIndices[0]];
+      final ClusterResultBuilder clusterResultBuilder =
+          ClusterResultBuilder.createFromIndices(
+        personId,
+        clusterIndices: clusterIndices,
+        allEmbeddings: allFaceEmbeddings,
+        allFileIds: allFileIDs,
+        allFaceIds: allFaceIDs,
+      );
+      clusterResultBuilders.add(clusterResultBuilder);
+      clusterResults.add(clusterResultBuilder.build());
+    }
+
+    // Store the clusters in the database
+    await MlDataDB.instance.createAllClusterResults(clusterResults);
+  }
+
   /// Analyzes all the images in the database with the latest ml version and stores the results in the database.
   ///
   /// This function first checks if the image has already been analyzed with the lastest faceMlVersion and stored in the database. If so, it skips the image.
