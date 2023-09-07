@@ -1,6 +1,7 @@
 import "dart:convert" show jsonEncode, jsonDecode;
 
 import "package:flutter/material.dart" show Size, immutable;
+import "package:ml_linalg/linalg.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/models/ml_typedefs.dart";
 import "package:photos/services/face_ml/face_alignment/alignment_result.dart";
@@ -9,6 +10,147 @@ import "package:photos/services/face_ml/face_ml_methods.dart";
 import "package:uuid/uuid.dart";
 
 const faceMlVersion = 0;
+const clusterMlVersion = 0;
+
+@immutable
+class ClusterResult {
+  final int personId;
+  final String displayFaceId;
+  final String displayImageUrl;
+
+  ///
+  final List<int> _fileIds;
+  final List<String> _faceIds;
+
+  final Embedding centroid;
+  final double centroidDistanceThreshold;
+
+  List<int> get uniqueFileIds {
+    return _fileIds.toSet().toList();
+  }
+
+  List<String> get uniqueFaceIds {
+    return _faceIds.toSet().toList();
+  }
+
+  const ClusterResult({
+    required this.personId,
+    required this.displayFaceId,
+    required this.displayImageUrl,
+    required List<int> fileIds,
+    required List<String> faceIds,
+    required this.centroid,
+    required this.centroidDistanceThreshold,
+  })  : _faceIds = faceIds,
+        _fileIds = fileIds;
+
+  Map<String, dynamic> _toJson() => {
+        'personId': personId,
+        'displayFaceId': displayFaceId,
+        'displayImageUrl': displayImageUrl,
+        'fileIds': _fileIds,
+        'faceIds': _faceIds,
+        'centroid': centroid,
+        'centroidDistanceThreshold': centroidDistanceThreshold,
+      };
+
+  String toJsonString() => jsonEncode(_toJson());
+
+  static ClusterResult _fromJson(Map<String, dynamic> json) {
+    return ClusterResult(
+      personId: json['personId'] ?? -1,
+      displayFaceId: json['displayFaceId'] ?? '',
+      displayImageUrl: json['displayImageUrl'] ?? '',
+      fileIds:
+          (json['fileIds'] as List?)?.map((item) => item as int).toList() ?? [],
+      faceIds:
+          (json['faceIds'] as List?)?.map((item) => item as String).toList() ??
+              [],
+      centroid:
+          (json['centroid'] as List?)?.map((item) => item as double).toList() ??
+              [],
+      centroidDistanceThreshold: json['centroidDistanceThreshold'] ?? 0,
+    );
+  }
+
+  static ClusterResult fromJsonString(String jsonString) {
+    return _fromJson(jsonDecode(jsonString));
+  }
+}
+
+class ClusterResultBuilder {
+  int personId = -1;
+  String displayFaceId = '';
+  String displayImageUrl = '';
+
+  List<int> fileIds = <int>[];
+  List<String> faceIds = <String>[];
+
+  List<Embedding> embeddings = <Embedding>[];
+  Embedding centroid = <double>[];
+  double centroidDistanceThreshold = 0;
+
+  ClusterResultBuilder.createFromIndices({
+    required List<int> clusterIndices,
+    required List<int> labels,
+    required List<Embedding> allEmbeddings,
+    required List<int> allFileIds,
+    required List<String> allFaceIds,
+  }) {
+    final clusteredFileIds =
+        clusterIndices.map((fileIndex) => allFileIds[fileIndex]).toList();
+    final clusteredFaceIds =
+        clusterIndices.map((fileIndex) => allFaceIds[fileIndex]).toList();
+    final clusteredEmbeddings =
+        clusterIndices.map((fileIndex) => allEmbeddings[fileIndex]).toList();
+    personId = labels[clusterIndices[0]];
+    fileIds = clusteredFileIds;
+    faceIds = clusteredFaceIds;
+    embeddings = clusteredEmbeddings;
+  }
+
+  void calculateCentroidAndThreshold() {
+    if (embeddings.isEmpty) {
+      throw Exception("Cannot calculate centroid and threshold for empty list");
+    }
+
+    final Matrix embeddingsMatrix = Matrix.fromList(embeddings);
+
+    // Calculate and update the centroid
+    final tempCentroid = embeddingsMatrix.mean();
+    centroid = tempCentroid.toList();
+
+    // Calculate and update the centroidDistanceThreshold as the maximum distance from the centroid and any of the embeddings
+    double maximumDistance = 0;
+    for (final embedding in embeddings) {
+      final distance = tempCentroid.distanceTo(
+        Vector.fromList(embedding),
+        distance: Distance.cosine,
+      );
+      if (distance > maximumDistance) {
+        maximumDistance = distance;
+      }
+    }
+    centroidDistanceThreshold = maximumDistance;
+  }
+
+  // TODO: add a method to add the display face id and image url. Ask Vishnu or Bob!
+  void addDisplayStrings() {}
+
+  ClusterResult build() {
+    calculateCentroidAndThreshold();
+    addDisplayStrings();
+    return ClusterResult(
+      personId: personId,
+      displayFaceId: displayFaceId,
+      displayImageUrl: displayImageUrl,
+      fileIds: fileIds,
+      faceIds: faceIds,
+      centroid: centroid,
+      centroidDistanceThreshold: centroidDistanceThreshold,
+    );
+  }
+}
 
 @immutable
 class FaceMlResult {
@@ -24,6 +166,18 @@ class FaceMlResult {
   final String? lastErrorMessage;
   final int errorCount;
   final int mlVersion;
+
+  List<Embedding> get allFaceEmbeddings {
+    return faces.map((face) => face.embedding).toList();
+  }
+
+  List<String> get allFaceIds {
+    return faces.map((face) => face.id).toList();
+  }
+
+  List<int> get fileIdForEveryFace {
+    return List<int>.filled(faces.length, fileId);
+  }
 
   const FaceMlResult({
     required this.faceDetectionMethod,

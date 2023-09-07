@@ -56,7 +56,6 @@ class FaceMlService {
     initialized = true;
   }
 
-  // TODO: implement this function. Don't forget to run it in an isolate.
   Future<void> clusterAllImages() async {
     // Run the analysis on all images to make sure everything is analyzed
     await processAllImages();
@@ -79,28 +78,25 @@ class FaceMlService {
     final clusteringResult =
         await FaceClustering.instance.predict(allFaceEmbeddings);
     final labels = FaceClustering.instance.labels;
-
     if (labels == null) {
       _logger.severe("Clustering failed");
       throw GeneralFaceMlException("Clustering failed");
     }
 
     // Create the clusters
-    final List<ClusterResultBuilder> clusterResultBuilders = [];
-    final List<ClusterResult> clusterResults = [];
-    for (final List<int> clusterIndices in clusteringResult) {
-      final personId = labels[clusterIndices[0]];
-      final ClusterResultBuilder clusterResultBuilder =
-          ClusterResultBuilder.createFromIndices(
-        personId,
-        clusterIndices: clusterIndices,
-        allEmbeddings: allFaceEmbeddings,
-        allFileIds: allFileIDs,
-        allFaceIds: allFaceIDs,
-      );
-      clusterResultBuilders.add(clusterResultBuilder);
-      clusterResults.add(clusterResultBuilder.build());
-    }
+    final List<ClusterResultBuilder> clusterResultBuilders = [
+      for (final clusterIndices in clusteringResult)
+        ClusterResultBuilder.createFromIndices(
+          clusterIndices: clusterIndices,
+          labels: labels,
+          allEmbeddings: allFaceEmbeddings,
+          allFileIds: allFileIDs,
+          allFaceIds: allFaceIDs,
+        )
+    ];
+    final List<ClusterResult> clusterResults = [
+      for (final builder in clusterResultBuilders) builder.build()
+    ];
 
     // Store the clusters in the database
     await MlDataDB.instance.createAllClusterResults(clusterResults);
