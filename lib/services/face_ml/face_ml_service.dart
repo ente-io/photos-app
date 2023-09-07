@@ -11,6 +11,7 @@ import "package:photos/models/file/file.dart";
 import "package:photos/models/file/file_type.dart";
 import "package:photos/models/ml_typedefs.dart";
 import "package:photos/services/face_ml/face_alignment/similarity_transform.dart";
+import "package:photos/services/face_ml/face_clustering/face_clustering_service.dart";
 import "package:photos/services/face_ml/face_detection/detection.dart";
 import "package:photos/services/face_ml/face_detection/face_detection_exceptions.dart";
 import "package:photos/services/face_ml/face_detection/face_detection_service.dart";
@@ -202,23 +203,26 @@ class FaceMlService {
   /// 'enteFile': The ente file to analyze.
   ///
   /// Returns an immutable [FaceMlResult] instance containing the results of the analysis.
+  /// Does not store the result in the database, for that you should use [processFacesImage].
   /// Throws [CouldNotRetrieveAnyFileData] or [GeneralFaceMlException] if something goes wrong.
   Future<FaceMlResult> analyzeImage(EnteFile enteFile) async {
     _checkEnteFileForID(enteFile);
 
     final Uint8List? thumbnailData =
         await getDataForML(enteFile, typeOfData: FileDataForML.thumbnailData);
-    final Uint8List? fileData =
-        await getDataForML(enteFile, typeOfData: FileDataForML.fileData);
 
-    if (thumbnailData == null && fileData == null) {
-      _logger.severe(
-        "Failed to get any data for enteFile with uploadedFileID ${enteFile.uploadedFileID}",
-      );
-      throw CouldNotRetrieveAnyFileData();
+    Uint8List? fileData;
+    if (thumbnailData == null) {
+      fileData =
+          await getDataForML(enteFile, typeOfData: FileDataForML.fileData);
+      if (thumbnailData == null && fileData == null) {
+        _logger.severe(
+          "Failed to get any data for enteFile with uploadedFileID ${enteFile.uploadedFileID}",
+        );
+        throw CouldNotRetrieveAnyFileData();
+      }
     }
     final Uint8List smallData = thumbnailData ?? fileData!;
-    final Uint8List largeData = fileData ?? thumbnailData!;
 
     final resultBuilder =
         FaceMlResultBuilder.createWithMlMethods(file: enteFile);
@@ -239,6 +243,10 @@ class FaceMlService {
       if (faceDetectionResult.isEmpty) {
         return resultBuilder.buildNoFaceDetected();
       }
+
+      fileData ??=
+          await getDataForML(enteFile, typeOfData: FileDataForML.fileData);
+      final Uint8List largeData = fileData ?? thumbnailData!;
 
       // Align the faces
       final List<List<List<List<double>>>> faceAlignmentResult =
