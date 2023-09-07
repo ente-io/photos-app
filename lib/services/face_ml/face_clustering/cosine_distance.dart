@@ -1,5 +1,7 @@
 import 'dart:math' show sqrt;
 
+// TODO: test if implementing this function with ml_linalg package is faster!
+
 /// Simple cosine distance measurement function.
 double cosineDistance(List<double> vector1, List<double> vector2) {
   assert(vector1.length == vector2.length, 'Vectors must be the same length');
