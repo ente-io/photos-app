@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:isolate';
 import 'dart:typed_data' show Uint8List;
+// import 'dart:ui' as ui;
+// import "package:flutter/material.dart";
 import 'package:image/image.dart' as image_lib;
 import "package:logging/logging.dart";
 import "package:synchronized/synchronized.dart";
@@ -13,6 +15,21 @@ class CouldNotConvertToImageImage implements Exception {}
 image_lib.Image? _convertUint8ListToImagePackageImage(Uint8List imageData) {
   return image_lib.decodeImage(imageData);
 }
+
+// // TODO: try out the image_pixel package
+// /// Converts a [Uint8List] to an [image_lib.Image] object.
+// image_lib.Image? getImagePixel(Uint8List imageData) {
+//   return image_lib.decodeImage(imageData);
+// }
+
+// /// Converts a [Uint8List] to an [image_lib.Image] object.
+// image_lib.Image? _convertUint8ListToImagePackageImage(Uint8List imageData) async {
+//   final Image test = Image.memory(imageData);
+//   // test.
+
+//   ui.Codec codec = await ui.instantiateImageCodec(imageData);
+//   return image_lib.decodeImage(imageData);
+// }
 
 Uint8List _convertImagePackageImageToUint8List(image_lib.Image image) {
   return image_lib.encodeJpg(image);
