@@ -62,8 +62,8 @@ class FaceMlService {
     _logger.info("`processAllImages()` called");
 
     final List<EnteFile> enteFiles = await SearchService.instance.getAllFiles();
-    final Set<int> alreadyIndexedWithLatestVersionIDs =
-        await MlDataDB.instance.getAllFileIDs(mlVersion: faceMlVersion);
+    final Set<int> alreadyIndexedWithLatestVersionIDs = await MlDataDB.instance
+        .getAllFaceMlResultFileIDs(mlVersion: faceMlVersion);
 
     // Make sure the image conversion isolate is spawned
     await ImageConversionIsolate.instance.ensureSpawned();

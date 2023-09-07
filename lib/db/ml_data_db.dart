@@ -199,7 +199,7 @@ class MlDataDB {
   }
 
   /// getAllFileIDs returns a set of all fileIDs from the facesTable, meaning all the fileIDs for which a FaceMlResult exists, optionally filtered by mlVersion.
-  Future<Set<int>> getAllFileIDs({int? mlVersion}) async {
+  Future<Set<int>> getAllFaceMlResultFileIDs({int? mlVersion}) async {
     _logger.fine('getAllFileIDs called');
     final db = await instance.database;
 
