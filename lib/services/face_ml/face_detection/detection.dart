@@ -57,9 +57,91 @@ class FaceDetectionRelative extends Detection {
     );
   }
 
+  /// This is used to initialize the FaceDetectionRelative object with default values.
+  /// This constructor is useful because it can be used to initialize a FaceDetectionRelative object as a constant.
+  /// Contrary to the `FaceDetectionRelative.zero()` constructor, this one gives immutable attributes [box] and [allKeypoints].
+  FaceDetectionRelative.defaultInitialization()
+      : box = const <double>[0, 0, 0, 0],
+        allKeypoints = const <List<double>>[
+          [0, 0],
+          [0, 0],
+          [0, 0],
+          [0, 0],
+          [0, 0],
+          [0, 0]
+        ],
+        xMinBox = 0,
+        yMinBox = 0,
+        xMaxBox = 0,
+        yMaxBox = 0,
+        leftEye = <double>[0, 0],
+        rightEye = <double>[0, 0],
+        nose = <double>[0, 0],
+        mouth = <double>[0, 0],
+        leftEar = <double>[0, 0],
+        rightEar = <double>[0, 0],
+        super.empty();
+
+  FaceDetectionAbsolute toAbsolute({
+    required int imageWidth,
+    required int imageHeight,
+  }) {
+    final score = this.score;
+    final box = this.box;
+    final allKeypoints = this.allKeypoints;
+
+    box[0] *= imageWidth;
+    box[1] *= imageHeight;
+    box[2] *= imageWidth;
+    box[3] *= imageHeight;
+    final intbox = box.map((e) => e.toInt()).toList();
+
+    for (List<double> keypoint in allKeypoints) {
+      keypoint[0] *= imageWidth;
+      keypoint[1] *= imageHeight;
+    }
+    final intKeypoints =
+        allKeypoints.map((e) => e.map((e) => e.toInt()).toList()).toList();
+    return FaceDetectionAbsolute(
+      score: score,
+      box: intbox,
+      allKeypoints: intKeypoints,
+    );
+  }
+
   @override
   String toString() {
     return 'FaceDetectionRelative( with relative coordinates: \n score: $score \n Box: xMinBox: $xMinBox, yMinBox: $yMinBox, xMaxBox: $xMaxBox, yMaxBox: $yMaxBox, \n Keypoints: leftEye: $leftEye, rightEye: $rightEye, nose: $nose, mouth: $mouth, leftEar: $leftEar, rightEar: $rightEar \n )';
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'score': score,
+      'box': box,
+      'allKeypoints': allKeypoints,
+      'xMinBox': xMinBox,
+      'yMinBox': yMinBox,
+      'xMaxBox': xMaxBox,
+      'yMaxBox': yMaxBox,
+      'leftEye': leftEye,
+      'rightEye': rightEye,
+      'nose': nose,
+      'mouth': mouth,
+      'leftEar': leftEar,
+      'rightEar': rightEar,
+      'width': width,
+      'height': height,
+    };
+  }
+
+  factory FaceDetectionRelative.fromJson(Map<String, dynamic> json) {
+    return FaceDetectionRelative(
+      score: (json['score'] as num).toDouble(),
+      box: List<double>.from(json['box']),
+      allKeypoints: (json['allKeypoints'] as List)
+          .map((item) => List<double>.from(item))
+          .toList(),
+    );
   }
 
   @override
@@ -179,40 +261,24 @@ class FaceDetectionAbsolute extends Detection {
 }
 
 List<FaceDetectionAbsolute> relativeToAbsoluteDetections({
-  required List<FaceDetectionRelative> detections,
-  required int originalWidth,
-  required int originalHeight,
+  required List<FaceDetectionRelative> relativeDetections,
+  required int imageWidth,
+  required int imageHeight,
 }) {
-  final numberOfDetections = detections.length;
-  final intDetections = List<FaceDetectionAbsolute>.filled(
+  final numberOfDetections = relativeDetections.length;
+  final absoluteDetections = List<FaceDetectionAbsolute>.filled(
     numberOfDetections,
     FaceDetectionAbsolute._zero(),
   );
-  for (var i = 0; i < detections.length; i++) {
-    final detection = detections[i];
-    final score = detection.score;
-    final box = detection.box;
-    final allKeypoints = detection.allKeypoints;
-
-    box[0] *= originalWidth;
-    box[1] *= originalHeight;
-    box[2] *= originalWidth;
-    box[3] *= originalHeight;
-    final intbox = box.map((e) => e.toInt()).toList();
-
-    for (var keypoint in allKeypoints) {
-      keypoint[0] *= originalWidth;
-      keypoint[1] *= originalHeight;
-    }
-    final intKeypoints =
-        allKeypoints.map((e) => e.map((e) => e.toInt()).toList()).toList();
-
-    intDetections[i] = FaceDetectionAbsolute(
-      score: score,
-      box: intbox,
-      allKeypoints: intKeypoints,
+  for (var i = 0; i < relativeDetections.length; i++) {
+    final relativeDetection = relativeDetections[i];
+    final absoluteDetection = relativeDetection.toAbsolute(
+      imageWidth: imageWidth,
+      imageHeight: imageHeight,
     );
+
+    absoluteDetections[i] = absoluteDetection;
   }
 
-  return intDetections;
+  return absoluteDetections;
 }

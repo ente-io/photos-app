@@ -234,7 +234,7 @@ class FaceMlService {
 
     try {
       // Get the faces
-      final List<FaceDetectionAbsolute> faceDetectionResult =
+      final List<FaceDetectionRelative> faceDetectionResult =
           await detectFaces(smallData, resultBuilder: resultBuilder);
 
       _logger.info("Completed `detectFaces` function");
@@ -344,13 +344,13 @@ class FaceMlService {
   /// Returns a list of face detection results.
   ///
   /// Throws [CouldNotInitializeFaceDetector], [CouldNotRunFaceDetector] or [GeneralFaceMlException] if something goes wrong.
-  Future<List<FaceDetectionAbsolute>> detectFaces(
+  Future<List<FaceDetectionRelative>> detectFaces(
     Uint8List imageData, {
     FaceMlResultBuilder? resultBuilder,
   }) async {
     try {
       // Get the bounding boxes of the faces
-      final List<FaceDetectionAbsolute> faces =
+      final List<FaceDetectionRelative> faces =
           await FaceDetection.instance.predict(imageData);
 
       // Add detected faces to the resultBuilder
@@ -380,7 +380,7 @@ class FaceMlService {
   /// Throws [CouldNotEstimateSimilarityTransform] or [GeneralFaceMlException] if the face alignment fails.
   Future<List<Double3DInputMatrix>> alignFaces(
     Uint8List imageData,
-    List<FaceDetectionAbsolute> faces, {
+    List<FaceDetectionRelative> faces, {
     FaceMlResultBuilder? resultBuilder,
   }) async {
     // TODO: the image conversion below is what makes the whole pipeline slow, so come up with different solution
@@ -390,20 +390,27 @@ class FaceMlService {
     final image_lib.Image? inputImage =
         await ImageConversionIsolate.instance.convert(imageData);
     faceAlignmentImageDecodingStopwatch.stop();
-    _logger.info(
-      'image decoding for alignment is finished, in ${faceAlignmentImageDecodingStopwatch.elapsedMilliseconds}ms',
-    );
-
     if (inputImage == null) {
       _logger.severe('Error while converting Uint8List to Image');
       throw CouldNotConvertToImageImage();
     }
+    _logger.info(
+      'image decoding for alignment is finished, in ${faceAlignmentImageDecodingStopwatch.elapsedMilliseconds}ms',
+    );
+
+    // Convert the relative face detection results to absolute face detection results
+    final List<FaceDetectionAbsolute> absoluteFaces =
+        relativeToAbsoluteDetections(
+      relativeDetections: faces,
+      imageWidth: inputImage.width,
+      imageHeight: inputImage.height,
+    );
 
     final alignedFaces = <Double3DInputMatrix>[];
     for (int i = 0; i < faces.length; ++i) {
       final alignedFace = alignFaceToMatrix(
         inputImage,
-        faces[i],
+        absoluteFaces[i],
         resultBuilder: resultBuilder,
         faceIndex: i,
       );

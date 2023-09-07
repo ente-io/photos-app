@@ -134,7 +134,7 @@ class FaceMlResultBuilder {
     this.faceEmbeddingMethod = faceEmbeddingMethod;
   }
 
-  void addNewlyDetectedFaces(List<FaceDetectionAbsolute> faceDetections) {
+  void addNewlyDetectedFaces(List<FaceDetectionRelative> faceDetections) {
     for (var i = 0; i < faceDetections.length; i++) {
       faces.add(
         FaceResultBuilder.fromFaceDetection(
@@ -207,7 +207,7 @@ class FaceMlResultBuilder {
 
 @immutable
 class FaceResult {
-  final FaceDetectionAbsolute detection;
+  final FaceDetectionRelative detection;
   final AlignmentResult alignment;
   final Embedding embedding;
   final int fileId;
@@ -234,7 +234,7 @@ class FaceResult {
 
   static FaceResult fromJson(Map<String, dynamic> json) {
     return FaceResult(
-      detection: FaceDetectionAbsolute.fromJson(json['detection']),
+      detection: FaceDetectionRelative.fromJson(json['detection']),
       alignment: AlignmentResult.fromJson(json['alignment']),
       embedding: Embedding.from(json['embedding']),
       fileId: json['fileId'],
@@ -245,8 +245,8 @@ class FaceResult {
 }
 
 class FaceResultBuilder {
-  FaceDetectionAbsolute detection =
-      FaceDetectionAbsolute.defaultInitialization();
+  FaceDetectionRelative detection =
+      FaceDetectionRelative.defaultInitialization();
   AlignmentResult alignment = AlignmentResult.empty();
   Embedding embedding = <double>[];
   int fileId;
@@ -259,12 +259,13 @@ class FaceResultBuilder {
     this.personId = -1,
   });
 
+  // TODO: Ask Vishnu or Bob whether my implementation of generating a faceId makes sense! And whether it makes sense to store relative detections in the database, instead of absolute detections what I did before
   FaceResultBuilder.fromFaceDetection(
-    FaceDetectionAbsolute faceDetection, {
+    FaceDetectionRelative faceDetection, {
     required FaceMlResultBuilder resultBuilder,
     this.personId = -1,
   })  : fileId = resultBuilder.fileId,
-        id = const Uuid().v4(),
+        id = resultBuilder.fileId.toString() + '_' + const Uuid().v4(),
         detection = faceDetection;
 
   FaceResult build() {

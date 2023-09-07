@@ -48,7 +48,7 @@ class FaceDetection {
     }
   }
 
-  Future<List<FaceDetectionAbsolute>> predict(Uint8List imageData) async {
+  Future<List<FaceDetectionRelative>> predict(Uint8List imageData) async {
     assert(_interpreter != null && _isolateInterpreter != null);
 
     final image = await ImageConversionIsolate.instance.convert(imageData);
@@ -131,21 +131,15 @@ class FaceDetection {
 
     if (relativeDetections.isEmpty) {
       _logger.info('No face detected');
-      return <FaceDetectionAbsolute>[];
+      return <FaceDetectionRelative>[];
     }
-
-    final absoluteDetections = relativeToAbsoluteDetections(
-      detections: relativeDetections,
-      originalWidth: originalImageWidth,
-      originalHeight: originalImageHeight,
-    );
 
     stopwatch.stop();
     _logger.info(
       'predict() face detection executed in ${stopwatch.elapsedMilliseconds}ms',
     );
 
-    return absoluteDetections;
+    return relativeDetections;
   }
 
   List<List<List<num>>> _getPreprocessedImage(
