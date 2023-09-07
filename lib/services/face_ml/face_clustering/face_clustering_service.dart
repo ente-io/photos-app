@@ -23,7 +23,7 @@ class FaceClustering {
   /// Cluster label for each points, similar to sklearn's output structure.
   ///
   /// -1 means noise (doesn't belong in any cluster)
-  List<int>? get label {
+  List<int>? get labels {
     if (!_hasRun) {
       return null;
     }
