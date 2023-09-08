@@ -1,10 +1,13 @@
 import 'dart:math' show sqrt;
 
-// TODO: test if implementing this function with ml_linalg package is faster!
-
-/// Simple cosine distance measurement function.
+/// Calculates the cosine distance between two embeddings/vectors.
+///
+/// Throws an ArgumentError if the vectors are of different lengths or
+/// if either of the vectors has a magnitude of zero.
 double cosineDistance(List<double> vector1, List<double> vector2) {
-  assert(vector1.length == vector2.length, 'Vectors must be the same length');
+  if (vector1.length != vector2.length) {
+    throw ArgumentError('Vectors must be the same length');
+  }
 
   double dotProduct = 0.0;
   double magnitude1 = 0.0;
@@ -19,9 +22,9 @@ double cosineDistance(List<double> vector1, List<double> vector2) {
   magnitude1 = sqrt(magnitude1);
   magnitude2 = sqrt(magnitude2);
 
-  // Avoid division by zero
+  // Avoid division by zero. This should never happen. If it does, then one of the vectors contains only zeros.
   if (magnitude1 == 0 || magnitude2 == 0) {
-    return 0.0;
+    throw ArgumentError('Vectors must not have a magnitude of zero');
   }
 
   final double similarity = dotProduct / (magnitude1 * magnitude2);
