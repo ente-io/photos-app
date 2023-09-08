@@ -14,7 +14,7 @@ class DBSCANConfig {
 
 final DBSCANConfig faceClusteringDBSCANConfig = DBSCANConfig(
   // TODO: Find the best epsilon and minPoints for clustering faces
-  epsilon: 0.5,
-  minPoints: 4,
+  epsilon: 0.3,
+  minPoints: 5,
   distanceMeasure: cosineDistance,
 );
