@@ -74,6 +74,10 @@ class FaceMlService {
       allFaceIDs.addAll(faceMlResult.allFaceIds);
     }
 
+    _logger.info(
+      "`clusterAllImages`: Starting clustering, on ${allFaceEmbeddings.length} face embeddings",
+    );
+
     // Run the clustering
     final clusteringResult =
         await FaceClustering.instance.predict(allFaceEmbeddings);
@@ -97,6 +101,10 @@ class FaceMlService {
     final List<ClusterResult> clusterResults = [
       for (final builder in clusterResultBuilders) builder.build()
     ];
+
+    _logger.info(
+      "`clusterAllImages`: Finished clustering,  ${clusterResults.length} clusters found",
+    );
 
     // Store the clusters in the database
     await MlDataDB.instance.createAllClusterResults(clusterResults);
