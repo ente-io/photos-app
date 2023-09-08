@@ -196,12 +196,18 @@ class FaceMlService {
 
   /// Analyzes the given image data by running the full pipeline (face detection, face alignment, face embedding).
   ///
-  /// 'enteFile': The ente file to analyze.
+  /// [enteFile] The ente file to analyze.
+  ///
+  /// [preferUsingThumbnailForEverything] If true, the thumbnail will be used for everything (face detection, face alignment, face embedding), and file data will be used only if a thumbnail is unavailable.
+  /// If false, thumbnail will only be used for detection, and the original image will be used for face alignment and face embedding.
   ///
   /// Returns an immutable [FaceMlResult] instance containing the results of the analysis.
   /// Does not store the result in the database, for that you should use [processFacesImage].
   /// Throws [CouldNotRetrieveAnyFileData] or [GeneralFaceMlException] if something goes wrong.
-  Future<FaceMlResult> analyzeImage(EnteFile enteFile) async {
+  Future<FaceMlResult> analyzeImage(
+    EnteFile enteFile, {
+    bool preferUsingThumbnailForEverything = true,
+  }) async {
     _checkEnteFileForID(enteFile);
 
     final Uint8List? thumbnailData =
@@ -240,8 +246,10 @@ class FaceMlService {
         return resultBuilder.buildNoFaceDetected();
       }
 
-      fileData ??=
-          await getDataForML(enteFile, typeOfData: FileDataForML.fileData);
+      if (!preferUsingThumbnailForEverything) {
+        fileData ??=
+            await getDataForML(enteFile, typeOfData: FileDataForML.fileData);
+      }
       final Uint8List largeData = fileData ?? thumbnailData!;
 
       // Align the faces
