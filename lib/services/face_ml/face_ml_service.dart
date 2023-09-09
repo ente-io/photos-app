@@ -34,6 +34,7 @@ class FaceMlService {
   // singleton pattern
   FaceMlService._privateConstructor();
   static final instance = FaceMlService._privateConstructor();
+  factory FaceMlService() => instance;
 
   bool initialized = false;
 

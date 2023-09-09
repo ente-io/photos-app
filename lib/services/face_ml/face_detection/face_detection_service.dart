@@ -40,6 +40,7 @@ class FaceDetection {
   /// config options: faceDetectionFront // faceDetectionBackWeb // faceDetectionShortRange //faceDetectionFullRangeSparse; // faceDetectionFullRangeDense (faster than web while still accurate)
   static final instance =
       FaceDetection._privateConstructor(config: faceDetectionBackWeb);
+  factory FaceDetection() => instance;
 
   /// Check if the interpreter is initialized, if not initialize it with `loadModel()`
   Future<void> init() async {

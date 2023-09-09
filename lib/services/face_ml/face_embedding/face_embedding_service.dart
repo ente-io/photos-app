@@ -35,6 +35,7 @@ class FaceEmbedding {
   /// config options: faceEmbeddingEnte
   static final instance =
       FaceEmbedding._privateConstructor(config: faceEmbeddingEnte);
+  factory FaceEmbedding() => instance;
 
   /// Check if the interpreter is initialized, if not initialize it with `loadModel()`
   Future<void> init() async {

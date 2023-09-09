@@ -52,6 +52,7 @@ class FaceClustering {
   /// config options: faceClusteringDBSCANConfig
   static final instance =
       FaceClustering._privateConstructor(config: faceClusteringDBSCANConfig);
+  factory FaceClustering() => instance;
 
   Future<List<List<int>>> predict(List<List<double>> dataset) async {
     ClusteringIsolate.instance.ensureSpawned();
