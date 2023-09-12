@@ -262,10 +262,10 @@ class FaceMlResultBuilder {
 
   FaceMlResultBuilder.createWithMlMethods({
     required EnteFile file,
-    this.imageSource = '',
     this.lastErrorMessage = '',
     this.mlVersion = faceMlVersion,
   })  : fileId = file.uploadedFileID ?? -1,
+        imageSource = file.displayName, // TODO: Ask Vishnu/Bob whether this is smart to do
         imageDimensions = Size(file.width.toDouble(), file.height.toDouble()),
         faceDetectionMethod = FaceDetectionMethod.blazeFace(),
         faceAlignmentMethod = FaceAlignmentMethod.arcFace(),
