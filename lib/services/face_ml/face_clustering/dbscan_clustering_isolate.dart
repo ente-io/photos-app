@@ -29,6 +29,7 @@ class ClusteringIsolate {
   /// Then you can use `runClustering()` to get the clustering result, so `ClusteringIsolate.instance.runClustering(data, dbscan)`
   static final ClusteringIsolate instance =
       ClusteringIsolate._privateConstructor();
+  factory ClusteringIsolate() => instance;
 
   Future<void> init() async {
     return _initLock.synchronized(() async {

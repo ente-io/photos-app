@@ -68,6 +68,7 @@ class ImageConversionIsolate {
   /// Then you can use `convert()` to get the image, so `ImageConversionIsolate.instance.convert(imageData)`
   static final ImageConversionIsolate instance =
       ImageConversionIsolate._privateConstructor();
+  factory ImageConversionIsolate() => instance;
 
   Future<void> init() async {
     return _initLock.synchronized(() async {
