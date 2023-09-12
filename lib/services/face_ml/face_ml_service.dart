@@ -314,12 +314,6 @@ class FaceMlService {
       case FileDataForML.thumbnailData:
         final stopwatch = Stopwatch()..start();
         data = await getThumbnail(enteFile);
-        if (data == null) {
-          final io.File? actualIoFile = await getFile(enteFile);
-          if (actualIoFile != null) {
-            data = await actualIoFile.readAsBytes();
-          }
-        }
         stopwatch.stop();
         _logger.info(
           "Getting thumbnail data for uploadedFileID ${enteFile.uploadedFileID} took ${stopwatch.elapsedMilliseconds} ms",
