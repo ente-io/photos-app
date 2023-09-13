@@ -57,9 +57,9 @@ class FaceMlService {
     initialized = true;
   }
 
-  Future<void> clusterAllImages() async {
+  Future<void> indexAndClusterAllImages() async {
     // Run the analysis on all images to make sure everything is analyzed
-    await processAllImages();
+    await indexAllImages();
 
     final allFaceMlResults = await MlDataDB.instance.getAllFaceMlResults();
 
@@ -114,8 +114,8 @@ class FaceMlService {
   /// Analyzes all the images in the database with the latest ml version and stores the results in the database.
   ///
   /// This function first checks if the image has already been analyzed with the lastest faceMlVersion and stored in the database. If so, it skips the image.
-  Future<void> processAllImages() async {
-    _logger.info("`processAllImages()` called");
+  Future<void> indexAllImages() async {
+    _logger.info("`indexAllImages()` called");
 
     final List<EnteFile> enteFiles = await SearchService.instance.getAllFiles();
     final Set<int> alreadyIndexedWithLatestVersionIDs = await MlDataDB.instance
@@ -147,17 +147,20 @@ class FaceMlService {
       }
 
       _logger.info(
-        "`processAllImages()` on file number $fileAnalyzedCount: start processing image with uploadedFileID: ${enteFile.uploadedFileID}",
+        "`indexAllImages()` on file number $fileAnalyzedCount: start processing image with uploadedFileID: ${enteFile.uploadedFileID}",
       );
 
       try {
-        final result = await analyzeImage(enteFile, preferUsingThumbnailForEverything: false);
+        final result = await analyzeImage(
+          enteFile,
+          preferUsingThumbnailForEverything: false,
+        );
         await MlDataDB.instance.createFaceMlResult(result);
         fileAnalyzedCount++;
         continue;
       } catch (e, s) {
         _logger.severe(
-          "`processAllImages()`: Could not analyze image with uploadedFileID ${enteFile.uploadedFileID}",
+          "`indexAllImages()`: Could not analyze image with uploadedFileID ${enteFile.uploadedFileID}",
           e,
           s,
         );
@@ -166,7 +169,7 @@ class FaceMlService {
 
     stopwatch.stop();
     _logger.info(
-      "`processAllImages()` finished. Analyzed $fileAnalyzedCount images, skipped $fileSkippedCount images, in ${stopwatch.elapsedMilliseconds} ms",
+      "`indexAllImages()` finished. Analyzed $fileAnalyzedCount images, skipped $fileSkippedCount images, in ${stopwatch.elapsedMilliseconds} ms",
     );
 
     // Close the image conversion isolate
@@ -179,9 +182,9 @@ class FaceMlService {
   /// 'enteFile': The ente file to analyze.
   ///
   /// Returns an immutable [FaceMlResult] instance containing the results of the analysis. The result is also stored in the database.
-  Future<FaceMlResult> processFacesImage(EnteFile enteFile) async {
+  Future<FaceMlResult> indexImage(EnteFile enteFile) async {
     _logger.info(
-      "`processFacesImage` called on image with uploadedFileID ${enteFile.uploadedFileID}",
+      "`indexImage` called on image with uploadedFileID ${enteFile.uploadedFileID}",
     );
     _checkEnteFileForID(enteFile);
 
@@ -211,7 +214,7 @@ class FaceMlService {
   /// If false, thumbnail will only be used for detection, and the original image will be used for face alignment and face embedding.
   ///
   /// Returns an immutable [FaceMlResult] instance containing the results of the analysis.
-  /// Does not store the result in the database, for that you should use [processFacesImage].
+  /// Does not store the result in the database, for that you should use [indexImage].
   /// Throws [CouldNotRetrieveAnyFileData] or [GeneralFaceMlException] if something goes wrong.
   Future<FaceMlResult> analyzeImage(
     EnteFile enteFile, {
@@ -220,12 +223,12 @@ class FaceMlService {
     _checkEnteFileForID(enteFile);
 
     final Uint8List? thumbnailData =
-        await getDataForML(enteFile, typeOfData: FileDataForML.thumbnailData);
+        await _getDataForML(enteFile, typeOfData: FileDataForML.thumbnailData);
 
     Uint8List? fileData;
     if (thumbnailData == null) {
       fileData =
-          await getDataForML(enteFile, typeOfData: FileDataForML.fileData);
+          await _getDataForML(enteFile, typeOfData: FileDataForML.fileData);
       if (thumbnailData == null && fileData == null) {
         _logger.severe(
           "Failed to get any data for enteFile with uploadedFileID ${enteFile.uploadedFileID}",
@@ -246,7 +249,7 @@ class FaceMlService {
     try {
       // Get the faces
       final List<FaceDetectionRelative> faceDetectionResult =
-          await detectFaces(smallData, resultBuilder: resultBuilder);
+          await _detectFaces(smallData, resultBuilder: resultBuilder);
 
       _logger.info("Completed `detectFaces` function");
 
@@ -257,13 +260,13 @@ class FaceMlService {
 
       if (!preferUsingThumbnailForEverything) {
         fileData ??=
-            await getDataForML(enteFile, typeOfData: FileDataForML.fileData);
+            await _getDataForML(enteFile, typeOfData: FileDataForML.fileData);
       }
       final Uint8List largeData = fileData ?? thumbnailData!;
 
       // Align the faces
       final List<List<List<List<double>>>> faceAlignmentResult =
-          await alignFaces(
+          await _alignFaces(
         largeData,
         faceDetectionResult,
         resultBuilder: resultBuilder,
@@ -272,7 +275,7 @@ class FaceMlService {
       _logger.info("Completed `alignFaces` function");
 
       // Get the embeddings of the faces
-      await embedBatchFaces(
+      await _embedBatchFaces(
         faceAlignmentResult,
         resultBuilder: resultBuilder,
       );
@@ -291,7 +294,7 @@ class FaceMlService {
     }
   }
 
-  Future<Uint8List?> getDataForML(
+  Future<Uint8List?> _getDataForML(
     EnteFile enteFile, {
     FileDataForML typeOfData = FileDataForML.fileData,
   }) async {
@@ -351,7 +354,7 @@ class FaceMlService {
   /// Returns a list of face detection results.
   ///
   /// Throws [CouldNotInitializeFaceDetector], [CouldNotRunFaceDetector] or [GeneralFaceMlException] if something goes wrong.
-  Future<List<FaceDetectionRelative>> detectFaces(
+  Future<List<FaceDetectionRelative>> _detectFaces(
     Uint8List imageData, {
     FaceMlResultBuilder? resultBuilder,
   }) async {
@@ -385,7 +388,7 @@ class FaceMlService {
   /// Returns a list of the aligned faces as image data.
   ///
   /// Throws [CouldNotEstimateSimilarityTransform] or [GeneralFaceMlException] if the face alignment fails.
-  Future<List<Double3DInputMatrix>> alignFaces(
+  Future<List<Double3DInputMatrix>> _alignFaces(
     Uint8List imageData,
     List<FaceDetectionRelative> faces, {
     FaceMlResultBuilder? resultBuilder,
@@ -415,7 +418,7 @@ class FaceMlService {
 
     final alignedFaces = <Double3DInputMatrix>[];
     for (int i = 0; i < faces.length; ++i) {
-      final alignedFace = alignFaceToMatrix(
+      final alignedFace = _alignFaceToMatrix(
         inputImage,
         absoluteFaces[i],
         resultBuilder: resultBuilder,
@@ -435,7 +438,7 @@ class FaceMlService {
   /// Returns the aligned face as a matrix [Double3DInputMatrix].
   ///
   /// Throws [CouldNotEstimateSimilarityTransform], [CouldNotWarpAffine] or [GeneralFaceMlException] if the face alignment fails.
-  Double3DInputMatrix alignFaceToMatrix(
+  Double3DInputMatrix _alignFaceToMatrix(
     image_lib.Image inputImage,
     FaceDetectionAbsolute face, {
     FaceMlResultBuilder? resultBuilder,
@@ -477,7 +480,7 @@ class FaceMlService {
 
   /// Aligns a single face from the given image data.
   ///
-  /// WARNING: This function is not efficient for multiple faces. Use [alignFaceToMatrix] in pipelines instead.
+  /// WARNING: This function is not efficient for multiple faces. Use [_alignFaceToMatrix] in pipelines instead.
   ///
   /// `imageData`: The image data that contains the face.
   /// `face`: The face detection result for the face to align.
@@ -485,7 +488,7 @@ class FaceMlService {
   /// Returns the aligned face as image data.
   ///
   /// Throws [CouldNotEstimateSimilarityTransform], [CouldNotWarpAffine] or [GeneralFaceMlException] if the face alignment fails.
-  Uint8List alignSingleFace(Uint8List imageData, FaceDetectionAbsolute face) {
+  Uint8List _alignSingleFace(Uint8List imageData, FaceDetectionAbsolute face) {
     try {
       final faceLandmarks = face.allKeypoints.sublist(0, 4);
       final isNoNanInParam = _similarityTransform.estimate(faceLandmarks);
@@ -520,7 +523,7 @@ class FaceMlService {
   /// Returns the face embedding as a list of doubles.
   ///
   /// Throws [CouldNotInitializeFaceEmbeddor], [CouldNotRunFaceEmbeddor], [InputProblemFaceEmbeddor] or [GeneralFaceMlException] if the face embedding fails.
-  Future<List<double>> embedSingleFace(Uint8List faceData) async {
+  Future<List<double>> _embedSingleFace(Uint8List faceData) async {
     try {
       // Get the embedding of the face
       final List<double> embedding =
@@ -551,7 +554,7 @@ class FaceMlService {
   /// Returns a list of the face embeddings as lists of doubles.
   ///
   /// Throws [CouldNotInitializeFaceEmbeddor], [CouldNotRunFaceEmbeddor], [InputProblemFaceEmbeddor] or [GeneralFaceMlException] if the face embedding fails.
-  Future<List<List<double>>> embedBatchFaces(
+  Future<List<List<double>>> _embedBatchFaces(
     List<Double3DInputMatrix> facesMatrices, {
     FaceMlResultBuilder? resultBuilder,
   }) async {
