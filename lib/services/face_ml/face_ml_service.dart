@@ -151,7 +151,7 @@ class FaceMlService {
       );
 
       try {
-        final result = await analyzeImage(enteFile);
+        final result = await analyzeImage(enteFile, preferUsingThumbnailForEverything: false);
         await MlDataDB.instance.createFaceMlResult(result);
         fileAnalyzedCount++;
         continue;
@@ -215,7 +215,7 @@ class FaceMlService {
   /// Throws [CouldNotRetrieveAnyFileData] or [GeneralFaceMlException] if something goes wrong.
   Future<FaceMlResult> analyzeImage(
     EnteFile enteFile, {
-    bool preferUsingThumbnailForEverything = true,
+    bool preferUsingThumbnailForEverything = false,
   }) async {
     _checkEnteFileForID(enteFile);
 

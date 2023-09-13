@@ -255,7 +255,7 @@ class _ZoomableImageState extends State<ZoomableImage>
   }
 
   Future<void> process_for_face_detection(EnteFile enteFile) async {
-    // // MlDataDB.instance.cleanTables();
+    // MlDataDB.instance.cleanTables(cleanFaces: true, cleanPeople: true);
     // try {
     //   // final thumbnail = await getThumbnail(actualFile);
 
@@ -265,15 +265,15 @@ class _ZoomableImageState extends State<ZoomableImage>
     //   //         .detectFaces(actualFile.readAsBytesSync());
     //   // showToast(context, '${faceDetectionResults.length} faces detected');
 
-    //   // To test the full pipeline
-    //   final FaceMlResult faceMlResult =
-    //       await FaceMlService.instance.processFacesImage(
-    //     enteFile,
-    //   );
-    //   showToast(
-    //     context,
-    //     'Image successfully analyzed: ${faceMlResult.faces.length} faces. see logs for details',
-    //   );
+    // // To test the full pipeline
+    // final FaceMlResult faceMlResult =
+    //     await FaceMlService.instance.analyzeImage(
+    //   enteFile,
+    // );
+    // showToast(
+    //   context,
+    //   'Image successfully analyzed: ${faceMlResult.faces.length} faces. see logs for details',
+    // );
 
     //   // To test serialization
     //   // final String faceMlResultJsonString = faceMlResult.toJsonString();
