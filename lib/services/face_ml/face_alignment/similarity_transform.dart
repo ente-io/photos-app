@@ -359,7 +359,7 @@ class SimilarityTransform {
           );
 
           // Set the new pixel
-          outputMatrix[xTrans][yTrans] = [
+          outputMatrix[yTrans][xTrans] = [
             normalizePixel(r),
             normalizePixel(g),
             normalizePixel(b)
