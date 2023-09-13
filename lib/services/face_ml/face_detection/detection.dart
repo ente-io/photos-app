@@ -12,6 +12,16 @@ abstract class Detection {
   String toString();
 }
 
+/// This class represents a face detection with relative coordinates in the range [0, 1].
+/// The coordinates are relative to the image size. The pattern for the coordinates is always [x, y], where x is the horizontal coordinate and y is the vertical coordinate.
+/// 
+/// The [score] attribute is a double representing the confidence of the face detection.
+/// 
+/// The [box] attribute is a list of 4 doubles, representing the coordinates of the bounding box of the face detection.
+/// The four values of the box in order are: [xMinBox, yMinBox, xMaxBox, yMaxBox].
+/// 
+/// The [allKeypoints] attribute is a list of 6 lists of 2 doubles, representing the coordinates of the keypoints of the face detection.
+/// The six lists of two values in order are: [leftEye, rightEye, nose, mouth, leftEar, rightEar]. Again, all in [x, y] order.
 class FaceDetectionRelative extends Detection {
   final List<double> box;
   final List<List<double>> allKeypoints;
@@ -150,6 +160,16 @@ class FaceDetectionRelative extends Detection {
   double get height => yMaxBox - yMinBox;
 }
 
+/// This class represents a face detection with absolute coordinates in pixels, in the range [0, imageWidth] for the horizontal coordinates and [0, imageHeight] for the vertical coordinates.
+/// The pattern for the coordinates is always [x, y], where x is the horizontal coordinate and y is the vertical coordinate.
+/// 
+/// The [score] attribute is a double representing the confidence of the face detection.
+/// 
+/// The [box] attribute is a list of 4 integers, representing the coordinates of the bounding box of the face detection.
+/// The four values of the box in order are: [xMinBox, yMinBox, xMaxBox, yMaxBox].
+/// 
+/// The [allKeypoints] attribute is a list of 6 lists of 2 integers, representing the coordinates of the keypoints of the face detection.
+/// The six lists of two values in order are: [leftEye, rightEye, nose, mouth, leftEar, rightEar]. Again, all in [x, y] order.
 class FaceDetectionAbsolute extends Detection {
   final List<int> box;
   final List<List<int>> allKeypoints;
