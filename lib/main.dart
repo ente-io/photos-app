@@ -161,7 +161,9 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
   CryptoUtil.init();
   await NetworkClient.instance.init();
   await Configuration.instance.init();
-  await backgroundHomeWidgetCallback();
+  if (Platform.isAndroid) {
+    await backgroundHomeWidgetCallback();
+  }
   await UserService.instance.init();
   await EntityService.instance.init();
   LocationService.instance.init(preferences);
