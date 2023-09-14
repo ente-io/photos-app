@@ -1,0 +1,4 @@
+<resources>
+  <style name="Theme.Android.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+  <style name="Theme.Android.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+</resources>

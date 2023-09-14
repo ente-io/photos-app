@@ -11,6 +11,7 @@ import "package:flutter/rendering.dart";
 import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:photos/app.dart';
+import "package:photos/appwidget/app_widget.dart";
 import 'package:photos/core/configuration.dart';
 import 'package:photos/core/constants.dart';
 import 'package:photos/core/error-reporting/super_logging.dart';
@@ -63,6 +64,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final savedThemeMode = await AdaptiveTheme.getThemeMode();
   await _runInForeground(savedThemeMode);
+
   BackgroundFetch.registerHeadlessTask(_headlessTaskHandler);
 }
 
@@ -150,7 +152,7 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
   _scheduleHeartBeat(preferences, isBackground);
   AppLifecycleService.instance.init(preferences);
   if (isBackground) {
-    AppLifecycleService.instance.onAppInBackground('init via: $via');
+    AppLifecycleService.instance.onAppInBackground("init via: $via");
   } else {
     AppLifecycleService.instance.onAppInForeground('init via: $via');
   }
@@ -159,6 +161,9 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
   CryptoUtil.init();
   await NetworkClient.instance.init();
   await Configuration.instance.init();
+  if (Platform.isAndroid) {
+    await backgroundHomeWidgetCallback();
+  }
   await UserService.instance.init();
   await EntityService.instance.init();
   LocationService.instance.init(preferences);
