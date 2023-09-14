@@ -14,43 +14,35 @@ abstract class Detection {
 
 /// This class represents a face detection with relative coordinates in the range [0, 1].
 /// The coordinates are relative to the image size. The pattern for the coordinates is always [x, y], where x is the horizontal coordinate and y is the vertical coordinate.
-/// 
+///
 /// The [score] attribute is a double representing the confidence of the face detection.
-/// 
+///
 /// The [box] attribute is a list of 4 doubles, representing the coordinates of the bounding box of the face detection.
 /// The four values of the box in order are: [xMinBox, yMinBox, xMaxBox, yMaxBox].
-/// 
+///
 /// The [allKeypoints] attribute is a list of 6 lists of 2 doubles, representing the coordinates of the keypoints of the face detection.
 /// The six lists of two values in order are: [leftEye, rightEye, nose, mouth, leftEar, rightEar]. Again, all in [x, y] order.
 class FaceDetectionRelative extends Detection {
   final List<double> box;
   final List<List<double>> allKeypoints;
-  final double xMinBox;
-  final double yMinBox;
-  final double xMaxBox;
-  final double yMaxBox;
-  final List<double> leftEye;
-  final List<double> rightEye;
-  final List<double> nose;
-  final List<double> mouth;
-  final List<double> leftEar;
-  final List<double> rightEar;
+
+  double get xMinBox => box[0];
+  double get yMinBox => box[1];
+  double get xMaxBox => box[2];
+  double get yMaxBox => box[3];
+
+  List<double> get leftEye => allKeypoints[0];
+  List<double> get rightEye => allKeypoints[1];
+  List<double> get nose => allKeypoints[2];
+  List<double> get mouth => allKeypoints[3];
+  List<double> get leftEar => allKeypoints[4];
+  List<double> get rightEar => allKeypoints[5];
 
   FaceDetectionRelative({
     required double score,
     required this.box,
     required this.allKeypoints,
-  })  : xMinBox = box[0],
-        yMinBox = box[1],
-        xMaxBox = box[2],
-        yMaxBox = box[3],
-        leftEye = allKeypoints[0],
-        rightEye = allKeypoints[1],
-        nose = allKeypoints[2],
-        mouth = allKeypoints[3],
-        leftEar = allKeypoints[4],
-        rightEar = allKeypoints[5],
-        super(score: score);
+  }) : super(score: score);
 
   factory FaceDetectionRelative.zero() {
     return FaceDetectionRelative(
@@ -80,16 +72,6 @@ class FaceDetectionRelative extends Detection {
           [0, 0],
           [0, 0]
         ],
-        xMinBox = 0,
-        yMinBox = 0,
-        xMaxBox = 0,
-        yMaxBox = 0,
-        leftEye = <double>[0, 0],
-        rightEye = <double>[0, 0],
-        nose = <double>[0, 0],
-        mouth = <double>[0, 0],
-        leftEar = <double>[0, 0],
-        rightEar = <double>[0, 0],
         super.empty();
 
   FaceDetectionAbsolute toAbsolute({
@@ -129,18 +111,6 @@ class FaceDetectionRelative extends Detection {
       'score': score,
       'box': box,
       'allKeypoints': allKeypoints,
-      'xMinBox': xMinBox,
-      'yMinBox': yMinBox,
-      'xMaxBox': xMaxBox,
-      'yMaxBox': yMaxBox,
-      'leftEye': leftEye,
-      'rightEye': rightEye,
-      'nose': nose,
-      'mouth': mouth,
-      'leftEar': leftEar,
-      'rightEar': rightEar,
-      'width': width,
-      'height': height,
     };
   }
 
@@ -155,50 +125,46 @@ class FaceDetectionRelative extends Detection {
   }
 
   @override
+
+  /// The width of the bounding box of the face detection, in relative range [0, 1].
   double get width => xMaxBox - xMinBox;
   @override
+
+  /// The height of the bounding box of the face detection, in relative range [0, 1].
   double get height => yMaxBox - yMinBox;
 }
 
 /// This class represents a face detection with absolute coordinates in pixels, in the range [0, imageWidth] for the horizontal coordinates and [0, imageHeight] for the vertical coordinates.
 /// The pattern for the coordinates is always [x, y], where x is the horizontal coordinate and y is the vertical coordinate.
-/// 
+///
 /// The [score] attribute is a double representing the confidence of the face detection.
-/// 
+///
 /// The [box] attribute is a list of 4 integers, representing the coordinates of the bounding box of the face detection.
 /// The four values of the box in order are: [xMinBox, yMinBox, xMaxBox, yMaxBox].
-/// 
+///
 /// The [allKeypoints] attribute is a list of 6 lists of 2 integers, representing the coordinates of the keypoints of the face detection.
 /// The six lists of two values in order are: [leftEye, rightEye, nose, mouth, leftEar, rightEar]. Again, all in [x, y] order.
 class FaceDetectionAbsolute extends Detection {
   final List<int> box;
   final List<List<int>> allKeypoints;
-  final int xMinBox;
-  final int yMinBox;
-  final int xMaxBox;
-  final int yMaxBox;
-  final List<int> leftEye;
-  final List<int> rightEye;
-  final List<int> nose;
-  final List<int> mouth;
-  final List<int> leftEar;
-  final List<int> rightEar;
+
+  int get xMinBox => box[0];
+  int get yMinBox => box[1];
+  int get xMaxBox => box[2];
+  int get yMaxBox => box[3];
+
+  List<int> get leftEye => allKeypoints[0];
+  List<int> get rightEye => allKeypoints[1];
+  List<int> get nose => allKeypoints[2];
+  List<int> get mouth => allKeypoints[3];
+  List<int> get leftEar => allKeypoints[4];
+  List<int> get rightEar => allKeypoints[5];
 
   FaceDetectionAbsolute({
     required double score,
     required this.box,
     required this.allKeypoints,
-  })  : xMinBox = box[0],
-        yMinBox = box[1],
-        xMaxBox = box[2],
-        yMaxBox = box[3],
-        leftEye = allKeypoints[0],
-        rightEye = allKeypoints[1],
-        nose = allKeypoints[2],
-        mouth = allKeypoints[3],
-        leftEar = allKeypoints[4],
-        rightEar = allKeypoints[5],
-        super(score: score);
+  }) : super(score: score);
 
   factory FaceDetectionAbsolute._zero() {
     return FaceDetectionAbsolute(
@@ -225,16 +191,6 @@ class FaceDetectionAbsolute extends Detection {
           [0, 0],
           [0, 0]
         ],
-        xMinBox = 0,
-        yMinBox = 0,
-        xMaxBox = 0,
-        yMaxBox = 0,
-        leftEye = <int>[0, 0],
-        rightEye = <int>[0, 0],
-        nose = <int>[0, 0],
-        mouth = <int>[0, 0],
-        leftEar = <int>[0, 0],
-        rightEar = <int>[0, 0],
         super.empty();
 
   @override
@@ -247,18 +203,6 @@ class FaceDetectionAbsolute extends Detection {
       'score': score,
       'box': box,
       'allKeypoints': allKeypoints,
-      'xMinBox': xMinBox,
-      'yMinBox': yMinBox,
-      'xMaxBox': xMaxBox,
-      'yMaxBox': yMaxBox,
-      'leftEye': leftEye,
-      'rightEye': rightEye,
-      'nose': nose,
-      'mouth': mouth,
-      'leftEar': leftEar,
-      'rightEar': rightEar,
-      'width': width,
-      'height': height,
     };
   }
 
@@ -275,8 +219,12 @@ class FaceDetectionAbsolute extends Detection {
   static FaceDetectionAbsolute empty = FaceDetectionAbsolute._zero();
 
   @override
+
+  /// The width of the bounding box of the face detection, in number of pixels, range [0, imageWidth].
   int get width => xMaxBox - xMinBox;
   @override
+
+  /// The height of the bounding box of the face detection, in number of pixels, range [0, imageHeight].
   int get height => yMaxBox - yMinBox;
 }
 

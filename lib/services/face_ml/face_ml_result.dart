@@ -9,16 +9,15 @@ import "package:photos/services/face_ml/face_detection/detection.dart";
 import "package:photos/services/face_ml/face_ml_methods.dart";
 import "package:uuid/uuid.dart";
 
-const faceMlVersion = 0;
-const clusterMlVersion = 0;
+const faceMlVersion = 1;
+const clusterMlVersion = 1;
 
 @immutable
 class ClusterResult {
   final int personId;
-  final String displayFaceId;
-  final String displayImageUrl;
 
-  ///
+  final String thumbnailFaceId;
+
   final List<int> _fileIds;
   final List<String> _faceIds;
 
@@ -35,8 +34,7 @@ class ClusterResult {
 
   const ClusterResult({
     required this.personId,
-    required this.displayFaceId,
-    required this.displayImageUrl,
+    required this.thumbnailFaceId,
     required List<int> fileIds,
     required List<String> faceIds,
     required this.centroid,
@@ -46,8 +44,7 @@ class ClusterResult {
 
   Map<String, dynamic> _toJson() => {
         'personId': personId,
-        'displayFaceId': displayFaceId,
-        'displayImageUrl': displayImageUrl,
+        'displayFaceId': thumbnailFaceId,
         'fileIds': _fileIds,
         'faceIds': _faceIds,
         'centroid': centroid,
@@ -59,8 +56,7 @@ class ClusterResult {
   static ClusterResult _fromJson(Map<String, dynamic> json) {
     return ClusterResult(
       personId: json['personId'] ?? -1,
-      displayFaceId: json['displayFaceId'] ?? '',
-      displayImageUrl: json['displayImageUrl'] ?? '',
+      thumbnailFaceId: json['displayFaceId'] ?? '',
       fileIds:
           (json['fileIds'] as List?)?.map((item) => item as int).toList() ?? [],
       faceIds:
@@ -80,8 +76,7 @@ class ClusterResult {
 
 class ClusterResultBuilder {
   int personId = -1;
-  String displayFaceId = '';
-  String displayImageUrl = '';
+  String thumbnailFaceId = '';
 
   List<int> fileIds = <int>[];
   List<String> faceIds = <String>[];
@@ -104,6 +99,7 @@ class ClusterResultBuilder {
     final clusteredEmbeddings =
         clusterIndices.map((fileIndex) => allEmbeddings[fileIndex]).toList();
     personId = labels[clusterIndices[0]];
+    thumbnailFaceId = clusteredFaceIds[0];
     fileIds = clusteredFileIds;
     faceIds = clusteredFaceIds;
     embeddings = clusteredEmbeddings;
@@ -134,16 +130,20 @@ class ClusterResultBuilder {
     centroidDistanceThreshold = maximumDistance;
   }
 
-  // TODO: add a method to add the display face id and image url. Ask Vishnu or Bob!
-  void addDisplayStrings() {}
+  void changeThumbnailFaceId(String faceId) {
+    if (!faceIds.contains(faceId)) {
+      throw Exception(
+        "The faceId $faceId is not in the list of faceIds: $faceIds",
+      );
+    }
+    thumbnailFaceId = faceId;
+  }
 
   ClusterResult build() {
     calculateCentroidAndThreshold();
-    addDisplayStrings();
     return ClusterResult(
       personId: personId,
-      displayFaceId: displayFaceId,
-      displayImageUrl: displayImageUrl,
+      thumbnailFaceId: thumbnailFaceId,
       fileIds: fileIds,
       faceIds: faceIds,
       centroid: centroid,
@@ -154,82 +154,58 @@ class ClusterResultBuilder {
 
 @immutable
 class FaceMlResult {
-  final FaceDetectionMethod faceDetectionMethod;
-  final FaceAlignmentMethod faceAlignmentMethod;
-  final FaceEmbeddingMethod faceEmbeddingMethod;
+  final int fileId;
 
   final List<FaceResult> faces;
 
-  final int fileId;
-  final Size imageDimensions;
-  final String? imageSource;
-  final String? lastErrorMessage;
-  final int errorCount;
   final int mlVersion;
+  final bool errorOccured;
+
+  bool get hasFaces => faces.isNotEmpty;
 
   List<Embedding> get allFaceEmbeddings {
     return faces.map((face) => face.embedding).toList();
   }
 
   List<String> get allFaceIds {
-    return faces.map((face) => face.id).toList();
+    return faces.map((face) => face.faceId).toList();
   }
 
   List<int> get fileIdForEveryFace {
     return List<int>.filled(faces.length, fileId);
   }
 
+  FaceDetectionMethod get faceDetectionMethod =>
+      FaceDetectionMethod.fromMlVersion(mlVersion);
+  FaceAlignmentMethod get faceAlignmentMethod =>
+      FaceAlignmentMethod.fromMlVersion(mlVersion);
+  FaceEmbeddingMethod get faceEmbeddingMethod =>
+      FaceEmbeddingMethod.fromMlVersion(mlVersion);
+
   const FaceMlResult({
-    required this.faceDetectionMethod,
-    required this.faceAlignmentMethod,
-    required this.faceEmbeddingMethod,
-    required this.faces,
     required this.fileId,
-    required this.imageDimensions,
-    required this.imageSource,
-    required this.lastErrorMessage,
-    required this.errorCount,
+    required this.faces,
     required this.mlVersion,
+    this.errorOccured = false,
   });
 
   Map<String, dynamic> _toJson() => {
-        'faceDetectionMethod': faceDetectionMethod.toJson(),
-        'faceAlignmentMethod': faceAlignmentMethod.toJson(),
-        'faceEmbeddingMethod': faceEmbeddingMethod.toJson(),
-        'faces': faces.map((face) => face.toJson()).toList(),
         'fileId': fileId,
-        'imageDimensions': {
-          'width': imageDimensions.width,
-          'height': imageDimensions.height
-        },
-        'imageSource': imageSource,
-        'lastErrorMessage': lastErrorMessage,
-        'errorCount': errorCount,
+        'faces': faces.map((face) => face.toJson()).toList(),
         'mlVersion': mlVersion,
+        'errorOccured': errorOccured,
       };
 
   String toJsonString() => jsonEncode(_toJson());
 
   static FaceMlResult _fromJson(Map<String, dynamic> json) {
     return FaceMlResult(
-      faceDetectionMethod:
-          FaceDetectionMethod.fromJson(json['faceDetectionMethod']),
-      faceAlignmentMethod:
-          FaceAlignmentMethod.fromJson(json['faceAlignmentMethod']),
-      faceEmbeddingMethod:
-          FaceEmbeddingMethod.fromJson(json['faceEmbeddingMethod']),
+      fileId: json['fileId'],
       faces: (json['faces'] as List)
           .map((item) => FaceResult.fromJson(item as Map<String, dynamic>))
           .toList(),
-      fileId: json['fileId'],
-      imageDimensions: Size(
-        json['imageDimensions']['width'],
-        json['imageDimensions']['height'],
-      ),
-      imageSource: json['imageSource'],
-      lastErrorMessage: json['lastErrorMessage'],
-      errorCount: json['errorCount'],
       mlVersion: json['mlVersion'],
+      errorOccured: json['errorOccured'],
     );
   }
 
@@ -239,54 +215,22 @@ class FaceMlResult {
 }
 
 class FaceMlResultBuilder {
-  FaceDetectionMethod faceDetectionMethod = const FaceDetectionMethod.empty();
-  FaceAlignmentMethod faceAlignmentMethod = const FaceAlignmentMethod.empty();
-  FaceEmbeddingMethod faceEmbeddingMethod = const FaceEmbeddingMethod.empty();
+  int fileId;
 
   List<FaceResultBuilder> faces = <FaceResultBuilder>[];
 
-  int fileId;
-  Size imageDimensions;
-  String imageSource;
-  String lastErrorMessage;
-  int errorCount = 0;
   int mlVersion;
+  bool errorOccured = false;
 
   FaceMlResultBuilder({
     this.fileId = -1,
-    this.imageDimensions = const Size(0, 0),
-    this.imageSource = '',
-    this.lastErrorMessage = '',
     this.mlVersion = faceMlVersion,
   });
 
-  FaceMlResultBuilder.createWithMlMethods({
-    required EnteFile file,
-    this.lastErrorMessage = '',
+  FaceMlResultBuilder.fromEnteFile(
+    EnteFile file, {
     this.mlVersion = faceMlVersion,
-  })  : fileId = file.uploadedFileID ?? -1,
-        imageSource = file.displayName, // TODO: Ask Vishnu/Bob whether this is smart to do
-        imageDimensions = Size(file.width.toDouble(), file.height.toDouble()),
-        faceDetectionMethod = FaceDetectionMethod.blazeFace(),
-        faceAlignmentMethod = FaceAlignmentMethod.arcFace(),
-        faceEmbeddingMethod = FaceEmbeddingMethod.mobileFaceNet();
-
-  /// Adds the ML methods to the FaceMlResultBuilder
-  ///
-  /// WARNING: This overrides all methods, even if you only give the argument for one specific method
-  void addMlMethods({
-    FaceDetectionMethod? faceDetectionMethod,
-    FaceAlignmentMethod? faceAlignmentMethod,
-    FaceEmbeddingMethod? faceEmbeddingMethod,
-  }) {
-    faceDetectionMethod ??= FaceDetectionMethod.blazeFace();
-    faceAlignmentMethod ??= FaceAlignmentMethod.arcFace();
-    faceEmbeddingMethod ??= FaceEmbeddingMethod.mobileFaceNet();
-
-    this.faceDetectionMethod = faceDetectionMethod;
-    this.faceAlignmentMethod = faceAlignmentMethod;
-    this.faceEmbeddingMethod = faceEmbeddingMethod;
-  }
+  }) : fileId = file.uploadedFileID ?? -1;
 
   void addNewlyDetectedFaces(List<FaceDetectionRelative> faceDetections) {
     for (var i = 0; i < faceDetections.length; i++) {
@@ -330,18 +274,11 @@ class FaceMlResultBuilder {
     for (var i = 0; i < faces.length; i++) {
       faceResults.add(faces[i].build());
     }
-
     return FaceMlResult(
-      faceAlignmentMethod: faceAlignmentMethod,
-      faceDetectionMethod: faceDetectionMethod,
-      faceEmbeddingMethod: faceEmbeddingMethod,
-      faces: faceResults,
       fileId: fileId,
-      imageDimensions: imageDimensions,
-      imageSource: imageSource,
-      lastErrorMessage: lastErrorMessage,
-      errorCount: errorCount,
+      faces: faceResults,
       mlVersion: mlVersion,
+      errorOccured: errorOccured,
     );
   }
 
@@ -349,14 +286,6 @@ class FaceMlResultBuilder {
     faces = <FaceResultBuilder>[];
     return build();
   }
-
-  // void _noProperFileAcces() {
-  //   fileId = -1;
-  //   imageDimensions = const Size(0, 0);
-  //   imageSource = '';
-  //   lastErrorMessage = "No proper file access";
-  //   mlVersion = -1;
-  // }
 }
 
 @immutable
@@ -365,16 +294,14 @@ class FaceResult {
   final AlignmentResult alignment;
   final Embedding embedding;
   final int fileId;
-  final String id;
-  final int personId;
+  final String faceId;
 
   const FaceResult({
     required this.detection,
     required this.alignment,
     required this.embedding,
     required this.fileId,
-    required this.id,
-    required this.personId,
+    required this.faceId,
   });
 
   Map<String, dynamic> toJson() => {
@@ -382,8 +309,7 @@ class FaceResult {
         'alignment': alignment.toJson(),
         'embedding': embedding,
         'fileId': fileId,
-        'id': id,
-        'personId': personId,
+        'faceId': faceId,
       };
 
   static FaceResult fromJson(Map<String, dynamic> json) {
@@ -392,8 +318,7 @@ class FaceResult {
       alignment: AlignmentResult.fromJson(json['alignment']),
       embedding: Embedding.from(json['embedding']),
       fileId: json['fileId'],
-      id: json['id'],
-      personId: json['personId'],
+      faceId: json['faceId'],
     );
   }
 }
@@ -403,24 +328,23 @@ class FaceResultBuilder {
       FaceDetectionRelative.defaultInitialization();
   AlignmentResult alignment = AlignmentResult.empty();
   Embedding embedding = <double>[];
-  int fileId;
-  String id;
-  int personId;
+  int fileId = -1;
+  String faceId = '';
 
   FaceResultBuilder({
-    this.fileId = -1,
-    this.id = '',
-    this.personId = -1,
+    required this.fileId,
+    required this.faceId,
   });
 
-  // TODO: Ask Vishnu or Bob whether my implementation of generating a faceId makes sense! And whether it makes sense to store relative detections in the database, instead of absolute detections what I did before
+  // TODO: [BOB] change id to depend on the detection box, being deterministic, still prepended with fileId. Use md5 hash instead of uuid?
   FaceResultBuilder.fromFaceDetection(
     FaceDetectionRelative faceDetection, {
     required FaceMlResultBuilder resultBuilder,
-    this.personId = -1,
-  })  : fileId = resultBuilder.fileId,
-        id = resultBuilder.fileId.toString() + '_' + const Uuid().v4(),
-        detection = faceDetection;
+  }) {
+    fileId = resultBuilder.fileId;
+    faceId = resultBuilder.fileId.toString() + '_' + const Uuid().v4();
+    detection = faceDetection;
+  }
 
   FaceResult build() {
     return FaceResult(
@@ -428,8 +352,7 @@ class FaceResultBuilder {
       alignment: alignment,
       embedding: embedding,
       fileId: fileId,
-      id: id,
-      personId: personId,
+      faceId: faceId,
     );
   }
 }

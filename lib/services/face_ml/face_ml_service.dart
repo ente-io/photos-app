@@ -238,8 +238,7 @@ class FaceMlService {
     }
     final Uint8List smallData = thumbnailData ?? fileData!;
 
-    final resultBuilder =
-        FaceMlResultBuilder.createWithMlMethods(file: enteFile);
+    final resultBuilder = FaceMlResultBuilder.fromEnteFile(enteFile);
 
     _logger.info(
       "Analyzing image with uploadedFileID: ${enteFile.uploadedFileID}",
