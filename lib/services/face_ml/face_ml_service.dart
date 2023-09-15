@@ -153,7 +153,7 @@ class FaceMlService {
       try {
         final result = await analyzeImage(
           enteFile,
-          preferUsingThumbnailForEverything: false,
+          preferUsingThumbnailForEverything: true,
         );
         await MlDataDB.instance.createFaceMlResult(result);
         fileAnalyzedCount++;
@@ -216,6 +216,7 @@ class FaceMlService {
   /// Returns an immutable [FaceMlResult] instance containing the results of the analysis.
   /// Does not store the result in the database, for that you should use [indexImage].
   /// Throws [CouldNotRetrieveAnyFileData] or [GeneralFaceMlException] if something goes wrong.
+  /// TODO: improve function such that it only uses full image if it is already on the device, otherwise it uses thumbnail. And make sure to store what is used!
   Future<FaceMlResult> analyzeImage(
     EnteFile enteFile, {
     bool preferUsingThumbnailForEverything = false,
@@ -261,6 +262,7 @@ class FaceMlService {
         fileData ??=
             await _getDataForML(enteFile, typeOfData: FileDataForML.fileData);
       }
+      resultBuilder.onlyThumbnailUsed = fileData == null;
       final Uint8List largeData = fileData ?? thumbnailData!;
 
       // Align the faces

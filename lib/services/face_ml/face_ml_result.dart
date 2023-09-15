@@ -160,6 +160,7 @@ class FaceMlResult {
 
   final int mlVersion;
   final bool errorOccured;
+  final bool onlyThumbnailUsed;
 
   bool get hasFaces => faces.isNotEmpty;
 
@@ -186,7 +187,8 @@ class FaceMlResult {
     required this.fileId,
     required this.faces,
     required this.mlVersion,
-    this.errorOccured = false,
+    required this.errorOccured,
+    required this.onlyThumbnailUsed,
   });
 
   Map<String, dynamic> _toJson() => {
@@ -194,6 +196,7 @@ class FaceMlResult {
         'faces': faces.map((face) => face.toJson()).toList(),
         'mlVersion': mlVersion,
         'errorOccured': errorOccured,
+        'onlyThumbnailUsed': onlyThumbnailUsed,
       };
 
   String toJsonString() => jsonEncode(_toJson());
@@ -205,7 +208,8 @@ class FaceMlResult {
           .map((item) => FaceResult.fromJson(item as Map<String, dynamic>))
           .toList(),
       mlVersion: json['mlVersion'],
-      errorOccured: json['errorOccured'],
+      errorOccured: json['errorOccured'] ?? false,
+      onlyThumbnailUsed: json['onlyThumbnailUsed'] ?? false,
     );
   }
 
@@ -220,16 +224,21 @@ class FaceMlResultBuilder {
   List<FaceResultBuilder> faces = <FaceResultBuilder>[];
 
   int mlVersion;
-  bool errorOccured = false;
+  bool errorOccured;
+  bool onlyThumbnailUsed;
 
   FaceMlResultBuilder({
     this.fileId = -1,
     this.mlVersion = faceMlVersion,
+    this.errorOccured = false,
+    this.onlyThumbnailUsed = false,
   });
 
   FaceMlResultBuilder.fromEnteFile(
     EnteFile file, {
     this.mlVersion = faceMlVersion,
+    this.errorOccured = false,
+    this.onlyThumbnailUsed = false,
   }) : fileId = file.uploadedFileID ?? -1;
 
   void addNewlyDetectedFaces(List<FaceDetectionRelative> faceDetections) {
@@ -279,6 +288,7 @@ class FaceMlResultBuilder {
       faces: faceResults,
       mlVersion: mlVersion,
       errorOccured: errorOccured,
+      onlyThumbnailUsed: onlyThumbnailUsed,
     );
   }
 
