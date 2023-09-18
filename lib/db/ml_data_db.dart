@@ -176,7 +176,7 @@ class MlDataDB {
     return null;
   }
 
-  Future<List<FaceMlResult>?> getSelectedFaceMlResults(
+  Future<List<FaceMlResult>> getSelectedFaceMlResults(
     List<int> fileIds,
   ) async {
     _logger.fine('getSelectedFaceMlResults called');
@@ -349,33 +349,33 @@ class MlDataDB {
   }
 
   /// Returns the fileIDs of all files associated with a given [personId].
-  Future<List<int>?> getClusterFileIds(int personId) async {
+  Future<List<int>> getClusterFileIds(int personId) async {
     _logger.fine('getClusterFileIds called');
 
     final ClusterResult? clusterResult = await getClusterResult(personId);
     if (clusterResult == null) {
-      return null;
+      return <int>[];
     }
     return clusterResult.uniqueFileIds;
   }
 
-  Future<List<String>?> getClusterFaceIds(int personId) async {
+  Future<List<String>> getClusterFaceIds(int personId) async {
     _logger.fine('getClusterFaceIds called');
 
     final ClusterResult? clusterResult = await getClusterResult(personId);
     if (clusterResult == null) {
-      return null;
+      return <String>[];
     }
     return clusterResult.uniqueFaceIds;
   }
 
-  Future<List<Embedding>?> getClusterEmbeddings(
+  Future<List<Embedding>> getClusterEmbeddings(
     int personId,
   ) async {
     _logger.fine('getClusterEmbeddings called');
 
     final ClusterResult? clusterResult = await getClusterResult(personId);
-    if (clusterResult == null) return null;
+    if (clusterResult == null) return <Embedding>[];
 
     final fileIds = clusterResult.uniqueFileIds;
     final faceIds = clusterResult.uniqueFaceIds;
@@ -383,11 +383,11 @@ class MlDataDB {
       _logger.severe(
         'fileIds and faceIds have different lengths: ${fileIds.length} vs ${faceIds.length}. This should not happen!',
       );
-      return null;
+      return <Embedding>[];
     }
 
     final faceMlResults = await getSelectedFaceMlResults(fileIds);
-    if (faceMlResults == null) return null;
+    if (faceMlResults.isEmpty) return <Embedding>[];
 
     final embeddings = <Embedding>[];
     for (var i = 0; i < faceMlResults.length; i++) {
@@ -397,7 +397,7 @@ class MlDataDB {
         _logger.severe(
           'Could not find faceIndex for faceId ${faceIds[i]} in faceMlResult ${faceMlResult.fileId}',
         );
-        return null;
+        return <Embedding>[];
       }
       embeddings.add(faceMlResult.faces[faceIndex].embedding);
     }

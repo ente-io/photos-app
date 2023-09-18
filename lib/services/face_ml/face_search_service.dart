@@ -77,9 +77,9 @@ class FaceSearchService {
   }
 
   /// Returns all files associated with a given personId.
-  Future<List<EnteFile>?> getFilesForPerson(int personID) async {
+  Future<List<EnteFile>> getFilesForPerson(int personID) async {
     final fileIDs = await _mlDatabase.getClusterFileIds(personID);
-    if (fileIDs == null) return null;
+    if (fileIDs == null) return <EnteFile>[];
 
     final Map<int, EnteFile> files =
         await _filesDatabase.getFilesFromIDs(fileIDs);
