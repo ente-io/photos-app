@@ -26,6 +26,11 @@ import "package:photos/utils/thumbnail_util.dart";
 
 enum FileDataForML { thumbnailData, fileData, compressedFileData }
 
+/// This class is responsible for running the full face ml pipeline on images.
+/// 
+/// WARNING: For getting the ML results needed for the UI, you should use `FaceSearchService` instead of this class!
+/// 
+/// The pipeline consists of face detection, face alignment and face embedding.
 class FaceMlService {
   final _logger = Logger("FaceMlService");
 

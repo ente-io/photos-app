@@ -335,6 +335,20 @@ class MlDataDB {
         .toList();
   }
 
+  /// Returns the personIDs of all clustered people in the database.
+  Future<List<int>> getAllClusterIds() async {
+    _logger.fine('getAllClusterIds called');
+    final db = await instance.database;
+
+    final results = await db.query(
+      peopleTable,
+      columns: [personIDColumn],
+    );
+
+    return results.map((result) => result[personIDColumn] as int).toList();
+  }
+
+  /// Returns the fileIDs of all files associated with a given [personId].
   Future<List<int>?> getClusterFileIds(int personId) async {
     _logger.fine('getClusterFileIds called');
 

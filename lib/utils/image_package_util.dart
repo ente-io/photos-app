@@ -5,6 +5,7 @@ import 'dart:typed_data' show Uint8List;
 // import "package:flutter/material.dart";
 import 'package:image/image.dart' as image_lib;
 import "package:logging/logging.dart";
+import "package:photos/services/face_ml/face_detection/detection.dart";
 import "package:synchronized/synchronized.dart";
 
 class CouldNotConvertToImageImage implements Exception {}
@@ -35,12 +36,24 @@ Uint8List _convertImagePackageImageToUint8List(image_lib.Image image) {
   return image_lib.encodeJpg(image);
 }
 
-// extension ColorExtension on int {
-//   int get r => (this >> 0) & 0xFF;
-//   int get g => (this >> 8) & 0xFF;
-//   int get b => (this >> 16) & 0xFF;
-//   int get alpha => (this >> 24) & 0xFF;
-// }
+/// Generates a face thumbnail from [imageData] and a [faceDetection].
+Future<Uint8List?> generateFaceThumbnail(
+  Uint8List imageData,
+  FaceDetectionRelative faceDetection,
+) async {
+  final image = await ImageConversionIsolate.instance.convert(imageData);
+  if (image == null) return null;
+
+  final faceThumbnail = image_lib.copyCrop(
+    image,
+    x: (faceDetection.xMinBox * image.width).round() - 5,
+    y: (faceDetection.yMinBox * image.height).round() - 5,
+    width: (faceDetection.width * image.width).round() + 10,
+    height: (faceDetection.height * image.height).round() + 10,
+  );
+
+  return _convertImagePackageImageToUint8List(faceThumbnail);
+}
 
 /// This class is responsible for converting [Uint8List] to [image_lib.Image].
 ///

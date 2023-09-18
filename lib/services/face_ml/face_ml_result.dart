@@ -99,9 +99,9 @@ class ClusterResultBuilder {
     final clusteredEmbeddings =
         clusterIndices.map((fileIndex) => allEmbeddings[fileIndex]).toList();
     personId = labels[clusterIndices[0]];
-    thumbnailFaceId = clusteredFaceIds[0];
     fileIds = clusteredFileIds;
     faceIds = clusteredFaceIds;
+    thumbnailFaceId = faceIds[0];
     embeddings = clusteredEmbeddings;
   }
 
@@ -215,6 +215,14 @@ class FaceMlResult {
 
   static FaceMlResult fromJsonString(String jsonString) {
     return _fromJson(jsonDecode(jsonString));
+  }
+
+  FaceDetectionRelative getDetectionForFaceId(String faceId) {
+    final faceIndex = faces.indexWhere((face) => face.faceId == faceId);
+    if (faceIndex == -1) {
+      throw Exception("No face found with faceId $faceId");
+    }
+    return faces[faceIndex].detection;
   }
 }
 
