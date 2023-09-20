@@ -55,6 +55,11 @@ class FaceClustering {
   factory FaceClustering() => instance;
 
   Future<List<List<int>>> predict(List<List<double>> dataset) async {
+    if (dataset.isEmpty) {
+      _logger.warning("Clustering dataset of embeddings is empty, returning empty list.");
+      return [];
+    }
+
     ClusteringIsolate.instance.ensureSpawned();
 
     _hasRun = false;
