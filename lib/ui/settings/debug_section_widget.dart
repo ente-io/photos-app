@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:photos/core/configuration.dart';
+import "package:photos/db/ml_data_db.dart";
+import "package:photos/services/face_ml/face_ml_service.dart";
 import "package:photos/services/face_ml/face_search_service.dart";
 import 'package:photos/services/ignored_files_service.dart';
 import 'package:photos/services/local_sync_service.dart';
@@ -71,15 +73,56 @@ class DebugSectionWidget extends StatelessWidget {
         sectionOptionSpacing,
         MenuItemWidget(
           captionedTextWidget: const CaptionedTextWidget(
-            title: "Show cluster count",
+            title: "FaceML: Show cluster count",
           ),
           pressedColor: getEnteColorScheme(context).fillFaint,
           trailingIcon: Icons.chevron_right_outlined,
           trailingIconIsMuted: true,
           onTap: () async {
-            List<int> peoples = await FaceSearchService.instance.getAllPeople();
+            final List<int> peoples =
+                await FaceSearchService.instance.getAllPeople();
             // SyncService.instance.sync();
             showShortToast(context, 'people count ${peoples.length}');
+          },
+        ),
+        sectionOptionSpacing,
+        MenuItemWidget(
+          captionedTextWidget: const CaptionedTextWidget(
+            title: "FaceML: Delete DB",
+          ),
+          pressedColor: getEnteColorScheme(context).fillFaint,
+          trailingIcon: Icons.chevron_right_outlined,
+          trailingIconIsMuted: true,
+          onTap: () async {
+            await MlDataDB.instance
+                .cleanTables(cleanFaces: true, cleanPeople: true);
+            showShortToast(context, 'Databases cleared');
+          },
+        ),
+        sectionOptionSpacing,
+        MenuItemWidget(
+          captionedTextWidget: const CaptionedTextWidget(
+            title: "FaceML: Start indexing images",
+          ),
+          pressedColor: getEnteColorScheme(context).fillFaint,
+          trailingIcon: Icons.chevron_right_outlined,
+          trailingIconIsMuted: true,
+          onTap: () async {
+            FaceMlService.instance.indexAllImages().ignore();
+            showShortToast(context, 'Indexing started');
+          },
+        ),
+        sectionOptionSpacing,
+        MenuItemWidget(
+          captionedTextWidget: const CaptionedTextWidget(
+            title: "FaceML: Start clustering images",
+          ),
+          pressedColor: getEnteColorScheme(context).fillFaint,
+          trailingIcon: Icons.chevron_right_outlined,
+          trailingIconIsMuted: true,
+          onTap: () async {
+            FaceMlService.instance.clusterAllImages().ignore();
+            showShortToast(context, 'Clustering started');
           },
         ),
         sectionOptionSpacing,
