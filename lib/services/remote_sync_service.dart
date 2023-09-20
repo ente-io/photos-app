@@ -101,7 +101,11 @@ class RemoteSyncService {
     );
 
     try {
-      await FaceMlService.instance.indexAndClusterAllImages();
+      try {
+        await FaceMlService.instance.indexAndClusterAllImages();
+      } catch (e, s) {
+        _logger.severe('face indexing failed', e, s);
+      }
       // use flag to decide if we should start marking files for upload before
       // remote-sync is done. This is done to avoid adding existing files to
       // the same or different collection when user had already uploaded them

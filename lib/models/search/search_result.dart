@@ -20,6 +20,7 @@ enum ResultType {
   location,
   month,
   year,
+  people,
   fileType,
   fileExtension,
   fileCaption,

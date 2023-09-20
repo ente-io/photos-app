@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photos/core/configuration.dart';
+import "package:photos/services/face_ml/face_search_service.dart";
 import 'package:photos/services/ignored_files_service.dart';
 import 'package:photos/services/local_sync_service.dart';
 import 'package:photos/services/sync_service.dart';
@@ -65,6 +66,20 @@ class DebugSectionWidget extends StatelessWidget {
             await IgnoredFilesService.instance.reset();
             SyncService.instance.sync();
             showShortToast(context, "Done");
+          },
+        ),
+        sectionOptionSpacing,
+        MenuItemWidget(
+          captionedTextWidget: const CaptionedTextWidget(
+            title: "Show cluster count",
+          ),
+          pressedColor: getEnteColorScheme(context).fillFaint,
+          trailingIcon: Icons.chevron_right_outlined,
+          trailingIconIsMuted: true,
+          onTap: () async {
+            List<int> peoples = await FaceSearchService.instance.getAllPeople();
+            // SyncService.instance.sync();
+            showShortToast(context, 'people count ${peoples.length}');
           },
         ),
         sectionOptionSpacing,

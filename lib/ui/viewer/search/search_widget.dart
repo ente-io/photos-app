@@ -204,9 +204,14 @@ class _SearchWidgetState extends State<SearchWidget> {
         final yearResults = await _searchService.getYearSearchResults(query);
         allResults.addAll(yearResults);
       }
+      //todo: neeraj: remove this if condition after faces is out
+      if (query.startsWith('p')) {
+        final personResults = await _searchService.getFacesResult(query);
+        allResults.addAll(personResults);
+      }
 
       final holidayResults =
-      await _searchService.getHolidaySearchResults(context, query);
+          await _searchService.getHolidaySearchResults(context, query);
       allResults.addAll(holidayResults);
 
       final fileTypeSearchResults =
