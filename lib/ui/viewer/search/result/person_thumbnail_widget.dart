@@ -4,7 +4,6 @@ import 'package:flutter/widgets.dart';
 import 'package:photos/models/file/file.dart';
 import "package:photos/services/face_ml/face_search_service.dart";
 import 'package:photos/ui/viewer/file/no_thumbnail_widget.dart';
-import "package:photos/utils/toast_util.dart";
 
 class PersonThumbnailWidget extends StatelessWidget {
   final EnteFile? file;
@@ -31,16 +30,10 @@ class PersonThumbnailWidget extends StatelessWidget {
             future: FaceSearchService.instance.getPersonThumbnail(personID),
             builder: (context, snapshot) {
               if (snapshot.hasData) {
-                showToast(
-                    context,
-                    "Got thumbnail for person $personID "
-                    "${snapshot.data!.length} bytes");
                 return Image.memory(
                   snapshot.data!,
                   fit: BoxFit.cover,
                 );
-              } else {
-                showToast(context, "No thumbnail");
               }
               return const NoThumbnailWidget();
             },
