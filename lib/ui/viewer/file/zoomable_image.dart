@@ -11,14 +11,11 @@ import "package:photos/core/configuration.dart";
 import 'package:photos/core/constants.dart';
 import 'package:photos/core/event_bus.dart';
 import 'package:photos/db/files_db.dart';
-// import "package:photos/db/ml_data_db.dart";
 import 'package:photos/events/files_updated_event.dart';
 import 'package:photos/events/local_photos_updated_event.dart';
 import "package:photos/models/file/extensions/file_props.dart";
 import 'package:photos/models/file/file.dart';
 import "package:photos/models/metadata/file_magic.dart";
-// import "package:photos/services/face_ml/face_ml_result.dart";
-// import "package:photos/services/face_ml/face_ml_service.dart";
 import "package:photos/services/file_magic_service.dart";
 import 'package:photos/ui/common/loading_widget.dart';
 import 'package:photos/utils/file_util.dart';
@@ -240,7 +237,6 @@ class _ZoomableImageState extends State<ZoomableImage>
   }
 
   void _onFinalImageLoaded(ImageProvider imageProvider) {
-    process_for_face_detection(_photo).ignore();
     if (mounted) {
       precacheImage(imageProvider, context).then((value) async {
         if (mounted) {
@@ -256,54 +252,6 @@ class _ZoomableImageState extends State<ZoomableImage>
         }
       });
     }
-  }
-
-  Future<void> process_for_face_detection(EnteFile enteFile) async {
-    // MlDataDB.instance.cleanTables(cleanFaces: true, cleanPeople: true);
-    // try {
-    //   // final thumbnail = await getThumbnail(actualFile);
-
-    //   // To test face detection
-    //   // final List<FaceDetectionAbsolute> faceDetectionResults =
-    //   //     await FaceMlService.instance
-    //   //         .detectFaces(actualFile.readAsBytesSync());
-    //   // showToast(context, '${faceDetectionResults.length} faces detected');
-
-    // // To test the full pipeline
-    // final FaceMlResult faceMlResult =
-    //     await FaceMlService.instance.analyzeImage(
-    //   enteFile,
-    // );
-    // showToast(
-    //   context,
-    //   'Image successfully analyzed: ${faceMlResult.faces.length} faces. see logs for details',
-    // );
-
-    //   // To test serialization
-    //   // final String faceMlResultJsonString = faceMlResult.toJsonString();
-    //   // final FaceMlResult faceMlResultFromJson =
-    //   //     FaceMlResult.fromJsonString(faceMlResultJsonString);
-    //   // final String faceMlResultJsonString2 =
-    //   //     faceMlResultFromJson.toJsonString();
-
-    //   // debugPrint("FaceMlResult String 1:" + faceMlResultJsonString);
-    //   // debugPrint(
-    //   //   "Character length of string 1:" +
-    //   //       faceMlResultJsonString.length.toString(),
-    //   // );
-    //   // debugPrint("FaceMlResult String 2:" + faceMlResultJsonString2);
-    //   // final bool isEqual = faceMlResultJsonString == faceMlResultJsonString2;
-    //   // debugPrint("FaceMlResult Strings are equal:" + isEqual.toString());
-
-    //   // To print the result
-    //   _logger.info(faceMlResult.toJsonString());
-    // } catch (e, s) {
-    //   showToast(
-    //     context,
-    //     "Failed to process file ${e.toString()}",
-    //   );
-    //   _logger.warning("Error in processing file for face detection", e, s);
-    // }
   }
 
   Future<void> _updatePhotoViewController({
