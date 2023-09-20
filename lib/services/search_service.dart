@@ -124,6 +124,7 @@ class SearchService {
             ResultType.people,
             'Person $person',
             filesForPerson,
+            params: {'personID': person},
           ),
         );
       }

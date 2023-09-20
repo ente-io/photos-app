@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:photos/ente_theme_data.dart';
 import 'package:photos/models/search/search_result.dart';
+import "package:photos/ui/viewer/search/result/person_thumbnail_widget.dart";
 import 'package:photos/ui/viewer/search/result/search_result_page.dart';
 import 'package:photos/ui/viewer/search/result/search_thumbnail_widget.dart';
 import 'package:photos/utils/navigation_util.dart';
@@ -9,12 +10,14 @@ class SearchResultWidget extends StatelessWidget {
   final SearchResult searchResult;
   final Future<int>? resultCount;
   final Function? onResultTap;
+  final Map<String, dynamic>? params;
 
   const SearchResultWidget(
     this.searchResult, {
     Key? key,
     this.resultCount,
     this.onResultTap,
+    this.params,
   }) : super(key: key);
 
   @override
@@ -31,10 +34,16 @@ class SearchResultWidget extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              SearchThumbnailWidget(
-                searchResult.previewThumbnail(),
-                heroTagPrefix,
-              ),
+              searchResult.type() == ResultType.people
+                  ? PersonThumbnailWidget(
+                      searchResult.previewThumbnail(),
+                      params!['personID'] as int,
+                      heroTagPrefix,
+                    )
+                  : SearchThumbnailWidget(
+                      searchResult.previewThumbnail(),
+                      heroTagPrefix,
+                    ),
               const SizedBox(width: 16),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

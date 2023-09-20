@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:isolate';
 import 'dart:typed_data' show Uint8List;
+
 // import 'dart:ui' as ui;
 // import "package:flutter/material.dart";
+import "package:flutter/material.dart";
 import 'package:image/image.dart' as image_lib;
 import "package:logging/logging.dart";
 import "package:photos/services/face_ml/face_detection/detection.dart";
@@ -43,16 +45,23 @@ Future<Uint8List?> generateFaceThumbnail(
 ) async {
   final image = await ImageConversionIsolate.instance.convert(imageData);
   if (image == null) return null;
+  debugPrint("image: ${image.width}x ${image.height}");
+  debugPrint(
+      "faceDetection ${faceDetection.xMinBox}x ${faceDetection.yMinBox}x ${faceDetection.width}x ${faceDetection.height}");
+  debugPrint("x: ${(faceDetection.xMinBox * image.width).round() - 5}");
+  debugPrint("y: ${(faceDetection.yMinBox * image.height).round() - 5}");
+  debugPrint("width: ${(faceDetection.width * image.width).round() + 10}");
+  debugPrint("height: ${(faceDetection.height * image.height).round() + 10}");
 
-  final faceThumbnail = image_lib.copyCrop(
-    image,
-    x: (faceDetection.xMinBox * image.width).round() - 5,
-    y: (faceDetection.yMinBox * image.height).round() - 5,
-    width: (faceDetection.width * image.width).round() + 10,
-    height: (faceDetection.height * image.height).round() + 10,
-  );
+  // final faceThumbnail = image_lib.copyCrop(
+  //   image,
+  //   x: (faceDetection.xMinBox * image.width).round() - 5,
+  //   y: (faceDetection.yMinBox * image.height).round() - 5,
+  //   width: (faceDetection.width * image.width).round() + 10,
+  //   height: (faceDetection.height * image.height).round() + 10,
+  // );
 
-  return _convertImagePackageImageToUint8List(faceThumbnail);
+  return _convertImagePackageImageToUint8List(image);
 }
 
 /// This class is responsible for converting [Uint8List] to [image_lib.Image].

@@ -79,6 +79,7 @@ class SearchSuggestionsWidget extends StatelessWidget {
                       onResultTap: result.onResultTap != null
                           ? () => result.onResultTap!(context)
                           : null,
+                      params: result.params,
                     );
                   } else {
                     Logger('SearchSuggestionsWidget')
