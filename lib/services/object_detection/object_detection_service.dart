@@ -1,7 +1,7 @@
 // import "dart:isolate";
 // import "dart:math";
 // import "dart:typed_data";
-//
+
 // import "package:logging/logging.dart";
 // import "package:photos/services/object_detection/models/predictions.dart";
 // import 'package:photos/services/object_detection/models/recognition.dart';
@@ -9,21 +9,21 @@
 // import "package:photos/services/object_detection/tflite/mobilenet_classifier.dart";
 // import "package:photos/services/object_detection/tflite/scene_classifier.dart";
 // import "package:photos/services/object_detection/utils/isolate_utils.dart";
-//
+
 // class ObjectDetectionService {
 //   static const scoreThreshold = 0.35;
-//
+
 //   final _logger = Logger("ObjectDetectionService");
-//
+
 //   late CocoSSDClassifier _objectClassifier;
 //   late MobileNetClassifier _mobileNetClassifier;
 //   late SceneClassifier _sceneClassifier;
-//
+
 //   late IsolateUtils _isolateUtils;
-//
+
 //   ObjectDetectionService._privateConstructor();
 //   bool inInitiated = false;
-//
+
 //   Future<void> init() async {
 //     _isolateUtils = IsolateUtils();
 //     await _isolateUtils.start();
@@ -44,10 +44,10 @@
 //     }
 //     inInitiated = true;
 //   }
-//
+
 //   static ObjectDetectionService instance =
 //       ObjectDetectionService._privateConstructor();
-//
+
 //   Future<Map<String, double>> predict(Uint8List bytes) async {
 //     try {
 //       if (!inInitiated) {
@@ -55,7 +55,7 @@
 //       }
 //       final results = <String, double>{};
 //       final methods = [_getObjects, _getMobileNetResults, _getSceneResults];
-//
+
 //       for (var method in methods) {
 //         final methodResults = await method(bytes);
 //         methodResults.forEach((key, value) {
@@ -72,7 +72,7 @@
 //       rethrow;
 //     }
 //   }
-//
+
 //   Future<Map<String, double>> _getObjects(Uint8List bytes) async {
 //     try {
 //       final isolateData = IsolateData(
@@ -87,7 +87,7 @@
 //     }
 //     return {};
 //   }
-//
+
 //   Future<Map<String, double>> _getMobileNetResults(Uint8List bytes) async {
 //     try {
 //       final isolateData = IsolateData(
@@ -102,7 +102,7 @@
 //     }
 //     return {};
 //   }
-//
+
 //   Future<Map<String, double>> _getSceneResults(Uint8List bytes) async {
 //     try {
 //       final isolateData = IsolateData(
@@ -117,11 +117,11 @@
 //     }
 //     return {};
 //   }
-//
+
 //   Future<Map<String, double>> _getPredictions(IsolateData isolateData) async {
 //     final predictions = await _inference(isolateData);
 //     final Map<String, double> results = {};
-//
+
 //     if (predictions.error == null) {
 //       for (final Recognition result in predictions.recognitions!) {
 //         if (result.score > scoreThreshold) {
@@ -132,7 +132,7 @@
 //           }
 //         }
 //       }
-//
+
 //       _logger.info(
 //         "Time taken for ${isolateData.type}: ${predictions.stats!.totalElapsedTime}ms",
 //       );
@@ -142,10 +142,10 @@
 //         predictions.error,
 //       );
 //     }
-//
+
 //     return results;
 //   }
-//
+
 //   /// Runs inference in another isolate
 //   Future<Predictions> _inference(IsolateData isolateData) async {
 //     final responsePort = ReceivePort();
