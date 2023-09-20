@@ -32,6 +32,10 @@ class ClusterResult {
     return _faceIds.toSet().toList();
   }
 
+  int get thumbnailFileId {
+    return int.parse(thumbnailFaceId.split("_")[0]);
+  }
+
   const ClusterResult({
     required this.personId,
     required this.thumbnailFaceId,
@@ -365,6 +369,8 @@ class FaceResultBuilder {
   }
 
   FaceResult build() {
+    assert(detection.allKeypoints[0][0] <= 1);
+    assert(detection.box[0] <= 1);
     return FaceResult(
       detection: detection,
       alignment: alignment,

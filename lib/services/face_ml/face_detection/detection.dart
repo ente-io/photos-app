@@ -78,24 +78,26 @@ class FaceDetectionRelative extends Detection {
     required int imageWidth,
     required int imageHeight,
   }) {
-    final score = this.score;
-    final box = this.box;
-    final allKeypoints = this.allKeypoints;
+    final scoreCopy = score;
+    final boxCopy = List<double>.from(box, growable: false);
+    final allKeypointsCopy = allKeypoints
+        .map((sublist) => List<double>.from(sublist, growable: false))
+        .toList();
 
-    box[0] *= imageWidth;
-    box[1] *= imageHeight;
-    box[2] *= imageWidth;
-    box[3] *= imageHeight;
-    final intbox = box.map((e) => e.toInt()).toList();
+    boxCopy[0] *= imageWidth;
+    boxCopy[1] *= imageHeight;
+    boxCopy[2] *= imageWidth;
+    boxCopy[3] *= imageHeight;
+    final intbox = boxCopy.map((e) => e.toInt()).toList();
 
-    for (List<double> keypoint in allKeypoints) {
+    for (List<double> keypoint in allKeypointsCopy) {
       keypoint[0] *= imageWidth;
       keypoint[1] *= imageHeight;
     }
     final intKeypoints =
-        allKeypoints.map((e) => e.map((e) => e.toInt()).toList()).toList();
+        allKeypointsCopy.map((e) => e.map((e) => e.toInt()).toList()).toList();
     return FaceDetectionAbsolute(
-      score: score,
+      score: scoreCopy,
       box: intbox,
       allKeypoints: intKeypoints,
     );
@@ -195,7 +197,7 @@ class FaceDetectionAbsolute extends Detection {
 
   @override
   String toString() {
-    return 'FaceDetectionRelative( with relative coordinates: \n score: $score \n Box: xMinBox: $xMinBox, yMinBox: $yMinBox, xMaxBox: $xMaxBox, yMaxBox: $yMaxBox, \n Keypoints: leftEye: $leftEye, rightEye: $rightEye, nose: $nose, mouth: $mouth, leftEar: $leftEar, rightEar: $rightEar \n )';
+    return 'FaceDetectionAbsolute( with absolute coordinates: \n score: $score \n Box: xMinBox: $xMinBox, yMinBox: $yMinBox, xMaxBox: $xMaxBox, yMaxBox: $yMaxBox, \n Keypoints: leftEye: $leftEye, rightEye: $rightEye, nose: $nose, mouth: $mouth, leftEar: $leftEar, rightEar: $rightEar \n )';
   }
 
   Map<String, dynamic> toJson() {

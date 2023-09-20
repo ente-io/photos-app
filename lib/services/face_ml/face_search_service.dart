@@ -37,7 +37,7 @@ class FaceSearchService {
 
     // get the faceID and fileID you want to use to generate the thumbnail
     final String thumbnailFaceID = cluster.thumbnailFaceId;
-    final int thumbnailFileID = int.parse(thumbnailFaceID.split("_")[0]);
+    final int thumbnailFileID = cluster.thumbnailFileId;
 
     // get the full file thumbnail
     final EnteFile enteFile = await _filesDatabase

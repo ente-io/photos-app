@@ -66,6 +66,11 @@ class FaceMlService {
     // Run the analysis on all images to make sure everything is analyzed
     await indexAllImages();
 
+    // Cluster all the images
+    await clusterAllImages();
+  }
+
+  Future<void> clusterAllImages() async {
     final allFaceMlResults = await MlDataDB.instance.getAllFaceMlResults();
 
     // Initialize all the lists that we will use
