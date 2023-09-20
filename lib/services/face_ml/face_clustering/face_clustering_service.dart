@@ -12,12 +12,21 @@ class FaceClustering {
 
   bool _hasRun = false;
 
+  ///Result clusters
+  List<List<int>> _cluster = [];
+
+  ///Index of points considered as noise
+  List<int> _noise = [];
+
+  ///Cluster label, if prefer sklearn structure of output
+  List<int>? _label;
+
   ///Index of points considered as noise
   List<int>? get noise {
     if (!_hasRun) {
       return null;
     }
-    return _dbscan.noise;
+    return _noise;
   }
 
   /// Cluster label for each points, similar to sklearn's output structure.
@@ -27,7 +36,7 @@ class FaceClustering {
     if (!_hasRun) {
       return null;
     }
-    return _dbscan.label;
+    return _label;
   }
 
   /// Result clusters
@@ -35,7 +44,7 @@ class FaceClustering {
     if (!_hasRun) {
       return null;
     }
-    return _dbscan.cluster;
+    return _cluster;
   }
 
   // singleton pattern
@@ -75,6 +84,23 @@ class FaceClustering {
     _hasRun = true;
 
     ClusteringIsolate.instance.dispose();
+
+    // set clusters, labels and noise
+    _cluster = clusterOutput;
+    _label = _dbscan.label!;
+    _noise = _dbscan.noise;
+
+    // filter out clusters with less than minClusterSize elements.
+    for (var i = 0; i < clusterOutput.length; i++) {
+      if (clusterOutput[i].length < config.minClusterSize) {
+        for (var j = 0; j < clusterOutput[i].length; j++) {
+          _label![clusterOutput[i][j]] = -1;
+        }
+        _noise.addAll(clusterOutput[i]);
+        clusterOutput.removeAt(i);
+        i--;
+      }
+    }
 
     return clusterOutput;
   }

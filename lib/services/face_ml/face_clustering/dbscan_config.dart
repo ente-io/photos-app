@@ -4,11 +4,13 @@ class DBSCANConfig {
   final double epsilon;
   final int minPoints;
   final double Function(List<double>, List<double>) distanceMeasure;
+  final double minClusterSize;
 
   DBSCANConfig({
     required this.epsilon,
     required this.minPoints,
     this.distanceMeasure = cosineDistance,
+    this.minClusterSize = 5,
   });
 }
 
@@ -17,4 +19,5 @@ final DBSCANConfig faceClusteringDBSCANConfig = DBSCANConfig(
   epsilon: 0.3,
   minPoints: 5,
   distanceMeasure: cosineDistance,
+  minClusterSize: 5,
 );
