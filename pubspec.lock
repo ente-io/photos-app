@@ -1154,11 +1154,10 @@ packages:
   media_kit:
     dependency: "direct main"
     description:
-      path: media_kit
-      ref: main
-      resolved-ref: "8926ede69cb11aca45e9ea2b26428202e82ea5de"
-      url: "https://github.com/ashilkn/media-kit.git"
-    source: git
+      name: media_kit
+      sha256: "92c7f59e075d74471b31e703f81ccc1d7102739ebcce945b30a6417fa2f751d5"
+      url: "https://pub.dev"
+    source: hosted
     version: "1.1.7"
   media_kit_libs_android_video:
     dependency: transitive
@@ -1195,11 +1194,10 @@ packages:
   media_kit_libs_video:
     dependency: "direct main"
     description:
-      path: "libs/universal/media_kit_libs_video"
-      ref: main
-      resolved-ref: "8926ede69cb11aca45e9ea2b26428202e82ea5de"
-      url: "https://github.com/ashilkn/media-kit.git"
-    source: git
+      name: media_kit_libs_video
+      sha256: d961c49bc0d454524014b76fd66db1aa06e673f03b616f5fdbc59c405178a878
+      url: "https://pub.dev"
+    source: hosted
     version: "1.0.1"
   media_kit_libs_windows_video:
     dependency: transitive
@@ -1220,11 +1218,10 @@ packages:
   media_kit_video:
     dependency: "direct main"
     description:
-      path: media_kit_video
-      ref: main
-      resolved-ref: "9cbfe2b01a2387b2a536e13069efd6b6b631f366"
-      url: "https://github.com/ashilkn/media-kit.git"
-    source: git
+      name: media_kit_video
+      sha256: cd3ab78e7626146f115134b82c4029ac5987ba6351719c9067d86789723e0c12
+      url: "https://pub.dev"
+    source: hosted
     version: "1.1.8"
   meta:
     dependency: transitive
