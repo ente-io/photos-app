@@ -1155,8 +1155,8 @@ packages:
     dependency: "direct main"
     description:
       path: media_kit
-      ref: main
-      resolved-ref: "8926ede69cb11aca45e9ea2b26428202e82ea5de"
+      ref: ios_playback_fix
+      resolved-ref: "5ce75e1d65078aa60c6b49017c97b447b1c09815"
       url: "https://github.com/ashilkn/media-kit.git"
     source: git
     version: "1.1.7"
@@ -1196,8 +1196,8 @@ packages:
     dependency: "direct main"
     description:
       path: "libs/universal/media_kit_libs_video"
-      ref: main
-      resolved-ref: "8926ede69cb11aca45e9ea2b26428202e82ea5de"
+      ref: ios_playback_fix
+      resolved-ref: "5ce75e1d65078aa60c6b49017c97b447b1c09815"
       url: "https://github.com/ashilkn/media-kit.git"
     source: git
     version: "1.0.1"
@@ -1221,8 +1221,8 @@ packages:
     dependency: "direct main"
     description:
       path: media_kit_video
-      ref: main
-      resolved-ref: "9cbfe2b01a2387b2a536e13069efd6b6b631f366"
+      ref: ios_playback_fix
+      resolved-ref: "5ce75e1d65078aa60c6b49017c97b447b1c09815"
       url: "https://github.com/ashilkn/media-kit.git"
     source: git
     version: "1.1.8"
