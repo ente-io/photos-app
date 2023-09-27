@@ -111,10 +111,10 @@ class FaceMlService {
           allEmbeddings: allFaceEmbeddings,
           allFileIds: allFileIDs,
           allFaceIds: allFaceIDs,
-        )
+        ),
     ];
     final List<ClusterResult> clusterResults = [
-      for (final builder in clusterResultBuilders) builder.build()
+      for (final builder in clusterResultBuilders) builder.build(),
     ];
 
     _logger.info(
