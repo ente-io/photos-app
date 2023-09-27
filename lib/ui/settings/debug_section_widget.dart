@@ -108,7 +108,9 @@ class DebugSectionWidget extends StatelessWidget {
           trailingIcon: Icons.chevron_right_outlined,
           trailingIconIsMuted: true,
           onTap: () async {
-            FaceMlService.instance.indexAllImages().ignore();
+            FaceMlService.instance
+                .indexAllImages()
+                .onError((error, stackTrace) => debugPrint(error?.toString()));
             showShortToast(context, 'Indexing started');
           },
         ),
