@@ -170,14 +170,13 @@ class FaceEmbedding {
         // Use XNNPACK Delegate (CPU)
         interpreterOptions.addDelegate(XNNPackDelegate());
         // Use GPU Delegate (GPU). WARNING: It doesn't work on emulator
-        // interpreterOptions.addDelegate(GpuDelegateV2());
+        interpreterOptions.addDelegate(GpuDelegateV2());
       }
 
       // iOS Delegates
       if (Platform.isIOS) {
-        // Use Metal Delegate (GPU) WARNING: might be causing issues with loading the model, need to investigate further.
-        // interpreterOptions.addDelegate(GpuDelegate());
-        // interpreterOptions.addDelegate(GpuDelegateV2());
+        // Use Metal Delegate (GPU)
+        interpreterOptions.addDelegate(GpuDelegate());
       }
 
       // Load model from assets
