@@ -16,7 +16,7 @@ class MlDataDB {
   static final Logger _logger = Logger("MlDataDB");
 
   // TODO: [BOB] put the db in files
-  static const _databaseName = "ente.ml_data.db";
+  static const _databaseName = "ente.ml_data2.db";
   static const _databaseVersion = 1;
 
   static const facesTable = 'faces';
