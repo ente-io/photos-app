@@ -18,7 +18,7 @@ final BlazeFaceModelConfig faceDetectionBackWeb = BlazeFaceModelConfig(
   modelPath: ModelFile.faceDetectionBackWeb,
   faceOptions: FaceDetectionOptions(
     numBoxes: 896,
-    minScoreSigmoidThreshold: 0.60,
+    minScoreSigmoidThreshold: 0.75,
     iouThreshold: 0.3,
     inputWidth: 256,
     inputHeight: 256,
