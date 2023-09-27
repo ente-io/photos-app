@@ -7,7 +7,7 @@ class AlignmentResult {
       : affineMatrix = <List<double>>[
           [1, 0, 0],
           [0, 1, 0],
-          [0, 0, 1]
+          [0, 0, 1],
         ];
 
   factory AlignmentResult.fromJson(Map<String, dynamic> json) {

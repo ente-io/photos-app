@@ -17,7 +17,7 @@ class SimilarityTransform {
   var params = Matrix.fromList([
     [1.0, 0.0, 0.0],
     [0.0, 1.0, 0.0],
-    [0, 0, 1]
+    [0, 0, 1],
   ]);
   final arcface = [
     <double>[38.2946, 51.6963],
@@ -34,7 +34,7 @@ class SimilarityTransform {
     params = Matrix.fromList([
       [1.0, 0.0, 0.0],
       [0.0, 1.0, 0.0],
-      [0, 0, 1]
+      [0, 0, 1],
     ]);
   }
 
@@ -139,7 +139,8 @@ class SimilarityTransform {
     int width = 112,
     int height = 112,
   }) {
-    final image_lib.Image outputImage = image_lib.Image(width:width, height: height);
+    final image_lib.Image outputImage =
+        image_lib.Image(width: width, height: height);
     final image_lib.Image inputImage = image_lib.decodeImage(imageData)!;
 
     if (width != 112 || height != 112) {
@@ -150,7 +151,7 @@ class SimilarityTransform {
 
     final A = Matrix.fromList([
       [transformationMatrix[0][0], transformationMatrix[0][1]],
-      [transformationMatrix[1][0], transformationMatrix[1][1]]
+      [transformationMatrix[1][0], transformationMatrix[1][1]],
     ]);
     final aInverse = A.inverse();
     // final aInverseMinus = aInverse * -1;
@@ -275,7 +276,7 @@ class SimilarityTransform {
 
       final A = Matrix.fromList([
         [transformationMatrix[0][0], transformationMatrix[0][1]],
-        [transformationMatrix[1][0], transformationMatrix[1][1]]
+        [transformationMatrix[1][0], transformationMatrix[1][1]],
       ]);
       final aInverse = A.inverse();
       // final aInverseMinus = aInverse * -1;
@@ -362,7 +363,7 @@ class SimilarityTransform {
           outputMatrix[yTrans][xTrans] = [
             normalizePixel(r),
             normalizePixel(g),
-            normalizePixel(b)
+            normalizePixel(b),
           ];
         }
       }

@@ -54,7 +54,7 @@ class FaceDetectionRelative extends Detection {
         [0, 0],
         [0, 0],
         [0, 0],
-        [0, 0]
+        [0, 0],
       ],
     );
   }
@@ -70,7 +70,7 @@ class FaceDetectionRelative extends Detection {
           [0, 0],
           [0, 0],
           [0, 0],
-          [0, 0]
+          [0, 0],
         ],
         super.empty();
 
@@ -178,7 +178,7 @@ class FaceDetectionAbsolute extends Detection {
         [0, 0],
         [0, 0],
         [0, 0],
-        [0, 0]
+        [0, 0],
       ],
     );
   }
@@ -191,7 +191,7 @@ class FaceDetectionAbsolute extends Detection {
           [0, 0],
           [0, 0],
           [0, 0],
-          [0, 0]
+          [0, 0],
         ],
         super.empty();
 
