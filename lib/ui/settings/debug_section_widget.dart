@@ -121,8 +121,9 @@ class DebugSectionWidget extends StatelessWidget {
           trailingIcon: Icons.chevron_right_outlined,
           trailingIconIsMuted: true,
           onTap: () async {
-            FaceMlService.instance.clusterAllImages().ignore();
             showShortToast(context, 'Clustering started');
+            await FaceMlService.instance.clusterAllImages();
+            showShortToast(context, 'Clustering finished');
           },
         ),
         sectionOptionSpacing,
