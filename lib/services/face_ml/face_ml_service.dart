@@ -85,6 +85,13 @@ class FaceMlService {
       allFaceIDs.addAll(faceMlResult.allFaceIds);
     }
 
+    // final indicesOfZeroEmbeddings = <int>[];
+    // for (int i = 0; i < allFaceEmbeddings.length; ++i) {
+    //   if (allFaceEmbeddings[i].every((element) => element == 0.0)) {
+    //     indicesOfZeroEmbeddings.add(i);
+    //   }
+    // }
+
     _logger.info(
       "`clusterAllImages`: Starting clustering, on ${allFaceEmbeddings.length} face embeddings",
     );
@@ -142,20 +149,10 @@ class FaceMlService {
     int fileSkippedCount = 0;
     final stopwatch = Stopwatch()..start();
     for (final enteFile in enteFiles) {
-      // Skip if the file is not uploaded or if it's a video
-      if (!enteFile.isUploaded || enteFile.fileType == FileType.video) {
-        fileSkippedCount++;
-        continue;
-      }
-      // I don't know how motionPhotos and livePhotos work, so I'm also just skipping them for now
-      if (enteFile.fileType == FileType.other ||
-          enteFile.fileType == FileType.livePhoto) {
-        fileSkippedCount++;
-        continue;
-      }
-      // Skip if the image has already been analyzed with the latest ml version
-      final id = enteFile.uploadedFileID!;
-      if (alreadyIndexedWithLatestVersionIDs.contains(id)) {
+      if (_skipAnalysisEnteFile(
+        enteFile,
+        alreadyIndexedWithLatestVersionIDs: alreadyIndexedWithLatestVersionIDs,
+      )) {
         fileSkippedCount++;
         continue;
       }
@@ -167,7 +164,7 @@ class FaceMlService {
       try {
         final result = await analyzeImage(
           enteFile,
-          preferUsingThumbnailForEverything: true,
+          preferUsingThumbnailForEverything: false,
         );
         await MlDataDB.instance.createFaceMlResult(result);
         fileAnalyzedCount++;
@@ -188,6 +185,47 @@ class FaceMlService {
 
     // Close the image conversion isolate
     ImageConversionIsolate.instance.dispose();
+  }
+
+  /// Updates the results of the given images in the database. Updates regardless of the ml version, set [updateHigherVersionOnly] to true to only update if the ml version is higher than the one in the database.
+  Future<int> updateResultSelectedImages(
+    List<EnteFile> enteFiles, {
+    bool updateHigherVersionOnly = false,
+  }) async {
+    int updatedImagesCount = 0;
+    for (final enteFile in enteFiles) {
+      if (_skipAnalysisEnteFile(enteFile)) {
+        continue;
+      }
+
+      _logger.info(
+        "`updateResultSelectedImages()`: start processing image with uploadedFileID: ${enteFile.uploadedFileID}",
+      );
+
+      try {
+        final result = await analyzeImage(
+          enteFile,
+          preferUsingThumbnailForEverything: false,
+        );
+        await MlDataDB.instance.updateFaceMlResult(
+          result,
+          updateHigherVersionOnly: updateHigherVersionOnly,
+        );
+        updatedImagesCount++;
+        continue;
+      } catch (e, s) {
+        _logger.severe(
+          "`indexAllImages()`: Could not analyze image with uploadedFileID ${enteFile.uploadedFileID}",
+          e,
+          s,
+        );
+      }
+    }
+
+    // Close the image conversion isolate
+    ImageConversionIsolate.instance.dispose();
+
+    return updatedImagesCount;
   }
 
   /// Analyzes the given image data by running the full pipeline using [analyzeImage] and stores the result in the database [MlDataDB].
@@ -212,10 +250,25 @@ class FaceMlService {
     _logger.info(
       "Image with uploadedFileID ${enteFile.uploadedFileID} has not been analyzed and stored in the database. Analyzing it now.",
     );
-    final result = await analyzeImage(enteFile);
+    FaceMlResult result;
+    try {
+      result = await analyzeImage(enteFile);
+    } catch (e, s) {
+      _logger.severe(
+        "`indexImage` failed on image with uploadedFileID ${enteFile.uploadedFileID}",
+        e,
+        s,
+      );
+      throw GeneralFaceMlException(
+        "`indexImage` failed on image with uploadedFileID ${enteFile.uploadedFileID}",
+      );
+    }
 
     // Store the result in the database
     await MlDataDB.instance.createFaceMlResult(result);
+
+    // Close the image conversion isolate
+    ImageConversionIsolate.instance.dispose();
 
     return result;
   }
@@ -601,14 +654,45 @@ class FaceMlService {
     }
   }
 
-  /// Checks if the ente file to be analyzed actually has an uploadedFileID
+  /// Checks if the ente file to be analyzed actually can be analyzed: it must be uploaded and in the correct format.
   void _checkEnteFileForID(EnteFile enteFile) {
-    if (enteFile.uploadedFileID == null) {
+    if (_skipAnalysisEnteFile(enteFile)) {
       _logger.severe(
-        "Failed to analyze image with enteFile ${enteFile.toString()} because it has no uploadedFileID",
+        "Skipped analysis of image with enteFile ${enteFile.toString()} because it is the wrong format or has no uploadedFileID",
       );
       throw CouldNotRetrieveAnyFileData();
     }
+  }
+
+  bool _skipAnalysisEnteFile(
+    EnteFile enteFile, {
+    Set<int>? alreadyIndexedWithLatestVersionIDs,
+  }) {
+    // Skip if the file is not uploaded
+    if (!enteFile.isUploaded) {
+      return true;
+    }
+
+    // Skip if the file is a video
+    if (enteFile.fileType == FileType.video) {
+      return true;
+    }
+
+    // I don't know how motionPhotos and livePhotos work, so I'm also just skipping them for now
+    if (enteFile.fileType == FileType.other ||
+        enteFile.fileType == FileType.livePhoto) {
+      return true;
+    }
+
+    // Skip if the file is already analyzed with the latest ml version
+    if (alreadyIndexedWithLatestVersionIDs != null) {
+      final id = enteFile.uploadedFileID!;
+      if (alreadyIndexedWithLatestVersionIDs.contains(id)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   Future<FaceMlResult?> _checkForExistingUpToDateResult(

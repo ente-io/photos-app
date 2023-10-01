@@ -176,6 +176,7 @@ class MlDataDB {
     return null;
   }
 
+  /// Returns the faceMlResults for the given [fileIds].
   Future<List<FaceMlResult>> getSelectedFaceMlResults(
     List<int> fileIds,
   ) async {
@@ -224,7 +225,7 @@ class MlDataDB {
 
   /// getAllFileIDs returns a set of all fileIDs from the facesTable, meaning all the fileIDs for which a FaceMlResult exists, optionally filtered by mlVersion.
   Future<Set<int>> getAllFaceMlResultFileIDs({int? mlVersion}) async {
-    _logger.fine('getAllFileIDs called');
+    _logger.fine('getAllFaceMlResultFileIDs called');
     final db = await instance.database;
 
     String? whereString;
@@ -244,10 +245,55 @@ class MlDataDB {
     return results.map((result) => result[fileIDColumn] as int).toSet();
   }
 
-  Future<void> updateFaceMlResult(FaceMlResult faceMlResult) async {
-    _logger.fine('updateFaceMlResult called');
+  Future<Set<int>> getAllFaceMlResultFileIDsProcessedWithThumbnailOnly({
+    int? mlVersion,
+  }) async {
+    _logger.fine('getAllFaceMlResultFileIDsProcessedWithThumbnailOnly called');
     final db = await instance.database;
-    await db.update(
+
+    String? whereString;
+    List<dynamic>? whereArgs;
+
+    if (mlVersion != null) {
+      whereString = '$mlVersionColumn = ?';
+      whereArgs = [mlVersion];
+    }
+
+    final List<Map<String, Object?>> results = await db.query(
+      facesTable,
+      where: whereString,
+      whereArgs: whereArgs,
+    );
+
+    return results
+        .map(
+          (result) =>
+              FaceMlResult.fromJsonString(result[faceMlResultColumn] as String),
+        )
+        .where((element) => element.onlyThumbnailUsed)
+        .map((result) => result.fileId)
+        .toSet();
+  }
+
+  /// Updates the faceMlResult for the given [faceMlResult.fileId]. Update is done regardless of the [faceMlResult.mlVersion]. 
+  /// However, if [updateHigherVersionOnly] is set to true, the update is only done if the [faceMlResult.mlVersion] is higher than the existing one.
+  Future<int> updateFaceMlResult(FaceMlResult faceMlResult, {bool updateHigherVersionOnly = false}) async {
+    _logger.fine('updateFaceMlResult called');
+
+    if (updateHigherVersionOnly) {
+      final existingResult = await getFaceMlResult(faceMlResult.fileId);
+      if (existingResult != null) {
+        if (faceMlResult.mlVersion <= existingResult.mlVersion) {
+          _logger.fine(
+            'FaceMlResult with file ID ${faceMlResult.fileId} already exists with equal or higher version. Skipping update.',
+          );
+          return 0;
+        }
+      }
+    }
+    
+    final db = await instance.database;
+    return await db.update(
       facesTable,
       {
         fileIDColumn: faceMlResult.fileId,
