@@ -42,8 +42,8 @@ class FaceSearchService {
     // get the full file thumbnail
     final EnteFile enteFile = await _filesDatabase
         .getFilesFromIDs([thumbnailFileID]).then((value) => value.values.first);
-    final Uint8List? fullFileThumbnail = await getThumbnail(enteFile);
-    if (fullFileThumbnail == null) {
+    final Uint8List? fileThumbnail = await getThumbnail(enteFile);
+    if (fileThumbnail == null) {
       _logger.warning(
         "No full file thumbnail found for thumbnail faceID $thumbnailFaceID, unable to get thumbnail.",
       );
@@ -63,8 +63,10 @@ class FaceSearchService {
 
     // create the thumbnail from the full file thumbnail and the face detection
     final Uint8List? faceThumbnail = await generateFaceThumbnail(
-      fullFileThumbnail,
+      fileThumbnail,
+      enteFile.displayName,
       detection,
+      
     );
     if (faceThumbnail == null) {
       _logger.warning(

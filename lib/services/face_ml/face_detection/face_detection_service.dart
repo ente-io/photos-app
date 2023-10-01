@@ -49,10 +49,10 @@ class FaceDetection {
     }
   }
 
-  Future<List<FaceDetectionRelative>> predict(Uint8List imageData) async {
+  Future<List<FaceDetectionRelative>> predict(Uint8List imageData, {String? imagePath}) async {
     assert(_interpreter != null && _isolateInterpreter != null);
 
-    final image = await ImageConversionIsolate.instance.convert(imageData);
+    final image = await ImageConversionIsolate.instance.convert(imageData, imagePath: imagePath);
 
     if (image == null) {
       _logger.severe('Error while converting Uint8List to Image');

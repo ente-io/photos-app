@@ -15,8 +15,17 @@ class CouldNotConvertToImageImage implements Exception {}
 // TODO: the image conversion below is what makes the whole pipeline slow, so come up with different solution
 
 /// Converts a [Uint8List] to an [image_lib.Image] object.
-image_lib.Image? _convertUint8ListToImagePackageImage(Uint8List imageData) {
-  return image_lib.decodeImage(imageData);
+image_lib.Image? _convertUint8ListToImagePackageImage(
+  Uint8List imageData, {
+  String? path,
+}) {
+  image_lib.Image? image;
+  if (path != null) {
+    image = image_lib.decodeNamedImage(path, imageData);
+  } else {
+    image = image_lib.decodeImage(imageData);
+  }
+  return image;
 }
 
 // // TODO: try out the image_pixel package
@@ -41,9 +50,10 @@ Uint8List _convertImagePackageImageToUint8List(image_lib.Image image) {
 /// Generates a face thumbnail from [imageData] and a [faceDetection].
 Future<Uint8List?> generateFaceThumbnail(
   Uint8List imageData,
+  String? imagePath,
   FaceDetectionRelative faceDetection,
 ) async {
-  final image = await ImageConversionIsolate.instance.convert(imageData);
+  final image = await ImageConversionIsolate.instance.convert(imageData, imagePath: imagePath);
   if (image == null) return null;
 
   final faceThumbnail = image_lib.copyCrop(
@@ -80,7 +90,7 @@ class ImageConversionIsolate {
   /// e.g. `await ImageConversionIsolate.instance.init();`
   /// And kill the isolate when you're done with it with `dispose()`, e.g. `ImageConversionIsolate.instance.dispose();`
   ///
-  /// Then you can use `convert()` to get the image, so `ImageConversionIsolate.instance.convert(imageData)`
+  /// Then you can use `convert()` to get the image, so `ImageConversionIsolate.instance.convert(imageData, imagePath: imagePath)`
   static final ImageConversionIsolate instance =
       ImageConversionIsolate._privateConstructor();
   factory ImageConversionIsolate() => instance;
@@ -118,9 +128,10 @@ class ImageConversionIsolate {
 
     receivePort.listen((message) {
       final data = message[0] as Uint8List;
-      final sendPort = message[1] as SendPort;
+      final path = message[1] as String?;
+      final sendPort = message[2] as SendPort;
 
-      final result = _convertUint8ListToImagePackageImage(data);
+      final result = _convertUint8ListToImagePackageImage(data, path: path);
       // if (result != null) {
       sendPort.send(result);
       // } else {
@@ -130,12 +141,12 @@ class ImageConversionIsolate {
   }
 
   /// Converts a [Uint8List] to an [image_lib.Image] object inside a separate isolate.
-  Future<image_lib.Image?> convert(Uint8List data) async {
+  Future<image_lib.Image?> convert(Uint8List data, {String? imagePath}) async {
     await ensureSpawned();
     final completer = Completer<image_lib.Image?>();
     final answerPort = ReceivePort();
 
-    _mainSendPort.send([data, answerPort.sendPort]);
+    _mainSendPort.send([data, imagePath, answerPort.sendPort]);
 
     answerPort.listen((message) {
       // if (message is image_lib.Image?) {

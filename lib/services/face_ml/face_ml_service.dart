@@ -316,7 +316,11 @@ class FaceMlService {
     try {
       // Get the faces
       final List<FaceDetectionRelative> faceDetectionResult =
-          await _detectFaces(smallData, resultBuilder: resultBuilder);
+          await _detectFaces(
+        smallData,
+        resultBuilder: resultBuilder,
+        imagePath: enteFile.displayName,
+      );
 
       _logger.info("Completed `detectFaces` function");
 
@@ -338,6 +342,7 @@ class FaceMlService {
         largeData,
         faceDetectionResult,
         resultBuilder: resultBuilder,
+        imagePath: enteFile.displayName,
       );
 
       _logger.info("Completed `alignFaces` function");
@@ -425,11 +430,12 @@ class FaceMlService {
   Future<List<FaceDetectionRelative>> _detectFaces(
     Uint8List imageData, {
     FaceMlResultBuilder? resultBuilder,
+    String? imagePath,
   }) async {
     try {
       // Get the bounding boxes of the faces
       final List<FaceDetectionRelative> faces =
-          await FaceDetection.instance.predict(imageData);
+          await FaceDetection.instance.predict(imageData, imagePath: imagePath);
 
       // Add detected faces to the resultBuilder
       if (resultBuilder != null) {
@@ -460,13 +466,14 @@ class FaceMlService {
     Uint8List imageData,
     List<FaceDetectionRelative> faces, {
     FaceMlResultBuilder? resultBuilder,
+    String? imagePath,
   }) async {
     // TODO: the image conversion below is what makes the whole pipeline slow, so come up with different solution
 
     // Convert the image data to an image
     final Stopwatch faceAlignmentImageDecodingStopwatch = Stopwatch()..start();
-    final image_lib.Image? inputImage =
-        await ImageConversionIsolate.instance.convert(imageData);
+    final image_lib.Image? inputImage = await ImageConversionIsolate.instance
+        .convert(imageData, imagePath: imagePath);
     faceAlignmentImageDecodingStopwatch.stop();
     if (inputImage == null) {
       _logger.severe('Error while converting Uint8List to Image');
@@ -591,11 +598,14 @@ class FaceMlService {
   /// Returns the face embedding as a list of doubles.
   ///
   /// Throws [CouldNotInitializeFaceEmbeddor], [CouldNotRunFaceEmbeddor], [InputProblemFaceEmbeddor] or [GeneralFaceMlException] if the face embedding fails.
-  Future<List<double>> _embedSingleFace(Uint8List faceData) async {
+  Future<List<double>> _embedSingleFace(
+    Uint8List faceData, {
+    String? imagePath,
+  }) async {
     try {
       // Get the embedding of the face
       final List<double> embedding =
-          await FaceEmbedding.instance.predict(faceData);
+          await FaceEmbedding.instance.predict(faceData, imagePath: imagePath);
 
       return embedding;
     } on MobileFaceNetInterpreterInitializationException {

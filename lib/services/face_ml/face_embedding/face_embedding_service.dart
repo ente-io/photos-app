@@ -45,11 +45,11 @@ class FaceEmbedding {
   }
 
   /// WARNING: This function only works for one face at a time. it's better to use [predictBatch], which can handle both single and multiple faces.
-  Future<List<double>> predict(Uint8List imageData) async {
+  Future<List<double>> predict(Uint8List imageData, {String? imagePath}) async {
     assert(_interpreter != null && _isolateInterpreter != null);
 
     final dataConversionStopwatch = Stopwatch()..start();
-    final image = await ImageConversionIsolate.instance.convert(imageData);
+    final image = await ImageConversionIsolate.instance.convert(imageData, imagePath: imagePath);
 
     if (image == null) {
       _logger.severe('Error while converting Uint8List to Image');
