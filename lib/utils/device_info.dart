@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 
 DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
-bool disableMediaKit = false;
+bool _disableMediaKit = false;
 
 // https://gist.github.com/adamawolf/3048717
 final Set<String> iOSLowEndMachineCodes = <String>{
@@ -39,10 +39,10 @@ Future<void> initDeviceSpec() async {
 // Currently, we have disabled the media_kit for these devices. and in the
 // future if needed we can add a setting.
     final androidInfo = await deviceInfoPlugin.androidInfo;
-    disableMediaKit = androidInfo.toString().contains('graphene') ||
+    _disableMediaKit = androidInfo.toString().contains('graphene') ||
         androidInfo.toString().contains('divest');
   } else {
-    disableMediaKit = false;
+    _disableMediaKit = false;
   }
 }
 
@@ -69,5 +69,5 @@ Future<bool> isAndroidSDKVersionLowerThan(int inputSDK) async {
 }
 
 bool isCompatibleWithMediaKit() {
-  return disableMediaKit == false;
+  return _disableMediaKit == false;
 }
