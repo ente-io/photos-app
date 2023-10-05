@@ -165,6 +165,7 @@ class FaceMlService {
         final result = await analyzeImage(
           enteFile,
           preferUsingThumbnailForEverything: false,
+          disposeImageIsolateAfterUse: false,
         );
         await MlDataDB.instance.createFaceMlResult(result);
         fileAnalyzedCount++;
@@ -206,6 +207,7 @@ class FaceMlService {
         final result = await analyzeImage(
           enteFile,
           preferUsingThumbnailForEverything: false,
+          disposeImageIsolateAfterUse: false,
         );
         await MlDataDB.instance.updateFaceMlResult(
           result,
@@ -267,9 +269,6 @@ class FaceMlService {
     // Store the result in the database
     await MlDataDB.instance.createFaceMlResult(result);
 
-    // Close the image conversion isolate
-    ImageConversionIsolate.instance.dispose();
-
     return result;
   }
 
@@ -287,6 +286,7 @@ class FaceMlService {
   Future<FaceMlResult> analyzeImage(
     EnteFile enteFile, {
     bool preferUsingThumbnailForEverything = false,
+    bool disposeImageIsolateAfterUse = true,
   }) async {
     _checkEnteFileForID(enteFile);
 
@@ -359,6 +359,11 @@ class FaceMlService {
       _logger.info(
           "Completed analyzing image with uploadedFileID ${enteFile.uploadedFileID}, in "
           "${stopwatch.elapsedMilliseconds} ms");
+
+      if (disposeImageIsolateAfterUse) {
+        // Close the image conversion isolate
+        ImageConversionIsolate.instance.dispose();
+      }
 
       return resultBuilder.build();
     } catch (e, s) {
