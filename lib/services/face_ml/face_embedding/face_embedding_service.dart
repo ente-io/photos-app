@@ -167,10 +167,10 @@ class FaceEmbedding {
       // Android Delegates
       // TODO: Make sure this works on both platforms: Android and iOS
       if (Platform.isAndroid) {
-        // Use XNNPACK Delegate (CPU)
-        interpreterOptions.addDelegate(XNNPackDelegate());
         // Use GPU Delegate (GPU). WARNING: It doesn't work on emulator
         interpreterOptions.addDelegate(GpuDelegateV2());
+        // Use XNNPACK Delegate (CPU)
+        interpreterOptions.addDelegate(XNNPackDelegate());
       }
 
       // iOS Delegates
