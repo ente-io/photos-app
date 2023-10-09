@@ -2,6 +2,14 @@ import "dart:async";
 import "dart:typed_data" show Uint8List, ByteData;
 import "dart:ui";
 
+// import 'package:flutter/material.dart'
+//     show
+//         ImageProvider,
+//         ImageStream,
+//         ImageStreamListener,
+//         ImageInfo,
+//         MemoryImage,
+//         ImageConfiguration;
 import 'package:flutter/painting.dart' as paint show decodeImageFromList;
 import "package:logging/logging.dart";
 import 'package:ml_linalg/linalg.dart';
@@ -145,11 +153,25 @@ Future<Image> decodeImageFromData(Uint8List imageData) async {
   final Image image = await paint.decodeImageFromList(imageData);
   return image;
 
+  // Similar decoding as above, but without using flutter paint. This is not faster than the above.
   // final Codec codec = await instantiateImageCodecFromBuffer(
   //   await ImmutableBuffer.fromUint8List(imageData),
   // );
   // final FrameInfo frameInfo = await codec.getNextFrame();
   // return frameInfo.image;
+
+  // // Decoding using the ImageProvider, same as `image_pixels` package. This is not faster than the above.
+  // final Completer<Image> completer = Completer<Image>();
+  // final ImageProvider provider = MemoryImage(imageData);
+  // final ImageStream stream = provider.resolve(const ImageConfiguration());
+  // final ImageStreamListener listener =
+  //     ImageStreamListener((ImageInfo info, bool _) {
+  //   completer.complete(info.image);
+  // });
+  // stream.addListener(listener);
+  // final Image image = await completer.future;
+  // stream.removeListener(listener);
+  // return image;
 }
 
 /// Decodes [Uint8List] RGBA bytes to an ui.[Image] object.
