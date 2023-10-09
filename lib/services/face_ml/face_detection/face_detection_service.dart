@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data' show Uint8List;
 
-import 'package:image/image.dart' as image_lib;
 import "package:logging/logging.dart";
 import "package:photos/services/face_ml/face_detection/anchors.dart";
 import "package:photos/services/face_ml/face_detection/blazeface_model_config.dart";
@@ -10,8 +9,8 @@ import "package:photos/services/face_ml/face_detection/face_detection_exceptions
 import "package:photos/services/face_ml/face_detection/filter_extract_detections.dart";
 import "package:photos/services/face_ml/face_detection/generate_anchors.dart";
 import "package:photos/services/face_ml/face_detection/naive_non_max_suppression.dart";
-import "package:photos/utils/image_package_util.dart";
-import "package:photos/utils/ml_input_output.dart";
+import 'package:photos/utils/image_ml_isolate.dart';
+import 'package:photos/utils/image_ml_util.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 
 class FaceDetection {
@@ -49,27 +48,26 @@ class FaceDetection {
     }
   }
 
-  Future<List<FaceDetectionRelative>> predict(Uint8List imageData, {String? imagePath}) async {
+  Future<List<FaceDetectionRelative>> predict(Uint8List imageData) async {
     assert(_interpreter != null && _isolateInterpreter != null);
-
-    final image = await ImageConversionIsolate.instance.convert(imageData, imagePath: imagePath);
-
-    if (image == null) {
-      _logger.severe('Error while converting Uint8List to Image');
-      throw CouldNotConvertToImageImage();
-    }
-
-    _logger.info(
-      'Thumbnail for face detection has size: ${image.width}x${image.height} pixels (W x H)',
-    );
-
-    final faceOptions = config.faceOptions;
 
     final stopwatch = Stopwatch()..start();
 
-    final inputImageMatrix =
-        _getPreprocessedImage(image); // [inputWidt, inputHeight, 3]
+    final faceOptions = config.faceOptions;
+
+    final stopwatchDecoding = Stopwatch()..start();
+    final List<List<List<num>>> inputImageMatrix =
+        await ImageMlIsolate.instance.preprocessImage(
+      imageData,
+      normalize: true,
+      requiredWidth: faceOptions.inputWidth,
+      requiredHeight: faceOptions.inputHeight,
+    );
     final input = [inputImageMatrix];
+    stopwatchDecoding.stop();
+    _logger.info(
+      'Image decoding and preprocessing is finished, in ${stopwatchDecoding.elapsedMilliseconds}ms',
+    );
 
     final outputFaces = createEmptyOutputMatrix(outputShapes[0]);
     final outputScores = createEmptyOutputMatrix(outputShapes[1]);
@@ -83,8 +81,8 @@ class FaceDetection {
     final stopwatchInterpreter = Stopwatch()..start();
     try {
       await _isolateInterpreter!.runForMultipleInputs([input], outputs);
-    } catch (e) {
-      _logger.severe('Error while running inference: $e');
+    } catch (e, s) {
+      _logger.severe('Error while running inference: $e \n $s');
       throw BlazeFaceInterpreterRunException();
     }
     stopwatchInterpreter.stop();
@@ -141,35 +139,6 @@ class FaceDetection {
     );
 
     return relativeDetections;
-  }
-
-  List<List<List<num>>> _getPreprocessedImage(
-    image_lib.Image image,
-  ) {
-    _logger.info('preprocessing is called');
-    final faceOptions = config.faceOptions;
-
-    originalImageWidth = image.width;
-    originalImageHeight = image.height;
-    _logger.info(
-      'originalImageWidth: $originalImageWidth, originalImageHeight: $originalImageHeight',
-    );
-
-    // Resize image for model input
-    final image_lib.Image imageInput = image_lib.copyResize(
-      image,
-      width: faceOptions.inputWidth,
-      height: faceOptions.inputHeight,
-      interpolation: image_lib.Interpolation
-          .linear, // linear interpolation is less accurate than cubic, but faster!
-    );
-
-    // Get image matrix representation [inputWidt, inputHeight, 3]
-    final imageMatrix = createInputMatrixFromImage(imageInput, normalize: true);
-
-    _logger.info('preprocessing is finished');
-
-    return imageMatrix;
   }
 
   /// Initialize the interpreter by loading the model file.

@@ -3,7 +3,6 @@ import "dart:typed_data" show Uint8List;
 
 import "package:flutter/foundation.dart";
 import "package:flutter_image_compress/flutter_image_compress.dart";
-import "package:image/image.dart" as image_lib;
 import "package:logging/logging.dart";
 import "package:photos/core/configuration.dart";
 import "package:photos/db/ml_data_db.dart";
@@ -21,7 +20,7 @@ import "package:photos/services/face_ml/face_ml_exceptions.dart";
 import "package:photos/services/face_ml/face_ml_result.dart";
 import "package:photos/services/search_service.dart";
 import "package:photos/utils/file_util.dart";
-import 'package:photos/utils/image_package_util.dart';
+import 'package:photos/utils/image_ml_isolate.dart';
 import "package:photos/utils/thumbnail_util.dart";
 
 enum FileDataForML { thumbnailData, fileData, compressedFileData }
@@ -143,7 +142,7 @@ class FaceMlService {
         .getAllFaceMlResultFileIDs(mlVersion: faceMlVersion);
 
     // Make sure the image conversion isolate is spawned
-    await ImageConversionIsolate.instance.ensureSpawned();
+    await ImageMlIsolate.instance.ensureSpawned();
 
     int fileAnalyzedCount = 0;
     int fileSkippedCount = 0;
@@ -185,7 +184,7 @@ class FaceMlService {
     );
 
     // Close the image conversion isolate
-    ImageConversionIsolate.instance.dispose();
+    ImageMlIsolate.instance.dispose();
   }
 
   /// Updates the results of the given images in the database. Updates regardless of the ml version, set [updateHigherVersionOnly] to true to only update if the ml version is higher than the one in the database.
@@ -225,7 +224,7 @@ class FaceMlService {
     }
 
     // Close the image conversion isolate
-    ImageConversionIsolate.instance.dispose();
+    ImageMlIsolate.instance.dispose();
 
     return updatedImagesCount;
   }
@@ -319,7 +318,6 @@ class FaceMlService {
           await _detectFaces(
         smallData,
         resultBuilder: resultBuilder,
-        imagePath: enteFile.displayName,
       );
 
       _logger.info("Completed `detectFaces` function");
@@ -342,13 +340,12 @@ class FaceMlService {
         largeData,
         faceDetectionResult,
         resultBuilder: resultBuilder,
-        imagePath: enteFile.displayName,
       );
 
       _logger.info("Completed `alignFaces` function");
 
       // Get the embeddings of the faces
-      await _embedBatchFaces(
+      await _embedFaces(
         faceAlignmentResult,
         resultBuilder: resultBuilder,
       );
@@ -362,7 +359,7 @@ class FaceMlService {
 
       if (disposeImageIsolateAfterUse) {
         // Close the image conversion isolate
-        ImageConversionIsolate.instance.dispose();
+        ImageMlIsolate.instance.dispose();
       }
 
       return resultBuilder.build();
@@ -435,12 +432,11 @@ class FaceMlService {
   Future<List<FaceDetectionRelative>> _detectFaces(
     Uint8List imageData, {
     FaceMlResultBuilder? resultBuilder,
-    String? imagePath,
   }) async {
     try {
       // Get the bounding boxes of the faces
       final List<FaceDetectionRelative> faces =
-          await FaceDetection.instance.predict(imageData, imagePath: imagePath);
+          await FaceDetection.instance.predict(imageData);
 
       // Add detected faces to the resultBuilder
       if (resultBuilder != null) {
@@ -466,167 +462,30 @@ class FaceMlService {
   ///
   /// Returns a list of the aligned faces as image data.
   ///
-  /// Throws [CouldNotEstimateSimilarityTransform] or [GeneralFaceMlException] if the face alignment fails.
+  /// Throws [CouldNotWarpAffine] or [GeneralFaceMlException] if the face alignment fails.
   Future<List<Double3DInputMatrix>> _alignFaces(
     Uint8List imageData,
     List<FaceDetectionRelative> faces, {
     FaceMlResultBuilder? resultBuilder,
-    String? imagePath,
-  }) async {
-    // TODO: the image conversion below is what makes the whole pipeline slow, so come up with different solution
-
-    // Convert the image data to an image
-    final Stopwatch faceAlignmentImageDecodingStopwatch = Stopwatch()..start();
-    final image_lib.Image? inputImage = await ImageConversionIsolate.instance
-        .convert(imageData, imagePath: imagePath);
-    faceAlignmentImageDecodingStopwatch.stop();
-    if (inputImage == null) {
-      _logger.severe('Error while converting Uint8List to Image');
-      throw CouldNotConvertToImageImage();
-    }
-    _logger.info(
-      'image decoding for alignment is finished, in ${faceAlignmentImageDecodingStopwatch.elapsedMilliseconds}ms',
-    );
-
-    // Convert the relative face detection results to absolute face detection results
-    final List<FaceDetectionAbsolute> absoluteFaces =
-        relativeToAbsoluteDetections(
-      relativeDetections: faces,
-      imageWidth: inputImage.width,
-      imageHeight: inputImage.height,
-    );
-
-    final alignedFaces = <Double3DInputMatrix>[];
-    for (int i = 0; i < faces.length; ++i) {
-      final alignedFace = _alignFaceToMatrix(
-        inputImage,
-        absoluteFaces[i],
-        resultBuilder: resultBuilder,
-        faceIndex: i,
-      );
-      alignedFaces.add(alignedFace);
-    }
-
-    return alignedFaces;
-  }
-
-  /// Aligns a single face from the given image data.
-  ///
-  /// `inputImage`: The image in [image_lib.Image] format that contains the face.
-  /// `face`: The face detection [FaceDetectionAbsolute] result for the face to align.
-  ///
-  /// Returns the aligned face as a matrix [Double3DInputMatrix].
-  ///
-  /// Throws [CouldNotEstimateSimilarityTransform], [CouldNotWarpAffine] or [GeneralFaceMlException] if the face alignment fails.
-  Double3DInputMatrix _alignFaceToMatrix(
-    image_lib.Image inputImage,
-    FaceDetectionAbsolute face, {
-    FaceMlResultBuilder? resultBuilder,
-    int? faceIndex,
-  }) {
-    try {
-      final faceLandmarks = face.allKeypoints.sublist(0, 4);
-      final isNoNanInParam = _similarityTransform.estimate(faceLandmarks);
-      if (!isNoNanInParam) {
-        throw CouldNotEstimateSimilarityTransform();
-      }
-
-      final transformMatrix = _similarityTransform.params;
-      final transformMatrixList = _similarityTransform.paramsList;
-      if (resultBuilder != null && faceIndex != null) {
-        resultBuilder.addAlignmentToExistingFace(
-          transformMatrixList,
-          faceIndex,
-        );
-      }
-
-      Double3DInputMatrix? faceAlignedData;
-      try {
-        faceAlignedData = _similarityTransform.warpAffineToMatrix(
-          inputImage: inputImage,
-          transformationMatrix: transformMatrix,
-        );
-      } catch (e) {
-        throw CouldNotWarpAffine();
-      }
-
-      return faceAlignedData;
-      // ignore: avoid_catches_without_on_clauses
-    } catch (e) {
-      _logger.severe('Face alignment failed: $e');
-      throw GeneralFaceMlException('Face alignment failed: $e');
-    }
-  }
-
-  /// Aligns a single face from the given image data.
-  ///
-  /// WARNING: This function is not efficient for multiple faces. Use [_alignFaceToMatrix] in pipelines instead.
-  ///
-  /// `imageData`: The image data that contains the face.
-  /// `face`: The face detection result for the face to align.
-  ///
-  /// Returns the aligned face as image data.
-  ///
-  /// Throws [CouldNotEstimateSimilarityTransform], [CouldNotWarpAffine] or [GeneralFaceMlException] if the face alignment fails.
-  Uint8List _alignSingleFace(Uint8List imageData, FaceDetectionAbsolute face) {
-    try {
-      final faceLandmarks = face.allKeypoints.sublist(0, 4);
-      final isNoNanInParam = _similarityTransform.estimate(faceLandmarks);
-      if (!isNoNanInParam) {
-        throw CouldNotEstimateSimilarityTransform();
-      }
-
-      final transformMatrix = _similarityTransform.params;
-
-      Uint8List? faceAlignedData;
-      try {
-        faceAlignedData = _similarityTransform.warpAffine(
-          imageData: imageData,
-          transformationMatrix: transformMatrix,
-        );
-      } catch (e) {
-        throw CouldNotWarpAffine();
-      }
-
-      return faceAlignedData;
-      // ignore: avoid_catches_without_on_clauses
-    } catch (e) {
-      _logger.severe('Face alignment failed: $e');
-      throw GeneralFaceMlException('Face alignment failed: $e');
-    }
-  }
-
-  /// Embeds a single face from the given image data.
-  ///
-  /// `faceData`: The image data of the face to embed.
-  ///
-  /// Returns the face embedding as a list of doubles.
-  ///
-  /// Throws [CouldNotInitializeFaceEmbeddor], [CouldNotRunFaceEmbeddor], [InputProblemFaceEmbeddor] or [GeneralFaceMlException] if the face embedding fails.
-  Future<List<double>> _embedSingleFace(
-    Uint8List faceData, {
-    String? imagePath,
   }) async {
     try {
-      // Get the embedding of the face
-      final List<double> embedding =
-          await FaceEmbedding.instance.predict(faceData, imagePath: imagePath);
+      final (alignedFaces, transformationMatrices) = await ImageMlIsolate
+          .instance
+          .preprocessMobileFaceNet(imageData, faces);
 
-      return embedding;
-    } on MobileFaceNetInterpreterInitializationException {
-      throw CouldNotInitializeFaceEmbeddor();
-    } on MobileFaceNetInterpreterRunException {
-      throw CouldNotRunFaceEmbeddor();
-    } on MobileFaceNetEmptyInput {
-      throw InputProblemFaceEmbeddor("Input is empty");
-    } on MobileFaceNetWrongInputSize {
-      throw InputProblemFaceEmbeddor("Input size is wrong");
-    } on MobileFaceNetWrongInputRange {
-      throw InputProblemFaceEmbeddor("Input range is wrong");
-      // ignore: avoid_catches_without_on_clauses
-    } catch (e) {
-      _logger.severe('Face embedding failed: $e');
-      throw GeneralFaceMlException('Face embedding failed: $e');
+      if (resultBuilder != null) {
+        for (int faceIndex = 0; faceIndex < faces.length; ++faceIndex) {
+          resultBuilder.addAlignmentToExistingFace(
+            transformationMatrices[faceIndex],
+            faceIndex,
+          );
+        }
+      }
+
+      return alignedFaces;
+    } catch (e, s) {
+      _logger.severe('Face alignment failed: $e', e, s);
+      throw CouldNotWarpAffine();
     }
   }
 
@@ -637,14 +496,14 @@ class FaceMlService {
   /// Returns a list of the face embeddings as lists of doubles.
   ///
   /// Throws [CouldNotInitializeFaceEmbeddor], [CouldNotRunFaceEmbeddor], [InputProblemFaceEmbeddor] or [GeneralFaceMlException] if the face embedding fails.
-  Future<List<List<double>>> _embedBatchFaces(
+  Future<List<List<double>>> _embedFaces(
     List<Double3DInputMatrix> facesMatrices, {
     FaceMlResultBuilder? resultBuilder,
   }) async {
     try {
       // Get the embedding of the faces
       final List<List<double>> embeddings =
-          await FaceEmbedding.instance.predictBatch(facesMatrices);
+          await FaceEmbedding.instance.predict(facesMatrices);
 
       // Add the embeddings to the resultBuilder
       if (resultBuilder != null) {

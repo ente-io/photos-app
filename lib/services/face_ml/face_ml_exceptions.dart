@@ -14,8 +14,6 @@ class CouldNotInitializeFaceDetector implements Exception {}
 
 class CouldNotRunFaceDetector implements Exception {}
 
-class CouldNotEstimateSimilarityTransform implements Exception {}
-
 class CouldNotWarpAffine implements Exception {}
 
 class CouldNotInitializeFaceEmbeddor implements Exception {}

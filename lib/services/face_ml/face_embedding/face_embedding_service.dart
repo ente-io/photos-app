@@ -3,13 +3,13 @@ import "dart:math" show min, max;
 // import 'dart:math' as math show min, max;
 import 'dart:typed_data' show Uint8List;
 
-import 'package:image/image.dart' as image_lib;
 import "package:logging/logging.dart";
 import "package:photos/models/ml_typedefs.dart";
+import "package:photos/services/face_ml/face_detection/detection.dart";
 import "package:photos/services/face_ml/face_embedding/face_embedding_exceptions.dart";
 import "package:photos/services/face_ml/face_embedding/mobilefacenet_model_config.dart";
-import 'package:photos/utils/image_package_util.dart';
-import "package:photos/utils/ml_input_output.dart";
+import 'package:photos/utils/image_ml_isolate.dart';
+import 'package:photos/utils/image_ml_util.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 
 /// This class is responsible for running the MobileFaceNet model, and can be accessed through the singleton `FaceEmbedding.instance`.
@@ -44,30 +44,38 @@ class FaceEmbedding {
     }
   }
 
-  /// WARNING: This function only works for one face at a time. it's better to use [predictBatch], which can handle both single and multiple faces.
-  Future<List<double>> predict(Uint8List imageData, {String? imagePath}) async {
+  /// WARNING: This function only works for one face at a time. it's better to use [predict], which can handle both single and multiple faces.
+  Future<List<double>> predictSingle(
+    Uint8List imageData,
+    FaceDetectionRelative face,
+  ) async {
     assert(_interpreter != null && _isolateInterpreter != null);
-
-    final dataConversionStopwatch = Stopwatch()..start();
-    final image = await ImageConversionIsolate.instance.convert(imageData, imagePath: imagePath);
-
-    if (image == null) {
-      _logger.severe('Error while converting Uint8List to Image');
-      throw CouldNotConvertToImageImage();
-    }
-
-    dataConversionStopwatch.stop();
-    _logger.info(
-      'image data conversion is finished, in ${dataConversionStopwatch.elapsedMilliseconds}ms',
-    );
 
     final stopwatch = Stopwatch()..start();
 
-    final inputImageMatrix =
-        _getPreprocessedFace(image); // [inputHeight, inputWidth, 3]
-    final input = [inputImageMatrix];
+    final embeddingOptions = config.faceEmbeddingOptions;
 
-    final output = createEmptyOutputMatrix(outputShapes[0]);
+    // Image decoding and preprocessing
+    List<List<List<List<double>>>> input;
+    List output;
+    try {
+      final stopwatchDecoding = Stopwatch()..start();
+      final (inputImageMatrix, transformationMatrices) =
+          await ImageMlIsolate.instance.preprocessMobileFaceNet(
+        imageData,
+        [face],
+      );
+      input = inputImageMatrix;
+      stopwatchDecoding.stop();
+      _logger.info(
+        'Image decoding and preprocessing is finished, in ${stopwatchDecoding.elapsedMilliseconds}ms',
+      );
+
+      output = createEmptyOutputMatrix(outputShapes[0]);
+    } catch (e) {
+      _logger.severe('Error while decoding and preprocessing image: $e');
+      throw MobileFaceNetImagePreprocessingException();
+    }
 
     _logger.info('interpreter.run is called');
     // Run inference
@@ -105,20 +113,19 @@ class FaceEmbedding {
     return embedding;
   }
 
-  Future<List<List<double>>> predictBatch(
-    List<Double3DInputMatrix> faces,
+  Future<List<List<double>>> predict(
+    List<Double3DInputMatrix> inputImageMatrix,
   ) async {
     assert(_interpreter != null && _isolateInterpreter != null);
 
     final stopwatch = Stopwatch()..start();
 
-    final inputImageMatrix =
-        _checkPreprocessedInput(faces); // [inputHeight, inputWidth, 3]
+    _checkPreprocessedInput(inputImageMatrix); // [inputHeight, inputWidth, 3]
     final input = [inputImageMatrix];
 
     final output = <int, Object>{};
     final outputShape = outputShapes[0];
-    outputShape[0] = faces.length;
+    outputShape[0] = inputImageMatrix.length;
     output[0] = createEmptyOutputMatrix(outputShape);
     // for (int i = 0; i < faces.length; i++) {
     //   output[i] = createEmptyOutputMatrix(outputShapes[0]);
@@ -144,7 +151,7 @@ class FaceEmbedding {
     // Get output tensors
     final embeddings = <List<double>>[];
     final outerEmbedding = output[0]! as Iterable<dynamic>;
-    for (int i = 0; i < faces.length; i++) {
+    for (int i = 0; i < inputImageMatrix.length; i++) {
       final embedding = List<double>.from(outerEmbedding.toList()[i]);
       // _logger.info("The $i-th embedding: $embedding");
       embeddings.add(embedding);
@@ -210,33 +217,7 @@ class FaceEmbedding {
     }
   }
 
-  Double3DInputMatrix _getPreprocessedFace(
-    image_lib.Image image,
-  ) {
-    final embeddingOptions = config.faceEmbeddingOptions;
-
-    // Resize image for model input (112, 112) (thought most likely it is already resized, so we check first)
-    if (image.width != embeddingOptions.inputWidth ||
-        image.height != embeddingOptions.inputHeight) {
-      image = image_lib.copyResize(
-        image,
-        width: embeddingOptions.inputWidth,
-        height: embeddingOptions.inputHeight,
-        interpolation: image_lib.Interpolation
-            .linear, // can choose `bicubic` if more accuracy is needed. But this is slow, and adds little if bilinear is already used earlier (which is the case)
-      );
-    }
-
-    // Get image matrix representation [inputWidt, inputHeight, 3]
-    final imageMatrix =
-        createInputMatrixFromImage(image) as Double3DInputMatrix;
-
-    final checkedImageMatrix = _checkPreprocessedInput([imageMatrix]);
-
-    return checkedImageMatrix[0];
-  }
-
-  List<Double3DInputMatrix> _checkPreprocessedInput(
+  void _checkPreprocessedInput(
     List<Double3DInputMatrix> inputMatrix,
   ) {
     final embeddingOptions = config.faceEmbeddingOptions;
@@ -259,7 +240,5 @@ class FaceEmbedding {
     if (minValue < -1 || maxValue > 1) {
       throw MobileFaceNetWrongInputRange();
     }
-
-    return inputMatrix;
   }
 }

@@ -4,7 +4,7 @@ import "package:logging/logging.dart";
 import "package:photos/db/files_db.dart";
 import "package:photos/db/ml_data_db.dart";
 import "package:photos/models/file/file.dart";
-import "package:photos/utils/image_package_util.dart";
+import 'package:photos/utils/image_ml_isolate.dart';
 import "package:photos/utils/thumbnail_util.dart";
 
 class FaceSearchService {
@@ -62,13 +62,13 @@ class FaceSearchService {
     final detection = thumbnailMlResult.getDetectionForFaceId(thumbnailFaceID);
 
     // create the thumbnail from the full file thumbnail and the face detection
-    final Uint8List? faceThumbnail = await generateFaceThumbnail(
-      fileThumbnail,
-      enteFile.displayName,
-      detection,
-      
-    );
-    if (faceThumbnail == null) {
+    Uint8List faceThumbnail;
+    try {
+      faceThumbnail = await ImageMlIsolate.instance.generateFaceThumbnail(
+        fileThumbnail,
+        detection,
+      );
+    } catch (e) {
       _logger.warning(
         "Unable to generate face thumbnail for thumbnail faceID $thumbnailFaceID, unable to get thumbnail.",
       );

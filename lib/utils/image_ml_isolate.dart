@@ -1,0 +1,272 @@
+import 'dart:async';
+import 'dart:isolate';
+import 'dart:typed_data' show Uint8List;
+import 'dart:ui';
+
+import 'package:flutter_isolate/flutter_isolate.dart';
+import "package:logging/logging.dart";
+import 'package:photos/models/ml_typedefs.dart';
+import "package:photos/services/face_ml/face_detection/detection.dart";
+import "package:photos/utils/image_ml_util.dart";
+import "package:synchronized/synchronized.dart";
+
+enum ImageOperation {
+  preprocessStandard,
+  preprocessFaceAlign,
+  preprocessMobileFaceNet,
+  generateFaceThumbnail
+}
+
+/// This class is responsible for all image operations needed for ML models. It runs in a separate isolate to avoid jank.
+///
+/// It can be accessed through the singleton `ImageConversionIsolate.instance`. e.g. `ImageConversionIsolate.instance.convert(imageData)`
+///
+/// IMPORTANT: Make sure to dispose of the isolate when you're done with it with `dispose()`, e.g. `ImageConversionIsolate.instance.dispose();`
+class ImageMlIsolate {
+  // static const String debugName = 'ImageMlIsolate';
+
+  final _logger = Logger('ImageMlIsolate');
+
+  Timer? _inactivityTimer;
+  final Duration _inactivityDuration = const Duration(minutes: 20);
+
+  final _initLock = Lock();
+
+  late FlutterIsolate _isolate;
+  late ReceivePort _receivePort = ReceivePort();
+  late SendPort _mainSendPort;
+
+  bool isSpawned = false;
+
+  // singleton pattern
+  ImageMlIsolate._privateConstructor();
+
+  /// Use this instance to access the ImageConversionIsolate service. Make sure to call `init()` before using it.
+  /// e.g. `await ImageConversionIsolate.instance.init();`
+  /// And kill the isolate when you're done with it with `dispose()`, e.g. `ImageConversionIsolate.instance.dispose();`
+  ///
+  /// Then you can use `convert()` to get the image, so `ImageConversionIsolate.instance.convert(imageData, imagePath: imagePath)`
+  static final ImageMlIsolate instance = ImageMlIsolate._privateConstructor();
+  factory ImageMlIsolate() => instance;
+
+  Future<void> init() async {
+    return _initLock.synchronized(() async {
+      if (isSpawned) return;
+
+      _receivePort = ReceivePort();
+
+      try {
+        _isolate = await FlutterIsolate.spawn(
+          _isolateMain,
+          _receivePort.sendPort,
+        );
+        _mainSendPort = await _receivePort.first as SendPort;
+        isSpawned = true;
+
+        _resetInactivityTimer();
+      } catch (e) {
+        _logger.severe('Could not spawn isolate', e);
+        isSpawned = false;
+      }
+    });
+  }
+
+  Future<void> ensureSpawned() async {
+    if (!isSpawned) {
+      await init();
+    }
+  }
+
+  @pragma('vm:entry-point')
+  static void _isolateMain(SendPort mainSendPort) async {
+    final receivePort = ReceivePort();
+    mainSendPort.send(receivePort.sendPort);
+
+    receivePort.listen((message) async {
+      final functionIndex = message[0] as int;
+      final function = ImageOperation.values[functionIndex];
+      final args = message[1] as Map<String, dynamic>;
+      final sendPort = message[2] as SendPort;
+
+      switch (function) {
+        case ImageOperation.preprocessStandard:
+          final imageData = args['imageData'] as Uint8List;
+          final normalize = args['normalize'] as bool;
+          final requiredWidth = args['requiredWidth'] as int;
+          final requiredHeight = args['requiredHeight'] as int;
+          final qualityIndex = args['quality'] as int;
+          final quality = FilterQuality.values[qualityIndex];
+          final Num3DInputMatrix result = await preprocessImageToMatrix(
+            imageData,
+            normalize: normalize,
+            requiredWidth: requiredWidth,
+            requiredHeight: requiredHeight,
+            quality: quality,
+          );
+          sendPort.send(result);
+        case ImageOperation.preprocessFaceAlign:
+          final imageData = args['imageData'] as Uint8List;
+          final faceLandmarks = args['faceLandmarks'] as List<List<List<int>>>;
+          final List<Uint8List> result = await preprocessFaceAlignToUint8List(
+            imageData,
+            faceLandmarks,
+          );
+          sendPort.send(List.from(result));
+        case ImageOperation.preprocessMobileFaceNet:
+          final imageData = args['imageData'] as Uint8List;
+          final facesJson = args['facesJson'] as List<Map<String, dynamic>>;
+          final (inputs, transformationMatrices) =
+              await preprocessToMobileFaceNetInput(
+            imageData,
+            facesJson,
+          );
+          sendPort.send({
+            'inputs': inputs,
+            'transformationMatrices': transformationMatrices,
+          });
+        case ImageOperation.generateFaceThumbnail:
+          final imageData = args['imageData'] as Uint8List;
+          final faceDetection = args['faceDetection'] as FaceDetectionRelative;
+          final Uint8List result =
+              await generateFaceThumbnailFromData(imageData, faceDetection);
+          sendPort.send(<dynamic>[result]);
+      }
+    });
+  }
+
+  /// The common method to run any operation in the isolate. It sends the [message] to [_isolateMain] and waits for the result.
+  Future<dynamic> _runInIsolate(
+    (ImageOperation, Map<String, dynamic>) message,
+  ) async {
+    await ensureSpawned();
+    _resetInactivityTimer();
+    final completer = Completer<dynamic>();
+    final answerPort = ReceivePort();
+
+    _mainSendPort.send([message.$1.index, message.$2, answerPort.sendPort]);
+
+    answerPort.listen((receivedMessage) {
+      completer.complete(receivedMessage);
+    });
+
+    return completer.future;
+  }
+
+  /// Resets a timer that kills the isolate after a certain amount of inactivity.
+  ///
+  /// Should be called after initialization (e.g. inside `init()`) and after every call to isolate (e.g. inside `_runInIsolate()`)
+  void _resetInactivityTimer() {
+    _inactivityTimer?.cancel();
+    _inactivityTimer = Timer(_inactivityDuration, () {
+      _logger.info(
+        'Flutter Isolate has been inactive for ${_inactivityDuration.inSeconds} seconds. Killing isolate.',
+      );
+      dispose();
+    });
+  }
+
+  /// Disposes the isolate worker.
+  void dispose() {
+    if (!isSpawned) return;
+
+    isSpawned = false;
+    _isolate.kill();
+    _receivePort.close();
+    _inactivityTimer?.cancel();
+  }
+
+  /// Preprocesses [imageData] for standard ML models inside a separate isolate.
+  ///
+  /// Returns a [Num3DInputMatrix] image usable for ML inference.
+  ///
+  /// Uses [preprocessImageToMatrix] inside the isolate.
+  Future<Num3DInputMatrix> preprocessImage(
+    Uint8List imageData, {
+    required bool normalize,
+    required int requiredWidth,
+    required int requiredHeight,
+    FilterQuality quality = FilterQuality.medium,
+  }) async {
+    return await _runInIsolate(
+      (
+        ImageOperation.preprocessStandard,
+        {
+          'imageData': imageData,
+          'normalize': normalize,
+          'requiredWidth': requiredWidth,
+          'requiredHeight': requiredHeight,
+          'quality': quality.index,
+        },
+      ),
+    );
+  }
+
+  /// Preprocesses [imageData] for face alignment inside a separate isolate, to display the aligned faces. Mostly used for debugging.
+  ///
+  /// Returns a list of [Uint8List] images, one for each face, in png format.
+  ///
+  /// Uses [preprocessFaceAlignToUint8List] inside the isolate.
+  ///
+  /// WARNING: For preprocessing for MobileFaceNet, use [preprocessMobileFaceNet] instead!
+  Future<List<Uint8List>> preprocessFaceAlign(
+    Uint8List imageData,
+    List<FaceDetectionAbsolute> faces,
+  ) async {
+    final faceLandmarks =
+        faces.map((face) => face.allKeypoints.sublist(0, 4)).toList();
+    return await _runInIsolate(
+      (
+        ImageOperation.preprocessFaceAlign,
+        {
+          'imageData': imageData,
+          'faceLandmarks': faceLandmarks,
+        },
+      ),
+    ).then((value) => value.cast<Uint8List>());
+  }
+
+  /// Preprocesses [imageData] for MobileFaceNet input inside a separate isolate.
+  ///
+  /// Returns a list of [Num3DInputMatrix] images, one for each face.
+  ///
+  /// Uses [preprocessToMobileFaceNetInput] inside the isolate.
+  Future<(List<Double3DInputMatrix>, List<List<List<double>>>)>
+      preprocessMobileFaceNet(
+    Uint8List imageData,
+    List<FaceDetectionRelative> faces,
+  ) async {
+    final List<Map<String, dynamic>> facesJson =
+        faces.map((face) => face.toJson()).toList();
+    final Map<String, dynamic> results = await _runInIsolate(
+      (
+        ImageOperation.preprocessMobileFaceNet,
+        {
+          'imageData': imageData,
+          'facesJson': facesJson,
+        },
+      ),
+    );
+    final inputs = results['inputs'] as List<Double3DInputMatrix>;
+    final transformationMatrices =
+        results['transformationMatrices'] as List<List<List<double>>>;
+    return (inputs, transformationMatrices);
+  }
+
+  /// Generates a face thumbnail from [imageData] and a [faceDetection].
+  ///
+  /// Uses [generateFaceThumbnailFromData] inside the isolate.
+  Future<Uint8List> generateFaceThumbnail(
+    Uint8List imageData,
+    FaceDetectionRelative faceDetection,
+  ) async {
+    return await _runInIsolate(
+      (
+        ImageOperation.generateFaceThumbnail,
+        {
+          'imageData': imageData,
+          'faceDetection': faceDetection,
+        },
+      ),
+    ).then((value) => value[0] as Uint8List);
+  }
+}
