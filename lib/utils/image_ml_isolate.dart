@@ -126,7 +126,8 @@ class ImageMlIsolate {
           });
         case ImageOperation.generateFaceThumbnail:
           final imageData = args['imageData'] as Uint8List;
-          final faceDetection = args['faceDetection'] as FaceDetectionRelative;
+          final faceDetectionJson = args['faceDetection'] as Map<String, dynamic>;
+          final faceDetection = FaceDetectionRelative.fromJson(faceDetectionJson);
           final Uint8List result =
               await generateFaceThumbnailFromData(imageData, faceDetection);
           sendPort.send(<dynamic>[result]);
@@ -264,7 +265,7 @@ class ImageMlIsolate {
         ImageOperation.generateFaceThumbnail,
         {
           'imageData': imageData,
-          'faceDetection': faceDetection,
+          'faceDetection': faceDetection.toJson(),
         },
       ),
     ).then((value) => value[0] as Uint8List);

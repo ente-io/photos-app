@@ -9,7 +9,6 @@ import "package:photos/db/ml_data_db.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/models/file/file_type.dart";
 import "package:photos/models/ml_typedefs.dart";
-import "package:photos/services/face_ml/face_alignment/similarity_transform.dart";
 import "package:photos/services/face_ml/face_clustering/face_clustering_service.dart";
 import "package:photos/services/face_ml/face_detection/detection.dart";
 import "package:photos/services/face_ml/face_detection/face_detection_exceptions.dart";
@@ -33,7 +32,7 @@ enum FileDataForML { thumbnailData, fileData, compressedFileData }
 class FaceMlService {
   final _logger = Logger("FaceMlService");
 
-  late SimilarityTransform _similarityTransform;
+  // late SimilarityTransform _similarityTransform;
 
   // singleton pattern
   FaceMlService._privateConstructor();
@@ -49,7 +48,7 @@ class FaceMlService {
       _logger.severe("Could not initialize blazeface", e, s);
     }
     try {
-      _similarityTransform = SimilarityTransform();
+      // _similarityTransform = SimilarityTransform();
     } catch (e, s) {
       _logger.severe("Could not initialize face alignment", e, s);
     }
