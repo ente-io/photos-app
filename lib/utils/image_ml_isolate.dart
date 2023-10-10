@@ -17,6 +17,8 @@ enum ImageOperation {
   generateFaceThumbnail
 }
 
+/// The isolate below uses functions from ["package:photos/utils/image_ml_util.dart"] to preprocess images for ML models.
+
 /// This class is responsible for all image operations needed for ML models. It runs in a separate isolate to avoid jank.
 ///
 /// It can be accessed through the singleton `ImageConversionIsolate.instance`. e.g. `ImageConversionIsolate.instance.convert(imageData)`

@@ -10,6 +10,7 @@ import "dart:ui";
 //         ImageInfo,
 //         MemoryImage,
 //         ImageConfiguration;
+// import 'package:flutter/material.dart' as material show Image;
 import 'package:flutter/painting.dart' as paint show decodeImageFromList;
 import "package:logging/logging.dart";
 import 'package:ml_linalg/linalg.dart';
@@ -150,17 +151,18 @@ double normalizePixel(num pixelValue) {
 
 /// Decodes [Uint8List] image data to an ui.[Image] object.
 Future<Image> decodeImageFromData(Uint8List imageData) async {
+  // Decoding using flutter paint. This is the fastest and easiest method.
   final Image image = await paint.decodeImageFromList(imageData);
   return image;
 
-  // Similar decoding as above, but without using flutter paint. This is not faster than the above.
+  // // Similar decoding as above, but without using flutter paint. This is not faster than the above.
   // final Codec codec = await instantiateImageCodecFromBuffer(
   //   await ImmutableBuffer.fromUint8List(imageData),
   // );
   // final FrameInfo frameInfo = await codec.getNextFrame();
   // return frameInfo.image;
 
-  // // Decoding using the ImageProvider, same as `image_pixels` package. This is not faster than the above.
+  // Decoding using the ImageProvider, same as `image_pixels` package. This is not faster than the above.
   // final Completer<Image> completer = Completer<Image>();
   // final ImageProvider provider = MemoryImage(imageData);
   // final ImageStream stream = provider.resolve(const ImageConfiguration());
@@ -172,6 +174,10 @@ Future<Image> decodeImageFromData(Uint8List imageData) async {
   // final Image image = await completer.future;
   // stream.removeListener(listener);
   // return image;
+
+  // // Decoding using the ImageProvider from material.Image. This is not faster than the above, and also the code below is not finished!
+  // final materialImage = material.Image.memory(imageData);
+  // final ImageProvider uiImage = await materialImage.image;
 }
 
 /// Decodes [Uint8List] RGBA bytes to an ui.[Image] object.
