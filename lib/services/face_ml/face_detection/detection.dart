@@ -1,3 +1,6 @@
+import 'dart:convert' show utf8;
+import 'package:crypto/crypto.dart' show sha256;
+
 abstract class Detection {
   final double score;
 
@@ -42,7 +45,15 @@ class FaceDetectionRelative extends Detection {
     required double score,
     required this.box,
     required this.allKeypoints,
-  }) : super(score: score);
+  }) : super(score: score) {
+    assert(
+      (box[0] >= 0 && box[0] <= 1) &&
+          (box[1] >= 0 && box[1] <= 1) &&
+          (box[2] >= 0 && box[2] <= 1) &&
+          (box[3] >= 0 && box[3] <= 1),
+      "Bounding box values must be in the range [0, 1]",
+    );
+  }
 
   factory FaceDetectionRelative.zero() {
     return FaceDetectionRelative(
@@ -101,6 +112,32 @@ class FaceDetectionRelative extends Detection {
       box: intbox,
       allKeypoints: intKeypoints,
     );
+  }
+
+  String toFaceID({required int fileID}) {
+    // Assert that the values are within the expected range
+    assert(
+      (xMinBox >= 0 && xMinBox <= 1) &&
+          (yMinBox >= 0 && yMinBox <= 1) &&
+          (xMaxBox >= 0 && xMaxBox <= 1) &&
+          (yMaxBox >= 0 && yMaxBox <= 1),
+      "Bounding box values must be in the range [0, 1]",
+    );
+
+    // Extract bounding box values
+    final String xMin = xMinBox.toStringAsFixed(5).substring(2);
+    final String yMin = yMinBox.toStringAsFixed(5).substring(2);
+    final String xMax = xMaxBox.toStringAsFixed(5).substring(2);
+    final String yMax = yMaxBox.toStringAsFixed(5).substring(2);
+
+    // Convert the bounding box values to string and concatenate
+    final String rawID = "${xMin}_${yMin}_${xMax}_$yMax";
+
+    // Hash the concatenated string using SHA256
+    final digest = sha256.convert(utf8.encode(rawID));
+
+    // Return the hexadecimal representation of the hash
+    return fileID.toString() + '_' + digest.toString();
   }
 
   @override

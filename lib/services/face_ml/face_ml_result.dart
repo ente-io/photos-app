@@ -7,7 +7,6 @@ import "package:photos/models/ml_typedefs.dart";
 import "package:photos/services/face_ml/face_alignment/alignment_result.dart";
 import "package:photos/services/face_ml/face_detection/detection.dart";
 import "package:photos/services/face_ml/face_ml_methods.dart";
-import "package:uuid/uuid.dart";
 
 const faceMlVersion = 1;
 const clusterMlVersion = 1;
@@ -358,13 +357,12 @@ class FaceResultBuilder {
     required this.faceId,
   });
 
-  // TODO: [BOB] change id to depend on the detection box, being deterministic, still prepended with fileId. Use md5 hash instead of uuid?
   FaceResultBuilder.fromFaceDetection(
     FaceDetectionRelative faceDetection, {
     required FaceMlResultBuilder resultBuilder,
   }) {
     fileId = resultBuilder.fileId;
-    faceId = resultBuilder.fileId.toString() + '_' + const Uuid().v4();
+    faceId = faceDetection.toFaceID(fileID: resultBuilder.fileId);
     detection = faceDetection;
   }
 
