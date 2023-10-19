@@ -85,7 +85,7 @@ class FileAppBarState extends State<FileAppBar> {
           );
         },
       ),
-      Size.fromHeight(Platform.isAndroid ? 80 : 96),
+      Size.fromHeight(Platform.isAndroid ? 84 : 96),
     );
   }
 
@@ -104,27 +104,35 @@ class FileAppBarState extends State<FileAppBar> {
               ?.isHidden() ??
           false;
     }
-      if (kDebugMode) {
-        actions.add(
-          Text(
-            widget.file.generatedID?.toString() ?? 'null',
-            style: const TextStyle(color: Colors.white),
-          ),
-        );
-      }
+    if (kDebugMode) {
+      actions.add(
+        Text(
+          widget.file.generatedID?.toString() ?? 'null',
+          style: const TextStyle(color: Colors.white),
+        ),
+      );
+    }
     if (widget.file.isLiveOrMotionPhoto) {
       actions.add(
         IconButton(
           icon: const Icon(Icons.album_outlined),
           onPressed: () {
-            showShortToast(context, S.of(context).pressAndHoldToPlayVideoDetailed);
+            showShortToast(
+              context,
+              S.of(context).pressAndHoldToPlayVideoDetailed,
+            );
           },
         ),
       );
     }
     // only show fav option for files owned by the user
     if (isOwnedByUser && !isFileHidden && isFileUploaded) {
-      actions.add(FavoriteWidget(widget.file));
+      actions.add(
+        Padding(
+          padding: const EdgeInsets.all(8),
+          child: FavoriteWidget(widget.file),
+        ),
+      );
     }
     if (!isFileUploaded) {
       actions.add(
