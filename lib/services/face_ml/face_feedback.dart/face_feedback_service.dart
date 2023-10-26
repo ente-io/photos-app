@@ -29,6 +29,9 @@ class FaceFeedbackService {
   ///
   /// The updated cluster is also updated in [MlDataDB].
   Future<ClusterResult?> removePhotoFromCluster(int fileID, personID) async {
+    _logger.info(
+      'removePhotoFromCluster called with fileID $fileID and personID $personID',
+    );
     // Get the relevant cluster and face result
     final ClusterResult? cluster = await _mlDatabase.getClusterResult(personID);
     if (cluster == null) {
@@ -99,6 +102,9 @@ class FaceFeedbackService {
   ///
   /// Requires either a [ClusterResult] or a [personID]. If both are given, the [ClusterResult] is used.
   Future<void> deleteCluster({int? personID, ClusterResult? cluster}) async {
+    _logger.info(
+      'deleteCluster called with personID $personID and cluster $cluster',
+    );
     if (cluster == null && personID == null) {
       _logger.severe(
         "No cluster or personID given, unable to delete cluster!",
@@ -152,6 +158,9 @@ class FaceFeedbackService {
     String? customName,
     String? customFaceID,
   }) async {
+    _logger.info(
+      'renameOrSetThumbnailCluster called with personID $personID, cluster $cluster, customName $customName, and customFaceID $customFaceID',
+    );
     if (cluster == null && personID == null) {
       _logger.severe(
         "No cluster or personID given, unable to delete cluster!",
@@ -224,6 +233,9 @@ class FaceFeedbackService {
     List<int>? personIDs,
     List<ClusterResult>? clusters,
   }) async {
+    _logger.info(
+      'mergeClusters called with personIDs $personIDs and clusters $clusters',
+    );
     if (clusters == null && personIDs == null) {
       _logger.severe(
         "No clusters or personIDs given, unable to delete cluster!",

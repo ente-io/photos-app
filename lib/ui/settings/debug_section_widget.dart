@@ -95,8 +95,11 @@ class DebugSectionWidget extends StatelessWidget {
           trailingIcon: Icons.chevron_right_outlined,
           trailingIconIsMuted: true,
           onTap: () async {
-            await MlDataDB.instance
-                .cleanTables(cleanFaces: true, cleanPeople: true, cleanFeedback: true);
+            await MlDataDB.instance.cleanTables(
+              cleanFaces: true,
+              cleanPeople: true,
+              cleanFeedback: true,
+            );
             showShortToast(context, 'Databases cleared');
           },
         ),
@@ -109,8 +112,7 @@ class DebugSectionWidget extends StatelessWidget {
           trailingIcon: Icons.chevron_right_outlined,
           trailingIconIsMuted: true,
           onTap: () async {
-            await MlDataDB.instance
-                .cleanTables(cleanFaces: true);
+            await MlDataDB.instance.cleanTables(cleanFaces: true);
             showShortToast(context, 'Database cleared');
           },
         ),
@@ -123,8 +125,7 @@ class DebugSectionWidget extends StatelessWidget {
           trailingIcon: Icons.chevron_right_outlined,
           trailingIconIsMuted: true,
           onTap: () async {
-            await MlDataDB.instance
-                .cleanTables(cleanPeople: true);
+            await MlDataDB.instance.cleanTables(cleanPeople: true);
             showShortToast(context, 'Database cleared');
           },
         ),
@@ -137,8 +138,7 @@ class DebugSectionWidget extends StatelessWidget {
           trailingIcon: Icons.chevron_right_outlined,
           trailingIconIsMuted: true,
           onTap: () async {
-            await MlDataDB.instance
-                .cleanTables(cleanFeedback: true);
+            await MlDataDB.instance.cleanTables(cleanFeedback: true);
             showShortToast(context, 'Database cleared');
           },
         ),
@@ -167,7 +167,12 @@ class DebugSectionWidget extends StatelessWidget {
           trailingIconIsMuted: true,
           onTap: () async {
             showShortToast(context, 'Clustering started');
+            try {
             await FaceMlService.instance.clusterAllImages();
+            } catch (e, s) {
+              debugPrint(e.toString());
+              debugPrint(s.toString());
+            }
             showShortToast(context, 'Clustering finished');
           },
         ),
@@ -181,7 +186,12 @@ class DebugSectionWidget extends StatelessWidget {
           trailingIconIsMuted: true,
           onTap: () async {
             showShortToast(context, 'Not fully implemented yet');
+            // try {
             // await FaceFeedbackService.instance.removePhotoFromCluster(10, 0);
+            // } catch (e, s) {
+            //   debugPrint(e.toString());
+            //   debugPrint(s.toString());
+            // }
           },
         ),
         sectionOptionSpacing,
@@ -194,7 +204,12 @@ class DebugSectionWidget extends StatelessWidget {
           trailingIconIsMuted: true,
           onTap: () async {
             showShortToast(context, 'Not fully implemented yet');
+            // try {
             // await FaceFeedbackService.instance.removePhotoFromCluster(10, 0);
+            // } catch (e, s) {
+            //   debugPrint(e.toString());
+            //   debugPrint(s.toString());
+            // }
           },
         ),
         sectionOptionSpacing,
@@ -207,7 +222,13 @@ class DebugSectionWidget extends StatelessWidget {
           trailingIconIsMuted: true,
           onTap: () async {
             showShortToast(context, 'Starting merge');
-            await FaceFeedbackService.instance.mergeClusters(personIDs: [0, 1]);
+            try {
+              await FaceFeedbackService.instance
+                  .mergeClusters(personIDs: [0, 1]);
+            } catch (e, s) {
+              debugPrint(e.toString());
+              debugPrint(s.toString());
+            }
             showShortToast(context, 'Finished merge');
           },
         ),
@@ -221,7 +242,12 @@ class DebugSectionWidget extends StatelessWidget {
           trailingIconIsMuted: true,
           onTap: () async {
             showShortToast(context, 'Starting delete');
-            await FaceFeedbackService.instance.deleteCluster(personID: 5);
+            try {
+              await FaceFeedbackService.instance.deleteCluster(personID: 5);
+            } catch (e, s) {
+              debugPrint(e.toString());
+              debugPrint(s.toString());
+            }
             showShortToast(context, 'Finished delete');
           },
         ),
@@ -235,10 +261,15 @@ class DebugSectionWidget extends StatelessWidget {
           trailingIconIsMuted: true,
           onTap: () async {
             showShortToast(context, 'Starting rename');
-            await FaceFeedbackService.instance.renameOrSetThumbnailCluster(
-              personID: 6,
-              customName: 'test',
-            );
+            try {
+              await FaceFeedbackService.instance.renameOrSetThumbnailCluster(
+                personID: 6,
+                customName: 'test',
+              );
+            } catch (e, s) {
+              debugPrint(e.toString());
+              debugPrint(s.toString());
+            }
             showShortToast(context, 'Finished rename');
           },
         ),
@@ -255,10 +286,15 @@ class DebugSectionWidget extends StatelessWidget {
               context,
               "Can't access thumbnail faceID for testing",
             );
+            // try {
             // await FaceFeedbackService.instance.renameOrSetThumbnailCluster(
             //   personID: 8,
             //   customFaceID: 'test',
             // );
+            // } catch (e, s) {
+            //   debugPrint(e.toString());
+            //   debugPrint(s.toString());
+            // }
           },
         ),
         sectionOptionSpacing,

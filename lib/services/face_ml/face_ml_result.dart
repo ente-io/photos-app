@@ -283,6 +283,7 @@ class ClusterResultBuilder {
     final tempFeedback = RenameOrCustomThumbnailClusterFeedback(
       medoid: medoid,
       medoidDistanceThreshold: medoidDistanceThreshold,
+      customName: 'test',
     );
     final allRenameFeedbacks =
         await MlDataDB.instance.getAllMatchingClusterFeedback(tempFeedback);
@@ -325,8 +326,15 @@ class ClusterResultBuilder {
       if (await clusterBuilder._checkIfClusterIsDeleted()) {
         deletedClusterIndices.add(i);
       }
+    }
 
-      // Check if a cluster should be merged with another cluster
+    // Check if a cluster should be merged with another cluster
+    for (var i = 0; i < clusterBuilders.length; i++) {
+      // Don't check for clusters that have been deleted
+      if (deletedClusterIndices.contains(i)) {
+        continue;
+      }
+      final clusterBuilder = clusterBuilders[i];
       final List<MergeClusterFeedback> allMatchingMergeFeedback =
           await MlDataDB.instance.getAllMatchingClusterFeedback(
         MergeClusterFeedback(
@@ -341,24 +349,26 @@ class ClusterResultBuilder {
       // Merge the cluster with the first merge feedback
       final mainFeedback = allMatchingMergeFeedback.first;
       if (allMatchingMergeFeedback.length > 1) {
+        // This is the BUG!!!!
         _logger.warning(
           "There are ${allMatchingMergeFeedback.length} merge feedbacks for cluster ${clusterBuilder.personId}. Using the first one.",
         );
-        for (var j = 0; j < clusterBuilders.length; j++) {
-          if (i == j) continue;
-          final clusterBuilderToMergeTo = clusterBuilders[j];
-          final distance = cosineDistance(
-            mainFeedback.medoidToMoveTo,
-            clusterBuilderToMergeTo.medoid,
+      }
+      for (var j = 0; j < clusterBuilders.length; j++) {
+        if (i == j) continue;
+        final clusterBuilderToMergeTo = clusterBuilders[j];
+        final distance = cosineDistance(
+          // BUG: it hasn't calculated the medoid for every clusterBuilder yet!!!
+          mainFeedback.medoidToMoveTo,
+          clusterBuilderToMergeTo.medoid,
+        );
+        if (distance < mainFeedback.medoidDistanceThreshold ||
+            distance < clusterBuilderToMergeTo.medoidDistanceThreshold) {
+          clusterBuilderToMergeTo.addFileIDsAndFaceIDs(
+            clusterBuilder.fileIds,
+            clusterBuilder.faceIds,
           );
-          if (distance < mainFeedback.medoidDistanceThreshold ||
-              distance < clusterBuilderToMergeTo.medoidDistanceThreshold) {
-            clusterBuilderToMergeTo.addFileIDsAndFaceIDs(
-              clusterBuilder.fileIds,
-              clusterBuilder.faceIds,
-            );
-            deletedClusterIndices.add(i);
-          }
+          deletedClusterIndices.add(i);
         }
       }
     }
