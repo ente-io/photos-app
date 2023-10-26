@@ -168,7 +168,7 @@ class DebugSectionWidget extends StatelessWidget {
           onTap: () async {
             showShortToast(context, 'Clustering started');
             try {
-            await FaceMlService.instance.clusterAllImages();
+              await FaceMlService.instance.clusterAllImages();
             } catch (e, s) {
               debugPrint(e.toString());
               debugPrint(s.toString());
@@ -262,15 +262,27 @@ class DebugSectionWidget extends StatelessWidget {
           onTap: () async {
             showShortToast(context, 'Starting rename');
             try {
+              final cluster6 = await MlDataDB.instance.getClusterResult(6);
+              if (cluster6 == null) {
+                showShortToast(context, 'Cluster 6 not found');
+                return;
+              }
+              if (cluster6.hasUserDefinedName) {
+                showShortToast(
+                  context,
+                  'Cluster 6 already has a name: ${cluster6.userDefinedName}',
+                );
+                return;
+              }
               await FaceFeedbackService.instance.renameOrSetThumbnailCluster(
                 personID: 6,
-                customName: 'test',
+                customName: 'Giel! Kerelman!',
               );
             } catch (e, s) {
               debugPrint(e.toString());
               debugPrint(s.toString());
             }
-            showShortToast(context, 'Finished rename');
+            // showShortToast(context, 'Finished rename');
           },
         ),
         sectionOptionSpacing,
@@ -284,17 +296,27 @@ class DebugSectionWidget extends StatelessWidget {
           onTap: () async {
             showShortToast(
               context,
-              "Can't access thumbnail faceID for testing",
+              "Changing thumbnail for cluster 8",
             );
-            // try {
-            // await FaceFeedbackService.instance.renameOrSetThumbnailCluster(
-            //   personID: 8,
-            //   customFaceID: 'test',
-            // );
-            // } catch (e, s) {
-            //   debugPrint(e.toString());
-            //   debugPrint(s.toString());
-            // }
+            try {
+              // final cluster8 = await MlDataDB.instance.getClusterResult(8);
+              // if (cluster8 == null) {
+              //   showShortToast(context, 'Cluster 8 not found');
+              //   return;
+              // }
+              // debugPrint(
+              //   'Current thumbnail faceID: ${cluster8.thumbnailFaceId}',
+              // );
+              // debugPrint('All possible faceIDs: ${cluster8.faceIDs}');
+              await FaceFeedbackService.instance.renameOrSetThumbnailCluster(
+                personID: 8,
+                customFaceID: '20435664_ccaecd89-b5de-4dca-9b68-08585d8a1742',
+              );
+              showShortToast(context, 'Thumbnail changed');
+            } catch (e, s) {
+              debugPrint(e.toString());
+              debugPrint(s.toString());
+            }
           },
         ),
         sectionOptionSpacing,
