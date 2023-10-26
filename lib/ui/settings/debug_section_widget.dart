@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:photos/core/configuration.dart';
 import "package:photos/db/ml_data_db.dart";
+import "package:photos/services/face_ml/face_feedback.dart/face_feedback_service.dart";
 import "package:photos/services/face_ml/face_ml_service.dart";
 import "package:photos/services/face_ml/face_search_service.dart";
 import 'package:photos/services/ignored_files_service.dart';
@@ -88,15 +89,57 @@ class DebugSectionWidget extends StatelessWidget {
         sectionOptionSpacing,
         MenuItemWidget(
           captionedTextWidget: const CaptionedTextWidget(
-            title: "FaceML: Delete DB",
+            title: "FaceML: Delete full DB",
           ),
           pressedColor: getEnteColorScheme(context).fillFaint,
           trailingIcon: Icons.chevron_right_outlined,
           trailingIconIsMuted: true,
           onTap: () async {
             await MlDataDB.instance
-                .cleanTables(cleanFaces: true, cleanPeople: true);
+                .cleanTables(cleanFaces: true, cleanPeople: true, cleanFeedback: true);
             showShortToast(context, 'Databases cleared');
+          },
+        ),
+        sectionOptionSpacing,
+        MenuItemWidget(
+          captionedTextWidget: const CaptionedTextWidget(
+            title: "FaceML: Delete face DB",
+          ),
+          pressedColor: getEnteColorScheme(context).fillFaint,
+          trailingIcon: Icons.chevron_right_outlined,
+          trailingIconIsMuted: true,
+          onTap: () async {
+            await MlDataDB.instance
+                .cleanTables(cleanFaces: true);
+            showShortToast(context, 'Database cleared');
+          },
+        ),
+        sectionOptionSpacing,
+        MenuItemWidget(
+          captionedTextWidget: const CaptionedTextWidget(
+            title: "FaceML: Delete clustering DB",
+          ),
+          pressedColor: getEnteColorScheme(context).fillFaint,
+          trailingIcon: Icons.chevron_right_outlined,
+          trailingIconIsMuted: true,
+          onTap: () async {
+            await MlDataDB.instance
+                .cleanTables(cleanPeople: true);
+            showShortToast(context, 'Database cleared');
+          },
+        ),
+        sectionOptionSpacing,
+        MenuItemWidget(
+          captionedTextWidget: const CaptionedTextWidget(
+            title: "FaceML: Delete feedback DB",
+          ),
+          pressedColor: getEnteColorScheme(context).fillFaint,
+          trailingIcon: Icons.chevron_right_outlined,
+          trailingIconIsMuted: true,
+          onTap: () async {
+            await MlDataDB.instance
+                .cleanTables(cleanFeedback: true);
+            showShortToast(context, 'Database cleared');
           },
         ),
         sectionOptionSpacing,
@@ -126,6 +169,96 @@ class DebugSectionWidget extends StatelessWidget {
             showShortToast(context, 'Clustering started');
             await FaceMlService.instance.clusterAllImages();
             showShortToast(context, 'Clustering finished');
+          },
+        ),
+        sectionOptionSpacing,
+        MenuItemWidget(
+          captionedTextWidget: const CaptionedTextWidget(
+            title: "FeedbackML: remove photo from cluster",
+          ),
+          pressedColor: getEnteColorScheme(context).fillFaint,
+          trailingIcon: Icons.chevron_right_outlined,
+          trailingIconIsMuted: true,
+          onTap: () async {
+            showShortToast(context, 'Not fully implemented yet');
+            // await FaceFeedbackService.instance.removePhotoFromCluster(10, 0);
+          },
+        ),
+        sectionOptionSpacing,
+        MenuItemWidget(
+          captionedTextWidget: const CaptionedTextWidget(
+            title: "FeedbackML: add photo to cluster",
+          ),
+          pressedColor: getEnteColorScheme(context).fillFaint,
+          trailingIcon: Icons.chevron_right_outlined,
+          trailingIconIsMuted: true,
+          onTap: () async {
+            showShortToast(context, 'Not fully implemented yet');
+            // await FaceFeedbackService.instance.removePhotoFromCluster(10, 0);
+          },
+        ),
+        sectionOptionSpacing,
+        MenuItemWidget(
+          captionedTextWidget: const CaptionedTextWidget(
+            title: "FeedbackML: Merge two clusters: 0 and 1",
+          ),
+          pressedColor: getEnteColorScheme(context).fillFaint,
+          trailingIcon: Icons.chevron_right_outlined,
+          trailingIconIsMuted: true,
+          onTap: () async {
+            showShortToast(context, 'Starting merge');
+            await FaceFeedbackService.instance.mergeClusters(personIDs: [0, 1]);
+            showShortToast(context, 'Finished merge');
+          },
+        ),
+        sectionOptionSpacing,
+        MenuItemWidget(
+          captionedTextWidget: const CaptionedTextWidget(
+            title: "FeedbackML: delete a cluster: 5",
+          ),
+          pressedColor: getEnteColorScheme(context).fillFaint,
+          trailingIcon: Icons.chevron_right_outlined,
+          trailingIconIsMuted: true,
+          onTap: () async {
+            showShortToast(context, 'Starting delete');
+            await FaceFeedbackService.instance.deleteCluster(personID: 5);
+            showShortToast(context, 'Finished delete');
+          },
+        ),
+        sectionOptionSpacing,
+        MenuItemWidget(
+          captionedTextWidget: const CaptionedTextWidget(
+            title: "FeedbackML: rename a cluster: 6 to 'test'",
+          ),
+          pressedColor: getEnteColorScheme(context).fillFaint,
+          trailingIcon: Icons.chevron_right_outlined,
+          trailingIconIsMuted: true,
+          onTap: () async {
+            showShortToast(context, 'Starting rename');
+            await FaceFeedbackService.instance.renameOrSetThumbnailCluster(
+              personID: 6,
+              customName: 'test',
+            );
+            showShortToast(context, 'Finished rename');
+          },
+        ),
+        sectionOptionSpacing,
+        MenuItemWidget(
+          captionedTextWidget: const CaptionedTextWidget(
+            title: "FeedbackML: change thumbnail cluster: 8",
+          ),
+          pressedColor: getEnteColorScheme(context).fillFaint,
+          trailingIcon: Icons.chevron_right_outlined,
+          trailingIconIsMuted: true,
+          onTap: () async {
+            showShortToast(
+              context,
+              "Can't access thumbnail faceID for testing",
+            );
+            // await FaceFeedbackService.instance.renameOrSetThumbnailCluster(
+            //   personID: 8,
+            //   customFaceID: 'test',
+            // );
           },
         ),
         sectionOptionSpacing,

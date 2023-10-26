@@ -63,6 +63,11 @@ class FaceClustering {
       FaceClustering._privateConstructor(config: faceClusteringDBSCANConfig);
   factory FaceClustering() => instance;
 
+  /// Runs the clustering algorithm on the given [dataset], in an isolate.
+  /// 
+  /// Returns the clustering result, which is a list of clusters, where each cluster is a list of indices of the dataset.
+  /// 
+  /// WARNING: Make sure to always input data in the same ordering, otherwise the clustering can less less deterministic.
   Future<List<List<int>>> predict(List<List<double>> dataset) async {
     if (dataset.isEmpty) {
       _logger.warning("Clustering dataset of embeddings is empty, returning empty list.");

@@ -70,7 +70,9 @@ class FaceSearchService {
       );
     } catch (e, s) {
       _logger.warning(
-        "Unable to generate face thumbnail for thumbnail faceID $thumbnailFaceID, unable to get thumbnail.", e, s,
+        "Unable to generate face thumbnail for thumbnail faceID $thumbnailFaceID, unable to get thumbnail.",
+        e,
+        s,
       );
       return null;
     }

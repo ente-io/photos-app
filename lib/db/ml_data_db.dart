@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart' show join;
 import 'package:path_provider/path_provider.dart';
-import "package:photos/models/ml_typedefs.dart";
+import 'package:photos/models/ml/ml_typedefs.dart';
+import "package:photos/services/face_ml/face_feedback.dart/cluster_feedback.dart";
+import "package:photos/services/face_ml/face_feedback.dart/feedback_types.dart";
 import "package:photos/services/face_ml/face_ml_result.dart";
 import 'package:sqflite/sqflite.dart';
 
@@ -30,6 +32,14 @@ class MlDataDB {
   static const centroidColumn = 'cluster_centroid';
   static const centroidDistanceThresholdColumn = 'centroid_distance_threshold';
 
+  static const feedbackTable = 'feedback';
+  static const feedbackIDColumn = 'feedback_id';
+  static const feedbackTypeColumn = 'feedback_type';
+  static const feedbackDataColumn = 'feedback_data';
+  static const feedbackTimestampColumn = 'feedback_timestamp';
+  static const feedbackFaceMlVersionColumn = 'feedback_face_ml_version';
+  static const feedbackClusterMlVersionColumn = 'feedback_cluster_ml_version';
+
   static const createFacesTable = '''CREATE TABLE IF NOT EXISTS $facesTable (
   $fileIDColumn	INTEGER NOT NULL UNIQUE,
 	$faceMlResultColumn	TEXT NOT NULL,
@@ -42,11 +52,23 @@ class MlDataDB {
 	$clusterResultColumn	TEXT NOT NULL,
   $centroidColumn	TEXT NOT NULL,
   $centroidDistanceThresholdColumn	REAL NOT NULL,
-	PRIMARY KEY($personIDColumn AUTOINCREMENT)
+	PRIMARY KEY($personIDColumn)
+  );
+  ''';
+  static const createFeedbackTable =
+      '''CREATE TABLE IF NOT EXISTS $feedbackTable (
+  $feedbackIDColumn	TEXT NOT NULL UNIQUE,
+  $feedbackTypeColumn	TEXT NOT NULL,
+  $feedbackDataColumn	TEXT NOT NULL,
+  $feedbackTimestampColumn	TEXT NOT NULL,
+  $feedbackFaceMlVersionColumn	INTEGER NOT NULL,
+  $feedbackClusterMlVersionColumn	INTEGER NOT NULL,
+  PRIMARY KEY($feedbackIDColumn)
   );
   ''';
   static const _deleteFacesTable = 'DROP TABLE IF EXISTS $facesTable';
   static const _deletePeopleTable = 'DROP TABLE IF EXISTS $peopleTable';
+  static const _deleteFeedbackTable = 'DROP TABLE IF EXISTS $feedbackTable';
 
   MlDataDB._privateConstructor();
   static final MlDataDB instance = MlDataDB._privateConstructor();
@@ -71,12 +93,14 @@ class MlDataDB {
   Future _onCreate(Database db, int version) async {
     await db.execute(createFacesTable);
     await db.execute(createPeopleTable);
+    await db.execute(createFeedbackTable);
   }
 
   /// WARNING: This will delete ALL data in the database! Only use this for debug/testing purposes!
   Future<void> cleanTables({
     bool cleanFaces = false,
     bool cleanPeople = false,
+    bool cleanFeedback = false,
   }) async {
     _logger.fine('`cleanTables()` called');
     final db = await instance.database;
@@ -91,7 +115,12 @@ class MlDataDB {
       await db.execute(_deletePeopleTable);
     }
 
-    if (!cleanFaces && !cleanPeople) {
+    if (cleanFeedback) {
+      _logger.fine('`cleanTables()`: Cleaning feedback table');
+      await db.execute(_deleteFeedbackTable);
+    }
+
+    if (!cleanFaces && !cleanPeople && !cleanFeedback) {
       _logger.fine(
         '`cleanTables()`: No tables cleaned, since no table was specified. Please be careful with this function!',
       );
@@ -99,6 +128,7 @@ class MlDataDB {
 
     await db.execute(createFacesTable);
     await db.execute(createPeopleTable);
+    await db.execute(createFeedbackTable);
   }
 
   Future<void> createFaceMlResult(FaceMlResult faceMlResult) async {
@@ -183,10 +213,16 @@ class MlDataDB {
     _logger.fine('getSelectedFaceMlResults called');
     final db = await instance.database;
 
+    if (fileIds.isEmpty) {
+      _logger.warning('getSelectedFaceMlResults called with empty fileIds');
+      return <FaceMlResult>[];
+    }
+
     final List<Map<String, Object?>> results = await db.query(
       facesTable,
       columns: [faceMlResultColumn],
       where: '$fileIDColumn IN (${fileIds.join(',')})',
+      orderBy: fileIDColumn,
     );
 
     return results
@@ -213,6 +249,7 @@ class MlDataDB {
       facesTable,
       where: whereString,
       whereArgs: whereArgs,
+      orderBy: fileIDColumn,
     );
 
     return results
@@ -240,6 +277,7 @@ class MlDataDB {
       facesTable,
       where: whereString,
       whereArgs: whereArgs,
+      orderBy: fileIDColumn,
     );
 
     return results.map((result) => result[fileIDColumn] as int).toSet();
@@ -263,6 +301,7 @@ class MlDataDB {
       facesTable,
       where: whereString,
       whereArgs: whereArgs,
+      orderBy: fileIDColumn,
     );
 
     return results
@@ -275,9 +314,12 @@ class MlDataDB {
         .toSet();
   }
 
-  /// Updates the faceMlResult for the given [faceMlResult.fileId]. Update is done regardless of the [faceMlResult.mlVersion]. 
+  /// Updates the faceMlResult for the given [faceMlResult.fileId]. Update is done regardless of the [faceMlResult.mlVersion].
   /// However, if [updateHigherVersionOnly] is set to true, the update is only done if the [faceMlResult.mlVersion] is higher than the existing one.
-  Future<int> updateFaceMlResult(FaceMlResult faceMlResult, {bool updateHigherVersionOnly = false}) async {
+  Future<int> updateFaceMlResult(
+    FaceMlResult faceMlResult, {
+    bool updateHigherVersionOnly = false,
+  }) async {
     _logger.fine('updateFaceMlResult called');
 
     if (updateHigherVersionOnly) {
@@ -291,7 +333,7 @@ class MlDataDB {
         }
       }
     }
-    
+
     final db = await instance.database;
     return await db.update(
       facesTable,
@@ -324,6 +366,11 @@ class MlDataDB {
     _logger.fine('createClusterResults called');
     final db = await instance.database;
 
+    if (clusterResults.isEmpty) {
+      _logger.fine('No clusterResults given, skipping insert.');
+      return;
+    }
+
     // Completely clean the table and start fresh
     if (cleanExistingClusters) {
       await deleteAllClusterResults();
@@ -336,9 +383,9 @@ class MlDataDB {
         {
           personIDColumn: clusterResult.personId,
           clusterResultColumn: clusterResult.toJsonString(),
-          centroidColumn: clusterResult.centroid.toString(),
+          centroidColumn: clusterResult.medoid.toString(),
           centroidDistanceThresholdColumn:
-              clusterResult.centroidDistanceThreshold,
+              clusterResult.medoidDistanceThreshold,
         },
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
@@ -362,6 +409,33 @@ class MlDataDB {
     }
     _logger.fine('No clusterResult found for personID $personId');
     return null;
+  }
+
+  /// Returns the ClusterResult objects for the given [personIDs].
+  Future<List<ClusterResult>> getSelectedClusterResults(
+    List<int> personIDs,
+  ) async {
+    _logger.fine('getSelectedClusterResults called');
+    final db = await instance.database;
+
+    if (personIDs.isEmpty) {
+      _logger.warning('getSelectedClusterResults called with empty personIDs');
+      return <ClusterResult>[];
+    }
+
+    final results = await db.query(
+      peopleTable,
+      where: '$personIDColumn IN (${personIDs.join(',')})',
+      orderBy: personIDColumn,
+    );
+
+    return results
+        .map(
+          (result) => ClusterResult.fromJsonString(
+            result[clusterResultColumn] as String,
+          ),
+        )
+        .toList();
   }
 
   Future<List<ClusterResult>> getAllClusterResults() async {
@@ -412,7 +486,7 @@ class MlDataDB {
     if (clusterResult == null) {
       return <String>[];
     }
-    return clusterResult.uniqueFaceIds;
+    return clusterResult.faceIDs;
   }
 
   Future<List<Embedding>> getClusterEmbeddings(
@@ -424,7 +498,7 @@ class MlDataDB {
     if (clusterResult == null) return <Embedding>[];
 
     final fileIds = clusterResult.uniqueFileIds;
-    final faceIds = clusterResult.uniqueFaceIds;
+    final faceIds = clusterResult.faceIDs;
     if (fileIds.length != faceIds.length) {
       _logger.severe(
         'fileIds and faceIds have different lengths: ${fileIds.length} vs ${faceIds.length}. This should not happen!',
@@ -459,9 +533,8 @@ class MlDataDB {
       {
         personIDColumn: clusterResult.personId,
         clusterResultColumn: clusterResult.toJsonString(),
-        centroidColumn: clusterResult.centroid.toString(),
-        centroidDistanceThresholdColumn:
-            clusterResult.centroidDistanceThreshold,
+        centroidColumn: clusterResult.medoid.toString(),
+        centroidDistanceThresholdColumn: clusterResult.medoidDistanceThreshold,
       },
       where: '$personIDColumn = ?',
       whereArgs: [clusterResult.personId],
@@ -485,5 +558,150 @@ class MlDataDB {
     final db = await instance.database;
     await db.execute(_deletePeopleTable);
     await db.execute(createPeopleTable);
+  }
+
+  // TODO: current function implementation will skip inserting for a similar feedback, which means I can't remove two photos from the same person in a row
+  Future<void> createClusterFeedback<T extends ClusterFeedback>(
+    T feedback,
+  ) async {
+    _logger.fine('createClusterFeedback called');
+
+    if (await doesClusterFeedbackExist(feedback)) {
+      _logger.fine(
+        'ClusterFeedback with ID ${feedback.feedbackID} already has a similar feedback installed. Skipping insert.',
+      );
+      return;
+    }
+
+    final db = await instance.database;
+    await db.insert(
+      feedbackTable,
+      {
+        feedbackIDColumn: feedback.feedbackID,
+        feedbackTypeColumn: feedback.typeString,
+        feedbackDataColumn: feedback.toJsonString(),
+        feedbackTimestampColumn: feedback.timestampString,
+        feedbackFaceMlVersionColumn: feedback.madeOnFaceMlVersion,
+        feedbackClusterMlVersionColumn: feedback.madeOnClusterMlVersion,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+    return;
+  }
+
+  Future<bool> doesClusterFeedbackExist<T extends ClusterFeedback>(
+    T feedback,
+  ) async {
+    _logger.fine('doesClusterFeedbackExist called');
+
+    final List<T> existingFeedback =
+        await getAllClusterFeedback<T>(type: feedback.type);
+
+    if (existingFeedback.isNotEmpty) {
+      for (final existingFeedbackItem in existingFeedback) {
+        assert(
+          existingFeedbackItem.type == feedback.type,
+          'Feedback types should be the same!',
+        );
+        if (feedback.matches(existingFeedbackItem)) {
+          _logger.fine(
+            'ClusterFeedback of type ${feedback.typeString} with ID ${feedback.feedbackID} already has a similar feedback installed!',
+          );
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /// Returns all the clusterFeedbacks of type [T] which match the given [feedback], sorted by timestamp (latest first).
+  Future<List<T>> getAllMatchingClusterFeedback<T extends ClusterFeedback>(
+    T feedback,
+  ) async {
+    _logger.fine('getAllMatchingClusterFeedback called');
+
+    final List<T> existingFeedback =
+        await getAllClusterFeedback<T>(type: feedback.type);
+    final List<T> matchingFeedback = <T>[];
+    if (existingFeedback.isNotEmpty) {
+      for (final existingFeedbackItem in existingFeedback) {
+        assert(
+          existingFeedbackItem.type == feedback.type,
+          'Feedback types should be the same!',
+        );
+        if (feedback.matches(existingFeedbackItem)) {
+          _logger.fine(
+            'ClusterFeedback of type ${feedback.typeString} with ID ${feedback.feedbackID} already has a similar feedback installed!',
+          );
+          matchingFeedback.add(existingFeedbackItem);
+        }
+      }
+    }
+    return matchingFeedback..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+  }
+
+  Future<List<T>> getAllClusterFeedback<T extends ClusterFeedback>({
+    required FeedbackType type,
+    int? mlVersion,
+    int? clusterMlVersion,
+  }) async {
+    _logger.fine('getAllClusterFeedback called');
+    final db = await instance.database;
+
+    // TODO: implement the versions for FeedbackType.imageFeedback and FeedbackType.faceFeedback and rename this function to getAllFeedback?
+
+    String whereString = '$feedbackTypeColumn = ?';
+    final List<dynamic> whereArgs = [type.toValueString()];
+
+    if (mlVersion != null) {
+      whereString += ' AND $feedbackFaceMlVersionColumn = ?';
+      whereArgs.add(mlVersion);
+    }
+    if (clusterMlVersion != null) {
+      whereString += ' AND $feedbackClusterMlVersionColumn = ?';
+      whereArgs.add(clusterMlVersion);
+    }
+
+    final results = await db.query(
+      feedbackTable,
+      where: whereString,
+      whereArgs: whereArgs,
+    );
+
+    if (results.isNotEmpty) {
+      if (ClusterFeedback.fromJsonStringRegistry.containsKey(type)) {
+        final Function(String) fromJsonString =
+            ClusterFeedback.fromJsonStringRegistry[type]!;
+        return results
+            .map((e) => fromJsonString(e[feedbackDataColumn] as String) as T)
+            .toList();
+      } else {
+        _logger.severe(
+          'No fromJsonString function found for type ${type.name}. This should not happen!',
+        );
+      }
+    }
+    _logger.fine(
+      'No clusterFeedback results found of type $type' +
+          (mlVersion != null ? ' and mlVersion $mlVersion' : '') +
+          (clusterMlVersion != null
+              ? ' and clusterMlVersion $clusterMlVersion'
+              : ''),
+    );
+    return <T>[];
+  }
+
+  Future<int> deleteClusterFeedback<T extends ClusterFeedback>(
+    T feedback,
+  ) async {
+    _logger.fine('deleteClusterFeedback called');
+    final db = await instance.database;
+    final deleteCount = await db.delete(
+      feedbackTable,
+      where: '$feedbackIDColumn = ?',
+      whereArgs: [feedback.feedbackID],
+    );
+    _logger.fine('Deleted $deleteCount clusterFeedbacks');
+    return deleteCount;
   }
 }

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:isolate';
 
 import "package:logging/logging.dart";
-import "package:photos/models/ml_typedefs.dart";
+import 'package:photos/models/ml/ml_typedefs.dart';
 import 'package:simple_cluster/simple_cluster.dart';
 import 'package:synchronized/synchronized.dart';
 

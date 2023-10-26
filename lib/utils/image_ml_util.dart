@@ -14,7 +14,7 @@ import "dart:ui";
 import 'package:flutter/painting.dart' as paint show decodeImageFromList;
 import "package:logging/logging.dart";
 import 'package:ml_linalg/linalg.dart';
-import "package:photos/models/ml_typedefs.dart";
+import 'package:photos/models/ml/ml_typedefs.dart';
 import "package:photos/services/face_ml/face_alignment/similarity_transform.dart";
 import "package:photos/services/face_ml/face_detection/detection.dart";
 

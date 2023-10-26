@@ -15,6 +15,7 @@ import 'package:photos/events/local_photos_updated_event.dart';
 import "package:photos/models/file/extensions/file_props.dart";
 import 'package:photos/models/file/file.dart';
 import "package:photos/models/metadata/file_magic.dart";
+import "package:photos/services/face_ml/face_ml_service.dart";
 import "package:photos/services/file_magic_service.dart";
 import 'package:photos/ui/common/loading_widget.dart';
 import 'package:photos/utils/file_util.dart';
@@ -232,7 +233,13 @@ class _ZoomableImageState extends State<ZoomableImage>
     }
   }
 
-  void _onFinalImageLoaded(ImageProvider imageProvider) {
+  void _onFinalImageLoaded(ImageProvider imageProvider) async {
+    final result = await FaceMlService.instance.analyzeImage(
+      _photo,
+      preferUsingThumbnailForEverything: false,
+      disposeImageIsolateAfterUse: false,
+    );
+    _logger.info("FaceMlService result: $result");
     if (mounted) {
       precacheImage(imageProvider, context).then((value) async {
         if (mounted) {

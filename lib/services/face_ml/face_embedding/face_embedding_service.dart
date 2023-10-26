@@ -4,7 +4,7 @@ import "dart:math" show min, max;
 import 'dart:typed_data' show Uint8List;
 
 import "package:logging/logging.dart";
-import "package:photos/models/ml_typedefs.dart";
+import 'package:photos/models/ml/ml_typedefs.dart';
 import "package:photos/services/face_ml/face_detection/detection.dart";
 import "package:photos/services/face_ml/face_embedding/face_embedding_exceptions.dart";
 import "package:photos/services/face_ml/face_embedding/mobilefacenet_model_config.dart";

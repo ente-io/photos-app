@@ -46,6 +46,7 @@ class FaceDetectionRelative extends Detection {
     required this.box,
     required this.allKeypoints,
   }) : super(score: score) {
+    // TODO: turn this assert back on
     assert(
       (box[0] >= 0 && box[0] <= 1) &&
           (box[1] >= 0 && box[1] <= 1) &&
@@ -138,6 +139,11 @@ class FaceDetectionRelative extends Detection {
 
     // Return the hexadecimal representation of the hash
     return fileID.toString() + '_' + digest.toString();
+  }
+
+  /// This method is used to generate a faceID for a face detection that was manually added by the user.
+  static String faceIDManualAdd({required int fileID}) {
+    return fileID.toString() + '_0';
   }
 
   @override

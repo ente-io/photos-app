@@ -1,57 +1,144 @@
 import "dart:convert" show jsonEncode, jsonDecode;
 
-import "package:flutter/material.dart" show immutable;
-import "package:ml_linalg/linalg.dart";
+import "package:flutter/material.dart" show debugPrint, immutable;
+import "package:logging/logging.dart";
+import "package:photos/db/ml_data_db.dart";
 import "package:photos/models/file/file.dart";
-import "package:photos/models/ml_typedefs.dart";
+import 'package:photos/models/ml/ml_typedefs.dart';
+import "package:photos/models/ml/ml_versions.dart";
 import "package:photos/services/face_ml/face_alignment/alignment_result.dart";
+import "package:photos/services/face_ml/face_clustering/cosine_distance.dart";
 import "package:photos/services/face_ml/face_detection/detection.dart";
+import "package:photos/services/face_ml/face_feedback.dart/cluster_feedback.dart";
 import "package:photos/services/face_ml/face_ml_methods.dart";
 
-const faceMlVersion = 1;
-const clusterMlVersion = 1;
+final _logger = Logger('ClusterResult_FaceMlResult');
 
-@immutable
+// TODO: should I add [faceMlVersion] and [clusterMlVersion] to the [ClusterResult] class?
 class ClusterResult {
   final int personId;
+  String? userDefinedName;
+  bool get hasUserDefinedName => userDefinedName != null;
 
-  final String thumbnailFaceId;
+  String _thumbnailFaceId;
+  bool thumbnailFaceIdIsUserDefined;
 
   final List<int> _fileIds;
   final List<String> _faceIds;
 
-  final Embedding centroid;
-  final double centroidDistanceThreshold;
+  final Embedding medoid;
+  double medoidDistanceThreshold;
 
-  List<int> get uniqueFileIds {
-    return _fileIds.toSet().toList();
+  List<int> get uniqueFileIds => _fileIds.toSet().toList();
+  List<int> get fileIDsIncludingPotentialDuplicates => _fileIds;
+
+  List<String> get faceIDs => _faceIds;
+
+  String get thumbnailFaceId => _thumbnailFaceId;
+
+  int get thumbnailFileId => _getFileIdFromFaceId(_thumbnailFaceId);
+
+  /// Sets the thumbnail faceId to the given faceId.
+  /// Throws an exception if the faceId is not in the list of faceIds.
+  set setThumbnailFaceId(String faceId) {
+    if (!_faceIds.contains(faceId)) {
+      throw Exception(
+        "The faceId $faceId is not in the list of faceIds: $faceId",
+      );
+    }
+    _thumbnailFaceId = faceId;
+    thumbnailFaceIdIsUserDefined = true;
   }
 
-  List<String> get uniqueFaceIds {
-    return _faceIds.toSet().toList();
+  /// Sets the [userDefinedName] to the given [customName]
+  set setUserDefinedName(String customName) {
+    userDefinedName = customName;
   }
 
-  int get thumbnailFileId {
-    return int.parse(thumbnailFaceId.split("_")[0]);
-  }
+  int get clusterSize => _fileIds.toSet().length;
 
-  const ClusterResult({
+  ClusterResult({
     required this.personId,
-    required this.thumbnailFaceId,
+    required String thumbnailFaceId,
     required List<int> fileIds,
     required List<String> faceIds,
-    required this.centroid,
-    required this.centroidDistanceThreshold,
-  })  : _faceIds = faceIds,
+    required this.medoid,
+    required this.medoidDistanceThreshold,
+    this.userDefinedName,
+    this.thumbnailFaceIdIsUserDefined = false,
+  })  : _thumbnailFaceId = thumbnailFaceId,
+        _faceIds = faceIds,
         _fileIds = fileIds;
+
+  void addFileIDsAndFaceIDs(List<int> fileIDs, List<String> faceIDs) {
+    assert(fileIDs.length == faceIDs.length);
+    _fileIds.addAll(fileIDs);
+    _faceIds.addAll(faceIDs);
+  }
+
+  // TODO: Consider if we should recalculated the medoid and threshold when deleting or adding a file from the cluster
+  int removeFileId(int fileId) {
+    assert(_fileIds.length == _faceIds.length);
+    if (!_fileIds.contains(fileId)) {
+      throw Exception(
+        "The fileId $fileId is not in the list of fileIds: $fileId, so it's not in the cluster and cannot be removed.",
+      );
+    }
+
+    int removedCount = 0;
+    for (var i = 0; i < _fileIds.length; i++) {
+      if (_fileIds[i] == fileId) {
+        assert(_getFileIdFromFaceId(_faceIds[i]) == fileId);
+        _fileIds.removeAt(i);
+        _faceIds.removeAt(i);
+        debugPrint(
+          "Removed fileId $fileId from cluster $personId at index ${i + removedCount}}",
+        );
+        i--; // Adjust index due to removal
+        removedCount++;
+      }
+    }
+
+    _ensureClusterSizeIsAboveMinimum();
+
+    return removedCount;
+  }
+
+  int addFileID(int fileID) {
+    assert(_fileIds.length == _faceIds.length);
+    if (_fileIds.contains(fileID)) {
+      return 0;
+    }
+
+    _fileIds.add(fileID);
+    _faceIds.add(FaceDetectionRelative.faceIDManualAdd(fileID: fileID));
+
+    return 1;
+  }
+
+  void ensureThumbnailFaceIdIsInCluster() {
+    if (!_faceIds.contains(_thumbnailFaceId)) {
+      _thumbnailFaceId = _faceIds[0];
+    }
+  }
+
+  void _ensureClusterSizeIsAboveMinimum() {
+    if (clusterSize < minimumClusterSize) {
+      throw Exception(
+        "Cluster size is below minimum cluster size of $minimumClusterSize",
+      );
+    }
+  }
 
   Map<String, dynamic> _toJson() => {
         'personId': personId,
-        'displayFaceId': thumbnailFaceId,
+        'thumbnailFaceId': _thumbnailFaceId,
         'fileIds': _fileIds,
         'faceIds': _faceIds,
-        'centroid': centroid,
-        'centroidDistanceThreshold': centroidDistanceThreshold,
+        'medoid': medoid,
+        'medoidDistanceThreshold': medoidDistanceThreshold,
+        if (userDefinedName != null) 'userDefinedName': userDefinedName,
+        'thumbnailFaceIdIsUserDefined': thumbnailFaceIdIsUserDefined,
       };
 
   String toJsonString() => jsonEncode(_toJson());
@@ -59,16 +146,19 @@ class ClusterResult {
   static ClusterResult _fromJson(Map<String, dynamic> json) {
     return ClusterResult(
       personId: json['personId'] ?? -1,
-      thumbnailFaceId: json['displayFaceId'] ?? '',
+      thumbnailFaceId: json['thumbnailFaceId'] ?? '',
       fileIds:
           (json['fileIds'] as List?)?.map((item) => item as int).toList() ?? [],
       faceIds:
           (json['faceIds'] as List?)?.map((item) => item as String).toList() ??
               [],
-      centroid:
-          (json['centroid'] as List?)?.map((item) => item as double).toList() ??
+      medoid:
+          (json['medoid'] as List?)?.map((item) => item as double).toList() ??
               [],
-      centroidDistanceThreshold: json['centroidDistanceThreshold'] ?? 0,
+      medoidDistanceThreshold: json['medoidDistanceThreshold'] ?? 0,
+      userDefinedName: json['userDefinedName'],
+      thumbnailFaceIdIsUserDefined:
+          json['thumbnailFaceIdIsUserDefined'] as bool,
     );
   }
 
@@ -79,14 +169,18 @@ class ClusterResult {
 
 class ClusterResultBuilder {
   int personId = -1;
+  String? userDefinedName;
   String thumbnailFaceId = '';
+  bool thumbnailFaceIdIsUserDefined = false;
 
   List<int> fileIds = <int>[];
   List<String> faceIds = <String>[];
 
   List<Embedding> embeddings = <Embedding>[];
-  Embedding centroid = <double>[];
-  double centroidDistanceThreshold = 0;
+  Embedding medoid = <double>[];
+  double medoidDistanceThreshold = 0;
+  bool medoidAndThresholdCalculated = false;
+  final int k = 5;
 
   ClusterResultBuilder.createFromIndices({
     required List<int> clusterIndices,
@@ -108,29 +202,99 @@ class ClusterResultBuilder {
     embeddings = clusteredEmbeddings;
   }
 
-  void calculateCentroidAndThreshold() {
+  void calculateAndSetMedoidAndThreshold() {
     if (embeddings.isEmpty) {
-      throw Exception("Cannot calculate centroid and threshold for empty list");
+      throw Exception("Cannot calculate medoid and threshold for empty list");
     }
 
-    final Matrix embeddingsMatrix = Matrix.fromList(embeddings);
+    // Calculate the medoid and threshold
+    final (tempMedoid, distanceThreshold) =
+        _calculateMedoidAndDistanceTreshold(embeddings);
 
-    // Calculate and update the centroid
-    final tempCentroid = embeddingsMatrix.mean();
-    centroid = tempCentroid.toList();
+    // Update the medoid
+    medoid = List.from(tempMedoid);
 
-    // Calculate and update the centroidDistanceThreshold as the maximum distance from the centroid and any of the embeddings
-    double maximumDistance = 0;
-    for (final embedding in embeddings) {
-      final distance = tempCentroid.distanceTo(
-        Vector.fromList(embedding),
-        distance: Distance.cosine,
-      );
-      if (distance > maximumDistance) {
-        maximumDistance = distance;
+    // Update the medoidDistanceThreshold as the distance of the medoid to its k-th nearest neighbor
+    medoidDistanceThreshold = distanceThreshold;
+
+    medoidAndThresholdCalculated = true;
+  }
+
+  (List<double>, double) _calculateMedoidAndDistanceTreshold(
+    List<List<double>> embeddings,
+  ) {
+    double minDistance = double.infinity;
+    List<double>? medoid;
+
+    // Calculate the distance between all pairs
+    for (int i = 0; i < embeddings.length; ++i) {
+      double totalDistance = 0;
+      for (int j = 0; j < embeddings.length; ++j) {
+        if (i != j) {
+          totalDistance += cosineDistance(embeddings[i], embeddings[j]);
+
+          // Break early if we already exceed minDistance
+          if (totalDistance > minDistance) {
+            break;
+          }
+        }
+      }
+
+      // Find the minimum total distance
+      if (totalDistance < minDistance) {
+        minDistance = totalDistance;
+        medoid = embeddings[i];
       }
     }
-    centroidDistanceThreshold = maximumDistance;
+
+    // Now, calculate k-th nearest neighbor for the medoid
+    final List<double> distancesToMedoid = [];
+    for (List<double> embedding in embeddings) {
+      if (embedding != medoid) {
+        distancesToMedoid.add(cosineDistance(medoid!, embedding));
+      }
+    }
+    distancesToMedoid.sort();
+    // TODO: empirically find the best k
+    final double kthDistance = distancesToMedoid[k - 1];
+
+    return (medoid!, kthDistance);
+  }
+
+  Future<bool> _checkIfClusterIsDeleted() async {
+    assert(medoidAndThresholdCalculated);
+
+    // Check if the medoid is the default medoid for deleted faces
+    if (cosineDistance(medoid, List.filled(medoid.length, 10.0)) < 0.001) {
+      return true;
+    }
+
+    final tempFeedback = DeleteClusterFeedback(
+      medoid: medoid,
+      medoidDistanceThreshold: medoidDistanceThreshold,
+    );
+    return await MlDataDB.instance.doesClusterFeedbackExist(tempFeedback);
+  }
+
+  Future<void> _checkAndAddCustomName() async {
+    assert(medoidAndThresholdCalculated);
+
+    final tempFeedback = RenameOrCustomThumbnailClusterFeedback(
+      medoid: medoid,
+      medoidDistanceThreshold: medoidDistanceThreshold,
+    );
+    final allRenameFeedbacks =
+        await MlDataDB.instance.getAllMatchingClusterFeedback(tempFeedback);
+
+    for (final nameFeedback in allRenameFeedbacks) {
+      userDefinedName ??= nameFeedback.customName;
+      if (!thumbnailFaceIdIsUserDefined) {
+        thumbnailFaceId = nameFeedback.customThumbnailFaceId ?? thumbnailFaceId;
+        thumbnailFaceIdIsUserDefined =
+            nameFeedback.customThumbnailFaceId != null;
+      }
+    }
+    return;
   }
 
   void changeThumbnailFaceId(String faceId) {
@@ -142,15 +306,105 @@ class ClusterResultBuilder {
     thumbnailFaceId = faceId;
   }
 
-  ClusterResult build() {
-    calculateCentroidAndThreshold();
+  void addFileIDsAndFaceIDs(List<int> fileIDs, List<String> faceIDs) {
+    assert(fileIDs.length == faceIDs.length);
+    this.fileIds.addAll(fileIDs);
+    this.faceIds.addAll(faceIDs);
+  }
+
+  static Future<List<ClusterResult>> buildClusters(
+    List<ClusterResultBuilder> clusterBuilders,
+  ) async {
+    final List<int> deletedClusterIndices = [];
+    for (var i = 0; i < clusterBuilders.length; i++) {
+      final clusterBuilder = clusterBuilders[i];
+      clusterBuilder.calculateAndSetMedoidAndThreshold();
+
+      // Check if the cluster has been deleted
+      if (await clusterBuilder._checkIfClusterIsDeleted()) {
+        deletedClusterIndices.add(i);
+      }
+
+      // Check if a cluster should be merged with another cluster
+      final List<MergeClusterFeedback> allMatchingMergeFeedback =
+          await MlDataDB.instance.getAllMatchingClusterFeedback(
+        MergeClusterFeedback(
+          medoid: clusterBuilder.medoid,
+          medoidDistanceThreshold: clusterBuilder.medoidDistanceThreshold,
+          medoidToMoveTo: clusterBuilder.medoid,
+        ),
+      );
+      if (allMatchingMergeFeedback.isEmpty) {
+        continue;
+      }
+      // Merge the cluster with the first merge feedback
+      final mainFeedback = allMatchingMergeFeedback.first;
+      if (allMatchingMergeFeedback.length > 1) {
+        _logger.warning(
+          "There are ${allMatchingMergeFeedback.length} merge feedbacks for cluster ${clusterBuilder.personId}. Using the first one.",
+        );
+        for (var j = 0; j < clusterBuilders.length; j++) {
+          if (i == j) continue;
+          final clusterBuilderToMergeTo = clusterBuilders[j];
+          final distance = cosineDistance(
+            mainFeedback.medoidToMoveTo,
+            clusterBuilderToMergeTo.medoid,
+          );
+          if (distance < mainFeedback.medoidDistanceThreshold ||
+              distance < clusterBuilderToMergeTo.medoidDistanceThreshold) {
+            clusterBuilderToMergeTo.addFileIDsAndFaceIDs(
+              clusterBuilder.fileIds,
+              clusterBuilder.faceIds,
+            );
+            deletedClusterIndices.add(i);
+          }
+        }
+      }
+    }
+
+    final clusterResults = <ClusterResult>[];
+    for (var i = 0; i < clusterBuilders.length; i++) {
+      // Don't build the cluster if it has been deleted or merged
+      if (deletedClusterIndices.contains(i)) {
+        continue;
+      }
+      final clusterBuilder = clusterBuilders[i];
+      // Check if the cluster has a custom name or thumbnail
+      await clusterBuilder._checkAndAddCustomName();
+
+      // Build the clusterResult
+      clusterResults.add(
+        ClusterResult(
+          personId: clusterBuilder.personId,
+          thumbnailFaceId: clusterBuilder.thumbnailFaceId,
+          fileIds: clusterBuilder.fileIds,
+          faceIds: clusterBuilder.faceIds,
+          medoid: clusterBuilder.medoid,
+          medoidDistanceThreshold: clusterBuilder.medoidDistanceThreshold,
+          userDefinedName: clusterBuilder.userDefinedName,
+          thumbnailFaceIdIsUserDefined:
+              clusterBuilder.thumbnailFaceIdIsUserDefined,
+        ),
+      );
+    }
+
+    return clusterResults;
+  }
+
+  // TODO: This function should include the feedback from the user. Should also be nullable, since user might want to delete the cluster.
+  Future<ClusterResult?> _buildSingleCluster() async {
+    calculateAndSetMedoidAndThreshold();
+    if (await _checkIfClusterIsDeleted()) {
+      return null;
+    }
+    await _checkAndAddCustomName();
     return ClusterResult(
       personId: personId,
       thumbnailFaceId: thumbnailFaceId,
       fileIds: fileIds,
       faceIds: faceIds,
-      centroid: centroid,
-      centroidDistanceThreshold: centroidDistanceThreshold,
+      medoid: medoid,
+      medoidDistanceThreshold: medoidDistanceThreshold,
     );
   }
 }
@@ -166,6 +420,7 @@ class FaceMlResult {
   final bool onlyThumbnailUsed;
 
   bool get hasFaces => faces.isNotEmpty;
+  int get numberOfFaces => faces.length;
 
   List<Embedding> get allFaceEmbeddings {
     return faces.map((face) => face.embedding).toList();
@@ -218,6 +473,21 @@ class FaceMlResult {
 
   static FaceMlResult fromJsonString(String jsonString) {
     return _fromJson(jsonDecode(jsonString));
+  }
+
+  /// Sets the embeddings of the faces with the given faceIds to [10, 10,..., 10].
+  ///
+  /// Throws an exception if a faceId is not found in the FaceMlResult.
+  void setEmbeddingsToTen(List<String> faceIds) {
+    for (final faceId in faceIds) {
+      final faceIndex = faces.indexWhere((face) => face.faceId == faceId);
+      if (faceIndex == -1) {
+        throw Exception("No face found with faceId $faceId");
+      }
+      for (var i = 0; i < faces[faceIndex].embedding.length; i++) {
+        faces[faceIndex].embedding[i] = 10;
+      }
+    }
   }
 
   FaceDetectionRelative getDetectionForFaceId(String faceId) {
@@ -377,4 +647,8 @@ class FaceResultBuilder {
       faceId: faceId,
     );
   }
+}
+
+int _getFileIdFromFaceId(String faceId) {
+  return int.parse(faceId.split("_")[0]);
 }

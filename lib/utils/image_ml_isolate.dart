@@ -5,7 +5,7 @@ import 'dart:ui';
 
 import 'package:flutter_isolate/flutter_isolate.dart';
 import "package:logging/logging.dart";
-import 'package:photos/models/ml_typedefs.dart';
+import 'package:photos/models/ml/ml_typedefs.dart';
 import "package:photos/services/face_ml/face_detection/detection.dart";
 import "package:photos/utils/image_ml_util.dart";
 import "package:synchronized/synchronized.dart";

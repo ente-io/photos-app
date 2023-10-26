@@ -8,7 +8,8 @@ import "package:photos/core/configuration.dart";
 import "package:photos/db/ml_data_db.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/models/file/file_type.dart";
-import "package:photos/models/ml_typedefs.dart";
+import 'package:photos/models/ml/ml_typedefs.dart';
+import "package:photos/models/ml/ml_versions.dart";
 import "package:photos/services/face_ml/face_clustering/face_clustering_service.dart";
 import "package:photos/services/face_ml/face_detection/detection.dart";
 import "package:photos/services/face_ml/face_detection/face_detection_exceptions.dart";
@@ -69,65 +70,69 @@ class FaceMlService {
   }
 
   Future<void> clusterAllImages() async {
-    final allFaceMlResults = await MlDataDB.instance.getAllFaceMlResults();
+    _logger.info("`clusterAllImages()` called");
 
-    // Initialize all the lists that we will use
-    final allFaceEmbeddings = <Embedding>[];
-    final allFileIDs = <int>[];
-    final allFaceIDs = <String>[];
+    try {
+      final allFaceMlResults = await MlDataDB.instance.getAllFaceMlResults();
 
-    // Populate the lists for the clustering
-    for (final FaceMlResult faceMlResult in allFaceMlResults) {
-      allFaceEmbeddings.addAll(faceMlResult.allFaceEmbeddings);
-      allFileIDs.addAll(faceMlResult.fileIdForEveryFace);
-      allFaceIDs.addAll(faceMlResult.allFaceIds);
+      // Initialize all the lists that we will use
+      final allFaceEmbeddings = <Embedding>[];
+      final allFileIDs = <int>[];
+      final allFaceIDs = <String>[];
+
+      // Populate the lists for the clustering
+      for (final FaceMlResult faceMlResult in allFaceMlResults) {
+        allFaceEmbeddings.addAll(faceMlResult.allFaceEmbeddings);
+        allFileIDs.addAll(faceMlResult.fileIdForEveryFace);
+        allFaceIDs.addAll(faceMlResult.allFaceIds);
+      }
+
+      // final indicesOfZeroEmbeddings = <int>[];
+      // for (int i = 0; i < allFaceEmbeddings.length; ++i) {
+      //   if (allFaceEmbeddings[i].every((element) => element == 0.0)) {
+      //     indicesOfZeroEmbeddings.add(i);
+      //   }
+      // }
+
+      _logger.info(
+        "`clusterAllImages`: Starting clustering, on ${allFaceEmbeddings.length} face embeddings",
+      );
+      if (allFaceEmbeddings.isEmpty) {
+        _logger.warning("No face embeddings found, skipping clustering");
+        return;
+      }
+
+      // Run the clustering
+      final clusteringResult =
+          await FaceClustering.instance.predict(allFaceEmbeddings);
+      final labels = FaceClustering.instance.labels;
+      if (labels == null) {
+        _logger.severe("Clustering failed");
+        throw GeneralFaceMlException("Clustering failed");
+      }
+
+      // Create the clusters
+      final List<ClusterResultBuilder> clusterResultBuilders = [
+        for (final clusterIndices in clusteringResult)
+          ClusterResultBuilder.createFromIndices(
+            clusterIndices: clusterIndices,
+            labels: labels,
+            allEmbeddings: allFaceEmbeddings,
+            allFileIds: allFileIDs,
+            allFaceIds: allFaceIDs,
+          ),
+      ];
+      final List<ClusterResult> clusterResults =
+          await ClusterResultBuilder.buildClusters(clusterResultBuilders);
+      _logger.info(
+        "`clusterAllImages`: Finished clustering,  ${clusterResults.length} clusters found (after feedback)",
+      );
+
+      // Store the clusters in the database
+      await MlDataDB.instance.createAllClusterResults(clusterResults);
+    } catch (e, s) {
+      _logger.severe("`clusterAllImages` failed", e, s);
     }
-
-    // final indicesOfZeroEmbeddings = <int>[];
-    // for (int i = 0; i < allFaceEmbeddings.length; ++i) {
-    //   if (allFaceEmbeddings[i].every((element) => element == 0.0)) {
-    //     indicesOfZeroEmbeddings.add(i);
-    //   }
-    // }
-
-    _logger.info(
-      "`clusterAllImages`: Starting clustering, on ${allFaceEmbeddings.length} face embeddings",
-    );
-    if (allFaceEmbeddings.isEmpty) {
-      _logger.warning("No face embeddings found, skipping clustering");
-      return;
-    }
-
-    // Run the clustering
-    final clusteringResult =
-        await FaceClustering.instance.predict(allFaceEmbeddings);
-    final labels = FaceClustering.instance.labels;
-    if (labels == null) {
-      _logger.severe("Clustering failed");
-      throw GeneralFaceMlException("Clustering failed");
-    }
-
-    // Create the clusters
-    final List<ClusterResultBuilder> clusterResultBuilders = [
-      for (final clusterIndices in clusteringResult)
-        ClusterResultBuilder.createFromIndices(
-          clusterIndices: clusterIndices,
-          labels: labels,
-          allEmbeddings: allFaceEmbeddings,
-          allFileIds: allFileIDs,
-          allFaceIds: allFaceIDs,
-        ),
-    ];
-    final List<ClusterResult> clusterResults = [
-      for (final builder in clusterResultBuilders) builder.build(),
-    ];
-
-    _logger.info(
-      "`clusterAllImages`: Finished clustering,  ${clusterResults.length} clusters found",
-    );
-
-    // Store the clusters in the database
-    await MlDataDB.instance.createAllClusterResults(clusterResults);
   }
 
   /// Analyzes all the images in the database with the latest ml version and stores the results in the database.
