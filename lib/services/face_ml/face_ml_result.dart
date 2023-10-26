@@ -256,7 +256,8 @@ class ClusterResultBuilder {
     }
     distancesToMedoid.sort();
     // TODO: empirically find the best k
-    final double kthDistance = distancesToMedoid[k - 1];
+    final double kthDistance = distancesToMedoid[
+        distancesToMedoid.length >= k ? k - 1 : distancesToMedoid.length - 1];
 
     return (medoid!, kthDistance);
   }
