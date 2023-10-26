@@ -43,18 +43,25 @@ class FaceDetectionRelative extends Detection {
 
   FaceDetectionRelative({
     required double score,
-    required this.box,
-    required this.allKeypoints,
-  }) : super(score: score) {
-    // TODO: turn this assert back on
-    assert(
-      (box[0] >= 0 && box[0] <= 1) &&
-          (box[1] >= 0 && box[1] <= 1) &&
-          (box[2] >= 0 && box[2] <= 1) &&
-          (box[3] >= 0 && box[3] <= 1),
-      "Bounding box values must be in the range [0, 1]",
-    );
-  }
+    required List<double> box,
+    required List<List<double>> allKeypoints,
+  })  : assert(
+          box.every((e) => e >= -0.1 && e <= 1.1),
+          "Bounding box values must be in the range [0, 1], with only a small margin of error allowed.",
+        ),
+        assert(
+          allKeypoints
+              .every((sublist) => sublist.every((e) => e >= -0.1 && e <= 1.1)),
+          "All keypoints must be in the range [0, 1], with only a small margin of error allowed.",
+        ),
+        box = List<double>.from(box.map((e) => e.clamp(0.0, 1.0))),
+        allKeypoints = allKeypoints
+            .map(
+              (sublist) =>
+                  List<double>.from(sublist.map((e) => e.clamp(0.0, 1.0))),
+            )
+            .toList(),
+        super(score: score);
 
   factory FaceDetectionRelative.zero() {
     return FaceDetectionRelative(
@@ -126,10 +133,14 @@ class FaceDetectionRelative extends Detection {
     );
 
     // Extract bounding box values
-    final String xMin = xMinBox.toStringAsFixed(5).substring(2);
-    final String yMin = yMinBox.toStringAsFixed(5).substring(2);
-    final String xMax = xMaxBox.toStringAsFixed(5).substring(2);
-    final String yMax = yMaxBox.toStringAsFixed(5).substring(2);
+    final String xMin =
+        xMinBox.clamp(0.0, 0.999999).toStringAsFixed(5).substring(2);
+    final String yMin =
+        yMinBox.clamp(0.0, 0.999999).toStringAsFixed(5).substring(2);
+    final String xMax =
+        xMaxBox.clamp(0.0, 0.999999).toStringAsFixed(5).substring(2);
+    final String yMax =
+        yMaxBox.clamp(0.0, 0.999999).toStringAsFixed(5).substring(2);
 
     // Convert the bounding box values to string and concatenate
     final String rawID = "${xMin}_${yMin}_${xMax}_$yMax";

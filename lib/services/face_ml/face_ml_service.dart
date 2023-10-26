@@ -75,6 +75,31 @@ class FaceMlService {
     try {
       final allFaceMlResults = await MlDataDB.instance.getAllFaceMlResults();
 
+      int detectionOutsideBoundsCount = 0;
+      int earsOutsideBoundsCount = 0;
+      int importantLandmarksOutsideBoundsCount = 0;
+      List<double> numberOutsideBounds = [];
+      int totalFacesCount = 0;
+      for (final analyzedImage in allFaceMlResults) {
+        totalFacesCount += analyzedImage.numberOfFaces;
+        for (final FaceResult face in analyzedImage.faces) {
+          final detection = face.detection;
+          for (var i = 0; i < detection.allKeypoints.length; i++) {
+            for (final double value in detection.allKeypoints[i]) {
+              if (value < 0.0 || value > 1.0) {
+                detectionOutsideBoundsCount++;
+                numberOutsideBounds.add(value);
+                if (i == 4 || i == 5) {
+                  earsOutsideBoundsCount++;
+                } else {
+                  importantLandmarksOutsideBoundsCount++;
+                }
+              }
+            }
+          }
+        }
+      }
+
       // Initialize all the lists that we will use
       final allFaceEmbeddings = <Embedding>[];
       final allFileIDs = <int>[];
