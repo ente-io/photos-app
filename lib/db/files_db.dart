@@ -77,6 +77,7 @@ class FilesDB {
   static final initializationScript = [
     ...createTable(filesTable),
   ];
+
   static final migrationScripts = [
     ...alterDeviceFolderToAllowNULL(),
     ...alterTimestampColumnTypes(),
