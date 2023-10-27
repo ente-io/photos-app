@@ -223,8 +223,7 @@ class DebugSectionWidget extends StatelessWidget {
           onTap: () async {
             showShortToast(context, 'Starting merge');
             try {
-              await FaceFeedbackService.instance
-                  .mergeClusters(personIDs: [0, 1]);
+              await FaceFeedbackService.instance.mergeClusters([0, 1]);
             } catch (e, s) {
               debugPrint(e.toString());
               debugPrint(s.toString());
@@ -243,7 +242,7 @@ class DebugSectionWidget extends StatelessWidget {
           onTap: () async {
             showShortToast(context, 'Starting delete');
             try {
-              await FaceFeedbackService.instance.deleteCluster(personID: 5);
+              await FaceFeedbackService.instance.deleteCluster(5);
             } catch (e, s) {
               debugPrint(e.toString());
               debugPrint(s.toString());
@@ -275,7 +274,7 @@ class DebugSectionWidget extends StatelessWidget {
                 return;
               }
               await FaceFeedbackService.instance.renameOrSetThumbnailCluster(
-                personID: 6,
+                6,
                 customName: 'Giel! Kerelman!',
               );
             } catch (e, s) {
@@ -309,7 +308,7 @@ class DebugSectionWidget extends StatelessWidget {
               // );
               // debugPrint('All possible faceIDs: ${cluster8.faceIDs}');
               await FaceFeedbackService.instance.renameOrSetThumbnailCluster(
-                personID: 8,
+                8,
                 customFaceID: '20435664_ccaecd89-b5de-4dca-9b68-08585d8a1742',
               );
               showShortToast(context, 'Thumbnail changed');

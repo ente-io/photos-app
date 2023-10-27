@@ -99,23 +99,13 @@ class FaceFeedbackService {
   }
 
   /// Deletes the given cluster completely.
-  ///
-  /// Requires either a [ClusterResult] or a [personID]. If both are given, the [ClusterResult] is used.
-  Future<void> deleteCluster({int? personID, ClusterResult? cluster}) async {
+  Future<void> deleteCluster(int personID) async {
     _logger.info(
-      'deleteCluster called with personID $personID and cluster $cluster',
+      'deleteCluster called with personID $personID',
     );
-    if (cluster == null && personID == null) {
-      _logger.severe(
-        "No cluster or personID given, unable to delete cluster!",
-      );
-      throw ArgumentError(
-        "No cluster or personID given, unable to delete cluster!",
-      );
-    }
 
     // Get the relevant cluster
-    cluster ??= await _mlDatabase.getClusterResult(personID!);
+    final cluster = await _mlDatabase.getClusterResult(personID);
     if (cluster == null) {
       _logger.severe(
         "No cluster found for personID $personID, unable to delete non-existent cluster!",
@@ -150,25 +140,15 @@ class FaceFeedbackService {
 
   /// Renames the given cluster and/or sets the thumbnail of the given cluster.
   ///
-  /// Requires either a [ClusterResult] or a [personID]. If both are given, the [ClusterResult] is used.
-  /// Also requires either a [customName] or a [customFaceID]. If both are given, both are used. If neither are given, an error is thrown.
-  Future<ClusterResult> renameOrSetThumbnailCluster({
-    int? personID,
-    ClusterResult? cluster,
+  /// Requires either a [customName] or a [customFaceID]. If both are given, both are used. If neither are given, an error is thrown.
+  Future<ClusterResult> renameOrSetThumbnailCluster(
+    int personID, {
     String? customName,
     String? customFaceID,
   }) async {
     _logger.info(
-      'renameOrSetThumbnailCluster called with personID $personID, cluster $cluster, customName $customName, and customFaceID $customFaceID',
+      'renameOrSetThumbnailCluster called with personID $personID, customName $customName, and customFaceID $customFaceID',
     );
-    if (cluster == null && personID == null) {
-      _logger.severe(
-        "No cluster or personID given, unable to delete cluster!",
-      );
-      throw ArgumentError(
-        "No cluster or personID given, unable to delete cluster!",
-      );
-    }
     if (customName == null && customFaceID == null) {
       _logger.severe(
         "No name or faceID given, unable to rename or set thumbnail of cluster!",
@@ -179,7 +159,7 @@ class FaceFeedbackService {
     }
 
     // Get the relevant cluster
-    cluster ??= await _mlDatabase.getClusterResult(personID!);
+    final cluster = await _mlDatabase.getClusterResult(personID);
     if (cluster == null) {
       _logger.severe(
         "No cluster found for personID $personID, unable to delete non-existent cluster!",
@@ -229,24 +209,14 @@ class FaceFeedbackService {
   /// Merges the given clusters. The largest cluster is kept and the other clusters are deleted.
   ///
   /// Requires either a [clusters] or [personIDs]. If both are given, the [clusters] are used.
-  Future<ClusterResult> mergeClusters({
-    List<int>? personIDs,
-    List<ClusterResult>? clusters,
-  }) async {
+  Future<ClusterResult> mergeClusters(List<int> personIDs) async {
     _logger.info(
-      'mergeClusters called with personIDs $personIDs and clusters $clusters',
+      'mergeClusters called with personIDs $personIDs',
     );
-    if (clusters == null && personIDs == null) {
-      _logger.severe(
-        "No clusters or personIDs given, unable to delete cluster!",
-      );
-      throw ArgumentError(
-        "No clusters or personIDs given, unable to delete cluster!",
-      );
-    }
 
     // Get the relevant clusters
-    clusters ??= await _mlDatabase.getSelectedClusterResults(personIDs!);
+    final List<ClusterResult> clusters =
+        await _mlDatabase.getSelectedClusterResults(personIDs);
     if (clusters.length <= 1) {
       _logger.severe(
         "${clusters.length} clusters found for personIDs $personIDs, unable to merge non-existent clusters!",
