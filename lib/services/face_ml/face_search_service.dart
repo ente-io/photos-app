@@ -88,4 +88,33 @@ class FaceSearchService {
         await _filesDatabase.getFilesFromIDs(fileIDs);
     return files.values.toList();
   }
+
+  Future<List<EnteFile>> getFilesForIntersectOfPeople(
+    List<int> personIDs,
+  ) async {
+    if (personIDs.length <= 1) {
+      _logger
+          .warning('Cannot get intersection of files for less than 2 people');
+      return <EnteFile>[];
+    }
+
+    final Set<int> fileIDsFirstCluster = await _mlDatabase
+        .getClusterFileIds(personIDs.first)
+        .then((value) => value.toSet());
+    for (final personID in personIDs.sublist(1)) {
+      final fileIDsSingleCluster =
+          await _mlDatabase.getClusterFileIds(personID);
+      fileIDsFirstCluster.retainAll(fileIDsSingleCluster);
+
+      // Early termination if intersection is empty
+      if (fileIDsFirstCluster.isEmpty) {
+        return <EnteFile>[];
+      }
+    }
+
+    final Map<int, EnteFile> files =
+        await _filesDatabase.getFilesFromIDs(fileIDsFirstCluster.toList());
+
+    return files.values.toList();
+  }
 }
