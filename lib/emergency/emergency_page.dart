@@ -46,8 +46,8 @@ class _EmergencyPageState extends State<EmergencyPage> {
       owner.email = Configuration.instance.getEmail()!;
     }
 
-    final List<EmergencyContact> viewers = emergencyInfo.grantors;
-    final List<EmergencyContact> collaborators = emergencyInfo.userContacts;
+    final List<EmergencyContact> viewers = emergencyInfo.othersEmergencyContact;
+    final List<EmergencyContact> collaborators = emergencyInfo.contacts;
 
     return Scaffold(
       body: CustomScrollView(
@@ -55,10 +55,10 @@ class _EmergencyPageState extends State<EmergencyPage> {
         slivers: <Widget>[
           const TitleBarWidget(
             flexibleSpaceTitle: TitleBarTitleWidget(
-              title: "Emergency Contacts",
+              title: "Trusted Contacts",
             ),
           ),
-          emergencyInfo.userAccountRecoverySessions.isEmpty
+          emergencyInfo.recoverSessions.isEmpty
               ? SliverPadding(
                   padding: const EdgeInsets.only(top: 20, left: 16, right: 16),
                   sliver: SliverList(
@@ -84,15 +84,15 @@ class _EmergencyPageState extends State<EmergencyPage> {
                             padding: const EdgeInsets.only(bottom: 8.0),
                             child: NotificationWidget(
                               startIcon: Icons.warning_amber_rounded,
-                              text: "Your emergency contact is trying to "
+                              text: "Your trusted contact is trying to "
                                   "access your account",
                               actionIcon: null,
                               onTap: () {},
                             ),
                           );
                         }
-                        final RecoverySessions recoverSession = emergencyInfo
-                            .userAccountRecoverySessions[index - 1];
+                        final RecoverySessions recoverSession =
+                            emergencyInfo.recoverSessions[index - 1];
                         return MenuItemWidget(
                           captionedTextWidget: CaptionedTextWidget(
                             title: recoverSession.emergencyContact.email,
@@ -109,8 +109,7 @@ class _EmergencyPageState extends State<EmergencyPage> {
                           isGestureDetectorDisabled: true,
                         );
                       },
-                      childCount:
-                          1 + emergencyInfo.userAccountRecoverySessions.length,
+                      childCount: 1 + emergencyInfo.recoverSessions.length,
                     ),
                   ),
                 ),
@@ -121,7 +120,7 @@ class _EmergencyPageState extends State<EmergencyPage> {
                 (context, index) {
                   if (index == 0 && (isOwner || collaborators.isNotEmpty)) {
                     return const MenuSectionTitle(
-                      title: "Your Emergency Contacts",
+                      title: "Your Trusted Contacts",
                       iconData: Icons.emergency_outlined,
                     );
                   } else if (index > 0 && index <= collaborators.length) {
@@ -172,7 +171,7 @@ class _EmergencyPageState extends State<EmergencyPage> {
                       captionedTextWidget: CaptionedTextWidget(
                         title: collaborators.isNotEmpty
                             ? S.of(context).addMore
-                            : "Add Emergency Contact",
+                            : "Add Trusted Contact",
                         makeTextBold: true,
                       ),
                       leadingIcon: Icons.add_outlined,
@@ -201,7 +200,7 @@ class _EmergencyPageState extends State<EmergencyPage> {
                 (context, index) {
                   if (index == 0 && (isOwner || viewers.isNotEmpty)) {
                     return const MenuSectionTitle(
-                      title: "You're Their Emergency Contact",
+                      title: "You're Their Trusted Contact",
                       iconData: Icons.photo_outlined,
                     );
                   } else if (index > 0 && index <= viewers.length) {

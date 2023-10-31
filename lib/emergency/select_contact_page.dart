@@ -66,7 +66,7 @@ class _AddContactPage extends State<AddContactPage> {
       resizeToAvoidBottomInset: isKeypadOpen,
       appBar: AppBar(
         title: const Text(
-          "Add trusted contact",
+          "Add Trusted Contact",
         ),
       ),
       body: Column(
@@ -180,7 +180,7 @@ class _AddContactPage extends State<AddContactPage> {
                   ButtonWidget(
                     buttonType: ButtonType.primary,
                     buttonSize: ButtonSize.large,
-                    labelText: "Add trusted contact",
+                    labelText: "Add",
                     isDisabled: (selectedEmail == '' && !_emailIsValid),
                     onTap: (selectedEmail == '' && !_emailIsValid)
                         ? null
@@ -190,7 +190,7 @@ class _AddContactPage extends State<AddContactPage> {
                             try {
                               final result = await EmergencyContactService
                                   .instance
-                                  .AddContact(context, emailToAdd);
+                                  .addContact(context, emailToAdd);
                               if (result && mounted) {
                                 Navigator.of(context).pop(true);
                               }

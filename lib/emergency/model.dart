@@ -24,40 +24,38 @@ class EmergencyContact {
 
 class EmergencyInfo {
   // List of emergency contacts added by the user
-  final List<EmergencyContact> userContacts;
+  final List<EmergencyContact> contacts;
 
   // List of recovery sessions that are created to recover current user account
-  final List<RecoverySessions> userAccountRecoverySessions;
+  final List<RecoverySessions> recoverSessions;
 
   // List of emergency contacts that have added current user as their emergency contact
-  final List<EmergencyContact> grantors;
+  final List<EmergencyContact> othersEmergencyContact;
 
   // List of recovery sessions that are created to recover grantor's account
-  final List<RecoverySessions> grantorAccountRecoverySession;
+  final List<RecoverySessions> othersRecoverySession;
 
   EmergencyInfo(
-    this.userContacts,
-    this.userAccountRecoverySessions,
-    this.grantors,
-    this.grantorAccountRecoverySession,
+    this.contacts,
+    this.recoverSessions,
+    this.othersEmergencyContact,
+    this.othersRecoverySession,
   );
 
   // from json
   EmergencyInfo.fromJson(Map<String, dynamic> json)
-      : userContacts = (json['userContacts'] as List)
+      : contacts = (json['contacts'] as List)
             .map((contact) => EmergencyContact.fromJson(contact))
             .toList(),
-        userAccountRecoverySessions =
-            (json['userAccountRecoverySessions'] as List)
-                .map((session) => RecoverySessions.fromJson(session))
-                .toList(),
-        grantors = (json['grantors'] as List)
+        recoverSessions = (json['recoverSessions'] as List)
+            .map((session) => RecoverySessions.fromJson(session))
+            .toList(),
+        othersEmergencyContact = (json['othersEmergencyContact'] as List)
             .map((grantor) => EmergencyContact.fromJson(grantor))
             .toList(),
-        grantorAccountRecoverySession =
-            (json['grantorAccountRecoverySession'] as List)
-                .map((session) => RecoverySessions.fromJson(session))
-                .toList();
+        othersRecoverySession = (json['othersRecoverySession'] as List)
+            .map((session) => RecoverySessions.fromJson(session))
+            .toList();
 }
 
 class RecoverySessions {
