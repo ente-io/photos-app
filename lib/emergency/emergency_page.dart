@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photos/core/configuration.dart';
+import "package:photos/emergency/model.dart";
 import "package:photos/generated/l10n.dart";
 import "package:photos/models/api/collection/user.dart";
 import 'package:photos/theme/ente_theme.dart';
@@ -8,11 +9,9 @@ import 'package:photos/ui/components/divider_widget.dart';
 import 'package:photos/ui/components/menu_item_widget/menu_item_widget.dart';
 import 'package:photos/ui/components/menu_section_title.dart';
 import "package:photos/ui/components/notification_widget.dart";
+import 'package:photos/ui/components/title_bar_title_widget.dart';
 import 'package:photos/ui/components/title_bar_widget.dart';
-import "package:photos/ui/emergency/model.dart";
-import 'package:photos/ui/sharing/user_avator_widget.dart';
-
-import "../components/title_bar_title_widget.dart";
+import "package:photos/ui/sharing/user_avator_widget.dart";
 
 class EmergencyPage extends StatefulWidget {
   const EmergencyPage({
@@ -34,10 +33,9 @@ class _EmergencyPageState extends State<EmergencyPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isOwner = true;
+    const isOwner = true;
     final colorScheme = getEnteColorScheme(context);
     final currentUserID = Configuration.instance.getUserID()!;
-    final int participants = 1;
     final User owner = User(
       id: 1,
       email: "",
@@ -100,7 +98,7 @@ class _EmergencyPageState extends State<EmergencyPage> {
                             textColor: colorScheme.warning500,
                           ),
                           leadingIconWidget: UserAvatarWidget(
-                            owner,
+                            recoverSession.emergencyContact,
                             currentUserID: currentUserID,
                           ),
                           leadingIconSize: 24,
