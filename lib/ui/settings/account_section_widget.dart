@@ -11,6 +11,7 @@ import 'package:photos/ui/account/password_entry_page.dart';
 import 'package:photos/ui/components/captioned_text_widget.dart';
 import 'package:photos/ui/components/expandable_menu_item_widget.dart';
 import 'package:photos/ui/components/menu_item_widget/menu_item_widget.dart';
+import "package:photos/ui/emergency/emergency_page.dart";
 import "package:photos/ui/payment/subscription.dart";
 import 'package:photos/ui/settings/common_settings.dart';
 import 'package:photos/utils/dialog_util.dart';
@@ -92,6 +93,32 @@ class AccountSectionWidget extends StatelessWidget {
                     return const PasswordEntryPage(
                       mode: PasswordEntryMode.update,
                     );
+                  },
+                ),
+              );
+            }
+          },
+        ),
+        sectionOptionSpacing,
+        MenuItemWidget(
+          captionedTextWidget: CaptionedTextWidget(
+            title: "Legacy contact",
+          ),
+          pressedColor: getEnteColorScheme(context).fillFaint,
+          trailingIcon: Icons.chevron_right_outlined,
+          trailingIconIsMuted: true,
+          showOnlyLoadingState: true,
+          onTap: () async {
+            final hasAuthenticated = await LocalAuthenticationService.instance
+                .requestLocalAuthentication(
+              context,
+              S.of(context).authToChangeYourPassword,
+            );
+            if (hasAuthenticated) {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (BuildContext context) {
+                    return const EmergencyPage();
                   },
                 ),
               );
