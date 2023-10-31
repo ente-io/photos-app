@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:photos/core/configuration.dart';
 import "package:photos/emergency/model.dart";
+import "package:photos/emergency/select_contact_page.dart";
 import "package:photos/generated/l10n.dart";
 import "package:photos/models/api/collection/user.dart";
 import 'package:photos/theme/ente_theme.dart';
@@ -12,6 +13,7 @@ import "package:photos/ui/components/notification_widget.dart";
 import 'package:photos/ui/components/title_bar_title_widget.dart';
 import 'package:photos/ui/components/title_bar_widget.dart';
 import "package:photos/ui/sharing/user_avator_widget.dart";
+import "package:photos/utils/navigation_util.dart";
 
 class EmergencyPage extends StatefulWidget {
   const EmergencyPage({
@@ -176,6 +178,10 @@ class _EmergencyPageState extends State<EmergencyPage> {
                       leadingIcon: Icons.add_outlined,
                       menuItemColor: getEnteColorScheme(context).fillFaint,
                       onTap: () async {
+                        routeToPage(
+                          context,
+                          AddContactPage(emergencyInfo),
+                        );
                         // _navigateToAddUser(false);
                       },
                       isTopBorderRadiusRemoved: collaborators.isNotEmpty,
