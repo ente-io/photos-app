@@ -16,6 +16,10 @@ class EmergencyContact {
   bool isCurrentUserContact(int userID) {
     return user.id == userID;
   }
+
+  bool isPendingInvite() {
+    return state == 'INVITED';
+  }
 }
 
 class EmergencyInfo {
