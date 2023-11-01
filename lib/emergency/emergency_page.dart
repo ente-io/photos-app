@@ -6,7 +6,6 @@ import "package:photos/emergency/model.dart";
 import "package:photos/emergency/other_contact_page.dart";
 import "package:photos/emergency/select_contact_page.dart";
 import "package:photos/generated/l10n.dart";
-import "package:photos/models/api/collection/user.dart";
 import 'package:photos/theme/ente_theme.dart';
 import "package:photos/ui/common/loading_widget.dart";
 import "package:photos/ui/components/action_sheet_widget.dart";
@@ -72,14 +71,6 @@ class _EmergencyPageState extends State<EmergencyPage> {
   Widget build(BuildContext context) {
     final colorScheme = getEnteColorScheme(context);
     final currentUserID = Configuration.instance.getUserID()!;
-    final User owner = User(
-      id: 1,
-      email: "",
-    );
-    if (owner.id == currentUserID && owner.email == "") {
-      owner.email = Configuration.instance.getEmail()!;
-    }
-
     final List<EmergencyContact> othersTrustedContacts =
         info?.othersEmergencyContact ?? [];
     final List<EmergencyContact> trustedContacts = info?.contacts ?? [];
@@ -158,20 +149,19 @@ class _EmergencyPageState extends State<EmergencyPage> {
                       );
                     } else if (index > 0 && index <= trustedContacts.length) {
                       final listIndex = index - 1;
-                      final currentUser = trustedContacts[listIndex];
+                      final contact = trustedContacts[listIndex];
                       final isLastItem = index == trustedContacts.length;
                       return Column(
                         children: [
                           MenuItemWidget(
                             captionedTextWidget: CaptionedTextWidget(
-                              title: currentUser.emergencyContact.email,
-                              subTitle:
-                                  currentUser.isPendingInvite() ? "⚠" : null,
-                              makeTextBold: currentUser.isPendingInvite(),
+                              title: contact.emergencyContact.email,
+                              subTitle: contact.isPendingInvite() ? "⚠" : null,
+                              makeTextBold: contact.isPendingInvite(),
                             ),
                             leadingIconSize: 24.0,
                             leadingIconWidget: UserAvatarWidget(
-                              currentUser.emergencyContact,
+                              contact.emergencyContact,
                               type: AvatarType.mini,
                               currentUserID: currentUserID,
                             ),
@@ -242,9 +232,8 @@ class _EmergencyPageState extends State<EmergencyPage> {
                             captionedTextWidget: CaptionedTextWidget(
                               title: currentUser.user.email,
                               makeTextBold: currentUser.isPendingInvite(),
-                              subTitle: currentUser.isPendingInvite()
-                                  ? currentUser.state.stringValue
-                                  : null,
+                              subTitle:
+                                  currentUser.isPendingInvite() ? "⚠" : null,
                             ),
                             leadingIconSize: 24.0,
                             leadingIconWidget: UserAvatarWidget(
