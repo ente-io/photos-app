@@ -189,10 +189,6 @@ class CollectionActions {
     return false;
   }
 
-  (int, String) foo() {
-    return (42, "foobar");
-  }
-
   // addEmailToCollection returns true if add operation was successful
   Future<bool> addEmailToCollection(
     BuildContext context,

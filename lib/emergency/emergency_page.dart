@@ -58,7 +58,6 @@ class _EmergencyPageState extends State<EmergencyPage> {
 
   @override
   Widget build(BuildContext context) {
-    const isOwner = true;
     final colorScheme = getEnteColorScheme(context);
     final currentUserID = Configuration.instance.getUserID()!;
     final User owner = User(
@@ -117,7 +116,7 @@ class _EmergencyPageState extends State<EmergencyPage> {
                       return MenuItemWidget(
                         captionedTextWidget: CaptionedTextWidget(
                           title: recoverSession.emergencyContact.email,
-                          makeTextBold: isOwner,
+                          makeTextBold: recoverSession.status.isNotEmpty,
                           textColor: colorScheme.warning500,
                         ),
                         leadingIconWidget: UserAvatarWidget(
@@ -140,7 +139,7 @@ class _EmergencyPageState extends State<EmergencyPage> {
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
-                    if (index == 0 && (isOwner || trustedContacts.isNotEmpty)) {
+                    if (index == 0 && trustedContacts.isNotEmpty) {
                       return const MenuSectionTitle(
                         title: "Your Trusted Contact",
                         iconData: Icons.emergency_outlined,
@@ -148,8 +147,7 @@ class _EmergencyPageState extends State<EmergencyPage> {
                     } else if (index > 0 && index <= trustedContacts.length) {
                       final listIndex = index - 1;
                       final currentUser = trustedContacts[listIndex];
-                      final isLastItem =
-                          !isOwner && index == trustedContacts.length;
+                      final isLastItem = index == trustedContacts.length;
                       return Column(
                         children: [
                           MenuItemWidget(
@@ -168,15 +166,9 @@ class _EmergencyPageState extends State<EmergencyPage> {
                             ),
                             menuItemColor:
                                 getEnteColorScheme(context).fillFaint,
-                            trailingIcon: isOwner ? Icons.chevron_right : null,
+                            trailingIcon: Icons.chevron_right,
                             trailingIconIsMuted: true,
-                            onTap: isOwner
-                                ? () async {
-                                    if (isOwner) {
-                                      // _navigateToManageUser(currentUser);
-                                    }
-                                  }
-                                : null,
+                            onTap: null,
                             isTopBorderRadiusRemoved: listIndex > 0,
                             isBottomBorderRadiusRemoved: !isLastItem,
                             singleBorderRadius: 8,
@@ -190,8 +182,7 @@ class _EmergencyPageState extends State<EmergencyPage> {
                                 ),
                         ],
                       );
-                    } else if (index == (1 + trustedContacts.length) &&
-                        isOwner) {
+                    } else if (index == (1 + trustedContacts.length)) {
                       return MenuItemWidget(
                         captionedTextWidget: CaptionedTextWidget(
                           title: trustedContacts.isNotEmpty
@@ -224,8 +215,7 @@ class _EmergencyPageState extends State<EmergencyPage> {
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
-                    if (index == 0 &&
-                        (isOwner || othersTrustedContacts.isNotEmpty)) {
+                    if (index == 0 && (othersTrustedContacts.isNotEmpty)) {
                       return const MenuSectionTitle(
                         title: "You're Their Trusted Contact",
                         iconData: Icons.photo_outlined,
@@ -234,8 +224,7 @@ class _EmergencyPageState extends State<EmergencyPage> {
                         index <= othersTrustedContacts.length) {
                       final listIndex = index - 1;
                       final currentUser = othersTrustedContacts[listIndex];
-                      final isLastItem =
-                          !isOwner && index == othersTrustedContacts.length;
+                      final isLastItem = index == othersTrustedContacts.length;
                       return Column(
                         children: [
                           MenuItemWidget(
@@ -254,15 +243,9 @@ class _EmergencyPageState extends State<EmergencyPage> {
                             ),
                             menuItemColor:
                                 getEnteColorScheme(context).fillFaint,
-                            trailingIcon: isOwner ? Icons.chevron_right : null,
+                            trailingIcon: Icons.chevron_right,
                             trailingIconIsMuted: true,
-                            onTap: isOwner
-                                ? () async {
-                                    if (isOwner) {
-                                      // _navigateToManageUser(currentUser);
-                                    }
-                                  }
-                                : null,
+                            onTap: null,
                             isTopBorderRadiusRemoved: listIndex > 0,
                             isBottomBorderRadiusRemoved: !isLastItem,
                             singleBorderRadius: 8,
