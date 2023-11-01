@@ -2,8 +2,10 @@ import "dart:typed_data";
 
 import "package:dio/dio.dart";
 import "package:flutter/cupertino.dart";
+import "package:logging/logging.dart";
 import "package:photos/core/configuration.dart";
 import "package:photos/core/network/network.dart";
+import "package:photos/emergency/model.dart";
 import "package:photos/generated/l10n.dart";
 import "package:photos/services/user_service.dart";
 import "package:photos/ui/common/user_dialogs.dart";
@@ -23,7 +25,7 @@ class EmergencyContactService {
   static final EmergencyContactService instance =
       EmergencyContactService._privateConstructor();
 
-  Future<bool> AddContact(BuildContext context, String email) async {
+  Future<bool> addContact(BuildContext context, String email) async {
     if (!isValidEmail(email)) {
       await showErrorDialog(
         context,
@@ -57,5 +59,15 @@ class EmergencyContactService {
       },
     );
     return true;
+  }
+
+  Future<EmergencyInfo> getInfo() async {
+    try {
+      final response = await _enteDio.get("/emergency-contacts/info");
+      return EmergencyInfo.fromJson(response.data);
+    } catch (e, s) {
+      Logger("EmergencyContact").severe('failed to get info', e, s);
+      rethrow;
+    }
   }
 }
