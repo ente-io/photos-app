@@ -7785,6 +7785,16 @@ class S {
       args: [],
     );
   }
+
+  /// `Remove invite`
+  String get removeInvite {
+    return Intl.message(
+      'Remove invite',
+      name: 'removeInvite',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

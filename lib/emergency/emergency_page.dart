@@ -160,6 +160,8 @@ class _EmergencyPageState extends State<EmergencyPage> {
                               makeTextBold: contact.isPendingInvite(),
                             ),
                             leadingIconSize: 24.0,
+                            surfaceExecutionStates: false,
+                            alwaysShowSuccessState: false,
                             leadingIconWidget: UserAvatarWidget(
                               contact.emergencyContact,
                               type: AvatarType.mini,
@@ -169,7 +171,9 @@ class _EmergencyPageState extends State<EmergencyPage> {
                                 getEnteColorScheme(context).fillFaint,
                             trailingIcon: Icons.chevron_right,
                             trailingIconIsMuted: true,
-                            onTap: null,
+                            onTap: () async {
+                              await showRevokeOrRemoveDialog(context, contact);
+                            },
                             isTopBorderRadiusRemoved: listIndex > 0,
                             isBottomBorderRadiusRemoved: !isLastItem,
                             singleBorderRadius: 8,
@@ -192,6 +196,7 @@ class _EmergencyPageState extends State<EmergencyPage> {
                           makeTextBold: true,
                         ),
                         leadingIcon: Icons.add_outlined,
+                        surfaceExecutionStates: false,
                         menuItemColor: getEnteColorScheme(context).fillFaint,
                         onTap: () async {
                           await routeToPage(
@@ -284,6 +289,85 @@ class _EmergencyPageState extends State<EmergencyPage> {
         ],
       ),
     );
+  }
+
+  Future<void> showRevokeOrRemoveDialog(
+    BuildContext context,
+    EmergencyContact contact,
+  ) async {
+    if (contact.isPendingInvite()) {
+      await showActionSheet(
+        context: context,
+        body:
+            "You have invited ${contact.emergencyContact.email} to be a trusted contact",
+        bodyHighlight: "They are yet to accept your invite",
+        buttons: [
+          ButtonWidget(
+            labelText: S.of(context).removeInvite,
+            buttonType: ButtonType.critical,
+            buttonSize: ButtonSize.large,
+            buttonAction: ButtonAction.first,
+            shouldStickToDarkTheme: true,
+            shouldSurfaceExecutionStates: true,
+            shouldShowSuccessConfirmation: false,
+            onTap: () async {
+              await EmergencyContactService.instance
+                  .updateContact(contact, ContactState.UserRevokedContact);
+              info?.contacts.remove(contact);
+              if (mounted) {
+                setState(() {});
+                _fetchData();
+              }
+            },
+            isInAlert: true,
+          ),
+          ButtonWidget(
+            labelText: S.of(context).cancel,
+            buttonType: ButtonType.tertiary,
+            buttonSize: ButtonSize.large,
+            buttonAction: ButtonAction.second,
+            shouldStickToDarkTheme: true,
+            isInAlert: true,
+          ),
+        ],
+      );
+    } else {
+      await showActionSheet(
+        context: context,
+        body:
+            "You have added ${contact.emergencyContact.email} as a trusted contact",
+        bodyHighlight: "They have accepted your invite",
+        buttons: [
+          ButtonWidget(
+            labelText: S.of(context).remove,
+            buttonType: ButtonType.critical,
+            buttonSize: ButtonSize.large,
+            buttonAction: ButtonAction.second,
+            shouldStickToDarkTheme: true,
+            shouldSurfaceExecutionStates: true,
+            shouldShowSuccessConfirmation: false,
+            onTap: () async {
+              await EmergencyContactService.instance
+                  .updateContact(contact, ContactState.UserRevokedContact);
+              info?.contacts.remove(contact);
+              if (mounted) {
+                setState(() {});
+                _fetchData();
+              }
+            },
+            isInAlert: true,
+          ),
+          ButtonWidget(
+            labelText: S.of(context).cancel,
+            buttonType: ButtonType.tertiary,
+            buttonSize: ButtonSize.large,
+            buttonAction: ButtonAction.third,
+            shouldStickToDarkTheme: true,
+            isInAlert: true,
+          ),
+        ],
+      );
+    }
   }
 
   Future<void> showAcceptOrDeclineDialog(

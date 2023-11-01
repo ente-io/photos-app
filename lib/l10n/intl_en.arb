@@ -1109,5 +1109,6 @@
   "removeYourselfAsTrustedContact": "Remove yourself as trusted contact",
   "addTrustedContact": "Add Trusted Contact",
   "myTrustedContact": "My Trusted Contact",
-  "trustedContacts": "Trusted Contacts"
+  "trustedContacts": "Trusted Contacts",
+  "removeInvite": "Remove invite"
 }

@@ -1027,6 +1027,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Remove from album?"),
         "removeFromFavorite":
             MessageLookupByLibrary.simpleMessage("Remove from favorite"),
+        "removeInvite": MessageLookupByLibrary.simpleMessage("Remove invite"),
         "removeLink": MessageLookupByLibrary.simpleMessage("Remove link"),
         "removeParticipant":
             MessageLookupByLibrary.simpleMessage("Remove participant"),
