@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import "package:logging/logging.dart";
 import 'package:photos/core/configuration.dart';
 import "package:photos/emergency/emergency_service.dart";
 import "package:photos/emergency/model.dart";
@@ -34,6 +35,7 @@ class EmergencyPage extends StatefulWidget {
 class _EmergencyPageState extends State<EmergencyPage> {
   late int currentUserID;
   EmergencyInfo? info;
+  final Logger _logger = Logger('EmergencyPage');
 
   @override
   void initState() {
@@ -43,21 +45,27 @@ class _EmergencyPageState extends State<EmergencyPage> {
     Future.delayed(
       const Duration(seconds: 0),
       () async {
-        try {
-          final result = await EmergencyContactService.instance.getInfo();
-          if (mounted) {
-            setState(() {
-              info = result;
-            });
-          }
-        } catch (e) {
-          showShortToast(
-            context,
-            S.of(context).somethingWentWrong,
-          );
-        }
+        await _fetchData();
       },
     );
+  }
+
+  Future<void> _fetchData() async {
+    try {
+      _logger.info('Fetching data');
+      final result = await EmergencyContactService.instance.getInfo();
+      if (mounted) {
+        setState(() {
+          _logger.info('Setting result ');
+          info = result;
+        });
+      }
+    } catch (e) {
+      showShortToast(
+        context,
+        S.of(context).somethingWentWrong,
+      );
+    }
   }
 
   @override
@@ -80,9 +88,9 @@ class _EmergencyPageState extends State<EmergencyPage> {
       body: CustomScrollView(
         primary: false,
         slivers: <Widget>[
-          const TitleBarWidget(
+          TitleBarWidget(
             flexibleSpaceTitle: TitleBarTitleWidget(
-              title: "Trusted Contacts",
+              title: S.of(context).trustedContacts,
             ),
           ),
           if (info == null)
@@ -144,8 +152,8 @@ class _EmergencyPageState extends State<EmergencyPage> {
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
                     if (index == 0 && trustedContacts.isNotEmpty) {
-                      return const MenuSectionTitle(
-                        title: "Your Trusted Contact",
+                      return MenuSectionTitle(
+                        title: S.of(context).myTrustedContact,
                         iconData: Icons.emergency_outlined,
                       );
                     } else if (index > 0 && index <= trustedContacts.length) {
@@ -157,9 +165,8 @@ class _EmergencyPageState extends State<EmergencyPage> {
                           MenuItemWidget(
                             captionedTextWidget: CaptionedTextWidget(
                               title: currentUser.emergencyContact.email,
-                              subTitle: currentUser.isPendingInvite()
-                                  ? currentUser.state.stringValue
-                                  : null,
+                              subTitle:
+                                  currentUser.isPendingInvite() ? "⚠" : null,
                               makeTextBold: currentUser.isPendingInvite(),
                             ),
                             leadingIconSize: 24.0,
@@ -191,17 +198,17 @@ class _EmergencyPageState extends State<EmergencyPage> {
                         captionedTextWidget: CaptionedTextWidget(
                           title: trustedContacts.isNotEmpty
                               ? S.of(context).addMore
-                              : "Add Trusted Contact",
+                              : S.of(context).addTrustedContact,
                           makeTextBold: true,
                         ),
                         leadingIcon: Icons.add_outlined,
                         menuItemColor: getEnteColorScheme(context).fillFaint,
                         onTap: () async {
-                          routeToPage(
+                          await routeToPage(
                             context,
                             AddContactPage(info!),
                           );
-                          // _navigateToAddUser(false);
+                          _fetchData();
                         },
                         isTopBorderRadiusRemoved: trustedContacts.isNotEmpty,
                         singleBorderRadius: 8,
@@ -222,7 +229,7 @@ class _EmergencyPageState extends State<EmergencyPage> {
                     if (index == 0 && (othersTrustedContacts.isNotEmpty)) {
                       return const MenuSectionTitle(
                         title: "You're Their Trusted Contact",
-                        iconData: Icons.photo_outlined,
+                        iconData: Icons.workspace_premium_outlined,
                       );
                     } else if (index > 0 &&
                         index <= othersTrustedContacts.length) {
@@ -256,10 +263,13 @@ class _EmergencyPageState extends State<EmergencyPage> {
                                   currentUser,
                                 );
                               } else {
-                                routeToPage(
+                                await routeToPage(
                                   context,
                                   OtherContactPage(contact: currentUser),
                                 );
+                                if (mounted) {
+                                  _fetchData();
+                                }
                               }
                             },
                             isTopBorderRadiusRemoved: listIndex > 0,

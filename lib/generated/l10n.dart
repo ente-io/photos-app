@@ -1,6 +1,7 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
 import 'intl/messages_all.dart';
 
 // **************************************************************************
@@ -7750,6 +7751,36 @@ class S {
     return Intl.message(
       'Remove yourself as trusted contact',
       name: 'removeYourselfAsTrustedContact',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add Trusted Contact`
+  String get addTrustedContact {
+    return Intl.message(
+      'Add Trusted Contact',
+      name: 'addTrustedContact',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `My Trusted Contact`
+  String get myTrustedContact {
+    return Intl.message(
+      'My Trusted Contact',
+      name: 'myTrustedContact',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Trusted Contacts`
+  String get trustedContacts {
+    return Intl.message(
+      'Trusted Contacts',
+      name: 'trustedContacts',
       desc: '',
       args: [],
     );

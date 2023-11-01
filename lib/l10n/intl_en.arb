@@ -1104,7 +1104,10 @@
   "moveToHiddenAlbum": "Move to hidden album",
   "deleteConfirmDialogBody": "This account is linked to other ente apps, if you use any.\\n\\nYour uploaded data, across all ente apps, will be scheduled for deletion, and your account will be permanently deleted.",
   "emergencyContacts": "Emergency Contacts",
-  "acceptTrustInvite" : "Accept Invite",
-  "declineTrustInvite" : "Decline Invite",
-  "removeYourselfAsTrustedContact": "Remove yourself as trusted contact"
+  "acceptTrustInvite": "Accept Invite",
+  "declineTrustInvite": "Decline Invite",
+  "removeYourselfAsTrustedContact": "Remove yourself as trusted contact",
+  "addTrustedContact": "Add Trusted Contact",
+  "myTrustedContact": "My Trusted Contact",
+  "trustedContacts": "Trusted Contacts"
 }
