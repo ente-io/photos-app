@@ -2,15 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:photos/core/configuration.dart';
 import "package:photos/emergency/emergency_service.dart";
 import "package:photos/emergency/model.dart";
+import "package:photos/emergency/other_contact_page.dart";
 import "package:photos/emergency/select_contact_page.dart";
 import "package:photos/generated/l10n.dart";
 import "package:photos/models/api/collection/user.dart";
 import 'package:photos/theme/ente_theme.dart';
 import "package:photos/ui/common/loading_widget.dart";
+import "package:photos/ui/components/action_sheet_widget.dart";
+import "package:photos/ui/components/buttons/button_widget.dart";
 import 'package:photos/ui/components/captioned_text_widget.dart';
 import 'package:photos/ui/components/divider_widget.dart';
 import 'package:photos/ui/components/menu_item_widget/menu_item_widget.dart';
 import 'package:photos/ui/components/menu_section_title.dart';
+import "package:photos/ui/components/models/button_type.dart";
 import "package:photos/ui/components/notification_widget.dart";
 import 'package:photos/ui/components/title_bar_title_widget.dart';
 import 'package:photos/ui/components/title_bar_widget.dart';
@@ -154,7 +158,7 @@ class _EmergencyPageState extends State<EmergencyPage> {
                             captionedTextWidget: CaptionedTextWidget(
                               title: currentUser.emergencyContact.email,
                               subTitle: currentUser.isPendingInvite()
-                                  ? currentUser.state
+                                  ? currentUser.state.stringValue
                                   : null,
                               makeTextBold: currentUser.isPendingInvite(),
                             ),
@@ -232,7 +236,7 @@ class _EmergencyPageState extends State<EmergencyPage> {
                               title: currentUser.user.email,
                               makeTextBold: currentUser.isPendingInvite(),
                               subTitle: currentUser.isPendingInvite()
-                                  ? currentUser.state
+                                  ? currentUser.state.stringValue
                                   : null,
                             ),
                             leadingIconSize: 24.0,
@@ -245,7 +249,19 @@ class _EmergencyPageState extends State<EmergencyPage> {
                                 getEnteColorScheme(context).fillFaint,
                             trailingIcon: Icons.chevron_right,
                             trailingIconIsMuted: true,
-                            onTap: null,
+                            onTap: () async {
+                              if (currentUser.isPendingInvite()) {
+                                await showAcceptOrDeclineDialog(
+                                  context,
+                                  currentUser,
+                                );
+                              } else {
+                                routeToPage(
+                                  context,
+                                  OtherContactPage(contact: currentUser),
+                                );
+                              }
+                            },
                             isTopBorderRadiusRemoved: listIndex > 0,
                             isBottomBorderRadiusRemoved: !isLastItem,
                             singleBorderRadius: 8,
@@ -269,5 +285,63 @@ class _EmergencyPageState extends State<EmergencyPage> {
         ],
       ),
     );
+  }
+
+  Future<void> showAcceptOrDeclineDialog(
+    BuildContext context,
+    EmergencyContact contact,
+  ) async {
+    await showActionSheet(
+      context: context,
+      buttons: [
+        ButtonWidget(
+          labelText: S.of(context).acceptTrustInvite,
+          buttonType: ButtonType.primary,
+          buttonSize: ButtonSize.large,
+          shouldStickToDarkTheme: true,
+          buttonAction: ButtonAction.first,
+          onTap: () async {
+            await EmergencyContactService.instance
+                .updateContact(contact, ContactState.ContactAccepted);
+            final updatedContact =
+                contact.copyWith(state: ContactState.ContactAccepted);
+            info?.othersEmergencyContact.remove(contact);
+            info?.othersEmergencyContact.add(updatedContact);
+            if (mounted) {
+              setState(() {});
+            }
+          },
+          isInAlert: true,
+        ),
+        ButtonWidget(
+          labelText: S.of(context).declineTrustInvite,
+          buttonType: ButtonType.critical,
+          buttonSize: ButtonSize.large,
+          buttonAction: ButtonAction.second,
+          shouldStickToDarkTheme: true,
+          onTap: () async {
+            await EmergencyContactService.instance
+                .updateContact(contact, ContactState.ContactDenied);
+            info?.othersEmergencyContact.remove(contact);
+            if (mounted) {
+              setState(() {});
+            }
+          },
+          isInAlert: true,
+        ),
+        ButtonWidget(
+          labelText: S.of(context).cancel,
+          buttonType: ButtonType.tertiary,
+          buttonSize: ButtonSize.large,
+          buttonAction: ButtonAction.third,
+          shouldStickToDarkTheme: true,
+          isInAlert: true,
+        ),
+      ],
+      body:
+          "You have been invited to be a trusted contact by ${contact.user.email}",
+      actionSheetType: ActionSheetType.defaultActionSheet,
+    );
+    return;
   }
 }

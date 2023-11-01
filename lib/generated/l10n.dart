@@ -190,17 +190,6 @@ class S {
     );
   }
 
-  /// `This account is linked to other ente apps, if you use any.`
-  /// `Your uploaded data, across all ente apps, will be scheduled for deletion, and your account will be permanently deleted.`
-  String get deleteConfirmDialogBody {
-    return Intl.message(
-      'This account is linked to other ente apps, if you use any.\n\nYour uploaded data, across all ente apps, will be scheduled for deletion, and your account will be permanently deleted.',
-      name: 'deleteConfirmDialogBody',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Delete Account Permanently`
   String get deleteAccountPermanentlyButton {
     return Intl.message(
@@ -7711,6 +7700,56 @@ class S {
     return Intl.message(
       'Move to hidden album',
       name: 'moveToHiddenAlbum',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `This account is linked to other ente apps, if you use any.\n\nYour uploaded data, across all ente apps, will be scheduled for deletion, and your account will be permanently deleted.`
+  String get deleteConfirmDialogBody {
+    return Intl.message(
+      'This account is linked to other ente apps, if you use any.\\n\\nYour uploaded data, across all ente apps, will be scheduled for deletion, and your account will be permanently deleted.',
+      name: 'deleteConfirmDialogBody',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Emergency Contacts`
+  String get emergencyContacts {
+    return Intl.message(
+      'Emergency Contacts',
+      name: 'emergencyContacts',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Accept Invite`
+  String get acceptTrustInvite {
+    return Intl.message(
+      'Accept Invite',
+      name: 'acceptTrustInvite',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Decline Invite`
+  String get declineTrustInvite {
+    return Intl.message(
+      'Decline Invite',
+      name: 'declineTrustInvite',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Remove yourself as trusted contact`
+  String get removeYourselfAsTrustedContact {
+    return Intl.message(
+      'Remove yourself as trusted contact',
+      name: 'removeYourselfAsTrustedContact',
       desc: '',
       args: [],
     );

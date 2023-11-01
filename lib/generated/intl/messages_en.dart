@@ -202,6 +202,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "aNewVersionOfEnteIsAvailable": MessageLookupByLibrary.simpleMessage(
             "A new version of ente is available."),
         "about": MessageLookupByLibrary.simpleMessage("About"),
+        "acceptTrustInvite":
+            MessageLookupByLibrary.simpleMessage("Accept Invite"),
         "account": MessageLookupByLibrary.simpleMessage("Account"),
         "accountWelcomeBack":
             MessageLookupByLibrary.simpleMessage("Welcome back!"),
@@ -469,6 +471,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "darkTheme": MessageLookupByLibrary.simpleMessage("Dark"),
         "dayToday": MessageLookupByLibrary.simpleMessage("Today"),
         "dayYesterday": MessageLookupByLibrary.simpleMessage("Yesterday"),
+        "declineTrustInvite":
+            MessageLookupByLibrary.simpleMessage("Decline Invite"),
         "decrypting": MessageLookupByLibrary.simpleMessage("Decrypting..."),
         "decryptingVideo":
             MessageLookupByLibrary.simpleMessage("Decrypting video..."),
@@ -486,6 +490,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "deleteAlbumsDialogBody": MessageLookupByLibrary.simpleMessage(
             "This will delete all empty albums. This is useful when you want to reduce the clutter in your album list."),
         "deleteAll": MessageLookupByLibrary.simpleMessage("Delete All"),
+        "deleteConfirmDialogBody": MessageLookupByLibrary.simpleMessage(
+            "This account is linked to other ente apps, if you use any.\\n\\nYour uploaded data, across all ente apps, will be scheduled for deletion, and your account will be permanently deleted."),
         "deleteEmailRequest": MessageLookupByLibrary.simpleMessage(
             "Please send an email to <warning>account-deletion@ente.io</warning> from your registered email address."),
         "deleteEmptyAlbums":
@@ -569,6 +575,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Email verification"),
         "emailYourLogs":
             MessageLookupByLibrary.simpleMessage("Email your logs"),
+        "emergencyContacts":
+            MessageLookupByLibrary.simpleMessage("Emergency Contacts"),
         "empty": MessageLookupByLibrary.simpleMessage("Empty"),
         "emptyTrash": MessageLookupByLibrary.simpleMessage("Empty trash?"),
         "enableMaps": MessageLookupByLibrary.simpleMessage("Enable Maps"),
@@ -1025,6 +1033,8 @@ class MessageLookup extends MessageLookupByLibrary {
             "Some of the items you are removing were added by other people, and you will lose access to them"),
         "removeWithQuestionMark":
             MessageLookupByLibrary.simpleMessage("Remove?"),
+        "removeYourselfAsTrustedContact": MessageLookupByLibrary.simpleMessage(
+            "Remove yourself as trusted contact"),
         "removingFromFavorites":
             MessageLookupByLibrary.simpleMessage("Removing from favorites..."),
         "rename": MessageLookupByLibrary.simpleMessage("Rename"),
