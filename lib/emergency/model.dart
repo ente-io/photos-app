@@ -84,34 +84,3 @@ class RecoverySessions {
         waitTill = json['waitTill'],
         createdAt = json['createdAt'];
 }
-
-// Create Dummy User
-User user1 = User(id: 1, email: 'user1@email.com');
-User user2 = User(id: 2, email: 'user2@email.com');
-User user3 = User(id: 3, email: 'user3@email.com');
-
-// Create Dummy Emergency Contacts
-EmergencyContact ec1 = EmergencyContact(user1, user2, 'INVITED');
-EmergencyContact ec3 = EmergencyContact(user1, user3, 'ACCEPTED');
-EmergencyContact ec2 = EmergencyContact(user2, user1, 'INVITED');
-EmergencyContact ec4 = EmergencyContact(user3, user1, 'ACCEPTED');
-
-List<EmergencyContact> userContacts = [ec1, ec3];
-List<EmergencyContact> grantors = [ec2, ec4];
-
-// Create Dummy Recovery Sessions
-RecoverySessions rs1 =
-    RecoverySessions('1', user1, user2, 'Pending', 1000, 500);
-RecoverySessions rs2 =
-    RecoverySessions('2', user2, user1, 'Pending', 1000, 500);
-
-List<RecoverySessions> userAccountRecoverySessions = [rs1];
-List<RecoverySessions> grantorAccountRecoverySession = [rs2];
-
-// Create Dummy EmergencyInfo
-EmergencyInfo emergencyInfo = EmergencyInfo(
-  userContacts,
-  userAccountRecoverySessions,
-  grantors,
-  grantorAccountRecoverySession,
-);
