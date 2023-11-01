@@ -9,8 +9,8 @@ class EmergencyContact {
 
   // fromJson
   EmergencyContact.fromJson(Map<String, dynamic> json)
-      : user = User.fromJson(json['user']),
-        emergencyContact = User.fromJson(json['emergencyContact']),
+      : user = User.fromMap(json['user']),
+        emergencyContact = User.fromMap(json['emergencyContact']),
         state = json['state'];
 
   bool isCurrentUserContact(int userID) {
@@ -78,8 +78,8 @@ class RecoverySessions {
   // fromJson
   RecoverySessions.fromJson(Map<String, dynamic> json)
       : id = json['id'],
-        user = User.fromJson(json['user']),
-        emergencyContact = User.fromJson(json['emergencyContact']),
+        user = User.fromMap(json['user']),
+        emergencyContact = User.fromMap(json['emergencyContact']),
         status = json['status'],
         waitTill = json['waitTill'],
         createdAt = json['createdAt'];
