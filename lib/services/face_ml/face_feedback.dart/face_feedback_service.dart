@@ -1,19 +1,12 @@
-// import "dart:typed_data";
-
 import "package:logging/logging.dart";
-import "package:photos/db/files_db.dart";
 import "package:photos/db/ml_data_db.dart";
 import "package:photos/services/face_ml/face_feedback.dart/cluster_feedback.dart";
 import "package:photos/services/face_ml/face_ml_result.dart";
-// import "package:photos/models/file/file.dart";
-// import 'package:photos/utils/image_ml_isolate.dart';
-// import "package:photos/utils/thumbnail_util.dart";
 
 class FaceFeedbackService {
   final _logger = Logger("FaceFeedbackService");
 
   final _mlDatabase = MlDataDB.instance;
-  final _filesDatabase = FilesDB.instance;
 
   int executedFeedbackCount = 0;
   final int _reclusterFeedbackThreshold = 10;
@@ -28,7 +21,7 @@ class FaceFeedbackService {
   /// If the file is not in the cluster, returns null.
   ///
   /// The updated cluster is also updated in [MlDataDB].
-  Future<ClusterResult?> removePhotoFromCluster(int fileID, personID) async {
+  Future<ClusterResult> removePhotoFromCluster(int fileID, personID) async {
     _logger.info(
       'removePhotoFromCluster called with fileID $fileID and personID $personID',
     );
@@ -38,7 +31,9 @@ class FaceFeedbackService {
       _logger.severe(
         "No cluster found for personID $personID, unable to remove photo from non-existent cluster!",
       );
-      return null;
+      throw ArgumentError(
+        "No cluster found for personID $personID, unable to remove photo from non-existent cluster!",
+      );
     }
     final FaceMlResult? faceMlResult =
         await _mlDatabase.getFaceMlResult(fileID);
@@ -46,13 +41,17 @@ class FaceFeedbackService {
       _logger.severe(
         "No face ml result found for fileID $faceMlResult, unable to remove unindexed photo from cluster!",
       );
-      return null;
+      throw ArgumentError(
+        "No face ml result found for fileID $faceMlResult, unable to remove unindexed photo from cluster!",
+      );
     }
     if (!cluster.uniqueFileIds.contains(fileID)) {
       _logger.severe(
         "FileID $fileID not found in cluster, unable to remove photo from cluster it is not in!",
       );
-      return null;
+      throw ArgumentError(
+        "FileID $fileID not found in cluster, unable to remove photo from cluster it is not in!",
+      );
     }
 
     // Find the faces/embeddings associated with both the fileID and personID
@@ -64,7 +63,9 @@ class FaceFeedbackService {
       _logger.severe(
         "No faces found in both cluster and file, unable to remove photo from cluster!",
       );
-      return null;
+      throw ArgumentError(
+        "No faces found in both cluster and file, unable to remove photo from cluster!",
+      );
     }
 
     // Set the embeddings to [10, 10,..., 10]

@@ -275,7 +275,9 @@ class RemovePhotoClusterFeedback extends ClusterFeedback {
   String toJsonString() => jsonEncode(toJson());
 
   static RemovePhotoClusterFeedback fromJson(Map<String, dynamic> json) {
-    assert(json['type'] == FeedbackType.removePhotoClusterFeedback.toValueString());
+    assert(
+      json['type'] == FeedbackType.removePhotoClusterFeedback.toValueString(),
+    );
     return RemovePhotoClusterFeedback(
       medoid:
           (json['medoid'] as List?)?.map((item) => item as double).toList() ??
@@ -295,12 +297,12 @@ class RemovePhotoClusterFeedback extends ClusterFeedback {
 }
 
 class AddPhotoClusterFeedback extends ClusterFeedback {
-  final int addedPhotoFileID;
+  final List<int> addedPhotoFileIDs;
 
   AddPhotoClusterFeedback({
     required List<double> medoid,
     required double medoidDistanceThreshold,
-    required this.addedPhotoFileID,
+    required this.addedPhotoFileIDs,
     String? feedbackID,
     DateTime? timestamp,
     int? madeOnFaceMlVersion,
@@ -321,7 +323,7 @@ class AddPhotoClusterFeedback extends ClusterFeedback {
       'type': type.toValueString(),
       'medoid': medoid,
       'medoidDistanceThreshold': medoidDistanceThreshold,
-      'addedPhotoFileID': addedPhotoFileID,
+      'addedPhotoFileIDs': addedPhotoFileIDs,
       'feedbackID': feedbackID,
       'timestamp': timestamp.toIso8601String(),
       'madeOnFaceMlVersion': madeOnFaceMlVersion,
@@ -333,13 +335,18 @@ class AddPhotoClusterFeedback extends ClusterFeedback {
   String toJsonString() => jsonEncode(toJson());
 
   static AddPhotoClusterFeedback fromJson(Map<String, dynamic> json) {
-    assert(json['type'] == FeedbackType.addPhotoClusterFeedback.toValueString());
+    assert(
+      json['type'] == FeedbackType.addPhotoClusterFeedback.toValueString(),
+    );
     return AddPhotoClusterFeedback(
       medoid:
           (json['medoid'] as List?)?.map((item) => item as double).toList() ??
               [],
       medoidDistanceThreshold: json['medoidDistanceThreshold'],
-      addedPhotoFileID: json['addedPhotoFileID'],
+      addedPhotoFileIDs: (json['addedPhotoFileIDs'] as List?)
+              ?.map((item) => item as int)
+              .toList() ??
+          [],
       feedbackID: json['feedbackID'],
       timestamp: DateTime.parse(json['timestamp']),
       madeOnFaceMlVersion: json['madeOnFaceMlVersion'],

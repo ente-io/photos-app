@@ -255,7 +255,7 @@ class ClusterResultBuilder {
       }
     }
     distancesToMedoid.sort();
-    // TODO: empirically find the best k
+    // TODO: empirically find the best k. Probably it should be dynamic in some way, so for instance larger for larger clusters and smaller for smaller clusters, especially since there are a lot of really small clusters and a few really large ones.
     final double kthDistance = distancesToMedoid[
         distancesToMedoid.length >= k ? k - 1 : distancesToMedoid.length - 1];
 
