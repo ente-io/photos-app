@@ -93,9 +93,10 @@ class _OtherContactPageState extends State<OtherContactPage> {
                     },
               isTopBorderRadiusRemoved: true,
             ),
-            const MenuSectionDescriptionWidget(
-              content: "You can recover account 30 days "
-                  "after you are starting the recovery process.",
+            MenuSectionDescriptionWidget(
+              content:
+                  "You can recover account after ${(widget.contact.recoveryNoticeInDays ~/ 24)} days of initiating "
+                  "recovery.",
             ),
             const SizedBox(height: 24),
             MenuSectionTitle(
