@@ -113,13 +113,22 @@ class _OtherContactPageState extends State<OtherContactPage> {
               menuItemColor: getEnteColorScheme(context).fillFaint,
               surfaceExecutionStates: false,
               onTap: () async {
-                try {
-                  await EmergencyContactService.instance
-                      .updateContact(widget.contact, ContactState.ContactLeft);
-                  Navigator.of(context).pop(true);
-                } catch (e) {
-                  showGenericErrorDialog(context: context);
-                }
+                final actionResult = await showChoiceActionSheet(context,
+                    title: "Remove",
+                    firstButtonLabel: S.of(context).yes,
+                    body: "Are you sure your want to stop being a trusted "
+                        "contact for ${widget.contact.user.email}?",
+                    isCritical: true, firstButtonOnTap: () async {
+                  try {
+                    await EmergencyContactService.instance.updateContact(
+                      widget.contact,
+                      ContactState.ContactLeft,
+                    );
+                    Navigator.of(context).pop(true);
+                  } catch (e) {
+                    showGenericErrorDialog(context: context);
+                  }
+                });
               },
             ),
           ],
