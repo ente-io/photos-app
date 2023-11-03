@@ -89,4 +89,19 @@ class EmergencyContactService {
       rethrow;
     }
   }
+
+  Future<void> startRecovery(EmergencyContact contact) async {
+    try {
+      await _enteDio.post(
+        "/emergency-contacts/start-recovery",
+        data: {
+          "userID": contact.user.id,
+          "emergencyContactID": contact.emergencyContact.id,
+        },
+      );
+    } catch (e, s) {
+      Logger("EmergencyContact").severe('failed to update contact', e, s);
+      rethrow;
+    }
+  }
 }

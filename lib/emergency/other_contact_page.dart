@@ -67,35 +67,27 @@ class _OtherContactPageState extends State<OtherContactPage> {
                   : () async {
                       final actionResult = await showChoiceActionSheet(
                         context,
-                        title: S.of(context).changePermissions,
-                        firstButtonLabel: S.of(context).yesConvertToViewer,
-                        body: S
-                            .of(context)
-                            .cannotAddMorePhotosAfterBecomingViewer(
-                              widget.contact.user.email,
-                            ),
+                        title: "Start recovery",
+                        firstButtonLabel: S.of(context).yes,
+                        body: "Are you sure you want to initiate recovery?",
                         isCritical: true,
                       );
                       if (actionResult?.action != null) {
                         if (actionResult!.action == ButtonAction.first) {
-                          // try {
-                          //   isConvertToViewSuccess =
-                          //       await collectionActions.addEmailToCollection(
-                          //     context,
-                          //     widget.collection,
-                          //     widget.user.email,
-                          //     CollectionParticipantRole.viewer,
-                          //   );
-                          // } catch (e) {
-                          //   showGenericErrorDialog(context: context);
-                          // }
-                          // if (isConvertToViewSuccess && mounted) {
-                          //   // reset value
-                          //   isConvertToViewSuccess = false;
-                          //   widget.user.role =
-                          //       CollectionParticipantRole.viewer.toStringVal();
-                          //   setState(() => {});
-                          // }
+                          try {
+                            await EmergencyContactService.instance
+                                .startRecovery(widget.contact);
+                            if (mounted) {
+                              await showErrorDialog(
+                                context,
+                                "Done",
+                                "You will need for x days before you can finish recovery",
+                              );
+                              Navigator.of(context).pop(true);
+                            }
+                          } catch (e) {
+                            showGenericErrorDialog(context: context);
+                          }
                         }
                       }
                     },

@@ -49,19 +49,23 @@ class EmergencyContact {
   final User user;
   final User emergencyContact;
   final ContactState state;
+  final int recoveryNoticeInDays;
 
-  EmergencyContact(this.user, this.emergencyContact, this.state);
+  EmergencyContact(
+      this.user, this.emergencyContact, this.state, this.recoveryNoticeInDays);
 
   // copyWith
   EmergencyContact copyWith({
     User? user,
     User? emergencyContact,
     ContactState? state,
+    int? recoveryNoticeInDays,
   }) {
     return EmergencyContact(
       user ?? this.user,
       emergencyContact ?? this.emergencyContact,
       state ?? this.state,
+      recoveryNoticeInDays ?? this.recoveryNoticeInDays,
     );
   }
 
@@ -69,7 +73,8 @@ class EmergencyContact {
   EmergencyContact.fromJson(Map<String, dynamic> json)
       : user = User.fromMap(json['user']),
         emergencyContact = User.fromMap(json['emergencyContact']),
-        state = ContactStateExtension.fromString(json['state'] as String);
+        state = ContactStateExtension.fromString(json['state'] as String),
+        recoveryNoticeInDays = json['recoveryNoticeInDays'];
 
   bool isCurrentUserContact(int userID) {
     return user.id == userID;
