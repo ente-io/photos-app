@@ -259,7 +259,10 @@ class _EmergencyPageState extends State<EmergencyPage> {
                               } else {
                                 await routeToPage(
                                   context,
-                                  OtherContactPage(contact: currentUser),
+                                  OtherContactPage(
+                                    contact: currentUser,
+                                    emergencyInfo: info!,
+                                  ),
                                 );
                                 if (mounted) {
                                   _fetchData();
