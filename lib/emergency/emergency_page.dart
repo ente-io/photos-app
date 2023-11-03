@@ -269,6 +269,7 @@ class _EmergencyPageState extends State<EmergencyPage> {
                             isTopBorderRadiusRemoved: listIndex > 0,
                             isBottomBorderRadiusRemoved: !isLastItem,
                             singleBorderRadius: 8,
+                            surfaceExecutionStates: false,
                           ),
                           isLastItem
                               ? const SizedBox.shrink()
