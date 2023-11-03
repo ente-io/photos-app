@@ -7,8 +7,8 @@ import "package:photos/theme/ente_theme.dart";
 import "package:photos/ui/components/buttons/button_widget.dart";
 import "package:photos/ui/components/captioned_text_widget.dart";
 import "package:photos/ui/components/menu_item_widget/menu_item_widget.dart";
-import 'package:photos/ui/components/menu_section_description_widget.dart';
 import "package:photos/ui/components/menu_section_title.dart";
+import "package:photos/ui/components/models/button_type.dart";
 import "package:photos/ui/components/title_bar_title_widget.dart";
 import "package:photos/utils/dialog_util.dart";
 
@@ -18,10 +18,19 @@ class OtherContactPage extends StatefulWidget {
   const OtherContactPage({required this.contact, super.key});
 
   @override
-  _OtherContactPageState createState() => _OtherContactPageState();
+  State<OtherContactPage> createState() => _OtherContactPageState();
 }
 
 class _OtherContactPageState extends State<OtherContactPage> {
+  late String recoverDelayTime;
+  late String accountEmail = widget.contact.user.email;
+
+  @override
+  void initState() {
+    super.initState();
+    recoverDelayTime = "${(widget.contact.recoveryNoticeInDays ~/ 24)} days";
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = getEnteColorScheme(context);
@@ -45,7 +54,7 @@ class _OtherContactPageState extends State<OtherContactPage> {
                     title: "Recover account",
                   ),
                   Text(
-                    widget.contact.user.email,
+                    accountEmail,
                     textAlign: TextAlign.left,
                     style:
                         textTheme.small.copyWith(color: colorScheme.textMuted),
@@ -53,15 +62,18 @@ class _OtherContactPageState extends State<OtherContactPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-            MenuItemWidget(
-              captionedTextWidget: const CaptionedTextWidget(
-                title: "Start recovery",
-              ),
-              leadingIcon: Icons.account_circle_outlined,
-              leadingIconColor: getEnteColorScheme(context).strokeBase,
-              menuItemColor: getEnteColorScheme(context).fillFaint,
-              showOnlyLoadingState: true,
+            const SizedBox(height: 12),
+            Text(
+              "You can recover $accountEmail account  $recoverDelayTime"
+              " after starting recovery process.",
+              style: textTheme.body,
+            ),
+            const SizedBox(height: 12),
+            ButtonWidget(
+              // icon: Icons.start_outlined,
+              buttonType: ButtonType.trailingIconPrimary,
+              icon: Icons.start_outlined,
+              labelText: "Start recovery",
               onTap: widget.contact.isPendingInvite()
                   ? null
                   : () async {
@@ -81,7 +93,8 @@ class _OtherContactPageState extends State<OtherContactPage> {
                               await showErrorDialog(
                                 context,
                                 "Done",
-                                "You will need for x days before you can finish recovery",
+                                "Please visit page after $recoverDelayTime to"
+                                    " recover $accountEmail's account.",
                               );
                               Navigator.of(context).pop(true);
                             }
@@ -91,14 +104,9 @@ class _OtherContactPageState extends State<OtherContactPage> {
                         }
                       }
                     },
-              isTopBorderRadiusRemoved: true,
+              // isTopBorderRadiusRemoved: true,
             ),
-            MenuSectionDescriptionWidget(
-              content:
-                  "You can recover account after ${(widget.contact.recoveryNoticeInDays ~/ 24)} days of initiating "
-                  "recovery.",
-            ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 48),
             MenuSectionTitle(
               title: S.of(context).removeYourselfAsTrustedContact,
             ),
@@ -117,7 +125,7 @@ class _OtherContactPageState extends State<OtherContactPage> {
                     title: "Remove",
                     firstButtonLabel: S.of(context).yes,
                     body: "Are you sure your want to stop being a trusted "
-                        "contact for ${widget.contact.user.email}?",
+                        "contact for $accountEmail?",
                     isCritical: true, firstButtonOnTap: () async {
                   try {
                     await EmergencyContactService.instance.updateContact(
