@@ -92,7 +92,7 @@ class EmergencyContactService {
 
   Future<void> startRecovery(EmergencyContact contact) async {
     try {
-      await _enteDio.post(
+       await _enteDio.post(
         "/emergency-contacts/start-recovery",
         data: {
           "userID": contact.user.id,
@@ -100,7 +100,39 @@ class EmergencyContactService {
         },
       );
     } catch (e, s) {
-      Logger("EmergencyContact").severe('failed to update contact', e, s);
+      Logger("EmergencyContact").severe('failed to start recovery', e, s);
+      rethrow;
+    }
+  }
+
+  Future<void> stopRecovery(RecoverySessions session) async {
+    try {
+      await _enteDio.post(
+        "/emergency-contacts/stop-recovery",
+        data: {
+          "userID": session.user.id,
+          "emergencyContactID": session.emergencyContact.id,
+          "id": session.id,
+        },
+      );
+    } catch (e, s) {
+      Logger("EmergencyContact").severe('failed to stop recovery', e, s);
+      rethrow;
+    }
+  }
+
+  Future<void> rejectRecovery(RecoverySessions session) async {
+    try {
+      await _enteDio.post(
+        "/emergency-contacts/reject-recovery",
+        data: {
+          "userID": session.user.id,
+          "emergencyContactID": session.emergencyContact.id,
+          "id": session.id,
+        },
+      );
+    } catch (e, s) {
+      Logger("EmergencyContact").severe('failed to stop recovery', e, s);
       rethrow;
     }
   }

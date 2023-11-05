@@ -1,3 +1,4 @@
+import "package:flutter/foundation.dart";
 import 'package:flutter/material.dart';
 import "package:logging/logging.dart";
 import 'package:photos/core/configuration.dart';
@@ -129,7 +130,10 @@ class _EmergencyPageState extends State<EmergencyPage> {
                         leadingIconSize: 24,
                         menuItemColor: colorScheme.fillFaint,
                         singleBorderRadius: 8,
-                        isGestureDetectorDisabled: true,
+                        trailingIcon: Icons.chevron_right,
+                        onTap: () async {
+                          await showRejectRecoveryDialog(recoverSession);
+                        },
                       );
                     },
                     childCount: 1 + info!.recoverSessions.length,
@@ -427,6 +431,55 @@ class _EmergencyPageState extends State<EmergencyPage> {
       ],
       body:
           "You have been invited to be a trusted contact by ${contact.user.email}",
+      actionSheetType: ActionSheetType.defaultActionSheet,
+    );
+    return;
+  }
+
+  Future<void> showRejectRecoveryDialog(RecoverySessions session) async {
+    final String emergencyContactEmail = session.emergencyContact.email;
+    await showActionSheet(
+      context: context,
+      buttons: [
+        ButtonWidget(
+          labelText: "Reject Recovery",
+          buttonSize: ButtonSize.large,
+          shouldStickToDarkTheme: true,
+          buttonType: ButtonType.critical,
+          buttonAction: ButtonAction.first,
+          onTap: () async {
+            await EmergencyContactService.instance.rejectRecovery(session);
+            info?.recoverSessions
+                .removeWhere((element) => element.id == session.id);
+            if (mounted) {
+              setState(() {});
+            }
+            _fetchData();
+          },
+          isInAlert: true,
+        ),
+        if (kDebugMode)
+          ButtonWidget(
+            labelText: "Approve Recovery",
+            buttonType: ButtonType.primary,
+            buttonSize: ButtonSize.large,
+            buttonAction: ButtonAction.second,
+            shouldStickToDarkTheme: true,
+            onTap: () async {
+              showToast(context, "Coming soon for internal users");
+            },
+            isInAlert: true,
+          ),
+        ButtonWidget(
+          labelText: S.of(context).cancel,
+          buttonType: ButtonType.tertiary,
+          buttonSize: ButtonSize.large,
+          buttonAction: ButtonAction.third,
+          shouldStickToDarkTheme: true,
+          isInAlert: true,
+        ),
+      ],
+      body: "$emergencyContactEmail is trying to recover your account.",
       actionSheetType: ActionSheetType.defaultActionSheet,
     );
     return;

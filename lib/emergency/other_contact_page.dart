@@ -15,6 +15,9 @@ import "package:photos/ui/components/title_bar_title_widget.dart";
 import "package:photos/utils/date_time_util.dart";
 import "package:photos/utils/dialog_util.dart";
 
+// OtherContactPage is used to start recovery process for other user's account
+// Based on the state of the contact & recovery session, it will show
+// different UI
 class OtherContactPage extends StatefulWidget {
   final EmergencyContact contact;
   final EmergencyInfo emergencyInfo;
