@@ -190,6 +190,42 @@ class _EmergencyPageState extends State<EmergencyPage> {
                         ],
                       );
                     } else if (index == (1 + trustedContacts.length)) {
+                      if (trustedContacts.isEmpty) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24.0,
+                            vertical: 12,
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.emergency_outlined,
+                                color: colorScheme.strokeMuted,
+                                size: 48,
+                              ),
+                              const SizedBox(height: 24),
+                              Text(
+                                "Your trusted contacts can help in recovering "
+                                "your account.",
+                                textAlign: TextAlign.center,
+                                style: getEnteTextTheme(context).bodyMuted,
+                              ),
+                              const SizedBox(height: 24),
+                              ButtonWidget(
+                                buttonType: ButtonType.primary,
+                                labelText: S.of(context).addTrustedContact,
+                                onTap: () async {
+                                  await routeToPage(
+                                    context,
+                                    AddContactPage(info!),
+                                  );
+                                  _fetchData();
+                                },
+                              ),
+                            ],
+                          ),
+                        );
+                      }
                       return MenuItemWidget(
                         captionedTextWidget: CaptionedTextWidget(
                           title: trustedContacts.isNotEmpty
