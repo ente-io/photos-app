@@ -1,6 +1,6 @@
 enum FeedbackType {
-  removePhotoClusterFeedback,
-  addPhotoClusterFeedback,
+  removePhotosClusterFeedback,
+  addPhotosClusterFeedback,
   deleteClusterFeedback,
   mergeClusterFeedback,
   renameOrCustomThumbnailClusterFeedback; // I have merged renameClusterFeedback and customThumbnailClusterFeedback, since I suspect they will be used together often
@@ -14,9 +14,9 @@ enum FeedbackType {
       case 'renameOrCustomThumbnailClusterFeedback':
         return FeedbackType.renameOrCustomThumbnailClusterFeedback;
       case 'removePhotoClusterFeedback':
-        return FeedbackType.removePhotoClusterFeedback;
+        return FeedbackType.removePhotosClusterFeedback;
       case 'addPhotoClusterFeedback':
-        return FeedbackType.addPhotoClusterFeedback;
+        return FeedbackType.addPhotosClusterFeedback;
       default:
         throw Exception('Invalid FeedbackType: $value');
     }

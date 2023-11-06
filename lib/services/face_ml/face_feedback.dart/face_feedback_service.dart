@@ -94,8 +94,9 @@ class FaceFeedbackService {
         );
       }
 
-      // Set the embeddings to [10, 10,..., 10]
+      // Set the embeddings to [10, 10,..., 10] and save the updated faceMlResult
       faceMlResultsInCluster[i].setEmbeddingsToTen(relevantFaceIDs);
+      await _mlDatabase.updateFaceMlResult(faceMlResultsInCluster[i]);
 
       // Make sure there is a manual override for [10, 10,..., 10] embeddings (not actually here, but in building the clusters, see _checkIfClusterIsDeleted function)
 

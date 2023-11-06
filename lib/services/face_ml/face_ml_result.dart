@@ -296,7 +296,6 @@ class ClusterResultBuilder {
           .toList();
       addFileIDsAndFaceIDs(fileIDsToAdd, faceIDsToAdd);
     }
-    return;
   }
 
   Future<void> _checkAndAddCustomName() async {

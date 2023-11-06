@@ -185,13 +185,14 @@ class DebugSectionWidget extends StatelessWidget {
           trailingIcon: Icons.chevron_right_outlined,
           trailingIconIsMuted: true,
           onTap: () async {
-            showShortToast(context, 'Not fully implemented yet');
-            // try {
-            // await FaceFeedbackService.instance.removePhotoFromCluster(10, 0);
-            // } catch (e, s) {
-            //   debugPrint(e.toString());
-            //   debugPrint(s.toString());
-            // }
+            showShortToast(context, 'Remove photo 4 from cluster 0');
+            try {
+              await FaceFeedbackService.instance
+                  .removePhotosFromCluster([13408232], 0);
+            } catch (e, s) {
+              debugPrint(e.toString());
+              debugPrint(s.toString());
+            }
           },
         ),
         sectionOptionSpacing,
@@ -203,13 +204,14 @@ class DebugSectionWidget extends StatelessWidget {
           trailingIcon: Icons.chevron_right_outlined,
           trailingIconIsMuted: true,
           onTap: () async {
-            showShortToast(context, 'Not fully implemented yet');
-            // try {
-            // await FaceFeedbackService.instance.removePhotoFromCluster(10, 0);
-            // } catch (e, s) {
-            //   debugPrint(e.toString());
-            //   debugPrint(s.toString());
-            // }
+            showShortToast(context, 'Adding photo 4 of cluster 1 to cluster 0');
+            try {
+              await FaceFeedbackService.instance
+                  .addPhotosToCluster([17195188], 0);
+            } catch (e, s) {
+              debugPrint(e.toString());
+              debugPrint(s.toString());
+            }
           },
         ),
         sectionOptionSpacing,

@@ -10,6 +10,10 @@ abstract class ClusterFeedback extends Feedback {
     FeedbackType.mergeClusterFeedback: MergeClusterFeedback.fromJsonString,
     FeedbackType.renameOrCustomThumbnailClusterFeedback:
         RenameOrCustomThumbnailClusterFeedback.fromJsonString,
+    FeedbackType.removePhotosClusterFeedback:
+        RemovePhotosClusterFeedback.fromJsonString,
+    FeedbackType.addPhotosClusterFeedback:
+        AddPhotosClusterFeedback.fromJsonString,
   };
 
   final List<double> medoid;
@@ -260,7 +264,7 @@ class RemovePhotosClusterFeedback extends ClusterFeedback {
     int? madeOnFaceMlVersion,
     int? madeOnClusterMlVersion,
   }) : super(
-          FeedbackType.removePhotoClusterFeedback,
+          FeedbackType.removePhotosClusterFeedback,
           medoid,
           medoidDistanceThreshold,
           feedbackID: feedbackID,
@@ -288,7 +292,7 @@ class RemovePhotosClusterFeedback extends ClusterFeedback {
 
   static RemovePhotosClusterFeedback fromJson(Map<String, dynamic> json) {
     assert(
-      json['type'] == FeedbackType.removePhotoClusterFeedback.toValueString(),
+      json['type'] == FeedbackType.removePhotosClusterFeedback.toValueString(),
     );
     return RemovePhotosClusterFeedback(
       medoid:
@@ -323,7 +327,7 @@ class AddPhotosClusterFeedback extends ClusterFeedback {
     int? madeOnFaceMlVersion,
     int? madeOnClusterMlVersion,
   }) : super(
-          FeedbackType.addPhotoClusterFeedback,
+          FeedbackType.addPhotosClusterFeedback,
           medoid,
           medoidDistanceThreshold,
           feedbackID: feedbackID,
@@ -351,7 +355,7 @@ class AddPhotosClusterFeedback extends ClusterFeedback {
 
   static AddPhotosClusterFeedback fromJson(Map<String, dynamic> json) {
     assert(
-      json['type'] == FeedbackType.addPhotoClusterFeedback.toValueString(),
+      json['type'] == FeedbackType.addPhotosClusterFeedback.toValueString(),
     );
     return AddPhotosClusterFeedback(
       medoid:
