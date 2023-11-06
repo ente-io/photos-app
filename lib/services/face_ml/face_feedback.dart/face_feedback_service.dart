@@ -40,7 +40,7 @@ class FaceFeedbackService {
       );
     }
 
-    // Get the relevant cluster and face result
+    // Get the relevant cluster
     final ClusterResult? cluster = await _mlDatabase.getClusterResult(personID);
     if (cluster == null) {
       _logger.severe(
@@ -50,6 +50,7 @@ class FaceFeedbackService {
         "No cluster found for personID $personID, unable to remove photo from non-existent cluster!",
       );
     }
+    // Get the relevant faceMlResults
     final List<FaceMlResult> faceMlResults =
         await _mlDatabase.getSelectedFaceMlResults(fileIDs);
     if (faceMlResults.length != fileIDs.length) {
@@ -119,7 +120,10 @@ class FaceFeedbackService {
       medoidDistanceThreshold: cluster.medoidDistanceThreshold,
       removedPhotosFileID: fileIDsInCluster,
     );
-    await _mlDatabase.createClusterFeedback(removePhotoFeedback);
+    await _mlDatabase.createClusterFeedback(
+      removePhotoFeedback,
+      skipIfSimilarFeedbackExists: false,
+    );
 
     // Return the updated cluster
     return cluster;
