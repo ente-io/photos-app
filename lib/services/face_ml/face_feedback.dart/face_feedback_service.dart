@@ -1,5 +1,6 @@
 import "package:logging/logging.dart";
 import "package:photos/db/ml_data_db.dart";
+import "package:photos/services/face_ml/face_detection/detection.dart";
 import "package:photos/services/face_ml/face_feedback.dart/cluster_feedback.dart";
 import "package:photos/services/face_ml/face_ml_result.dart";
 
@@ -22,6 +23,7 @@ class FaceFeedbackService {
   ///
   /// The updated cluster is also updated in [MlDataDB].
   Future<ClusterResult> removePhotoFromCluster(int fileID, personID) async {
+    // TODO: check if photo was originally added to cluster by user. If so, we should remove that addition instead of changing the embedding, because there is no embedding...
     _logger.info(
       'removePhotoFromCluster called with fileID $fileID and personID $personID',
     );
@@ -99,6 +101,67 @@ class FaceFeedbackService {
     return cluster;
   }
 
+  Future<ClusterResult> addPhotosToCluster(List<int> fileIDs, personID) async {
+    _logger.info(
+      'addPhotosToCluster called with fileIDs $fileIDs and personID $personID',
+    );
+
+    if (fileIDs.isEmpty) {
+      _logger.severe(
+        "No fileIDs given, unable to add photos to cluster!",
+      );
+      throw ArgumentError(
+        "No fileIDs given, unable to add photos to cluster!",
+      );
+    }
+
+    // Get the relevant cluster
+    final ClusterResult? cluster = await _mlDatabase.getClusterResult(personID);
+    if (cluster == null) {
+      _logger.severe(
+        "No cluster found for personID $personID, unable to add photos to non-existent cluster!",
+      );
+      throw ArgumentError(
+        "No cluster found for personID $personID, unable to add photos to non-existent cluster!",
+      );
+    }
+
+    // Check if at least one of the files is not in the cluster. If all files are already in the cluster, return the cluster.
+    final List<int> fileIDsNotInCluster = fileIDs
+        .where((fileID) => !cluster.uniqueFileIds.contains(fileID))
+        .toList();
+    if (fileIDsNotInCluster.isEmpty) {
+      _logger.warning(
+        "All fileIDs are already in the cluster, unable to add new photos to cluster!",
+      );
+      return cluster;
+    }
+    final List<String> faceIDsNotInCluster = fileIDsNotInCluster
+        .map((fileID) => FaceDetectionRelative.toFaceIDEmpty(fileID: fileID))
+        .toList();
+
+    // Add the new files to the cluster
+    cluster.addFileIDsAndFaceIDs(fileIDsNotInCluster, faceIDsNotInCluster);
+
+    // Update the cluster in the database
+    await _mlDatabase.updateClusterResult(cluster);
+
+    // Build the addPhotoFeedback
+    final AddPhotosClusterFeedback addPhotosFeedback = AddPhotosClusterFeedback(
+      medoid: cluster.medoid,
+      medoidDistanceThreshold: cluster.medoidDistanceThreshold,
+      addedPhotoFileIDs: fileIDsNotInCluster,
+    );
+
+    // TODO: check for exact match and update feedback if necessary
+
+    // Save the addPhotoFeedback to the database
+    await _mlDatabase.createClusterFeedback(addPhotosFeedback);
+
+    // Return the updated cluster
+    return cluster;
+  }
+
   /// Deletes the given cluster completely.
   Future<void> deleteCluster(int personID) async {
     _logger.info(
@@ -150,6 +213,14 @@ class FaceFeedbackService {
     _logger.info(
       'renameOrSetThumbnailCluster called with personID $personID, customName $customName, and customFaceID $customFaceID',
     );
+
+    if (customFaceID != null &&
+        FaceDetectionRelative.isFaceIDEmpty(customFaceID)) {
+      _logger.severe(
+        "customFaceID $customFaceID is belongs to empty detection, unable to set as thumbnail of cluster!",
+      );
+      customFaceID = null;
+    }
     if (customName == null && customFaceID == null) {
       _logger.severe(
         "No name or faceID given, unable to rename or set thumbnail of cluster!",

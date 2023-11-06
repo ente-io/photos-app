@@ -153,8 +153,13 @@ class FaceDetectionRelative extends Detection {
   }
 
   /// This method is used to generate a faceID for a face detection that was manually added by the user.
-  static String faceIDManualAdd({required int fileID}) {
+  static String toFaceIDEmpty({required int fileID}) {
     return fileID.toString() + '_0';
+  }
+
+  /// This method is used to check if a faceID corresponds to a manually added face detection and not an actual face detection.
+  static bool isFaceIDEmpty(String faceID) {
+    return faceID.split('_')[1] == '0';
   }
 
   @override

@@ -566,6 +566,7 @@ class MlDataDB {
   ) async {
     _logger.fine('createClusterFeedback called');
 
+    // TODO: this skipping might cause issues for adding photos to the same person in a row!!
     if (await doesClusterFeedbackExist(feedback)) {
       _logger.fine(
         'ClusterFeedback with ID ${feedback.feedbackID} already has a similar feedback installed. Skipping insert.',
@@ -603,7 +604,7 @@ class MlDataDB {
           existingFeedbackItem.type == feedback.type,
           'Feedback types should be the same!',
         );
-        if (feedback.matches(existingFeedbackItem)) {
+        if (feedback.looselyMatchesMedoid(existingFeedbackItem)) {
           _logger.fine(
             'ClusterFeedback of type ${feedback.typeString} with ID ${feedback.feedbackID} already has a similar feedback installed!',
           );
@@ -629,7 +630,7 @@ class MlDataDB {
           existingFeedbackItem.type == feedback.type,
           'Feedback types should be the same!',
         );
-        if (feedback.matches(existingFeedbackItem)) {
+        if (feedback.looselyMatchesMedoid(existingFeedbackItem)) {
           _logger.fine(
             'ClusterFeedback of type ${feedback.typeString} with ID ${feedback.feedbackID} already has a similar feedback installed!',
           );

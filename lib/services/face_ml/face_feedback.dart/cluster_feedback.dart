@@ -38,13 +38,25 @@ abstract class ClusterFeedback extends Feedback {
   ///
   /// Returns true if they are similar enough, false otherwise.
   /// // TODO: Should it maybe return a merged feedback instead, when you are similar enough?
-  bool matches(ClusterFeedback other) {
+  bool looselyMatchesMedoid(ClusterFeedback other) {
     // Using the cosineDistance function you mentioned
     final double distance = cosineDistance(medoid, other.medoid);
 
     // Check if the distance is less than either of the threshold values
     return distance < medoidDistanceThreshold ||
         distance < other.medoidDistanceThreshold;
+  }
+
+  bool exactlyMatchesMedoid(ClusterFeedback other) {
+    if (medoid.length != other.medoid.length) {
+      return false;
+    }
+    for (int i = 0; i < medoid.length; i++) {
+      if (medoid[i] != other.medoid[i]) {
+        return false;
+      }
+    }
+    return true;
   }
 }
 
@@ -296,10 +308,10 @@ class RemovePhotoClusterFeedback extends ClusterFeedback {
   }
 }
 
-class AddPhotoClusterFeedback extends ClusterFeedback {
+class AddPhotosClusterFeedback extends ClusterFeedback {
   final List<int> addedPhotoFileIDs;
 
-  AddPhotoClusterFeedback({
+  AddPhotosClusterFeedback({
     required List<double> medoid,
     required double medoidDistanceThreshold,
     required this.addedPhotoFileIDs,
@@ -334,11 +346,11 @@ class AddPhotoClusterFeedback extends ClusterFeedback {
   @override
   String toJsonString() => jsonEncode(toJson());
 
-  static AddPhotoClusterFeedback fromJson(Map<String, dynamic> json) {
+  static AddPhotosClusterFeedback fromJson(Map<String, dynamic> json) {
     assert(
       json['type'] == FeedbackType.addPhotoClusterFeedback.toValueString(),
     );
-    return AddPhotoClusterFeedback(
+    return AddPhotosClusterFeedback(
       medoid:
           (json['medoid'] as List?)?.map((item) => item as double).toList() ??
               [],
@@ -354,7 +366,7 @@ class AddPhotoClusterFeedback extends ClusterFeedback {
     );
   }
 
-  static AddPhotoClusterFeedback fromJsonString(String jsonString) {
+  static AddPhotosClusterFeedback fromJsonString(String jsonString) {
     return fromJson(jsonDecode(jsonString));
   }
 }

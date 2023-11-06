@@ -111,7 +111,7 @@ class ClusterResult {
     }
 
     _fileIds.add(fileID);
-    _faceIds.add(FaceDetectionRelative.faceIDManualAdd(fileID: fileID));
+    _faceIds.add(FaceDetectionRelative.toFaceIDEmpty(fileID: fileID));
 
     return 1;
   }
@@ -308,10 +308,10 @@ class ClusterResultBuilder {
     thumbnailFaceId = faceId;
   }
 
-  void addFileIDsAndFaceIDs(List<int> fileIDs, List<String> faceIDs) {
-    assert(fileIDs.length == faceIDs.length);
-    this.fileIds.addAll(fileIDs);
-    this.faceIds.addAll(faceIDs);
+  void addFileIDsAndFaceIDs(List<int> addedFileIDs, List<String> addedFaceIDs) {
+    assert(addedFileIDs.length == addedFaceIDs.length);
+    fileIds.addAll(addedFileIDs);
+    faceIds.addAll(addedFaceIDs);
   }
 
   static Future<List<ClusterResult>> buildClusters(
@@ -326,6 +326,8 @@ class ClusterResultBuilder {
       if (await clusterBuilder._checkIfClusterIsDeleted()) {
         deletedClusterIndices.add(i);
       }
+
+      // TODO: Check for adding photos to a cluster
     }
 
     // Check if a cluster should be merged with another cluster
