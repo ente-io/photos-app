@@ -278,6 +278,27 @@ class ClusterResultBuilder {
         .doesSimilarClusterFeedbackExist(tempFeedback);
   }
 
+  Future<void> _checkAndAddPhotos() async {
+    assert(medoidAndThresholdCalculated);
+
+    final tempFeedback = AddPhotosClusterFeedback(
+      medoid: medoid,
+      medoidDistanceThreshold: medoidDistanceThreshold,
+      addedPhotoFileIDs: [],
+    );
+    final allAddPhotosFeedbacks =
+        await MlDataDB.instance.getAllMatchingClusterFeedback(tempFeedback);
+
+    for (final addPhotosFeedback in allAddPhotosFeedbacks) {
+      final fileIDsToAdd = addPhotosFeedback.addedPhotoFileIDs;
+      final faceIDsToAdd = fileIDsToAdd
+          .map((fileID) => FaceDetectionRelative.toFaceIDEmpty(fileID: fileID))
+          .toList();
+      addFileIDsAndFaceIDs(fileIDsToAdd, faceIDsToAdd);
+    }
+    return;
+  }
+
   Future<void> _checkAndAddCustomName() async {
     assert(medoidAndThresholdCalculated);
 
@@ -328,7 +349,7 @@ class ClusterResultBuilder {
         deletedClusterIndices.add(i);
       }
 
-      // TODO: Check for adding photos to a cluster
+      await clusterBuilder._checkAndAddPhotos();
     }
 
     // Check if a cluster should be merged with another cluster

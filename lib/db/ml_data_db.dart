@@ -564,12 +564,12 @@ class MlDataDB {
   Future<void> createClusterFeedback<T extends ClusterFeedback>(
     T feedback, {
     bool skipIfSimilarFeedbackExists = false,
-    }
-  ) async {
+  }) async {
     _logger.fine('createClusterFeedback called');
 
     // TODO: this skipping might cause issues for adding photos to the same person in a row!!
-    if (skipIfSimilarFeedbackExists && await doesSimilarClusterFeedbackExist(feedback)) {
+    if (skipIfSimilarFeedbackExists &&
+        await doesSimilarClusterFeedbackExist(feedback)) {
       _logger.fine(
         'ClusterFeedback with ID ${feedback.feedbackID} already has a similar feedback installed. Skipping insert.',
       );
@@ -619,8 +619,9 @@ class MlDataDB {
 
   /// Returns all the clusterFeedbacks of type [T] which match the given [feedback], sorted by timestamp (latest first).
   Future<List<T>> getAllMatchingClusterFeedback<T extends ClusterFeedback>(
-    T feedback,
-  ) async {
+    T feedback, {
+    bool sortNewestFirst = true,
+  }) async {
     _logger.fine('getAllMatchingClusterFeedback called');
 
     final List<T> existingFeedback =
@@ -640,7 +641,10 @@ class MlDataDB {
         }
       }
     }
-    return matchingFeedback..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    if (sortNewestFirst) {
+      matchingFeedback.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    }
+    return matchingFeedback;
   }
 
   Future<List<T>> getAllClusterFeedback<T extends ClusterFeedback>({

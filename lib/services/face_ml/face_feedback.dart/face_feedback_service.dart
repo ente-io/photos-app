@@ -184,7 +184,10 @@ class FaceFeedbackService {
     // TODO: check for exact match and update feedback if necessary
 
     // Save the addPhotoFeedback to the database
-    await _mlDatabase.createClusterFeedback(addPhotosFeedback);
+    await _mlDatabase.createClusterFeedback(
+      addPhotosFeedback,
+      skipIfSimilarFeedbackExists: false,
+    );
 
     // Return the updated cluster
     return cluster;
