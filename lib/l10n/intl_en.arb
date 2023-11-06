@@ -1110,5 +1110,8 @@
   "addTrustedContact": "Add Trusted Contact",
   "myTrustedContact": "My Trusted Contact",
   "trustedContacts": "Trusted Contacts",
-  "removeInvite": "Remove invite"
+  "removeInvite": "Remove invite",
+  "cancelAccountRecovery": "Cancel recovery",
+  "cancelAccountRecoveryBody": "Are you sure you want to cancel recovery?",
+  "startAccountRecoveryTitle": "Start recovery"
 }

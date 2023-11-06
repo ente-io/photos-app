@@ -38,6 +38,7 @@ class _OtherContactPageState extends State<OtherContactPage> {
   RecoverySessions? recoverySession;
   String? waitTill;
   final Logger _logger = Logger("_OtherContactPageState");
+  late EmergencyInfo emergencyInfo = widget.emergencyInfo;
 
   @override
   void initState() {
@@ -45,6 +46,20 @@ class _OtherContactPageState extends State<OtherContactPage> {
     recoverDelayTime = "${(widget.contact.recoveryNoticeInDays ~/ 24)} days";
     recoverySession = widget.emergencyInfo.othersRecoverySession
         .firstWhereOrNull((session) => session.user.email == accountEmail);
+    _fetchData();
+  }
+
+  Future<void> _fetchData() async {
+    try {
+      final result = await EmergencyContactService.instance.getInfo();
+      if (mounted) {
+        setState(() {
+          recoverySession = result.othersRecoverySession.firstWhereOrNull(
+            (session) => session.user.email == accountEmail,
+          );
+        });
+      }
+    } catch (ignored) {}
   }
 
   @override
@@ -105,13 +120,13 @@ class _OtherContactPageState extends State<OtherContactPage> {
                 // icon: Icons.start_outlined,
                 buttonType: ButtonType.trailingIconPrimary,
                 icon: Icons.start_outlined,
-                labelText: "Start recovery",
+                labelText: S.of(context).startAccountRecoveryTitle,
                 onTap: widget.contact.isPendingInvite()
                     ? null
                     : () async {
                         final actionResult = await showChoiceActionSheet(
                           context,
-                          title: "Start recovery",
+                          title: S.of(context).startAccountRecoveryTitle,
                           firstButtonLabel: S.of(context).yes,
                           body: "Are you sure you want to initiate recovery?",
                           isCritical: true,
@@ -122,13 +137,13 @@ class _OtherContactPageState extends State<OtherContactPage> {
                               await EmergencyContactService.instance
                                   .startRecovery(widget.contact);
                               if (mounted) {
+                                _fetchData();
                                 await showErrorDialog(
                                   context,
                                   "Done",
                                   "Please visit page after $recoverDelayTime to"
                                       " recover $accountEmail's account.",
                                 );
-                                Navigator.of(context).pop(true);
                               }
                             } catch (e) {
                               showGenericErrorDialog(context: context);
@@ -137,6 +152,35 @@ class _OtherContactPageState extends State<OtherContactPage> {
                         }
                       },
                 // isTopBorderRadiusRemoved: true,
+              ),
+            if (recoverySession != null && recoverySession!.status == "READY")
+              const ButtonWidget(
+                // icon: Icons.start_outlined,
+                buttonType: ButtonType.primary,
+                labelText: "Recover account",
+              ),
+            if (recoverySession != null && recoverySession!.status == "WAITING")
+              ButtonWidget(
+                // icon: Icons.start_outlined,
+                buttonType: ButtonType.neutral,
+                labelText: S.of(context).cancelAccountRecovery,
+                shouldSurfaceExecutionStates: false,
+                onTap: () async {
+                  final actionResult = await showChoiceActionSheet(
+                    context,
+                    title: S.of(context).cancelAccountRecovery,
+                    firstButtonLabel: S.of(context).yes,
+                    body: S.of(context).cancelAccountRecoveryBody,
+                    isCritical: true,
+                    firstButtonOnTap: () async {
+                      EmergencyContactService.instance
+                          .stopRecovery(recoverySession!);
+                    },
+                  );
+                  if (actionResult?.action == ButtonAction.first) {
+                    _fetchData();
+                  }
+                },
               ),
             SizedBox(height: recoverySession == null ? 48 : 24),
             MenuSectionTitle(

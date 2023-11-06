@@ -1,6 +1,7 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
 import 'intl/messages_all.dart';
 
 // **************************************************************************
@@ -7790,6 +7791,36 @@ class S {
     return Intl.message(
       'Remove invite',
       name: 'removeInvite',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cancel recovery`
+  String get cancelAccountRecovery {
+    return Intl.message(
+      'Cancel recovery',
+      name: 'cancelAccountRecovery',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Are you sure you want to cancel recovery?`
+  String get cancelAccountRecoveryBody {
+    return Intl.message(
+      'Are you sure you want to cancel recovery?',
+      name: 'cancelAccountRecoveryBody',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Start recovery`
+  String get startAccountRecoveryTitle {
+    return Intl.message(
+      'Start recovery',
+      name: 'startAccountRecoveryTitle',
       desc: '',
       args: [],
     );

@@ -52,11 +52,9 @@ class _EmergencyPageState extends State<EmergencyPage> {
 
   Future<void> _fetchData() async {
     try {
-      _logger.info('Fetching data');
       final result = await EmergencyContactService.instance.getInfo();
       if (mounted) {
         setState(() {
-          _logger.info('Setting result ');
           info = result;
         });
       }

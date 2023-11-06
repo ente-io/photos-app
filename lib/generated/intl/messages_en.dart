@@ -358,6 +358,10 @@ class MessageLookup extends MessageLookupByLibrary {
         "canOnlyRemoveFilesOwnedByYou": MessageLookupByLibrary.simpleMessage(
             "Can only remove files owned by you"),
         "cancel": MessageLookupByLibrary.simpleMessage("Cancel"),
+        "cancelAccountRecovery":
+            MessageLookupByLibrary.simpleMessage("Cancel recovery"),
+        "cancelAccountRecoveryBody": MessageLookupByLibrary.simpleMessage(
+            "Are you sure you want to cancel recovery?"),
         "cancelOtherSubscription": m5,
         "cancelSubscription":
             MessageLookupByLibrary.simpleMessage("Cancel subscription"),
@@ -1196,6 +1200,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "sortNewestFirst": MessageLookupByLibrary.simpleMessage("Newest first"),
         "sortOldestFirst": MessageLookupByLibrary.simpleMessage("Oldest first"),
         "sparkleSuccess": MessageLookupByLibrary.simpleMessage("✨ Success"),
+        "startAccountRecoveryTitle":
+            MessageLookupByLibrary.simpleMessage("Start recovery"),
         "startBackup": MessageLookupByLibrary.simpleMessage("Start backup"),
         "storage": MessageLookupByLibrary.simpleMessage("Storage"),
         "storageBreakupFamily": MessageLookupByLibrary.simpleMessage("Family"),
