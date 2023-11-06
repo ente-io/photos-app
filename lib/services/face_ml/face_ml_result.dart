@@ -274,7 +274,8 @@ class ClusterResultBuilder {
       medoid: medoid,
       medoidDistanceThreshold: medoidDistanceThreshold,
     );
-    return await MlDataDB.instance.doesClusterFeedbackExist(tempFeedback);
+    return await MlDataDB.instance
+        .doesSimilarClusterFeedbackExist(tempFeedback);
   }
 
   Future<void> _checkAndAddCustomName() async {

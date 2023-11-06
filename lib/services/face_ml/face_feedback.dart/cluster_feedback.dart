@@ -248,13 +248,13 @@ class RenameOrCustomThumbnailClusterFeedback extends ClusterFeedback {
   }
 }
 
-class RemovePhotoClusterFeedback extends ClusterFeedback {
-  final int removedPhotoFileID;
+class RemovePhotosClusterFeedback extends ClusterFeedback {
+  final List<int> removedPhotosFileID;
 
-  RemovePhotoClusterFeedback({
+  RemovePhotosClusterFeedback({
     required List<double> medoid,
     required double medoidDistanceThreshold,
-    required this.removedPhotoFileID,
+    required this.removedPhotosFileID,
     String? feedbackID,
     DateTime? timestamp,
     int? madeOnFaceMlVersion,
@@ -275,7 +275,7 @@ class RemovePhotoClusterFeedback extends ClusterFeedback {
       'type': type.toValueString(),
       'medoid': medoid,
       'medoidDistanceThreshold': medoidDistanceThreshold,
-      'removedPhotoFileID': removedPhotoFileID,
+      'removedPhotosFileID': removedPhotosFileID,
       'feedbackID': feedbackID,
       'timestamp': timestamp.toIso8601String(),
       'madeOnFaceMlVersion': madeOnFaceMlVersion,
@@ -286,16 +286,19 @@ class RemovePhotoClusterFeedback extends ClusterFeedback {
   @override
   String toJsonString() => jsonEncode(toJson());
 
-  static RemovePhotoClusterFeedback fromJson(Map<String, dynamic> json) {
+  static RemovePhotosClusterFeedback fromJson(Map<String, dynamic> json) {
     assert(
       json['type'] == FeedbackType.removePhotoClusterFeedback.toValueString(),
     );
-    return RemovePhotoClusterFeedback(
+    return RemovePhotosClusterFeedback(
       medoid:
           (json['medoid'] as List?)?.map((item) => item as double).toList() ??
               [],
       medoidDistanceThreshold: json['medoidDistanceThreshold'],
-      removedPhotoFileID: json['removedPhotoFileID'],
+      removedPhotosFileID: (json['removedPhotosFileID'] as List?)
+              ?.map((item) => item as int)
+              .toList() ??
+          [],
       feedbackID: json['feedbackID'],
       timestamp: DateTime.parse(json['timestamp']),
       madeOnFaceMlVersion: json['madeOnFaceMlVersion'],
@@ -303,7 +306,7 @@ class RemovePhotoClusterFeedback extends ClusterFeedback {
     );
   }
 
-  static RemovePhotoClusterFeedback fromJsonString(String jsonString) {
+  static RemovePhotosClusterFeedback fromJsonString(String jsonString) {
     return fromJson(jsonDecode(jsonString));
   }
 }

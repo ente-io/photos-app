@@ -22,11 +22,24 @@ class FaceFeedbackService {
   /// If the file is not in the cluster, returns null.
   ///
   /// The updated cluster is also updated in [MlDataDB].
-  Future<ClusterResult> removePhotoFromCluster(int fileID, personID) async {
+  Future<ClusterResult> removePhotosFromCluster(
+    List<int> fileIDs,
+    int personID,
+  ) async {
     // TODO: check if photo was originally added to cluster by user. If so, we should remove that addition instead of changing the embedding, because there is no embedding...
     _logger.info(
-      'removePhotoFromCluster called with fileID $fileID and personID $personID',
+      'removePhotoFromCluster called with fileIDs $fileIDs and personID $personID',
     );
+
+    if (fileIDs.isEmpty) {
+      _logger.severe(
+        "No fileIDs given, unable to add photos to cluster!",
+      );
+      throw ArgumentError(
+        "No fileIDs given, unable to add photos to cluster!",
+      );
+    }
+
     // Get the relevant cluster and face result
     final ClusterResult? cluster = await _mlDatabase.getClusterResult(personID);
     if (cluster == null) {
@@ -37,46 +50,57 @@ class FaceFeedbackService {
         "No cluster found for personID $personID, unable to remove photo from non-existent cluster!",
       );
     }
-    final FaceMlResult? faceMlResult =
-        await _mlDatabase.getFaceMlResult(fileID);
-    if (faceMlResult == null) {
+    final List<FaceMlResult> faceMlResults =
+        await _mlDatabase.getSelectedFaceMlResults(fileIDs);
+    if (faceMlResults.length != fileIDs.length) {
+      final List<int> foundFileIDs =
+          faceMlResults.map((faceMlResult) => faceMlResult.fileId).toList();
       _logger.severe(
-        "No face ml result found for fileID $faceMlResult, unable to remove unindexed photo from cluster!",
+        "Couldn't find all facemlresults for fileIDs $fileIDs, only found for $foundFileIDs. Unable to remove unindexed photos from cluster!",
       );
       throw ArgumentError(
-        "No face ml result found for fileID $faceMlResult, unable to remove unindexed photo from cluster!",
-      );
-    }
-    if (!cluster.uniqueFileIds.contains(fileID)) {
-      _logger.severe(
-        "FileID $fileID not found in cluster, unable to remove photo from cluster it is not in!",
-      );
-      throw ArgumentError(
-        "FileID $fileID not found in cluster, unable to remove photo from cluster it is not in!",
+        "Couldn't find all facemlresults for fileIDs $fileIDs, only found for $foundFileIDs. Unable to remove unindexed photos from cluster!",
       );
     }
 
-    // Find the faces/embeddings associated with both the fileID and personID
-    final List<String> faceIDs = faceMlResult.allFaceIds;
-    final List<String> faceIDsInCluster = cluster.faceIDs;
-    final List<String> relevantFaceIDs =
-        faceIDsInCluster.where((faceID) => faceIDs.contains(faceID)).toList();
-    if (relevantFaceIDs.isEmpty) {
-      _logger.severe(
-        "No faces found in both cluster and file, unable to remove photo from cluster!",
+    // Check if at least one of the files is in the cluster. If all files are already not in the cluster, return the cluster.
+    final List<int> fileIDsInCluster = fileIDs
+        .where((fileID) => cluster.uniqueFileIds.contains(fileID))
+        .toList();
+    if (fileIDsInCluster.isEmpty) {
+      _logger.warning(
+        "All fileIDs are already not in the cluster, unable to remove photos from cluster!",
       );
-      throw ArgumentError(
-        "No faces found in both cluster and file, unable to remove photo from cluster!",
-      );
+      return cluster;
     }
+    final List<FaceMlResult> faceMlResultsInCluster = faceMlResults
+        .where((faceMlResult) => fileIDsInCluster.contains(faceMlResult.fileId))
+        .toList();
+    assert(faceMlResultsInCluster.length == fileIDsInCluster.length);
 
-    // Set the embeddings to [10, 10,..., 10]
-    faceMlResult.setEmbeddingsToTen(relevantFaceIDs);
+    for (var i = 0; i < fileIDsInCluster.length; i++) {
+      // Find the faces/embeddings associated with both the fileID and personID
+      final List<String> faceIDs = faceMlResultsInCluster[i].allFaceIds;
+      final List<String> faceIDsInCluster = cluster.faceIDs;
+      final List<String> relevantFaceIDs =
+          faceIDsInCluster.where((faceID) => faceIDs.contains(faceID)).toList();
+      if (relevantFaceIDs.isEmpty) {
+        _logger.severe(
+          "No faces found in both cluster and file, unable to remove photo from cluster!",
+        );
+        throw ArgumentError(
+          "No faces found in both cluster and file, unable to remove photo from cluster!",
+        );
+      }
 
-    // Make sure there is a manual override for [10, 10,..., 10] embeddings (not actually here, but in building the clusters, see _checkIfClusterIsDeleted function)
+      // Set the embeddings to [10, 10,..., 10]
+      faceMlResultsInCluster[i].setEmbeddingsToTen(relevantFaceIDs);
 
-    // Manually remove the fileID from the cluster
-    cluster.removeFileId(fileID);
+      // Make sure there is a manual override for [10, 10,..., 10] embeddings (not actually here, but in building the clusters, see _checkIfClusterIsDeleted function)
+
+      // Manually remove the fileID from the cluster
+      cluster.removeFileId(fileIDsInCluster[i]);
+    }
 
     // TODO: see below
     // Re-cluster and check if this leads to more deletions. If so, save them and ask the user if they want to delete them too.
@@ -90,10 +114,10 @@ class FaceFeedbackService {
 
     // TODO: see below
     // Safe the given feedback to the database
-    final removePhotoFeedback = RemovePhotoClusterFeedback(
+    final removePhotoFeedback = RemovePhotosClusterFeedback(
       medoid: cluster.medoid,
       medoidDistanceThreshold: cluster.medoidDistanceThreshold,
-      removedPhotoFileID: fileID,
+      removedPhotosFileID: fileIDsInCluster,
     );
     await _mlDatabase.createClusterFeedback(removePhotoFeedback);
 
@@ -191,7 +215,8 @@ class FaceFeedbackService {
 
     // TODO: maybe I should merge the two feedbacks if they are similar enough? Or alternatively, I keep them both?
     // Check if feedback doesn't already exist
-    if (await _mlDatabase.doesClusterFeedbackExist(deleteClusterFeedback)) {
+    if (await _mlDatabase
+        .doesSimilarClusterFeedbackExist(deleteClusterFeedback)) {
       _logger.warning(
         "Feedback already exists for deleting cluster $personID, unable to delete cluster!",
       );

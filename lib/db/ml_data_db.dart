@@ -562,12 +562,14 @@ class MlDataDB {
 
   // TODO: current function implementation will skip inserting for a similar feedback, which means I can't remove two photos from the same person in a row
   Future<void> createClusterFeedback<T extends ClusterFeedback>(
-    T feedback,
+    T feedback, {
+    bool skipIfSimilarFeedbackExists = false,
+    }
   ) async {
     _logger.fine('createClusterFeedback called');
 
     // TODO: this skipping might cause issues for adding photos to the same person in a row!!
-    if (await doesClusterFeedbackExist(feedback)) {
+    if (skipIfSimilarFeedbackExists && await doesSimilarClusterFeedbackExist(feedback)) {
       _logger.fine(
         'ClusterFeedback with ID ${feedback.feedbackID} already has a similar feedback installed. Skipping insert.',
       );
@@ -590,7 +592,7 @@ class MlDataDB {
     return;
   }
 
-  Future<bool> doesClusterFeedbackExist<T extends ClusterFeedback>(
+  Future<bool> doesSimilarClusterFeedbackExist<T extends ClusterFeedback>(
     T feedback,
   ) async {
     _logger.fine('doesClusterFeedbackExist called');
