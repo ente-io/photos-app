@@ -487,7 +487,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "This will delete all empty albums. This is useful when you want to reduce the clutter in your album list."),
         "deleteAll": MessageLookupByLibrary.simpleMessage("Delete All"),
         "deleteConfirmDialogBody": MessageLookupByLibrary.simpleMessage(
-            "You are about to permanently delete your account and all its data.\nThis action is irreversible."),
+            "This account is linked to other ente apps, if you use any.\\n\\nYour uploaded data, across all ente apps, will be scheduled for deletion, and your account will be permanently deleted."),
         "deleteEmailRequest": MessageLookupByLibrary.simpleMessage(
             "Please send an email to <warning>account-deletion@ente.io</warning> from your registered email address."),
         "deleteEmptyAlbums":
@@ -692,6 +692,12 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Grant permission"),
         "groupNearbyPhotos":
             MessageLookupByLibrary.simpleMessage("Group nearby photos"),
+        "hearUsExplanation": MessageLookupByLibrary.simpleMessage(
+            "We don\'t track app installs. It\'d help if you told us where you found us!"),
+        "hearUsHint": MessageLookupByLibrary.simpleMessage(
+            "friend, reddit, ad, search, etc."),
+        "hearUsWhereTitle": MessageLookupByLibrary.simpleMessage(
+            "How did you hear about Ente? (optional)"),
         "hidden": MessageLookupByLibrary.simpleMessage("Hidden"),
         "hide": MessageLookupByLibrary.simpleMessage("Hide"),
         "hiding": MessageLookupByLibrary.simpleMessage("Hiding..."),
