@@ -190,16 +190,6 @@ class S {
     );
   }
 
-  /// `You are about to permanently delete your account and all its data.\nThis action is irreversible.`
-  String get deleteConfirmDialogBody {
-    return Intl.message(
-      'You are about to permanently delete your account and all its data.\nThis action is irreversible.',
-      name: 'deleteConfirmDialogBody',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Delete Account Permanently`
   String get deleteAccountPermanentlyButton {
     return Intl.message(
@@ -7710,6 +7700,36 @@ class S {
     return Intl.message(
       'Move to hidden album',
       name: 'moveToHiddenAlbum',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `This account is linked to other ente apps, if you use any.\n\nYour uploaded data, across all ente apps, will be scheduled for deletion, and your account will be permanently deleted.`
+  String get deleteConfirmDialogBody {
+    return Intl.message(
+      'This account is linked to other ente apps, if you use any.\\n\\nYour uploaded data, across all ente apps, will be scheduled for deletion, and your account will be permanently deleted.',
+      name: 'deleteConfirmDialogBody',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `How did you hear about Ente? (optional)`
+  String get hearUsWhereTitle {
+    return Intl.message(
+      'How did you hear about Ente? (optional)',
+      name: 'hearUsWhereTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `We don't track app installs. It'd help if you told us where you found us!`
+  String get hearUsExplanation {
+    return Intl.message(
+      'We don\'t track app installs. It\'d help if you told us where you found us!',
+      name: 'hearUsExplanation',
       desc: '',
       args: [],
     );
