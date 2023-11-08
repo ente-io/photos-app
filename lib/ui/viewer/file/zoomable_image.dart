@@ -10,6 +10,7 @@ import 'package:photos/core/cache/thumbnail_in_memory_cache.dart';
 import 'package:photos/core/constants.dart';
 import 'package:photos/core/event_bus.dart';
 import 'package:photos/db/files_db.dart';
+// import "package:photos/db/ml_data_db.dart";
 import 'package:photos/events/files_updated_event.dart';
 import 'package:photos/events/local_photos_updated_event.dart';
 import "package:photos/models/file/extensions/file_props.dart";
@@ -237,9 +238,13 @@ class _ZoomableImageState extends State<ZoomableImage>
     final result = await FaceMlService.instance.analyzeImage(
       _photo,
       preferUsingThumbnailForEverything: false,
-      disposeImageIsolateAfterUse: false,
+      disposeImageIsolateAfterUse: true,
     );
-    _logger.info("FaceMlService result: $result");
+    // debugPrint("FaceMlService result: ${result.faces[0].embedding}");
+    // final test =
+    //     await MlDataDB.instance.getFaceMlResult(_photo.uploadedFileID!);
+    // _logger.info("FaceMlService result: ${result.faces[0].embedding}");
+    // _logger.info("FaceMlService detection: ${result.faces[0].detection}");
     if (mounted) {
       precacheImage(imageProvider, context).then((value) async {
         if (mounted) {
