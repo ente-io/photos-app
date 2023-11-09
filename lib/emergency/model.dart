@@ -52,7 +52,11 @@ class EmergencyContact {
   final int recoveryNoticeInDays;
 
   EmergencyContact(
-      this.user, this.emergencyContact, this.state, this.recoveryNoticeInDays);
+    this.user,
+    this.emergencyContact,
+    this.state,
+    this.recoveryNoticeInDays,
+  );
 
   // copyWith
   EmergencyContact copyWith({
