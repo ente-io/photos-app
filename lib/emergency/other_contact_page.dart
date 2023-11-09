@@ -154,10 +154,15 @@ class _OtherContactPageState extends State<OtherContactPage> {
                 // isTopBorderRadiusRemoved: true,
               ),
             if (recoverySession != null && recoverySession!.status == "READY")
-              const ButtonWidget(
+              ButtonWidget(
                 // icon: Icons.start_outlined,
                 buttonType: ButtonType.primary,
                 labelText: "Recover account",
+                onTap: () async {
+                  final String memKey = await EmergencyContactService.instance
+                      .getRecoveryInfo(recoverySession!);
+                  showErrorDialog(context, "Key", memKey);
+                },
               ),
             if (recoverySession != null && recoverySession!.status == "WAITING")
               ButtonWidget(

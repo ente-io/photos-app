@@ -1,5 +1,6 @@
 import "dart:typed_data";
 
+import 'package:bip39/bip39.dart' as bip39;
 import "package:dio/dio.dart";
 import "package:flutter/cupertino.dart";
 import "package:logging/logging.dart";
@@ -7,6 +8,7 @@ import "package:photos/core/configuration.dart";
 import "package:photos/core/network/network.dart";
 import "package:photos/emergency/model.dart";
 import "package:photos/generated/l10n.dart";
+import "package:photos/models/key_attributes.dart";
 import "package:photos/services/user_service.dart";
 import "package:photos/ui/common/user_dialogs.dart";
 import "package:photos/utils/crypto_util.dart";
@@ -16,10 +18,12 @@ import "package:photos/utils/email_util.dart";
 class EmergencyContactService {
   late Dio _enteDio;
   late UserService _userService;
+  late Configuration _config;
 
   EmergencyContactService._privateConstructor() {
     _enteDio = NetworkClient.instance.enteDio;
     _userService = UserService.instance;
+    _config = Configuration.instance;
   }
 
   static final EmergencyContactService instance =
@@ -92,7 +96,7 @@ class EmergencyContactService {
 
   Future<void> startRecovery(EmergencyContact contact) async {
     try {
-       await _enteDio.post(
+      await _enteDio.post(
         "/emergency-contacts/start-recovery",
         data: {
           "userID": contact.user.id,
@@ -131,6 +135,28 @@ class EmergencyContactService {
           "id": session.id,
         },
       );
+    } catch (e, s) {
+      Logger("EmergencyContact").severe('failed to stop recovery', e, s);
+      rethrow;
+    }
+  }
+
+  Future<String> getRecoveryInfo(RecoverySessions sessions) async {
+    try {
+      final resp = await _enteDio.get(
+        "/emergency-contacts/recovery-info/${sessions.id}",
+      );
+      String encryptedKey = resp.data["encryptedKey"]!;
+      final decryptedKey = CryptoUtil.openSealSync(
+        CryptoUtil.base642bin(encryptedKey),
+        CryptoUtil.base642bin(_config.getKeyAttributes()!.publicKey),
+        _config.getSecretKey()!,
+      );
+      final String memKey =
+          bip39.entropyToMnemonic(CryptoUtil.bin2hex(decryptedKey));
+      KeyAttributes keyAttributes =
+          KeyAttributes.fromMap(resp.data['userKeyAttr']);
+      return memKey;
     } catch (e, s) {
       Logger("EmergencyContact").severe('failed to stop recovery', e, s);
       rethrow;
