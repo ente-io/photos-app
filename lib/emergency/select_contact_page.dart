@@ -65,8 +65,8 @@ class _AddContactPage extends State<AddContactPage> {
     return Scaffold(
       resizeToAvoidBottomInset: isKeypadOpen,
       appBar: AppBar(
-        title: const Text(
-          "Add Trusted Contact",
+        title: Text(
+          S.of(context).addTrustedContact,
         ),
       ),
       body: Column(
@@ -109,8 +109,7 @@ class _AddContactPage extends State<AddContactPage> {
                                 vertical: 8.0,
                               ),
                               child: MenuSectionDescriptionWidget(
-                                content: "Trusted contact can help in "
-                                    "recovering your data.",
+                                content: S.of(context).whyAddTrustContact,
                               ),
                             );
                           }

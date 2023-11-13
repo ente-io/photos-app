@@ -1385,6 +1385,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "weHaveSendEmailTo": m61,
         "weakStrength": MessageLookupByLibrary.simpleMessage("Weak"),
         "welcomeBack": MessageLookupByLibrary.simpleMessage("Welcome back!"),
+        "whyAddTrustContact": MessageLookupByLibrary.simpleMessage(
+            "Trusted contact can help in recovering your data."),
         "yearly": MessageLookupByLibrary.simpleMessage("Yearly"),
         "yearsAgo": m62,
         "yes": MessageLookupByLibrary.simpleMessage("Yes"),

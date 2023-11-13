@@ -7884,6 +7884,16 @@ class S {
       args: [],
     );
   }
+
+  /// `Trusted contact can help in recovering your data.`
+  String get whyAddTrustContact {
+    return Intl.message(
+      'Trusted contact can help in recovering your data.',
+      name: 'whyAddTrustContact',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {
