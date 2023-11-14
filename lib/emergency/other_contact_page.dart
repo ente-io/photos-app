@@ -3,7 +3,9 @@ import "package:flutter/material.dart";
 import "package:logging/logging.dart";
 import "package:photos/emergency/emergency_service.dart";
 import "package:photos/emergency/model.dart";
+import "package:photos/emergency/recover_others_account.dart";
 import "package:photos/generated/l10n.dart";
+import "package:photos/models/key_attributes.dart";
 import "package:photos/theme/colors.dart";
 import "package:photos/theme/ente_theme.dart";
 import "package:photos/ui/components/buttons/button_widget.dart";
@@ -14,6 +16,7 @@ import "package:photos/ui/components/models/button_type.dart";
 import "package:photos/ui/components/title_bar_title_widget.dart";
 import "package:photos/utils/date_time_util.dart";
 import "package:photos/utils/dialog_util.dart";
+import "package:photos/utils/navigation_util.dart";
 
 // OtherContactPage is used to start recovery process for other user's account
 // Based on the state of the contact & recovery session, it will show
@@ -159,9 +162,13 @@ class _OtherContactPageState extends State<OtherContactPage> {
                 buttonType: ButtonType.primary,
                 labelText: "Recover account",
                 onTap: () async {
-                  final String memKey = await EmergencyContactService.instance
-                      .getRecoveryInfo(recoverySession!);
-                  showErrorDialog(context, "Key", memKey);
+                  final (String key, KeyAttributes attributes) =
+                      await EmergencyContactService.instance
+                          .getRecoveryInfo(recoverySession!);
+                  routeToPage(
+                    context,
+                    RecoverOthersAccount(key, attributes, recoverySession!),
+                  );
                 },
               ),
             if (recoverySession != null && recoverySession!.status == "WAITING")

@@ -1,6 +1,5 @@
 import "dart:typed_data";
 
-import 'package:bip39/bip39.dart' as bip39;
 import "package:dio/dio.dart";
 import "package:flutter/cupertino.dart";
 import "package:logging/logging.dart";
@@ -141,22 +140,23 @@ class EmergencyContactService {
     }
   }
 
-  Future<String> getRecoveryInfo(RecoverySessions sessions) async {
+  Future<(String, KeyAttributes)> getRecoveryInfo(
+    RecoverySessions sessions,
+  ) async {
     try {
       final resp = await _enteDio.get(
         "/emergency-contacts/recovery-info/${sessions.id}",
       );
-      String encryptedKey = resp.data["encryptedKey"]!;
+      final String encryptedKey = resp.data["encryptedKey"]!;
       final decryptedKey = CryptoUtil.openSealSync(
         CryptoUtil.base642bin(encryptedKey),
         CryptoUtil.base642bin(_config.getKeyAttributes()!.publicKey),
         _config.getSecretKey()!,
       );
-      final String memKey =
-          bip39.entropyToMnemonic(CryptoUtil.bin2hex(decryptedKey));
-      KeyAttributes keyAttributes =
+      final String hexRecoveryKey = CryptoUtil.bin2hex(decryptedKey);
+      final KeyAttributes keyAttributes =
           KeyAttributes.fromMap(resp.data['userKeyAttr']);
-      return memKey;
+      return (hexRecoveryKey, keyAttributes);
     } catch (e, s) {
       Logger("EmergencyContact").severe('failed to stop recovery', e, s);
       rethrow;

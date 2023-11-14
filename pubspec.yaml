@@ -12,7 +12,7 @@ description: ente photos application
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 
-version: 0.7.103+503
+version: 0.7.108+508
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -99,8 +99,8 @@ dependencies:
   lottie: ^1.2.2
   media_extension: ^1.0.1
   media_kit: ^1.1.9
-  media_kit_libs_video: ^1.0.3                                  
-  media_kit_video: ^1.2.1                    
+  media_kit_libs_video: ^1.0.3
+  media_kit_video: ^1.2.1
   modal_bottom_sheet: ^3.0.0-pre
   motion_photos:
     git: "https://github.com/ente-io/motion_photo.git"
@@ -147,7 +147,7 @@ dependencies:
     git:
       url: https://github.com/ente-io/packages.git
       ref: android_video_roation_fix
-      path: packages/video_player/video_player/p
+      path: packages/video_player/video_player
   video_thumbnail: ^0.5.3
   visibility_detector: ^0.3.3
   wakelock_plus: ^1.1.1
@@ -183,7 +183,6 @@ dev_dependencies:
     sdk: flutter
   json_serializable: ^6.6.1
   test: ^1.22.0
-  intl_utils: ^2.8.5
 
 flutter_icons:
   android: "launcher_icon"
