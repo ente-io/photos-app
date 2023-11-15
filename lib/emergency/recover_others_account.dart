@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
 import 'package:password_strength/password_strength.dart';
+import "package:photos/emergency/emergency_service.dart";
 import "package:photos/emergency/model.dart";
 import "package:photos/generated/l10n.dart";
 import "package:photos/models/key_attributes.dart";
+import "package:photos/models/set_keys_request.dart";
 import 'package:photos/ui/common/dynamic_fab.dart';
 import "package:photos/utils/crypto_util.dart";
 import 'package:photos/utils/dialog_util.dart';
@@ -338,16 +340,21 @@ class _RecoverOthersAccountState extends State<RecoverOthersAccount> {
         memLimit: derivedKeyResult.memLimit,
         opsLimit: derivedKeyResult.opsLimit,
       );
-      // todo: make API call to change the password
-      // await UserService.instance
-      //     .updateKeyAttributes(result.item1, result.item2);
+      final setKeyRequest = SetKeysRequest(
+        kekSalt: updatedAttributes.kekSalt,
+        encryptedKey: updatedAttributes.encryptedKey,
+        keyDecryptionNonce: updatedAttributes.keyDecryptionNonce,
+        memLimit: updatedAttributes.memLimit!,
+        opsLimit: updatedAttributes.opsLimit!,
+      );
+      await EmergencyContactService.instance.changePasswordForOther(
+        loginKey,
+        setKeyRequest,
+        widget.sessions,
+      );
       await dialog.hide();
       showShortToast(context, S.of(context).passwordChangedSuccessfully);
-      // Navigator.of(context).pop();
-      // if (widget.mode == PasswordEntryMode.reset) {
-      //   Bus.instance.fire(SubscriptionPurchasedEvent());
-      //   Navigator.of(context).popUntil((route) => route.isFirst);
-      // }
+      Navigator.of(context).pop();
     } catch (e, s) {
       _logger.severe(e, s);
       await dialog.hide();

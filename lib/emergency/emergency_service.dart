@@ -1,3 +1,5 @@
+import "dart:convert";
+import "dart:math";
 import "dart:typed_data";
 
 import "package:dio/dio.dart";
@@ -7,17 +9,27 @@ import "package:photos/core/configuration.dart";
 import "package:photos/core/network/network.dart";
 import "package:photos/emergency/model.dart";
 import "package:photos/generated/l10n.dart";
+import "package:photos/models/api/user/srp.dart";
 import "package:photos/models/key_attributes.dart";
+import "package:photos/models/set_keys_request.dart";
 import "package:photos/services/user_service.dart";
 import "package:photos/ui/common/user_dialogs.dart";
 import "package:photos/utils/crypto_util.dart";
 import "package:photos/utils/dialog_util.dart";
 import "package:photos/utils/email_util.dart";
+import "package:pointycastle/pointycastle.dart";
+import "package:pointycastle/random/fortuna_random.dart";
+import "package:pointycastle/srp/srp6_client.dart";
+import "package:pointycastle/srp/srp6_standard_groups.dart";
+import "package:pointycastle/srp/srp6_util.dart";
+import "package:pointycastle/srp/srp6_verifier_generator.dart";
+import "package:uuid/uuid.dart";
 
 class EmergencyContactService {
   late Dio _enteDio;
   late UserService _userService;
   late Configuration _config;
+  late final Logger _logger = Logger("EmergencyContactService");
 
   EmergencyContactService._privateConstructor() {
     _enteDio = NetworkClient.instance.enteDio;
@@ -161,5 +173,86 @@ class EmergencyContactService {
       Logger("EmergencyContact").severe('failed to stop recovery', e, s);
       rethrow;
     }
+  }
+
+  Future<void> changePasswordForOther(
+    Uint8List loginKey,
+    SetKeysRequest setKeysRequest,
+    RecoverySessions recoverySessions,
+  ) async {
+    try {
+      final SRP6GroupParameters kDefaultSrpGroup =
+          SRP6StandardGroups.rfc5054_4096;
+      final String username = const Uuid().v4().toString();
+      final SecureRandom random = _getSecureRandom();
+      final Uint8List identity = Uint8List.fromList(utf8.encode(username));
+      final Uint8List password = loginKey;
+      final Uint8List salt = random.nextBytes(16);
+      final gen = SRP6VerifierGenerator(
+        group: kDefaultSrpGroup,
+        digest: Digest('SHA-256'),
+      );
+      final v = gen.generateVerifier(salt, identity, password);
+
+      final client = SRP6Client(
+        group: kDefaultSrpGroup,
+        digest: Digest('SHA-256'),
+        random: random,
+      );
+
+      final A = client.generateClientCredentials(salt, identity, password);
+      final request = SetupSRPRequest(
+        srpUserID: username,
+        srpSalt: base64Encode(salt),
+        srpVerifier: base64Encode(SRP6Util.encodeBigInt(v)),
+        srpA: base64Encode(SRP6Util.encodeBigInt(A!)),
+        isUpdate: false,
+      );
+      final response = await _enteDio.post(
+        "/emergency-contacts/init-change-password",
+        data: {
+          "recoveryID": recoverySessions.id,
+          "setupSRPRequest": request.toMap(),
+        },
+      );
+      if (response.statusCode == 200) {
+        final SetupSRPResponse setupSRPResponse =
+            SetupSRPResponse.fromJson(response.data);
+        final serverB =
+            SRP6Util.decodeBigInt(base64Decode(setupSRPResponse.srpB));
+        // ignore: need to calculate secret to get M1, unused_local_variable
+        final clientS = client.calculateSecret(serverB);
+        final clientM = client.calculateClientEvidenceMessage();
+        // ignore: unused_local_variable
+        late Response srpCompleteResponse;
+        srpCompleteResponse = await _enteDio.post(
+          "/emergency-contacts/change-password",
+          data: {
+            "recoveryID": recoverySessions.id,
+            'updateSrpAndKeysRequest': {
+              'setupID': setupSRPResponse.setupID,
+              'srpM1': base64Encode(SRP6Util.encodeBigInt(clientM!)),
+              'updatedKeyAttr': setKeysRequest.toMap(),
+            },
+          },
+        );
+      } else {
+        throw Exception("register-srp action failed");
+      }
+    } catch (e, s) {
+      _logger.severe("failed to change password for other", e, s);
+      rethrow;
+    }
+  }
+
+  SecureRandom _getSecureRandom() {
+    final List<int> seeds = [];
+    final random = Random.secure();
+    for (int i = 0; i < 32; i++) {
+      seeds.add(random.nextInt(255));
+    }
+    final secureRandom = FortunaRandom();
+    secureRandom.seed(KeyParameter(Uint8List.fromList(seeds)));
+    return secureRandom;
   }
 }
