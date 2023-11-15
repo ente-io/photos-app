@@ -36,6 +36,7 @@ class FileWidget extends StatelessWidget {
         file,
         shouldDisableScroll: shouldDisableScroll,
         tagPrefix: tagPrefix,
+        pageController: pageController,
         backgroundDecoration: backgroundDecoration,
         key: key ?? ValueKey(fileKey),
       );

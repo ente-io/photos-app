@@ -81,6 +81,7 @@ class _ZoomableLiveImageNewState extends State<ZoomableLiveImageNew>
         tagPrefix: widget.tagPrefix,
         shouldDisableScroll: widget.shouldDisableScroll,
         backgroundDecoration: widget.backgroundDecoration,
+        pageController: widget.pageController,
       );
     }
     return GestureDetector(
