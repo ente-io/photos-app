@@ -126,8 +126,25 @@ class _ZoomableImageState extends State<ZoomableImage>
                     },
                 },
             };
+    horizontalDragCallback(d) => {
+          if (d.delta.dx > dragSensitivity)
+            {
+              widget.pageController!.previousPage(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+              ),
+            }
+          else if (d.delta.dx < (dragSensitivity * -1))
+            {
+              widget.pageController!.nextPage(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+              ),
+            },
+        };
     return GestureDetector(
       onVerticalDragUpdate: verticalDragCallback,
+      onHorizontalDragUpdate: horizontalDragCallback,
       child: content,
     );
   }
