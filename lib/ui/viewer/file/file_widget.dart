@@ -10,6 +10,7 @@ class FileWidget extends StatelessWidget {
   final String? tagPrefix;
   final Function(bool)? shouldDisableScroll;
   final Function(bool)? playbackCallback;
+  final PageController? pageController;
   final BoxDecoration? backgroundDecoration;
   final bool? autoPlay;
 
@@ -18,6 +19,7 @@ class FileWidget extends StatelessWidget {
     this.autoPlay,
     this.shouldDisableScroll,
     this.playbackCallback,
+    this.pageController,
     this.tagPrefix,
     this.backgroundDecoration,
     Key? key,

@@ -26,6 +26,7 @@ import "package:photos/utils/toast_util.dart";
 class ZoomableImage extends StatefulWidget {
   final EnteFile photo;
   final Function(bool)? shouldDisableScroll;
+  final PageController? pageController;
   final String? tagPrefix;
   final Decoration? backgroundDecoration;
   final bool shouldCover;
@@ -33,6 +34,7 @@ class ZoomableImage extends StatefulWidget {
   const ZoomableImage(
     this.photo, {
     Key? key,
+    this.pageController,
     this.shouldDisableScroll,
     required this.tagPrefix,
     this.backgroundDecoration,

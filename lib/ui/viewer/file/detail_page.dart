@@ -172,6 +172,7 @@ class _DetailPageState extends State<DetailPage> {
           file,
           autoPlay: shouldAutoPlay(),
           tagPrefix: widget.config.tagPrefix,
+          pageController: _pageController,
           shouldDisableScroll: (value) {
             if (_shouldDisableScroll != value) {
               setState(() {

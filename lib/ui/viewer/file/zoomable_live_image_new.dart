@@ -18,6 +18,7 @@ class ZoomableLiveImageNew extends StatefulWidget {
   final EnteFile enteFile;
   final Function(bool)? shouldDisableScroll;
   final String? tagPrefix;
+  final PageController? pageController;
   final Decoration? backgroundDecoration;
 
   const ZoomableLiveImageNew(
@@ -25,6 +26,7 @@ class ZoomableLiveImageNew extends StatefulWidget {
     Key? key,
     this.shouldDisableScroll,
     required this.tagPrefix,
+    this.pageController,
     this.backgroundDecoration,
   }) : super(key: key);
 
