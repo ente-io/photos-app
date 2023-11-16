@@ -48,6 +48,7 @@ class FaceDetection {
     }
   }
 
+  /// Detects faces in the given image data.
   Future<List<FaceDetectionRelative>> predict(Uint8List imageData) async {
     assert(_interpreter != null && _isolateInterpreter != null);
 
@@ -139,6 +140,52 @@ class FaceDetection {
     );
 
     return relativeDetections;
+  }
+
+  Future<List<FaceDetectionRelative>> predictInTwoPhases(
+    Uint8List thumbnailData,
+    Uint8List fileData,
+  ) async {
+    // Get the bounding boxes of the faces
+    final List<FaceDetectionRelative> phase1Faces =
+        await predict(thumbnailData);
+
+    final finalDetections = <FaceDetectionRelative>[];
+    for (final FaceDetectionRelative phase1Face in phase1Faces) {
+      // Enlarge the bounding box by factor 2
+      final List<double> imageBox = getEnlargedRelativeBox(phase1Face.box, 2.0);
+      final paddedImage =
+          await ImageMlIsolate.instance.cropAndPadFace(fileData, imageBox);
+      final List<double> paddedBox = getEnlargedRelativeBox(imageBox, 2.0);
+
+      final List<FaceDetectionRelative> phase2Faces =
+          await FaceDetection.instance.predict(paddedImage);
+
+      // TODO: adjust the phase2 detection for the fact that you use an enlarged and cropped/padded image. Right now the box and landmarks are incorrect.
+
+      FaceDetectionRelative? selected;
+      if (phase2Faces.length == 1) {
+        selected = phase2Faces[0];
+      } else if (phase2Faces.length > 1) {
+        selected = phase1Face.getNearestDetection(phase2Faces);
+      }
+
+      if (selected != null && selected.score > 0.75) {
+        finalDetections.add(selected);
+      }
+    }
+
+    final finalFilteredDetections = naiveNonMaxSuppression(
+      detections: finalDetections,
+      iouThreshold: config.faceOptions.iouThreshold,
+    );
+
+    if (finalFilteredDetections.isEmpty) {
+      _logger.info('No face detected');
+      return <FaceDetectionRelative>[];
+    }
+
+    return finalFilteredDetections;
   }
 
   /// Initialize the interpreter by loading the model file.

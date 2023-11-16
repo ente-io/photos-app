@@ -322,6 +322,11 @@ class FaceMlService {
         await _getDataForML(enteFile, typeOfData: FileDataForML.thumbnailData);
 
     Uint8List? fileData;
+
+    // TODO: remove/optimize this later. Not now though: premature optimization
+    fileData =
+        await _getDataForML(enteFile, typeOfData: FileDataForML.fileData);
+
     if (thumbnailData == null) {
       fileData =
           await _getDataForML(enteFile, typeOfData: FileDataForML.fileData);
@@ -345,7 +350,8 @@ class FaceMlService {
       // Get the faces
       final List<FaceDetectionRelative> faceDetectionResult =
           await _detectFaces(
-        smallData,
+        thumbnailData!,
+        fileData!,
         resultBuilder: resultBuilder,
       );
 
@@ -459,13 +465,14 @@ class FaceMlService {
   ///
   /// Throws [CouldNotInitializeFaceDetector], [CouldNotRunFaceDetector] or [GeneralFaceMlException] if something goes wrong.
   Future<List<FaceDetectionRelative>> _detectFaces(
-    Uint8List imageData, {
+    Uint8List imageData,
+    Uint8List fileData, {
     FaceMlResultBuilder? resultBuilder,
   }) async {
     try {
       // Get the bounding boxes of the faces
       final List<FaceDetectionRelative> faces =
-          await FaceDetection.instance.predict(imageData);
+          await FaceDetection.instance.predictInTwoPhases(imageData, fileData);
 
       // Add detected faces to the resultBuilder
       if (resultBuilder != null) {

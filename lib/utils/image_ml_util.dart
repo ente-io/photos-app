@@ -1,4 +1,5 @@
 import "dart:async";
+import "dart:math" show min, max;
 import "dart:typed_data" show Uint8List, ByteData;
 import "dart:ui";
 
@@ -265,28 +266,39 @@ Future<Image> resizeImage(
 }
 
 /// Crops an [Image] object to the specified [width] and [height], starting at the specified [x] and [y] coordinates.
+/// Optionally, the cropped image can be resized to comply with a [maxSize] and/or [minSize].
 Future<Image> cropImage(
   Image image, {
   required int x,
   required int y,
   required int width,
   required int height,
+  Size? maxSize,
+  Size? minSize,
   FilterQuality quality = FilterQuality.medium,
 }) async {
-  if (x < 0 ||
-      y < 0 ||
-      (x + width) > image.width ||
-      (y + height) > image.height) {
-    _logger.severe('Invalid crop dimensions or coordinates.');
-    throw ArgumentError('Invalid crop dimensions or coordinates.');
+  // Calculate the scale for resizing based on maxSize and minSize
+  double scaleX = 1.0;
+  double scaleY = 1.0;
+  if (maxSize != null) {
+    scaleX = min(maxSize.width / width, 1.0);
+    scaleY = min(maxSize.height / height, 1.0);
   }
+  if (minSize != null) {
+    scaleX = max(minSize.width / width, scaleX);
+    scaleY = max(minSize.height / height, scaleY);
+  }
+
+  // Calculate the final dimensions
+  final targetWidth = (width * scaleX).round();
+  final targetHeight = (height * scaleY).round();
 
   final recorder = PictureRecorder();
   final canvas = Canvas(
     recorder,
     Rect.fromPoints(
       const Offset(0, 0),
-      Offset(width.toDouble(), height.toDouble()),
+      Offset(targetWidth.toDouble(), targetHeight.toDouble()),
     ),
   );
 
@@ -298,13 +310,75 @@ Future<Image> cropImage(
     ),
     Rect.fromPoints(
       const Offset(0, 0),
-      Offset(width.toDouble(), height.toDouble()),
+      Offset(targetWidth.toDouble(), targetHeight.toDouble()),
     ),
     Paint()..filterQuality = quality,
   );
 
   final picture = recorder.endRecording();
-  return picture.toImage(width, height);
+
+  if (x < 0 ||
+      y < 0 ||
+      (x + width) > image.width ||
+      (y + height) > image.height) {
+    _logger.severe('Invalid crop dimensions or coordinates.');
+    throw ArgumentError('Invalid crop dimensions or coordinates.');
+  }
+  return picture.toImage(targetWidth, targetHeight);
+}
+
+/// Adds padding around an [Image] object.
+Future<Image> addPaddingToImage(
+  Image image, [
+  double padding = 0.5,
+]) async {
+  const Color paddingColor = Color.fromARGB(0, 0, 0, 0);
+  final originalWidth = image.width;
+  final originalHeight = image.height;
+
+  final paddedWidth = (originalWidth + 2 * padding * originalWidth).toInt();
+  final paddedHeight = (originalHeight + 2 * padding * originalHeight).toInt();
+
+  final recorder = PictureRecorder();
+  final canvas = Canvas(
+    recorder,
+    Rect.fromPoints(
+      const Offset(0, 0),
+      Offset(paddedWidth.toDouble(), paddedHeight.toDouble()),
+    ),
+  );
+
+  final paint = Paint();
+  paint.color = paddingColor;
+
+  // Draw the padding
+  canvas.drawRect(
+    Rect.fromPoints(
+      const Offset(0, 0),
+      Offset(paddedWidth.toDouble(), paddedHeight.toDouble()),
+    ),
+    paint,
+  );
+
+  // Draw the original image on top of the padding
+  canvas.drawImageRect(
+    image,
+    Rect.fromPoints(
+      const Offset(0, 0),
+      Offset(image.width.toDouble(), image.height.toDouble()),
+    ),
+    Rect.fromPoints(
+      Offset(padding * originalWidth, padding * originalHeight),
+      Offset(
+        (1 + padding) * originalWidth,
+        (1 + padding) * originalHeight,
+      ),
+    ),
+    Paint(),
+  );
+
+  final picture = recorder.endRecording();
+  return picture.toImage(paddedWidth, paddedHeight);
 }
 
 /// Preprocesses [imageData] for standard ML models
@@ -691,6 +765,38 @@ Future<Uint8List> generateFaceThumbnailFromData(
     faceThumbnail,
     format: ImageByteFormat.png,
   );
+}
+
+/// Generates cropped and padded image data from [imageData] and a [faceBox].
+///
+/// The steps are:
+/// 1. Crop the image to the face bounding box
+/// 2. Resize this cropped image to a square that is half the BlazeFace input size
+/// 3. Pad the image to the BlazeFace input size
+///
+/// Note that [faceBox] is a list of the following values: [xMinBox, yMinBox, xMaxBox, yMaxBox].
+Future<Uint8List> cropAndPadFaceData(
+  Uint8List imageData,
+  List<double> faceBox,
+) async {
+  final Image image = await decodeImageFromData(imageData);
+
+  final Image faceCrop = await cropImage(
+    image,
+    x: (faceBox[0] * image.width).round(),
+    y: (faceBox[1] * image.height).round(),
+    width: ((faceBox[2] - faceBox[0]) * image.width).round(),
+    height: ((faceBox[3] - faceBox[1]) * image.height).round(),
+    maxSize: const Size(128, 128),
+    minSize: const Size(128, 128),
+  );
+
+  final Image facePadded = await addPaddingToImage(
+    faceCrop,
+    0.5,
+  );
+
+  return await encodeImageToUint8List(facePadded);
 }
 
 int bilinearInterpolation(

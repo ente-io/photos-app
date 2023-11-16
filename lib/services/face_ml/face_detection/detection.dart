@@ -1,4 +1,5 @@
 import 'dart:convert' show utf8;
+import 'dart:math' show sqrt, pow;
 import 'package:crypto/crypto.dart' show sha256;
 
 abstract class Detection {
@@ -92,6 +93,33 @@ class FaceDetectionRelative extends Detection {
           [0, 0],
         ],
         super.empty();
+
+  FaceDetectionRelative getNearestDetection(
+    List<FaceDetectionRelative> detections,
+  ) {
+    if (detections.isEmpty) {
+      throw ArgumentError("The detection list cannot be empty.");
+    }
+
+    var nearestDetection = detections[0];
+    var minDistance = double.infinity;
+
+    // Calculate the center of the current instance
+    final centerX1 = (xMinBox + xMaxBox) / 2;
+    final centerY1 = (yMinBox + yMaxBox) / 2;
+
+    for (var detection in detections) {
+      final centerX2 = (detection.xMinBox + detection.xMaxBox) / 2;
+      final centerY2 = (detection.yMinBox + detection.yMaxBox) / 2;
+      final distance =
+          sqrt(pow(centerX2 - centerX1, 2) + pow(centerY2 - centerY1, 2));
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestDetection = detection;
+      }
+    }
+    return nearestDetection;
+  }
 
   FaceDetectionAbsolute toAbsolute({
     required int imageWidth,
@@ -310,4 +338,19 @@ List<FaceDetectionAbsolute> relativeToAbsoluteDetections({
   }
 
   return absoluteDetections;
+}
+
+List<double> getEnlargedRelativeBox(List<double> box, [double factor = 2]) {
+  final boxCopy = List<double>.from(box, growable: false);
+  // The four values of the box in order are: [xMinBox, yMinBox, xMaxBox, yMaxBox].
+
+  final width = boxCopy[2] - boxCopy[0];
+  final height = boxCopy[3] - boxCopy[1];
+
+  boxCopy[0] -= width * (factor - 1) / 2;
+  boxCopy[1] -= height * (factor - 1) / 2;
+  boxCopy[2] += width * (factor - 1) / 2;
+  boxCopy[3] += height * (factor - 1) / 2;
+
+  return boxCopy;
 }

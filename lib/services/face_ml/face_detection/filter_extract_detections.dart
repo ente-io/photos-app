@@ -6,6 +6,7 @@ import "package:photos/services/face_ml/face_detection/face_detection_options.da
 
 
 
+/// Filters the raw scores and boxes based on the score threshold and then returns the bounding boxes and keypoints.
 List<FaceDetectionRelative> filterExtractDetections({
   required FaceDetectionOptions options,
   required List<dynamic> rawScores,

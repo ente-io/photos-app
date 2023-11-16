@@ -14,7 +14,8 @@ enum ImageOperation {
   preprocessStandard,
   preprocessFaceAlign,
   preprocessMobileFaceNet,
-  generateFaceThumbnail
+  generateFaceThumbnail,
+  cropAndPadFace,
 }
 
 /// The isolate below uses functions from ["package:photos/utils/image_ml_util.dart"] to preprocess images for ML models.
@@ -128,10 +129,17 @@ class ImageMlIsolate {
           });
         case ImageOperation.generateFaceThumbnail:
           final imageData = args['imageData'] as Uint8List;
-          final faceDetectionJson = args['faceDetection'] as Map<String, dynamic>;
-          final faceDetection = FaceDetectionRelative.fromJson(faceDetectionJson);
+          final faceDetectionJson =
+              args['faceDetection'] as Map<String, dynamic>;
+          final faceDetection =
+              FaceDetectionRelative.fromJson(faceDetectionJson);
           final Uint8List result =
               await generateFaceThumbnailFromData(imageData, faceDetection);
+          sendPort.send(<dynamic>[result]);
+        case ImageOperation.cropAndPadFace:
+          final imageData = args['imageData'] as Uint8List;
+          final faceBox = args['faceBox'] as List<double>;
+          final Uint8List result = await cropAndPadFaceData(imageData, faceBox);
           sendPort.send(<dynamic>[result]);
       }
     });
@@ -268,6 +276,29 @@ class ImageMlIsolate {
         {
           'imageData': imageData,
           'faceDetection': faceDetection.toJson(),
+        },
+      ),
+    ).then((value) => value[0] as Uint8List);
+  }
+
+  /// Generates cropped and padded image data from [imageData] and a [faceBox].
+  /// 
+  /// The steps are:
+  /// 1. Crop the image to the face bounding box
+  /// 2. Resize this cropped image to a square that is half the BlazeFace input size
+  /// 3. Pad the image to the BlazeFace input size
+  ///
+  /// Uses [cropAndPadFaceData] inside the isolate.
+  Future<Uint8List> cropAndPadFace(
+    Uint8List imageData,
+    List<double> faceBox,
+  ) async {
+    return await _runInIsolate(
+      (
+        ImageOperation.cropAndPadFace,
+        {
+          'imageData': imageData,
+          'faceBox': List<double>.from(faceBox),
         },
       ),
     ).then((value) => value[0] as Uint8List);
