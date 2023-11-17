@@ -70,6 +70,28 @@ class OSMFranceTileAttributes extends StatelessWidget {
   }
 }
 
+class BaseMapsLayer extends StatelessWidget {
+  const BaseMapsLayer({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final isLightMode = Theme.of(context).brightness == Brightness.light;
+    return TileLayer(
+      urlTemplate: isLightMode
+          ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'
+          : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+      fallbackUrl: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      subdomains: const ['a', 'b', 'c'],
+      tileProvider: CachedNetworkTileProvider(),
+      backgroundColor: isLightMode
+          ? const Color.fromARGB(255, 246, 246, 246)
+          : const Color.fromARGB(255, 137, 137, 137),
+      userAgentPackageName: _userAgent,
+      panBuffer: 1,
+    );
+  }
+}
+
 class MapBoxTilesLayer extends StatelessWidget {
   const MapBoxTilesLayer({super.key});
 
