@@ -137,6 +137,9 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m41(endDate) => "Renews on ${endDate}";
 
+  static String m64(count) =>
+      "${Intl.plural(count, one: '${count} result found', other: '${count} results found')}";
+
   static String m42(count) => "${count} selected";
 
   static String m43(count, yourCount) =>
@@ -187,7 +190,7 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m59(count) =>
       "${Intl.plural(count, zero: '', one: '1 day', other: '${count} days')}";
 
-  static String m64(endDate) => "Valid till ${endDate}";
+  static String m65(endDate) => "Valid till ${endDate}";
 
   static String m60(email) => "Verify ${email}";
 
@@ -220,6 +223,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "addLocation": MessageLookupByLibrary.simpleMessage("Add location"),
         "addLocationButton": MessageLookupByLibrary.simpleMessage("Add"),
         "addMore": MessageLookupByLibrary.simpleMessage("Add more"),
+        "addNew": MessageLookupByLibrary.simpleMessage("Add new"),
         "addOnPageSubtitle":
             MessageLookupByLibrary.simpleMessage("Details of add-ons"),
         "addOns": MessageLookupByLibrary.simpleMessage("Add-ons"),
@@ -230,6 +234,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "addToHiddenAlbum":
             MessageLookupByLibrary.simpleMessage("Add to hidden album"),
         "addViewer": MessageLookupByLibrary.simpleMessage("Add viewer"),
+        "addYourPhotosNow":
+            MessageLookupByLibrary.simpleMessage("Add your photos now"),
         "addedAs": MessageLookupByLibrary.simpleMessage("Added as"),
         "addedBy": m1,
         "addedSuccessfullyTo": m2,
@@ -435,6 +441,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "contactSupport":
             MessageLookupByLibrary.simpleMessage("Contact support"),
         "contactToManageSubscription": m10,
+        "contents": MessageLookupByLibrary.simpleMessage("Contents"),
         "continueLabel": MessageLookupByLibrary.simpleMessage("Continue"),
         "continueOnFreeTrial":
             MessageLookupByLibrary.simpleMessage("Continue on free trial"),
@@ -634,6 +641,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "exportLogs": MessageLookupByLibrary.simpleMessage("Export logs"),
         "exportYourData":
             MessageLookupByLibrary.simpleMessage("Export your data"),
+        "faces": MessageLookupByLibrary.simpleMessage("Faces"),
         "failedToApplyCode":
             MessageLookupByLibrary.simpleMessage("Failed to apply code"),
         "failedToCancel":
@@ -664,6 +672,9 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Add a description..."),
         "fileSavedToGallery":
             MessageLookupByLibrary.simpleMessage("File saved to gallery"),
+        "fileTypes": MessageLookupByLibrary.simpleMessage("File types"),
+        "fileTypesAndNames":
+            MessageLookupByLibrary.simpleMessage("File types and names"),
         "filesBackedUpFromDevice": m19,
         "filesBackedUpInAlbum": m20,
         "filesDeleted": MessageLookupByLibrary.simpleMessage("Files deleted"),
@@ -776,6 +787,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "linkHasExpired":
             MessageLookupByLibrary.simpleMessage("Link has expired"),
         "linkNeverExpires": MessageLookupByLibrary.simpleMessage("Never"),
+        "livePhotos": MessageLookupByLibrary.simpleMessage("Live Photos"),
         "loadMessage1": MessageLookupByLibrary.simpleMessage(
             "You can share your subscription with your family"),
         "loadMessage2": MessageLookupByLibrary.simpleMessage(
@@ -837,6 +849,10 @@ class MessageLookup extends MessageLookupByLibrary {
         "mobileWebDesktop":
             MessageLookupByLibrary.simpleMessage("Mobile, Web, Desktop"),
         "moderateStrength": MessageLookupByLibrary.simpleMessage("Moderate"),
+        "modifyYourQueryOrTrySearchingFor":
+            MessageLookupByLibrary.simpleMessage(
+                "Modify your query, or try searching for"),
+        "moments": MessageLookupByLibrary.simpleMessage("Moments"),
         "monthly": MessageLookupByLibrary.simpleMessage("Monthly"),
         "moveItem": m30,
         "moveToAlbum": MessageLookupByLibrary.simpleMessage("Move to album"),
@@ -910,6 +926,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "paymentFailedTalkToProvider": m33,
         "paymentFailedWithReason": m34,
         "pendingSync": MessageLookupByLibrary.simpleMessage("Pending sync"),
+        "people": MessageLookupByLibrary.simpleMessage("People"),
         "peopleUsingYourCode":
             MessageLookupByLibrary.simpleMessage("People using your code"),
         "permDeleteWarning": MessageLookupByLibrary.simpleMessage(
@@ -918,9 +935,12 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Permanently delete"),
         "permanentlyDeleteFromDevice": MessageLookupByLibrary.simpleMessage(
             "Permanently delete from device?"),
+        "photoDescriptions":
+            MessageLookupByLibrary.simpleMessage("Photo descriptions"),
         "photoGridSize":
             MessageLookupByLibrary.simpleMessage("Photo grid size"),
         "photoSmallCase": MessageLookupByLibrary.simpleMessage("photo"),
+        "photos": MessageLookupByLibrary.simpleMessage("Photos"),
         "photosAddedByYouWillBeRemovedFromTheAlbum":
             MessageLookupByLibrary.simpleMessage(
                 "Photos added by you will be removed from the album"),
@@ -1078,12 +1098,36 @@ class MessageLookup extends MessageLookupByLibrary {
         "scanThisBarcodeWithnyourAuthenticatorApp":
             MessageLookupByLibrary.simpleMessage(
                 "Scan this barcode with\nyour authenticator app"),
+        "searchAlbumsEmptySection":
+            MessageLookupByLibrary.simpleMessage("Albums"),
         "searchByAlbumNameHint":
             MessageLookupByLibrary.simpleMessage("Album name"),
         "searchByExamples": MessageLookupByLibrary.simpleMessage(
             "• Album names (e.g. \"Camera\")\n• Types of files (e.g. \"Videos\", \".gif\")\n• Years and months (e.g. \"2022\", \"January\")\n• Holidays (e.g. \"Christmas\")\n• Photo descriptions (e.g. “#fun”)"),
+        "searchCaptionEmptySection": MessageLookupByLibrary.simpleMessage(
+            "Add descriptions like \"#trip\" in photo info to quickly find them here"),
+        "searchDatesEmptySection": MessageLookupByLibrary.simpleMessage(
+            "Search by a date, month or year"),
+        "searchFaceEmptySection":
+            MessageLookupByLibrary.simpleMessage("Find all photos of a person"),
+        "searchFileTypesAndNamesEmptySection":
+            MessageLookupByLibrary.simpleMessage("File types and names"),
+        "searchHint1":
+            MessageLookupByLibrary.simpleMessage("Fast, on-device search"),
+        "searchHint2":
+            MessageLookupByLibrary.simpleMessage("Photo dates, descriptions"),
+        "searchHint3": MessageLookupByLibrary.simpleMessage(
+            "Albums, file names, and types"),
+        "searchHint4": MessageLookupByLibrary.simpleMessage("Location"),
+        "searchHint5": MessageLookupByLibrary.simpleMessage(
+            "Coming soon: Photo contents, faces"),
         "searchHintText": MessageLookupByLibrary.simpleMessage(
             "Albums, months, days, years, ..."),
+        "searchLocationEmptySection": MessageLookupByLibrary.simpleMessage(
+            "Group photos that are taken within some radius of a photo"),
+        "searchPeopleEmptySection": MessageLookupByLibrary.simpleMessage(
+            "Invite people, and you\'ll see all photos shared by them here"),
+        "searchResultCount": m64,
         "security": MessageLookupByLibrary.simpleMessage("Security"),
         "selectAlbum": MessageLookupByLibrary.simpleMessage("Select album"),
         "selectAll": MessageLookupByLibrary.simpleMessage("Select all"),
@@ -1332,7 +1376,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "useSelectedPhoto":
             MessageLookupByLibrary.simpleMessage("Use selected photo"),
         "usedSpace": MessageLookupByLibrary.simpleMessage("Used space"),
-        "validTill": m64,
+        "validTill": m65,
         "verificationFailedPleaseTryAgain":
             MessageLookupByLibrary.simpleMessage(
                 "Verification failed, please try again"),
@@ -1348,6 +1392,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "verifyingRecoveryKey":
             MessageLookupByLibrary.simpleMessage("Verifying recovery key..."),
         "videoSmallCase": MessageLookupByLibrary.simpleMessage("video"),
+        "videos": MessageLookupByLibrary.simpleMessage("Videos"),
         "viewActiveSessions":
             MessageLookupByLibrary.simpleMessage("View active sessions"),
         "viewAddOnButton": MessageLookupByLibrary.simpleMessage("View add-ons"),
@@ -1402,6 +1447,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "youHaveSuccessfullyFreedUp": m63,
         "yourAccountHasBeenDeleted": MessageLookupByLibrary.simpleMessage(
             "Your account has been deleted"),
+        "yourMap": MessageLookupByLibrary.simpleMessage("Your map"),
         "yourPlanWasSuccessfullyDowngraded":
             MessageLookupByLibrary.simpleMessage(
                 "Your plan was successfully downgraded"),
