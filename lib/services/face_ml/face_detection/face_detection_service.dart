@@ -154,14 +154,22 @@ class FaceDetection {
     for (final FaceDetectionRelative phase1Face in phase1Faces) {
       // Enlarge the bounding box by factor 2
       final List<double> imageBox = getEnlargedRelativeBox(phase1Face.box, 2.0);
+      // Crop and pad the image
       final paddedImage =
           await ImageMlIsolate.instance.cropAndPadFace(fileData, imageBox);
+      // Enlarge the imageBox, to help with transformation to original image
       final List<double> paddedBox = getEnlargedRelativeBox(imageBox, 2.0);
 
+      // Get the bounding boxes of the faces
       final List<FaceDetectionRelative> phase2Faces =
           await FaceDetection.instance.predict(paddedImage);
-
-      // TODO: adjust the phase2 detection for the fact that you use an enlarged and cropped/padded image. Right now the box and landmarks are incorrect.
+      // Transform the bounding boxes to original image
+      for (final phase2Detection in phase2Faces) {
+        phase2Detection.transformRelativeToOriginalImage(
+          imageBox,
+          paddedBox,
+        );
+      }
 
       FaceDetectionRelative? selected;
       if (phase2Faces.length == 1) {

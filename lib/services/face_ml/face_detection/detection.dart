@@ -16,6 +16,17 @@ abstract class Detection {
   String toString();
 }
 
+// extension BBoxExtension on List<double> {
+//   double get xMinBox =>
+//       isNotEmpty ? this[0] : throw IndexError.withLength(0, length);
+//   double get yMinBox =>
+//       length >= 2 ? this[1] : throw IndexError.withLength(1, length);
+//   double get xMaxBox =>
+//       length >= 3 ? this[2] : throw IndexError.withLength(2, length);
+//   double get yMaxBox =>
+//       length >= 4 ? this[3] : throw IndexError.withLength(3, length);
+// }
+
 /// This class represents a face detection with relative coordinates in the range [0, 1].
 /// The coordinates are relative to the image size. The pattern for the coordinates is always [x, y], where x is the horizontal coordinate and y is the vertical coordinate.
 ///
@@ -119,6 +130,65 @@ class FaceDetectionRelative extends Detection {
       }
     }
     return nearestDetection;
+  }
+
+  void transformRelativeToOriginalImage(
+    List<double> imageBox, // [xMin, yMin, xMax, yMax]
+    List<double> paddedBox, // [xMin, yMin, xMax, yMax]
+  ) {
+    // Account for padding
+    final singlePaddingWidth = imageBox[0] - paddedBox[0];
+    final singlePaddingHeigth = imageBox[1] - paddedBox[1];
+    imageBox[0] -= singlePaddingWidth;
+    imageBox[1] -= singlePaddingHeigth;
+    imageBox[2] -= singlePaddingWidth;
+    imageBox[3] -= singlePaddingHeigth;
+
+    // Calculate the scaling and translation
+    final double scaleX = (imageBox[2] - imageBox[0]);
+    final double scaleY = (imageBox[3] - imageBox[1]);
+    final double translateX = imageBox[0];
+    final double translateY = imageBox[1];
+
+    // Transform Box
+    _transformBox(box, scaleX, scaleY, translateX, translateY);
+
+    // Transform All Keypoints
+    for (int i = 0; i < allKeypoints.length; i++) {
+      allKeypoints[i] = _transformPoint(
+        allKeypoints[i],
+        scaleX,
+        scaleY,
+        translateX,
+        translateY,
+      );
+    }
+  }
+
+  void _transformBox(
+    List<double> box,
+    double scaleX,
+    double scaleY,
+    double translateX,
+    double translateY,
+  ) {
+    box[0] = (box[0] * scaleX + translateX).clamp(0.0, 1.0);
+    box[1] = (box[1] * scaleY + translateY).clamp(0.0, 1.0);
+    box[2] = (box[2] * scaleX + translateX).clamp(0.0, 1.0);
+    box[3] = (box[3] * scaleY + translateY).clamp(0.0, 1.0);
+  }
+
+  List<double> _transformPoint(
+    List<double> point,
+    double scaleX,
+    double scaleY,
+    double translateX,
+    double translateY,
+  ) {
+    return [
+      (point[0] * scaleX + translateX).clamp(0.0, 1.0),
+      (point[1] * scaleY + translateY).clamp(0.0, 1.0),
+    ];
   }
 
   FaceDetectionAbsolute toAbsolute({
@@ -340,6 +410,7 @@ List<FaceDetectionAbsolute> relativeToAbsoluteDetections({
   return absoluteDetections;
 }
 
+/// Returns an enlarged version of the [box] by a factor of [factor].
 List<double> getEnlargedRelativeBox(List<double> box, [double factor = 2]) {
   final boxCopy = List<double>.from(box, growable: false);
   // The four values of the box in order are: [xMinBox, yMinBox, xMaxBox, yMaxBox].
