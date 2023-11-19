@@ -32,8 +32,8 @@ Color readPixelColor(
   int y,
 ) {
   if (x < 0 || x >= image.width || y < 0 || y >= image.height) {
-    throw ArgumentError('Invalid pixel coordinates.');
-    // return const Color(0x00000000);
+    // throw ArgumentError('Invalid pixel coordinates.');
+    return const Color(0x00000000);
   }
   assert(byteData.lengthInBytes == 4 * image.width * image.height);
 
@@ -317,13 +317,6 @@ Future<Image> cropImage(
 
   final picture = recorder.endRecording();
 
-  if (x < 0 ||
-      y < 0 ||
-      (x + width) > image.width ||
-      (y + height) > image.height) {
-    _logger.severe('Invalid crop dimensions or coordinates.');
-    throw ArgumentError('Invalid crop dimensions or coordinates.');
-  }
   return picture.toImage(targetWidth, targetHeight);
 }
 
