@@ -7,6 +7,7 @@ import "package:logging/logging.dart";
 import 'package:photos/models/ml/ml_typedefs.dart';
 import "package:photos/services/face_ml/face_detection/detection.dart";
 import "package:photos/services/face_ml/face_embedding/face_embedding_exceptions.dart";
+import "package:photos/services/face_ml/face_embedding/face_embedding_options.dart";
 import "package:photos/services/face_ml/face_embedding/mobilefacenet_model_config.dart";
 import 'package:photos/utils/image_ml_isolate.dart';
 import 'package:photos/utils/image_ml_util.dart';
@@ -24,6 +25,7 @@ class FaceEmbedding {
   final _logger = Logger("FaceEmbeddingService");
 
   final MobileFaceNetModelConfig config;
+  late final FaceEmbeddingOptions embeddingOptions;
   // singleton pattern
   FaceEmbedding._privateConstructor({required this.config});
 
@@ -52,8 +54,6 @@ class FaceEmbedding {
     assert(_interpreter != null && _isolateInterpreter != null);
 
     final stopwatch = Stopwatch()..start();
-
-    final embeddingOptions = config.faceEmbeddingOptions;
 
     // Image decoding and preprocessing
     List<List<List<List<double>>>> input;
@@ -167,6 +167,8 @@ class FaceEmbedding {
 
   Future<void> _loadModel() async {
     _logger.info('loadModel is called');
+
+    embeddingOptions = config.faceEmbeddingOptions;
 
     try {
       final interpreterOptions = InterpreterOptions();
