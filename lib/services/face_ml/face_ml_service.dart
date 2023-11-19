@@ -43,15 +43,19 @@ class FaceMlService {
   bool initialized = false;
 
   Future<void> init() async {
+    if (initialized) {
+      return;
+    }
+    _logger.info("init called");
     try {
       await FaceDetection.instance.init();
     } catch (e, s) {
       _logger.severe("Could not initialize blazeface", e, s);
     }
     try {
-      // _similarityTransform = SimilarityTransform();
+      await ImageMlIsolate.instance.init();
     } catch (e, s) {
-      _logger.severe("Could not initialize face alignment", e, s);
+      _logger.severe("Could not initialize image ml isolate", e, s);
     }
     try {
       await FaceEmbedding.instance.init();
