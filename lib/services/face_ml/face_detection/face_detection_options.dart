@@ -3,6 +3,7 @@ import 'dart:math' as math show log;
 class FaceDetectionOptions {
   final int numBoxes;
   final double minScoreSigmoidThreshold;
+  final double minScoreSigmoidThresholdSecondPass;
   final double iouThreshold;
   final int inputWidth;
   final int inputHeight;
@@ -21,6 +22,7 @@ class FaceDetectionOptions {
   FaceDetectionOptions({
     required this.numBoxes,
     required this.minScoreSigmoidThreshold,
+    required this.minScoreSigmoidThresholdSecondPass,
     required this.iouThreshold,
     required this.inputWidth,
     required this.inputHeight,

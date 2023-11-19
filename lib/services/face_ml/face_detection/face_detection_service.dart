@@ -6,6 +6,7 @@ import "package:photos/services/face_ml/face_detection/anchors.dart";
 import "package:photos/services/face_ml/face_detection/blazeface_model_config.dart";
 import "package:photos/services/face_ml/face_detection/detection.dart";
 import "package:photos/services/face_ml/face_detection/face_detection_exceptions.dart";
+import "package:photos/services/face_ml/face_detection/face_detection_options.dart";
 import "package:photos/services/face_ml/face_detection/filter_extract_detections.dart";
 import "package:photos/services/face_ml/face_detection/generate_anchors.dart";
 import "package:photos/services/face_ml/face_detection/naive_non_max_suppression.dart";
@@ -26,6 +27,7 @@ class FaceDetection {
   late List<Anchor> _anchors;
   late int originalImageWidth;
   late int originalImageHeight;
+  late final FaceDetectionOptions _faceOptions;
 
   final BlazeFaceModelConfig config;
   // singleton pattern
@@ -54,15 +56,13 @@ class FaceDetection {
 
     final stopwatch = Stopwatch()..start();
 
-    final faceOptions = config.faceOptions;
-
     final stopwatchDecoding = Stopwatch()..start();
     final List<List<List<num>>> inputImageMatrix =
         await ImageMlIsolate.instance.preprocessImage(
       imageData,
       normalize: true,
-      requiredWidth: faceOptions.inputWidth,
-      requiredHeight: faceOptions.inputHeight,
+      requiredWidth: _faceOptions.inputWidth,
+      requiredHeight: _faceOptions.inputHeight,
     );
     final input = [inputImageMatrix];
     stopwatchDecoding.stop();
@@ -118,7 +118,7 @@ class FaceDetection {
     // devtools.log('rawBoxesFirstCoordinates: $flatBoxesFirstCoordinates');
 
     var relativeDetections = filterExtractDetections(
-      options: faceOptions,
+      options: _faceOptions,
       rawScores: rawScores,
       rawBoxes: rawBoxes,
       anchors: _anchors,
@@ -126,7 +126,7 @@ class FaceDetection {
 
     relativeDetections = naiveNonMaxSuppression(
       detections: relativeDetections,
-      iouThreshold: faceOptions.iouThreshold,
+      iouThreshold: _faceOptions.iouThreshold,
     );
 
     if (relativeDetections.isEmpty) {
@@ -178,8 +178,15 @@ class FaceDetection {
         selected = phase1Face.getNearestDetection(phase2Faces);
       }
 
-      if (selected != null && selected.score > 0.75) {
+      if (selected != null &&
+          selected.score > _faceOptions.minScoreSigmoidThresholdSecondPass) {
         finalDetections.add(selected);
+      } else if (phase1Face.score >
+          _faceOptions.minScoreSigmoidThresholdSecondPass) {
+        finalDetections.add(phase1Face);
+        _logger.info(
+          'No high confidence face detected in second phase, using first phase detection',
+        );
       }
     }
 
@@ -201,6 +208,7 @@ class FaceDetection {
     _logger.info('loadModel is called');
 
     final anchorOption = config.anchorOptions;
+    _faceOptions = config.faceOptions;
 
     try {
       final interpreterOptions = InterpreterOptions();

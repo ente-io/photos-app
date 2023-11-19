@@ -137,18 +137,16 @@ class FaceDetectionRelative extends Detection {
     List<double> paddedBox, // [xMin, yMin, xMax, yMax]
   ) {
     // Account for padding
-    final singlePaddingWidth = imageBox[0] - paddedBox[0];
-    final singlePaddingHeigth = imageBox[1] - paddedBox[1];
-    imageBox[0] -= singlePaddingWidth;
-    imageBox[1] -= singlePaddingHeigth;
-    imageBox[2] -= singlePaddingWidth;
-    imageBox[3] -= singlePaddingHeigth;
+    final double paddingXRatio =
+        (imageBox[0] - paddedBox[0]) / (paddedBox[2] - paddedBox[0]);
+    final double paddingYRatio =
+        (imageBox[1] - paddedBox[1]) / (paddedBox[3] - paddedBox[1]);
 
     // Calculate the scaling and translation
-    final double scaleX = (imageBox[2] - imageBox[0]);
-    final double scaleY = (imageBox[3] - imageBox[1]);
-    final double translateX = imageBox[0];
-    final double translateY = imageBox[1];
+    final double scaleX = (imageBox[2] - imageBox[0]) / (1 - 2 * paddingXRatio);
+    final double scaleY = (imageBox[3] - imageBox[1]) / (1 - 2 * paddingYRatio);
+    final double translateX = imageBox[0] - paddingXRatio * scaleX;
+    final double translateY = imageBox[1] - paddingYRatio * scaleY;
 
     // Transform Box
     _transformBox(box, scaleX, scaleY, translateX, translateY);
