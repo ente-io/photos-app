@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data' show Uint8List;
+import "dart:ui" show FilterQuality;
 
 import "package:logging/logging.dart";
 import "package:photos/services/face_ml/face_detection/anchors.dart";
@@ -63,6 +64,7 @@ class FaceDetection {
       normalize: true,
       requiredWidth: _faceOptions.inputWidth,
       requiredHeight: _faceOptions.inputHeight,
+      quality: FilterQuality.high,
     );
     final input = [inputImageMatrix];
     stopwatchDecoding.stop();

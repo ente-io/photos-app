@@ -367,7 +367,7 @@ Future<Image> addPaddingToImage(
         (1 + padding) * originalHeight,
       ),
     ),
-    Paint(),
+    Paint()..filterQuality = FilterQuality.none,
   );
 
   final picture = recorder.endRecording();
@@ -782,6 +782,7 @@ Future<Uint8List> cropAndPadFaceData(
     height: ((faceBox[3] - faceBox[1]) * image.height).round(),
     maxSize: const Size(128, 128),
     minSize: const Size(128, 128),
+    quality: FilterQuality.high,
   );
 
   final Image facePadded = await addPaddingToImage(
