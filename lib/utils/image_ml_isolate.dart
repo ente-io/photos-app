@@ -282,7 +282,7 @@ class ImageMlIsolate {
   }
 
   /// Generates cropped and padded image data from [imageData] and a [faceBox].
-  /// 
+  ///
   /// The steps are:
   /// 1. Crop the image to the face bounding box
   /// 2. Resize this cropped image to a square that is half the BlazeFace input size

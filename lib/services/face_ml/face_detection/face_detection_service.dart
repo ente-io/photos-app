@@ -64,7 +64,7 @@ class FaceDetection {
       normalize: true,
       requiredWidth: _faceOptions.inputWidth,
       requiredHeight: _faceOptions.inputHeight,
-      quality: FilterQuality.high,
+      quality: FilterQuality.medium,
     );
     final input = [inputImageMatrix];
     stopwatchDecoding.stop();

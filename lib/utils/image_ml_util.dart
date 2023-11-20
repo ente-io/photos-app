@@ -782,7 +782,7 @@ Future<Uint8List> cropAndPadFaceData(
     height: ((faceBox[3] - faceBox[1]) * image.height).round(),
     maxSize: const Size(128, 128),
     minSize: const Size(128, 128),
-    quality: FilterQuality.high,
+    quality: FilterQuality.medium,
   );
 
   final Image facePadded = await addPaddingToImage(
