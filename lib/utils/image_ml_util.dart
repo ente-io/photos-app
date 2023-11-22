@@ -267,7 +267,7 @@ Future<Image> resizeImage(
   return picture.toImage(width, height);
 }
 
-Future<Image> resizeImage_aspect(
+Future<Image> resizeImageAspect(
   Image image,
   int width,
   int height, {
@@ -421,6 +421,7 @@ Future<Num3DInputMatrix> preprocessImageToMatrix(
   required int requiredWidth,
   required int requiredHeight,
   FilterQuality quality = FilterQuality.medium,
+  bool resizeWithAspectRatio = false,
 }) async {
   final Image image = await decodeImageFromData(imageData);
 
@@ -437,12 +438,19 @@ Future<Num3DInputMatrix> preprocessImageToMatrix(
     );
   }
 
-  final Image resizedImage = await resizeImage(
-    image,
-    requiredWidth,
-    requiredHeight,
-    quality: quality,
-  );
+  final Image resizedImage = resizeWithAspectRatio
+      ? (await resizeImageAspect(
+          image,
+          requiredWidth,
+          requiredHeight,
+          quality: quality,
+        ))
+      : (await resizeImage(
+          image,
+          requiredWidth,
+          requiredHeight,
+          quality: quality,
+        ));
 
   final ByteData imgByteData = await getByteDataFromImage(resizedImage);
   final Num3DInputMatrix imageMatrix = createInputMatrixFromImage(

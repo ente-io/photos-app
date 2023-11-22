@@ -87,43 +87,32 @@ class FaceDetection {
   /// Detects faces in the given image data.
   Future<List<FaceDetectionRelative>> predict(Uint8List imageData) async {
     assert(_interpreter != null && _isolateInterpreter != null);
-
     final stopwatch = Stopwatch()..start();
-
     final stopwatchDecoding = Stopwatch()..start();
+    final List<FilterQuality> qualities = [
+      FilterQuality.low,
+      FilterQuality.medium,
+      FilterQuality.high,
+    ];
+    final List<bool> aspectFollow = [false, true];
+    for (final filter in qualities) {
+      for (bool aspect in aspectFollow) {
+        final List<List<List<num>>> matrix =
+            await ImageMlIsolate.instance.preprocessImage(
+          imageData,
+          normalize: false,
+          requiredWidth: _faceOptions.inputWidth,
+          requiredHeight: _faceOptions.inputHeight,
+          quality: filter,
+          resizeWithAspectRatio: aspect,
+        );
+        await _encodeAndSaveData(
+          matrix,
+          "input_${filter.name}_aspect_$aspect",
+        );
+      }
+    }
 
-    final List<List<List<num>>> inputImageMatrixMed =
-        await ImageMlIsolate.instance.preprocessImage(
-      imageData,
-      normalize: false,
-      requiredWidth: _faceOptions.inputWidth,
-      requiredHeight: _faceOptions.inputHeight,
-      quality: FilterQuality.medium,
-    );
-    // final input = [inputImageMatrix];
-    await _encodeAndSaveData(inputImageMatrixMed, "input_resized_int_med");
-
-    final List<List<List<num>>> inputImageMatrixLow =
-        await ImageMlIsolate.instance.preprocessImage(
-      imageData,
-      normalize: false,
-      requiredWidth: _faceOptions.inputWidth,
-      requiredHeight: _faceOptions.inputHeight,
-      quality: FilterQuality.low,
-    );
-
-    await _encodeAndSaveData(inputImageMatrixLow, "input_resized_int_low");
-
-    final List<List<List<num>>> inputImageMatrixHigh =
-        await ImageMlIsolate.instance.preprocessImage(
-      imageData,
-      normalize: false,
-      requiredWidth: _faceOptions.inputWidth,
-      requiredHeight: _faceOptions.inputHeight,
-      quality: FilterQuality.high,
-    );
-
-    await _encodeAndSaveData(inputImageMatrixHigh, "input_resized_int_high");
     throw Exception("done");
     // stopwatchDecoding.stop();
     // _logger.info(

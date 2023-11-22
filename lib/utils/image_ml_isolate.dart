@@ -98,6 +98,7 @@ class ImageMlIsolate {
           final requiredWidth = args['requiredWidth'] as int;
           final requiredHeight = args['requiredHeight'] as int;
           final qualityIndex = args['quality'] as int;
+          final resizeWithAspectRatio = args['resizeWithAspectRatio'] as bool;
           final quality = FilterQuality.values[qualityIndex];
           final Num3DInputMatrix result = await preprocessImageToMatrix(
             imageData,
@@ -105,6 +106,7 @@ class ImageMlIsolate {
             requiredWidth: requiredWidth,
             requiredHeight: requiredHeight,
             quality: quality,
+            resizeWithAspectRatio: resizeWithAspectRatio,
           );
           sendPort.send(result);
         case ImageOperation.preprocessFaceAlign:
@@ -197,6 +199,7 @@ class ImageMlIsolate {
     required int requiredWidth,
     required int requiredHeight,
     FilterQuality quality = FilterQuality.medium,
+    bool resizeWithAspectRatio = false,
   }) async {
     return await _runInIsolate(
       (
@@ -207,6 +210,7 @@ class ImageMlIsolate {
           'requiredWidth': requiredWidth,
           'requiredHeight': requiredHeight,
           'quality': quality.index,
+          'resizeWithAspectRatio': resizeWithAspectRatio,
         },
       ),
     );
