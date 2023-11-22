@@ -85,20 +85,22 @@ Num3DInputMatrix createInputMatrixFromImage(
   ByteData byteDataRgba, {
   bool normalize = true,
 }) {
-  return List.generate(
-    image.height,
-    (y) => List.generate(
-      image.width,
-      (x) {
-        final pixel = readPixelColor(image, byteDataRgba, x, y);
-        return [
-          normalize ? normalizePixel(pixel.red) : pixel.red,
-          normalize ? normalizePixel(pixel.green) : pixel.green,
-          normalize ? normalizePixel(pixel.blue) : pixel.blue,
-        ];
-      },
-    ),
-  );
+  final height = image.height;
+  final width = image.width;
+
+  final matrix = List.generate(height, (y) {
+    final row = List.generate(width, (x) {
+      final pixel = readPixelColor(image, byteDataRgba, x, y);
+      final red = normalize ? normalizePixel(pixel.red) : pixel.red;
+      final green = normalize ? normalizePixel(pixel.green) : pixel.green;
+      final blue = normalize ? normalizePixel(pixel.blue) : pixel.blue;
+      return [red, green, blue];
+    });
+
+    return row;
+  });
+
+  return matrix;
 }
 
 /// Creates an input matrix from the specified image, which can be used for inference
@@ -257,6 +259,44 @@ Future<Image> resizeImage(
     Rect.fromPoints(
       const Offset(0, 0),
       Offset(width.toDouble(), height.toDouble()),
+    ),
+    Paint()..filterQuality = quality,
+  );
+
+  final picture = recorder.endRecording();
+  return picture.toImage(width, height);
+}
+
+Future<Image> resizeImage_aspect(
+  Image image,
+  int width,
+  int height, {
+  FilterQuality quality = FilterQuality.medium,
+}) async {
+  if (image.width == width && image.height == height) {
+    return image;
+  }
+  final recorder = PictureRecorder();
+  final scale = (width * 1.0) / max(image.height, image.width);
+  final scaledWidth = scale * image.width;
+  final scaledHeight = scale * image.height;
+  final canvas = Canvas(
+    recorder,
+    Rect.fromPoints(
+      const Offset(0, 0),
+      Offset(width.toDouble(), height.toDouble()),
+    ),
+  );
+
+  canvas.drawImageRect(
+    image,
+    Rect.fromPoints(
+      const Offset(0, 0),
+      Offset(image.width.toDouble(), image.height.toDouble()),
+    ),
+    Rect.fromPoints(
+      const Offset(0, 0),
+      Offset(scaledWidth, scaledHeight),
     ),
     Paint()..filterQuality = quality,
   );

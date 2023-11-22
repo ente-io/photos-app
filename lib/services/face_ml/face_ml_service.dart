@@ -417,7 +417,8 @@ class FaceMlService {
     switch (typeOfData) {
       case FileDataForML.fileData:
         final stopwatch = Stopwatch()..start();
-        final io.File? actualIoFile = await getFile(enteFile);
+        final io.File? actualIoFile = await getFile(enteFile, isOrigin: true);
+
         if (actualIoFile != null) {
           data = await actualIoFile.readAsBytes();
         }
