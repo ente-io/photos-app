@@ -1,8 +1,11 @@
+import "dart:convert";
 import 'dart:io';
 import 'dart:typed_data' show Uint8List;
 import "dart:ui" show FilterQuality;
 
+import "package:flutter/foundation.dart" show debugPrint;
 import "package:logging/logging.dart";
+import "package:path_provider/path_provider.dart";
 import "package:photos/services/face_ml/face_detection/anchors.dart";
 import "package:photos/services/face_ml/face_detection/blazeface_model_config.dart";
 import "package:photos/services/face_ml/face_detection/detection.dart";
@@ -71,6 +74,7 @@ class FaceDetection {
     _logger.info(
       'Image decoding and preprocessing is finished, in ${stopwatchDecoding.elapsedMilliseconds}ms',
     );
+    // await _encodeAndSaveData(inputImageMatrix, 'input_resized_float.json');
 
     final outputFaces = createEmptyOutputMatrix(outputShapes[0]);
     final outputScores = createEmptyOutputMatrix(outputShapes[1]);
@@ -92,6 +96,7 @@ class FaceDetection {
     _logger.info(
       'interpreter.run is finished, in ${stopwatchInterpreter.elapsedMilliseconds} ms',
     );
+    // await _encodeAndSaveData(outputs, 'image_resized_raw_outputs');
 
     // Get output tensors
     final rawBoxes = outputs[0]![0]; // Nested List of shape [896, 16]
@@ -136,6 +141,11 @@ class FaceDetection {
       return <FaceDetectionRelative>[];
     }
 
+    // await _encodeAndSaveData(
+    //   relativeDetections,
+    //   'image_resized_final_detections_pass1',
+    // );
+
     stopwatch.stop();
     _logger.info(
       'predict() face detection executed in ${stopwatch.elapsedMilliseconds}ms',
@@ -149,8 +159,7 @@ class FaceDetection {
     Uint8List fileData,
   ) async {
     // Get the bounding boxes of the faces
-    final List<FaceDetectionRelative> phase1Faces =
-        await predict(thumbnailData);
+    final List<FaceDetectionRelative> phase1Faces = await predict(fileData);
 
     final finalDetections = <FaceDetectionRelative>[];
     for (final FaceDetectionRelative phase1Face in phase1Faces) {
@@ -263,4 +272,35 @@ class FaceDetection {
       throw BlazeFaceInterpreterInitializationException();
     }
   }
+}
+
+Future<void> _encodeAndSaveData(dynamic nestedData, String identifier) async {
+  // Convert map keys to strings if nestedData is a map
+  final dataToEncode = nestedData is Map
+      ? nestedData.map((key, value) => MapEntry(key.toString(), value))
+      : nestedData;
+  // Step 1: Serialize Your Data
+  final String jsonData = jsonEncode(dataToEncode);
+
+  // Step 2: Encode the JSON String to Base64
+  // final String base64String = base64Encode(utf8.encode(jsonData));
+
+  // Step 3 & 4: Write the Base64 String to a File and Execute the Function
+  try {
+    final File file = await _writeBase64StringToFile(jsonData, identifier);
+    // Success, handle the file, e.g., print the file path
+    debugPrint('[FaceDetectionService]: File saved at ${file.path}');
+  } catch (e) {
+    // If an error occurs, handle it.
+    debugPrint('[FaceDetectionService]: Error saving file: $e');
+  }
+}
+
+Future<File> _writeBase64StringToFile(
+  String base64String,
+  String identifier,
+) async {
+  final directory = await getExternalStorageDirectory();
+  final file = File('${directory!.path}/$identifier.json');
+  return file.writeAsString(base64String);
 }

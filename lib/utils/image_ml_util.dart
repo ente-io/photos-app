@@ -265,6 +265,44 @@ Future<Image> resizeImage(
   return picture.toImage(width, height);
 }
 
+Future<Image> resizeImageMaintainingAspectRatio(
+  Image image,
+  int width,
+  int height, {
+  FilterQuality quality = FilterQuality.medium,
+}) async {
+  if (image.width == width && image.height == height) {
+    return image;
+  }
+  final recorder = PictureRecorder();
+  final double scale = (width.toDouble()) / max(image.height, image.width).toDouble();
+  final scaledWidth = scale * image.width;
+  final scaledHeight = scale * image.height;
+  final canvas = Canvas(
+    recorder,
+    Rect.fromPoints(
+      const Offset(0, 0),
+      Offset(width.toDouble(), height.toDouble()),
+    ),
+  );
+
+  canvas.drawImageRect(
+    image,
+    Rect.fromPoints(
+      const Offset(0, 0),
+      Offset(image.width.toDouble(), image.height.toDouble()),
+    ),
+    Rect.fromPoints(
+      const Offset(0, 0),
+      Offset(scaledWidth, scaledHeight),
+    ),
+    Paint()..filterQuality = quality,
+  );
+
+  final picture = recorder.endRecording();
+  return picture.toImage(width, height);
+}
+
 /// Crops an [Image] object to the specified [width] and [height], starting at the specified [x] and [y] coordinates.
 /// Optionally, the cropped image can be resized to comply with a [maxSize] and/or [minSize].
 Future<Image> cropImage(
