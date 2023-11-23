@@ -10,9 +10,11 @@ import "package:photos/services/face_ml/face_detection/blazeface_model_config.da
 import "package:photos/services/face_ml/face_detection/detection.dart";
 import "package:photos/services/face_ml/face_detection/face_detection_exceptions.dart";
 import "package:photos/services/face_ml/face_detection/face_detection_options.dart";
+import "package:photos/services/face_ml/face_detection/filter_extract_detections.dart";
 import "package:photos/services/face_ml/face_detection/generate_anchors.dart";
 import "package:photos/services/face_ml/face_detection/naive_non_max_suppression.dart";
 import 'package:photos/utils/image_ml_isolate.dart';
+import "package:photos/utils/image_ml_util.dart";
 import 'package:tflite_flutter/tflite_flutter.dart';
 
 class FaceDetection {
@@ -89,106 +91,75 @@ class FaceDetection {
     assert(_interpreter != null && _isolateInterpreter != null);
     final stopwatch = Stopwatch()..start();
     final stopwatchDecoding = Stopwatch()..start();
-    final List<FilterQuality> qualities = [
-      FilterQuality.low,
-      FilterQuality.medium,
-      FilterQuality.high,
-    ];
-    final List<bool> aspectFollow = [false, true];
-    for (final filter in qualities) {
-      for (bool aspect in aspectFollow) {
-        final List<List<List<num>>> matrix =
-            await ImageMlIsolate.instance.preprocessImage(
-          imageData,
-          normalize: false,
-          requiredWidth: _faceOptions.inputWidth,
-          requiredHeight: _faceOptions.inputHeight,
-          quality: filter,
-          resizeWithAspectRatio: aspect,
-        );
-        await _encodeAndSaveData(
-          matrix,
-          "input_${filter.name}_aspect_$aspect",
-        );
-      }
+    final List<List<List<num>>> matrix =
+        await ImageMlIsolate.instance.preprocessImage(
+      imageData,
+      normalize: true,
+      requiredWidth: _faceOptions.inputWidth,
+      requiredHeight: _faceOptions.inputHeight,
+      quality: FilterQuality.high,
+      resizeWithAspectRatio: false,
+    );
+    await _encodeAndSaveData(
+      matrix,
+      "input_${FilterQuality.high.name}_aspect_false",
+    );
+
+    var input = [matrix];
+
+    stopwatchDecoding.stop();
+    _logger.info(
+      'Image decoding and preprocessing is finished, in ${stopwatchDecoding.elapsedMilliseconds}ms',
+    );
+
+    final outputFaces = createEmptyOutputMatrix(outputShapes[0]);
+    final outputScores = createEmptyOutputMatrix(outputShapes[1]);
+    final outputs = <int, List>{
+      0: outputFaces,
+      1: outputScores,
+    };
+
+    _logger.info('interpreter.run is called');
+    // Run inference
+    final stopwatchInterpreter = Stopwatch()..start();
+    try {
+      await _isolateInterpreter!.runForMultipleInputs([input], outputs);
+    } catch (e, s) {
+      _logger.severe('Error while running inference: $e \n $s');
+      throw BlazeFaceInterpreterRunException();
+    }
+    stopwatchInterpreter.stop();
+    _logger.info(
+      'interpreter.run is finished, in ${stopwatchInterpreter.elapsedMilliseconds} ms',
+    );
+
+    // Get output tensors
+    final rawBoxes = outputs[0]![0]; // Nested List of shape [896, 16]
+    final rawScores = outputs[1]![0]; // Nested List of shape [896, 1]
+
+    var relativeDetections = filterExtractDetections(
+      options: _faceOptions,
+      rawScores: rawScores,
+      rawBoxes: rawBoxes,
+      anchors: _anchors,
+    );
+
+    relativeDetections = naiveNonMaxSuppression(
+      detections: relativeDetections,
+      iouThreshold: _faceOptions.iouThreshold,
+    );
+
+    if (relativeDetections.isEmpty) {
+      _logger.info('No face detected');
+      return <FaceDetectionRelative>[];
     }
 
-    throw Exception("done");
-    // stopwatchDecoding.stop();
-    // _logger.info(
-    //   'Image decoding and preprocessing is finished, in ${stopwatchDecoding.elapsedMilliseconds}ms',
-    // );
-    //
-    // final outputFaces = createEmptyOutputMatrix(outputShapes[0]);
-    // final outputScores = createEmptyOutputMatrix(outputShapes[1]);
-    // final outputs = <int, List>{
-    //   0: outputFaces,
-    //   1: outputScores,
-    // };
-    //
-    // _logger.info('interpreter.run is called');
-    // // Run inference
-    // final stopwatchInterpreter = Stopwatch()..start();
-    // try {
-    //   await _isolateInterpreter!.runForMultipleInputs([input], outputs);
-    // } catch (e, s) {
-    //   _logger.severe('Error while running inference: $e \n $s');
-    //   throw BlazeFaceInterpreterRunException();
-    // }
-    // stopwatchInterpreter.stop();
-    // _logger.info(
-    //   'interpreter.run is finished, in ${stopwatchInterpreter.elapsedMilliseconds} ms',
-    // );
-    //
-    // // Get output tensors
-    // final rawBoxes = outputs[0]![0]; // Nested List of shape [896, 16]
-    // final rawScores = outputs[1]![0]; // Nested List of shape [896, 1]
-    //
-    // // // Visually inspecting the raw scores
-    // // final List<dynamic> flatScores = List.filled(896, 0);
-    // // for (var i = 0; i < rawScores.length; i++) {
-    // //   flatScores[i] = rawScores[i][0];
-    // // }
-    // // final flatScoresSorted = flatScores;
-    // // flatScoresSorted.sort();
-    // // devtools.log('Ten highest (raw) scores: ${flatScoresSorted.sublist(886)}');
-    //
-    // // // Visually inspecting the raw boxes
-    // // final List<dynamic> flatBoxesFirstCoordinates = List.filled(896, 0);
-    // // final List<dynamic> flatBoxesSecondCoordinates = List.filled(896, 0);
-    // // final List<dynamic> flatBoxesThirdCoordinates = List.filled(896, 0);
-    // // final List<dynamic> flatBoxesFourthCoordinates = List.filled(896, 0);
-    // // for (var i = 0; i < rawBoxes[0].length; i++) {
-    // //   flatBoxesFirstCoordinates[i] = rawBoxes[i][0];
-    // //   flatBoxesSecondCoordinates[i] = rawBoxes[i][1];
-    // //   flatBoxesThirdCoordinates[i] = rawBoxes[i][2];
-    // //   flatBoxesFourthCoordinates[i] = rawBoxes[i][3];
-    // // }
-    // // devtools.log('rawBoxesFirstCoordinates: $flatBoxesFirstCoordinates');
-    //
-    // var relativeDetections = filterExtractDetections(
-    //   options: _faceOptions,
-    //   rawScores: rawScores,
-    //   rawBoxes: rawBoxes,
-    //   anchors: _anchors,
-    // );
-    //
-    // relativeDetections = naiveNonMaxSuppression(
-    //   detections: relativeDetections,
-    //   iouThreshold: _faceOptions.iouThreshold,
-    // );
-    //
-    // if (relativeDetections.isEmpty) {
-    //   _logger.info('No face detected');
-    //   return <FaceDetectionRelative>[];
-    // }
-    //
-    // stopwatch.stop();
-    // _logger.info(
-    //   'predict() face detection executed in ${stopwatch.elapsedMilliseconds}ms',
-    // );
-    //
-    // return relativeDetections;
+    stopwatch.stop();
+    _logger.info(
+      'predict() face detection executed in ${stopwatch.elapsedMilliseconds}ms',
+    );
+
+    return relativeDetections;
   }
 
   Future<List<FaceDetectionRelative>> predictInTwoPhases(
@@ -197,6 +168,7 @@ class FaceDetection {
   ) async {
     // Get the bounding boxes of the faces
     final List<FaceDetectionRelative> phase1Faces = await predict(fileData);
+    return phase1Faces;
 
     final finalDetections = <FaceDetectionRelative>[];
     for (final FaceDetectionRelative phase1Face in phase1Faces) {

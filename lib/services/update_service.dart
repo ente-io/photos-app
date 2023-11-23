@@ -104,7 +104,7 @@ class UpdateService {
   }
 
   bool isIndependent() {
-    if (Platform.isIOS) {
+    if (Platform.isIOS || kDebugMode) {
       return false;
     }
     if (!kDebugMode &&

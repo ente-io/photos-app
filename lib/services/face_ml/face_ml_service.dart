@@ -372,8 +372,12 @@ class FaceMlService {
       }
       resultBuilder.onlyThumbnailUsed = fileData == null;
       final Uint8List largeData = fileData ?? thumbnailData!;
-
-      // Align the faces
+      final absDetect = relativeToAbsoluteDetections(
+        relativeDetections: faceDetectionResult,
+        imageWidth: 256,
+        imageHeight: 256,
+      );
+      // Align the face s
       final List<List<List<List<double>>>> faceAlignmentResult =
           await _alignFaces(
         largeData,
