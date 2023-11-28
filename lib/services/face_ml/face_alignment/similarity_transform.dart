@@ -1,6 +1,8 @@
+import 'dart:math' show atan2;
 import "package:logging/logging.dart";
 import 'package:ml_linalg/linalg.dart';
 import 'package:photos/extensions/ml_linalg_extensions.dart';
+import "package:photos/services/face_ml/face_alignment/alignment_result.dart";
 
 
 /// Class to compute the similarity transform between two sets of points.
@@ -15,12 +17,19 @@ class SimilarityTransform {
     [0.0, 1.0, 0.0],
     [0, 0, 1],
   ]);
+  List<double> _center = <double>[0, 0]; // [x, y]
+  double _size = 1; // 1 / scale
+  double _rotation = 0; // atan2(simRotation[1][0], simRotation[0][0]);
+
   final arcface = [
     <double>[38.2946, 51.6963],
     <double>[73.5318, 51.5014],
     <double>[56.0252, 71.7366],
     <double>[56.1396, 92.2848],
   ];
+  get arcfaceNormalized => arcface
+      .map((list) => list.map((value) => value / 112.0).toList())
+      .toList();
 
   List<List<double>> get paramsList => _params.to2DList();
 
@@ -35,11 +44,14 @@ class SimilarityTransform {
       [0.0, 1.0, 0.0],
       [0, 0, 1],
     ]);
+    _center = <double>[0, 0];
+    _size = 1;
+    _rotation = 0;
   }
 
   /// Function to estimate the parameters of the affine transformation. These parameters are stored in the class variable params.
   ///
-  /// Returns true if the parameters are estimated successfully, false otherwise.
+  /// Returns a tuple of (AlignmentResult, bool). The bool indicates whether the parameters are valid or not.
   ///
   /// Runs efficiently in about 1-3 ms after initial warm-up.
   ///
@@ -47,25 +59,36 @@ class SimilarityTransform {
   /// parameters of the affine transformation as output. The function
   /// returns false if the parameters cannot be estimated. The function
   /// estimates the parameters by solving a least-squares problem using
-  /// the Umeyama algorithm.
-  (List<List<double>>, bool) estimate(List<List<int>> src) {
+  /// the Umeyama algorithm, via [_umeyama].
+  (AlignmentResult, bool) estimate(List<List<double>> src) {
     _cleanParams();
-    _params = _umeyama(src, arcface, true);
+    final (params, center, size, rotation) =
+        _umeyama(src, arcfaceNormalized, true);
+    _params = params;
+    _center = center;
+    _size = size;
+    _rotation = rotation;
+    final alignmentResult = AlignmentResult(
+      affineMatrix: paramsList,
+      center: center,
+      size: size,
+      rotation: rotation,
+    );
     // We check for NaN in the transformation matrix params.
     final isNoNanInParam =
         !_params.asFlattenedList.any((element) => element.isNaN);
-    return (paramsList, isNoNanInParam);
+    return (alignmentResult, isNoNanInParam);
   }
 
-  static Matrix _umeyama(
-    List<List<int>> src,
-    List<List<double>> dst,
-    bool estimateScale,
-  ) {
+  static (Matrix, List<double>, double, double) _umeyama(
+    List<List<double>> src,
+    List<List<double>> dst, [
+    bool estimateScale = true,
+  ]) {
     final srcMat = Matrix.fromList(
-      src
-          .map((list) => list.map((value) => value.toDouble()).toList())
-          .toList(),
+      src,
+      // .map((list) => list.map((value) => value.toDouble()).toList())
+      // .toList(),
     );
     final dstMat = Matrix.fromList(dst);
     final num = srcMat.rowCount;
@@ -98,7 +121,7 @@ class SimilarityTransform {
     // Eq. (40) and (43).
     final rank = A.matrixRank();
     if (rank == 0) {
-      return T * double.nan;
+      return (T * double.nan, <double>[0, 0], 1, 0);
     } else if (rank == dim - 1) {
       if (U.determinant() * V.determinant() > 0) {
         T = T.setSubMatrix(0, dim, 0, dim, U * V);
@@ -113,6 +136,7 @@ class SimilarityTransform {
       final replacement = U * Matrix.diagonal(d.toList()) * V;
       T = T.setSubMatrix(0, dim, 0, dim, replacement);
     }
+    final Matrix simRotation = U * Matrix.diagonal(d.toList()) * V;
 
     var scale = 1.0;
     if (estimateScale) {
@@ -128,6 +152,14 @@ class SimilarityTransform {
         T.sample(rowIndices: subTIndices, columnIndices: subTIndices) * scale;
     T = T.setSubMatrix(0, dim, 0, dim, newNewSubT);
 
-    return T;
+    // final List<double> translation = [T[0][2], T[1][2]];
+    // final simRotation = replacement?;
+    final size = 1 / scale;
+    final rotation = atan2(simRotation[1][0], simRotation[0][0]);
+    final meanTranslation = (dstMean - 0.5) * size;
+    final centerMat = srcMean - meanTranslation;
+    final List<double> center = [centerMat[0], centerMat[1]];
+
+    return (T, center, size, rotation);
   }
 }

@@ -1,6 +1,8 @@
 import 'dart:convert' show utf8;
 import 'dart:math' show sqrt, pow;
+import 'dart:ui' show Size;
 import 'package:crypto/crypto.dart' show sha256;
+import "package:photos/services/face_ml/face_alignment/alignment_result.dart";
 
 abstract class Detection {
   final double score;
@@ -16,16 +18,25 @@ abstract class Detection {
   String toString();
 }
 
-// extension BBoxExtension on List<double> {
-//   double get xMinBox =>
-//       isNotEmpty ? this[0] : throw IndexError.withLength(0, length);
-//   double get yMinBox =>
-//       length >= 2 ? this[1] : throw IndexError.withLength(1, length);
-//   double get xMaxBox =>
-//       length >= 3 ? this[2] : throw IndexError.withLength(2, length);
-//   double get yMaxBox =>
-//       length >= 4 ? this[3] : throw IndexError.withLength(3, length);
-// }
+extension BBoxExtension on List<double> {
+  void roundBoxToDouble() {
+    final widthRounded = (this[2] - this[0]).roundToDouble();
+    final heightRounded = (this[3] - this[1]).roundToDouble();
+    this[0] = this[0].roundToDouble();
+    this[1] = this[1].roundToDouble();
+    this[2] = this[0] + widthRounded;
+    this[3] = this[1] + heightRounded;
+  }
+
+  // double get xMinBox =>
+  //     isNotEmpty ? this[0] : throw IndexError.withLength(0, length);
+  // double get yMinBox =>
+  //     length >= 2 ? this[1] : throw IndexError.withLength(1, length);
+  // double get xMaxBox =>
+  //     length >= 3 ? this[2] : throw IndexError.withLength(2, length);
+  // double get yMaxBox =>
+  //     length >= 4 ? this[3] : throw IndexError.withLength(3, length);
+}
 
 /// This class represents a face detection with relative coordinates in the range [0, 1].
 /// The coordinates are relative to the image size. The pattern for the coordinates is always [x, y], where x is the horizontal coordinate and y is the vertical coordinate.
@@ -133,20 +144,60 @@ class FaceDetectionRelative extends Detection {
   }
 
   void transformRelativeToOriginalImage(
-    List<double> imageBox, // [xMin, yMin, xMax, yMax]
-    List<double> paddedBox, // [xMin, yMin, xMax, yMax]
+    List<double> fromBox, // [xMin, yMin, xMax, yMax]
+    List<double> toBox, // [xMin, yMin, xMax, yMax]
   ) {
+    // Return if all elements of fromBox and toBox are equal
+    for (int i = 0; i < fromBox.length; i++) {
+      if (fromBox[i] != toBox[i]) {
+        break;
+      }
+      if (i == fromBox.length - 1) {
+        return;
+      }
+    }
+
     // Account for padding
     final double paddingXRatio =
-        (imageBox[0] - paddedBox[0]) / (paddedBox[2] - paddedBox[0]);
+        (fromBox[0] - toBox[0]) / (toBox[2] - toBox[0]);
     final double paddingYRatio =
-        (imageBox[1] - paddedBox[1]) / (paddedBox[3] - paddedBox[1]);
+        (fromBox[1] - toBox[1]) / (toBox[3] - toBox[1]);
 
     // Calculate the scaling and translation
-    final double scaleX = (imageBox[2] - imageBox[0]) / (1 - 2 * paddingXRatio);
-    final double scaleY = (imageBox[3] - imageBox[1]) / (1 - 2 * paddingYRatio);
-    final double translateX = imageBox[0] - paddingXRatio * scaleX;
-    final double translateY = imageBox[1] - paddingYRatio * scaleY;
+    final double scaleX = (fromBox[2] - fromBox[0]) / (1 - 2 * paddingXRatio);
+    final double scaleY = (fromBox[3] - fromBox[1]) / (1 - 2 * paddingYRatio);
+    final double translateX = fromBox[0] - paddingXRatio * scaleX;
+    final double translateY = fromBox[1] - paddingYRatio * scaleY;
+
+    // Transform Box
+    _transformBox(box, scaleX, scaleY, translateX, translateY);
+
+    // Transform All Keypoints
+    for (int i = 0; i < allKeypoints.length; i++) {
+      allKeypoints[i] = _transformPoint(
+        allKeypoints[i],
+        scaleX,
+        scaleY,
+        translateX,
+        translateY,
+      );
+    }
+  }
+
+  void correctForMaintainedAspectRatio(
+    Size originalSize,
+    Size newSize,
+  ) {
+    // Return if both are the same size, meaning no scaling was done on both width and height
+    if (originalSize == newSize) {
+      return;
+    }
+
+    // Calculate the scaling
+    final double scaleX = originalSize.width / newSize.width;
+    final double scaleY = originalSize.height / newSize.height;
+    const double translateX = 0;
+    const double translateY = 0;
 
     // Transform Box
     _transformBox(box, scaleX, scaleY, translateX, translateY);
@@ -203,18 +254,18 @@ class FaceDetectionRelative extends Detection {
     boxCopy[1] *= imageHeight;
     boxCopy[2] *= imageWidth;
     boxCopy[3] *= imageHeight;
-    final intbox = boxCopy.map((e) => e.toInt()).toList();
+    // final intbox = boxCopy.map((e) => e.toInt()).toList();
 
     for (List<double> keypoint in allKeypointsCopy) {
       keypoint[0] *= imageWidth;
       keypoint[1] *= imageHeight;
     }
-    final intKeypoints =
-        allKeypointsCopy.map((e) => e.map((e) => e.toInt()).toList()).toList();
+    // final intKeypoints =
+    //     allKeypointsCopy.map((e) => e.map((e) => e.toInt()).toList()).toList();
     return FaceDetectionAbsolute(
       score: scoreCopy,
-      box: intbox,
-      allKeypoints: intKeypoints,
+      box: boxCopy,
+      allKeypoints: allKeypointsCopy,
     );
   }
 
@@ -302,20 +353,20 @@ class FaceDetectionRelative extends Detection {
 /// The [allKeypoints] attribute is a list of 6 lists of 2 integers, representing the coordinates of the keypoints of the face detection.
 /// The six lists of two values in order are: [leftEye, rightEye, nose, mouth, leftEar, rightEar]. Again, all in [x, y] order.
 class FaceDetectionAbsolute extends Detection {
-  final List<int> box;
-  final List<List<int>> allKeypoints;
+  final List<double> box;
+  final List<List<double>> allKeypoints;
 
-  int get xMinBox => box[0];
-  int get yMinBox => box[1];
-  int get xMaxBox => box[2];
-  int get yMaxBox => box[3];
+  double get xMinBox => box[0];
+  double get yMinBox => box[1];
+  double get xMaxBox => box[2];
+  double get yMaxBox => box[3];
 
-  List<int> get leftEye => allKeypoints[0];
-  List<int> get rightEye => allKeypoints[1];
-  List<int> get nose => allKeypoints[2];
-  List<int> get mouth => allKeypoints[3];
-  List<int> get leftEar => allKeypoints[4];
-  List<int> get rightEar => allKeypoints[5];
+  List<double> get leftEye => allKeypoints[0];
+  List<double> get rightEye => allKeypoints[1];
+  List<double> get nose => allKeypoints[2];
+  List<double> get mouth => allKeypoints[3];
+  List<double> get leftEar => allKeypoints[4];
+  List<double> get rightEar => allKeypoints[5];
 
   FaceDetectionAbsolute({
     required double score,
@@ -326,8 +377,8 @@ class FaceDetectionAbsolute extends Detection {
   factory FaceDetectionAbsolute._zero() {
     return FaceDetectionAbsolute(
       score: 0,
-      box: <int>[0, 0, 0, 0],
-      allKeypoints: <List<int>>[
+      box: <double>[0, 0, 0, 0],
+      allKeypoints: <List<double>>[
         [0, 0],
         [0, 0],
         [0, 0],
@@ -339,8 +390,8 @@ class FaceDetectionAbsolute extends Detection {
   }
 
   FaceDetectionAbsolute.defaultInitialization()
-      : box = const <int>[0, 0, 0, 0],
-        allKeypoints = const <List<int>>[
+      : box = const <double>[0, 0, 0, 0],
+        allKeypoints = const <List<double>>[
           [0, 0],
           [0, 0],
           [0, 0],
@@ -366,9 +417,9 @@ class FaceDetectionAbsolute extends Detection {
   factory FaceDetectionAbsolute.fromJson(Map<String, dynamic> json) {
     return FaceDetectionAbsolute(
       score: (json['score'] as num).toDouble(),
-      box: List<int>.from(json['box']),
+      box: List<double>.from(json['box']),
       allKeypoints: (json['allKeypoints'] as List)
-          .map((item) => List<int>.from(item))
+          .map((item) => List<double>.from(item))
           .toList(),
     );
   }
@@ -378,11 +429,11 @@ class FaceDetectionAbsolute extends Detection {
   @override
 
   /// The width of the bounding box of the face detection, in number of pixels, range [0, imageWidth].
-  int get width => xMaxBox - xMinBox;
+  double get width => xMaxBox - xMinBox;
   @override
 
   /// The height of the bounding box of the face detection, in number of pixels, range [0, imageHeight].
-  int get height => yMaxBox - yMinBox;
+  double get height => yMaxBox - yMinBox;
 }
 
 List<FaceDetectionAbsolute> relativeToAbsoluteDetections({
@@ -410,6 +461,33 @@ List<FaceDetectionAbsolute> relativeToAbsoluteDetections({
 
 /// Returns an enlarged version of the [box] by a factor of [factor].
 List<double> getEnlargedRelativeBox(List<double> box, [double factor = 2]) {
+  final boxCopy = List<double>.from(box, growable: false);
+  // The four values of the box in order are: [xMinBox, yMinBox, xMaxBox, yMaxBox].
+
+  final width = boxCopy[2] - boxCopy[0];
+  final height = boxCopy[3] - boxCopy[1];
+
+  boxCopy[0] -= width * (factor - 1) / 2;
+  boxCopy[1] -= height * (factor - 1) / 2;
+  boxCopy[2] += width * (factor - 1) / 2;
+  boxCopy[3] += height * (factor - 1) / 2;
+
+  return boxCopy;
+}
+
+List<double> getAlignedFaceBox(AlignmentResult alignment) {
+  final List<double> box = [
+    // [xMinBox, yMinBox, xMaxBox, yMaxBox]
+    alignment.center[0] - alignment.size / 2,
+    alignment.center[1] - alignment.size / 2,
+    alignment.center[0] + alignment.size / 2,
+    alignment.center[1] + alignment.size / 2,
+  ];
+  box.roundBoxToDouble();
+  return box;
+}
+
+List<double> getEnlargedAbsoluteBox(List<double> box, [double factor = 2]) {
   final boxCopy = List<double>.from(box, growable: false);
   // The four values of the box in order are: [xMinBox, yMinBox, xMaxBox, yMaxBox].
 

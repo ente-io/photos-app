@@ -355,7 +355,6 @@ class FaceMlService {
       final List<FaceDetectionRelative> faceDetectionResult =
           await _detectFaces(
         thumbnailData!,
-        fileData!,
         resultBuilder: resultBuilder,
       );
 
@@ -374,8 +373,7 @@ class FaceMlService {
       final Uint8List largeData = fileData ?? thumbnailData!;
 
       // Align the faces
-      final List<List<List<List<double>>>> faceAlignmentResult =
-          await _alignFaces(
+      final List<List<List<List<num>>>> faceAlignmentResult = await _alignFaces(
         largeData,
         faceDetectionResult,
         resultBuilder: resultBuilder,
@@ -469,14 +467,15 @@ class FaceMlService {
   ///
   /// Throws [CouldNotInitializeFaceDetector], [CouldNotRunFaceDetector] or [GeneralFaceMlException] if something goes wrong.
   Future<List<FaceDetectionRelative>> _detectFaces(
-    Uint8List imageData,
-    Uint8List fileData, {
+    Uint8List thumbnailData,
+    // Uint8List fileData,
+    {
     FaceMlResultBuilder? resultBuilder,
   }) async {
     try {
       // Get the bounding boxes of the faces
       final List<FaceDetectionRelative> faces =
-          await FaceDetection.instance.predictInTwoPhases(imageData, fileData);
+          await FaceDetection.instance.predict(thumbnailData);
 
       // Add detected faces to the resultBuilder
       if (resultBuilder != null) {
@@ -503,20 +502,19 @@ class FaceMlService {
   /// Returns a list of the aligned faces as image data.
   ///
   /// Throws [CouldNotWarpAffine] or [GeneralFaceMlException] if the face alignment fails.
-  Future<List<Double3DInputMatrix>> _alignFaces(
+  Future<List<Num3DInputMatrix>> _alignFaces(
     Uint8List imageData,
     List<FaceDetectionRelative> faces, {
     FaceMlResultBuilder? resultBuilder,
   }) async {
     try {
-      final (alignedFaces, transformationMatrices) = await ImageMlIsolate
-          .instance
+      final (alignedFaces, alignmentResults) = await ImageMlIsolate.instance
           .preprocessMobileFaceNet(imageData, faces);
 
       if (resultBuilder != null) {
         for (int faceIndex = 0; faceIndex < faces.length; ++faceIndex) {
           resultBuilder.addAlignmentToExistingFace(
-            transformationMatrices[faceIndex],
+            alignmentResults[faceIndex],
             faceIndex,
           );
         }
@@ -537,7 +535,7 @@ class FaceMlService {
   ///
   /// Throws [CouldNotInitializeFaceEmbeddor], [CouldNotRunFaceEmbeddor], [InputProblemFaceEmbeddor] or [GeneralFaceMlException] if the face embedding fails.
   Future<List<List<double>>> _embedFaces(
-    List<Double3DInputMatrix> facesMatrices, {
+    List<Num3DInputMatrix> facesMatrices, {
     FaceMlResultBuilder? resultBuilder,
   }) async {
     try {

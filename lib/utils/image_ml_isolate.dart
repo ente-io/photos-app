@@ -6,6 +6,7 @@ import 'dart:ui';
 import 'package:flutter_isolate/flutter_isolate.dart';
 import "package:logging/logging.dart";
 import 'package:photos/models/ml/ml_typedefs.dart';
+import "package:photos/services/face_ml/face_alignment/alignment_result.dart";
 import "package:photos/services/face_ml/face_detection/detection.dart";
 import "package:photos/utils/image_ml_util.dart";
 import "package:synchronized/synchronized.dart";
@@ -98,18 +99,27 @@ class ImageMlIsolate {
           final requiredWidth = args['requiredWidth'] as int;
           final requiredHeight = args['requiredHeight'] as int;
           final qualityIndex = args['quality'] as int;
+          final maintainAspectRatio = args['maintainAspectRatio'] as bool;
           final quality = FilterQuality.values[qualityIndex];
-          final Num3DInputMatrix result = await preprocessImageToMatrix(
+          final (result, originalSize, newSize) = await preprocessImageToMatrix(
             imageData,
             normalize: normalize,
             requiredWidth: requiredWidth,
             requiredHeight: requiredHeight,
             quality: quality,
+            maintainAspectRatio: maintainAspectRatio,
           );
-          sendPort.send(result);
+          sendPort.send({
+            'inputs': result,
+            'originalWidth': originalSize.width,
+            'originalHeight': originalSize.height,
+            'newWidth': newSize.width,
+            'newHeight': newSize.height,
+          });
         case ImageOperation.preprocessFaceAlign:
           final imageData = args['imageData'] as Uint8List;
-          final faceLandmarks = args['faceLandmarks'] as List<List<List<int>>>;
+          final faceLandmarks =
+              args['faceLandmarks'] as List<List<List<double>>>;
           final List<Uint8List> result = await preprocessFaceAlignToUint8List(
             imageData,
             faceLandmarks,
@@ -118,14 +128,16 @@ class ImageMlIsolate {
         case ImageOperation.preprocessMobileFaceNet:
           final imageData = args['imageData'] as Uint8List;
           final facesJson = args['facesJson'] as List<Map<String, dynamic>>;
-          final (inputs, transformationMatrices) =
+          final (inputs, alignmentResults) =
               await preprocessToMobileFaceNetInput(
             imageData,
             facesJson,
           );
+          final List<Map<String, dynamic>> alignmentResultsJson =
+              alignmentResults.map((result) => result.toJson()).toList();
           sendPort.send({
             'inputs': inputs,
-            'transformationMatrices': transformationMatrices,
+            'alignmentResultsJson': alignmentResultsJson,
           });
         case ImageOperation.generateFaceThumbnail:
           final imageData = args['imageData'] as Uint8List;
@@ -191,14 +203,15 @@ class ImageMlIsolate {
   /// Returns a [Num3DInputMatrix] image usable for ML inference.
   ///
   /// Uses [preprocessImageToMatrix] inside the isolate.
-  Future<Num3DInputMatrix> preprocessImage(
+  Future<(Num3DInputMatrix, Size, Size)> preprocessImage(
     Uint8List imageData, {
     required bool normalize,
     required int requiredWidth,
     required int requiredHeight,
     FilterQuality quality = FilterQuality.medium,
+    bool maintainAspectRatio = true,
   }) async {
-    return await _runInIsolate(
+    final Map<String, dynamic> results = await _runInIsolate(
       (
         ImageOperation.preprocessStandard,
         {
@@ -207,9 +220,20 @@ class ImageMlIsolate {
           'requiredWidth': requiredWidth,
           'requiredHeight': requiredHeight,
           'quality': quality.index,
+          'maintainAspectRatio': maintainAspectRatio,
         },
       ),
     );
+    final inputs = results['inputs'] as Num3DInputMatrix;
+    final originalSize = Size(
+      results['originalWidth'] as double,
+      results['originalHeight'] as double,
+    );
+    final newSize = Size(
+      results['newWidth'] as double,
+      results['newHeight'] as double,
+    );
+    return (inputs, originalSize, newSize);
   }
 
   /// Preprocesses [imageData] for face alignment inside a separate isolate, to display the aligned faces. Mostly used for debugging.
@@ -241,7 +265,7 @@ class ImageMlIsolate {
   /// Returns a list of [Num3DInputMatrix] images, one for each face.
   ///
   /// Uses [preprocessToMobileFaceNetInput] inside the isolate.
-  Future<(List<Double3DInputMatrix>, List<List<List<double>>>)>
+  Future<(List<Num3DInputMatrix>, List<AlignmentResult>)>
       preprocessMobileFaceNet(
     Uint8List imageData,
     List<FaceDetectionRelative> faces,
@@ -257,10 +281,13 @@ class ImageMlIsolate {
         },
       ),
     );
-    final inputs = results['inputs'] as List<Double3DInputMatrix>;
-    final transformationMatrices =
-        results['transformationMatrices'] as List<List<List<double>>>;
-    return (inputs, transformationMatrices);
+    final inputs = results['inputs'] as List<Num3DInputMatrix>;
+    final alignmentResultsJson =
+        results['alignmentResultsJson'] as List<Map<String, dynamic>>;
+    final alignmentResults = alignmentResultsJson.map((json) {
+      return AlignmentResult.fromJson(json);
+    }).toList();
+    return (inputs, alignmentResults);
   }
 
   /// Generates a face thumbnail from [imageData] and a [faceDetection].

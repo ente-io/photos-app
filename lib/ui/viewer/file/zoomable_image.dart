@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' show log;
 import 'dart:io' as io;
 
 import "package:flutter/foundation.dart";
@@ -242,7 +243,7 @@ class _ZoomableImageState extends State<ZoomableImage>
     _logger.info("FaceMlService result: $result");
     _logger.info("Box: ${result.faces[0].detection.box}");
     _logger.info("Landmarks: ${result.faces[0].detection.allKeypoints}");
-    _logger.info("Embedding: ${result.faces[0].embedding}");
+    log("Embedding: ${result.faces[0].embedding}");
     if (mounted) {
       precacheImage(imageProvider, context).then((value) async {
         if (mounted) {

@@ -568,7 +568,7 @@ class FaceMlResultBuilder {
   }
 
   void addAlignmentToExistingFace(
-    List<List<double>> transformationMatrix,
+    AlignmentResult alignmentResult,
     int faceIndex,
   ) {
     if (faceIndex >= faces.length) {
@@ -576,8 +576,12 @@ class FaceMlResultBuilder {
         "Face index $faceIndex is out of bounds. There are only ${faces.length} faces",
       );
     }
-    faces[faceIndex].alignment =
-        AlignmentResult(affineMatrix: transformationMatrix);
+    faces[faceIndex].alignment = AlignmentResult(
+      affineMatrix: alignmentResult.affineMatrix,
+      center: alignmentResult.center,
+      size: alignmentResult.size,
+      rotation: alignmentResult.rotation,
+    );
   }
 
   void addEmbeddingsToExistingFaces(

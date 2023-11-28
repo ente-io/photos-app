@@ -56,11 +56,11 @@ class FaceEmbedding {
     final stopwatch = Stopwatch()..start();
 
     // Image decoding and preprocessing
-    List<List<List<List<double>>>> input;
+    List<List<List<List<num>>>> input;
     List output;
     try {
       final stopwatchDecoding = Stopwatch()..start();
-      final (inputImageMatrix, transformationMatrices) =
+      final (inputImageMatrix, alignmentResultsList) =
           await ImageMlIsolate.instance.preprocessMobileFaceNet(
         imageData,
         [face],
@@ -114,7 +114,7 @@ class FaceEmbedding {
   }
 
   Future<List<List<double>>> predict(
-    List<Double3DInputMatrix> inputImageMatrix,
+    List<Num3DInputMatrix> inputImageMatrix,
   ) async {
     assert(_interpreter != null && _isolateInterpreter != null);
 
@@ -220,7 +220,7 @@ class FaceEmbedding {
   }
 
   void _checkPreprocessedInput(
-    List<Double3DInputMatrix> inputMatrix,
+    List<Num3DInputMatrix> inputMatrix,
   ) {
     final embeddingOptions = config.faceEmbeddingOptions;
 

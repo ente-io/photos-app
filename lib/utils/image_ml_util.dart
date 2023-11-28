@@ -16,6 +16,7 @@ import 'package:flutter/painting.dart' as paint show decodeImageFromList;
 import "package:logging/logging.dart";
 import 'package:ml_linalg/linalg.dart';
 import 'package:photos/models/ml/ml_typedefs.dart';
+import "package:photos/services/face_ml/face_alignment/alignment_result.dart";
 import "package:photos/services/face_ml/face_alignment/similarity_transform.dart";
 import "package:photos/services/face_ml/face_detection/detection.dart";
 
@@ -229,15 +230,21 @@ Future<Uint8List> encodeImageToUint8List(
   return encodedImage;
 }
 
-/// Resizes an [Image] object to the specified [width] and [height].
-Future<Image> resizeImage(
+/// Resizes the [image] to the specified [width] and [height].
+/// Returns the resized image and its size as a [Size] object. Note that this size excludes any empty pixels, hence it can be different than the actual image size if [maintainAspectRatio] is true.
+/// 
+/// 
+/// [quality] determines the interpolation quality. The default [FilterQuality.medium] works best for most cases, unless you're scaling by a factor of 5-10 or more
+/// [maintainAspectRatio] determines whether to maintain the aspect ratio of the original image or not. Note that maintaining aspect ratio here does not change the size of the image, but instead often means empty pixels that have to be taken into account
+Future<(Image, Size)> resizeImage(
   Image image,
   int width,
   int height, {
   FilterQuality quality = FilterQuality.medium,
+  bool maintainAspectRatio = false,
 }) async {
   if (image.width == width && image.height == height) {
-    return image;
+    return (image, Size(width.toDouble(), height.toDouble()));
   }
   final recorder = PictureRecorder();
   final canvas = Canvas(
@@ -248,43 +255,15 @@ Future<Image> resizeImage(
     ),
   );
 
-  canvas.drawImageRect(
-    image,
-    Rect.fromPoints(
-      const Offset(0, 0),
-      Offset(image.width.toDouble(), image.height.toDouble()),
-    ),
-    Rect.fromPoints(
-      const Offset(0, 0),
-      Offset(width.toDouble(), height.toDouble()),
-    ),
-    Paint()..filterQuality = quality,
-  );
-
-  final picture = recorder.endRecording();
-  return picture.toImage(width, height);
-}
-
-Future<Image> resizeImageMaintainingAspectRatio(
-  Image image,
-  int width,
-  int height, {
-  FilterQuality quality = FilterQuality.medium,
-}) async {
-  if (image.width == width && image.height == height) {
-    return image;
+  double scaleW = width / image.width;
+  double scaleH = height / image.height;
+  if (maintainAspectRatio) {
+    final scale = min(width / image.width, height / image.height);
+    scaleW = scale;
+    scaleH = scale;
   }
-  final recorder = PictureRecorder();
-  final double scale = (width.toDouble()) / max(image.height, image.width).toDouble();
-  final scaledWidth = scale * image.width;
-  final scaledHeight = scale * image.height;
-  final canvas = Canvas(
-    recorder,
-    Rect.fromPoints(
-      const Offset(0, 0),
-      Offset(width.toDouble(), height.toDouble()),
-    ),
-  );
+  final scaledWidth = (image.width * scaleW).round();
+  final scaledHeight = (image.height * scaleH).round();
 
   canvas.drawImageRect(
     image,
@@ -294,43 +273,54 @@ Future<Image> resizeImageMaintainingAspectRatio(
     ),
     Rect.fromPoints(
       const Offset(0, 0),
-      Offset(scaledWidth, scaledHeight),
+      Offset(scaledWidth.toDouble(), scaledHeight.toDouble()),
     ),
     Paint()..filterQuality = quality,
   );
 
   final picture = recorder.endRecording();
-  return picture.toImage(width, height);
+  final resizedImage = await picture.toImage(width, height);
+  return (resizedImage, Size(scaledWidth.toDouble(), scaledHeight.toDouble()));
 }
 
-/// Crops an [Image] object to the specified [width] and [height], starting at the specified [x] and [y] coordinates.
+/// Crops an [image] based on the specified [x], [y], [width] and [height].
 /// Optionally, the cropped image can be resized to comply with a [maxSize] and/or [minSize].
+/// Optionally, the cropped image can be rotated from the center by [rotation] radians.
+/// Optionally, the [quality] of the resizing interpolation can be specified.
 Future<Image> cropImage(
   Image image, {
-  required int x,
-  required int y,
-  required int width,
-  required int height,
+  required double x,
+  required double y,
+  required double width,
+  required double height,
   Size? maxSize,
   Size? minSize,
+  double rotation = 0.0, // rotation in radians
   FilterQuality quality = FilterQuality.medium,
 }) async {
   // Calculate the scale for resizing based on maxSize and minSize
   double scaleX = 1.0;
   double scaleY = 1.0;
   if (maxSize != null) {
-    scaleX = min(maxSize.width / width, 1.0);
-    scaleY = min(maxSize.height / height, 1.0);
+    final minScale = min(maxSize.width / width, maxSize.height / height);
+    if (minScale < 1.0) {
+      scaleX = minScale;
+      scaleY = minScale;
+    }
   }
   if (minSize != null) {
-    scaleX = max(minSize.width / width, scaleX);
-    scaleY = max(minSize.height / height, scaleY);
+    final maxScale = max(minSize.width / width, minSize.height / height);
+    if (maxScale > 1.0) {
+      scaleX = maxScale;
+      scaleY = maxScale;
+    }
   }
 
   // Calculate the final dimensions
   final targetWidth = (width * scaleX).round();
   final targetHeight = (height * scaleY).round();
 
+  // Create the canvas
   final recorder = PictureRecorder();
   final canvas = Canvas(
     recorder,
@@ -340,15 +330,33 @@ Future<Image> cropImage(
     ),
   );
 
+  // Apply rotation
+  final center = Offset(targetWidth / 2, targetHeight / 2);
+  canvas.translate(center.dx, center.dy);
+  canvas.rotate(rotation);
+
+  // Enlarge both the source and destination boxes to account for the rotation (i.e. avoid cropping the corners of the image)
+  final List<double> enlargedSrc =
+      getEnlargedAbsoluteBox([x, y, x + width, y + height], 1.5);
+  final List<double> enlargedDst = getEnlargedAbsoluteBox(
+    [
+      -center.dx,
+      -center.dy,
+      -center.dx + targetWidth,
+      -center.dy + targetHeight,
+    ],
+    1.5,
+  );
+
   canvas.drawImageRect(
     image,
     Rect.fromPoints(
-      Offset(x.toDouble(), y.toDouble()),
-      Offset((x + width).toDouble(), (y + height).toDouble()),
+      Offset(enlargedSrc[0], enlargedSrc[1]),
+      Offset(enlargedSrc[2], enlargedSrc[3]),
     ),
     Rect.fromPoints(
-      const Offset(0, 0),
-      Offset(targetWidth.toDouble(), targetHeight.toDouble()),
+      Offset(enlargedDst[0], enlargedDst[1]),
+      Offset(enlargedDst[2], enlargedDst[3]),
     ),
     Paint()..filterQuality = quality,
   );
@@ -412,34 +420,45 @@ Future<Image> addPaddingToImage(
   return picture.toImage(paddedWidth, paddedHeight);
 }
 
-/// Preprocesses [imageData] for standard ML models
-Future<Num3DInputMatrix> preprocessImageToMatrix(
+/// Preprocesses [imageData] for standard ML models.
+/// Returns a [Num3DInputMatrix] image, ready for inference.
+/// Also returns the original image size and the new image size, respectively.
+///
+/// The [imageData] argument must be a [Uint8List] object.
+/// The [normalize] argument determines whether the image is normalized to range [-1, 1].
+/// The [requiredWidth] and [requiredHeight] arguments determine the size of the output image.
+/// The [quality] argument determines the quality of the resizing interpolation.
+/// The [maintainAspectRatio] argument determines whether the aspect ratio of the image is maintained.
+Future<(Num3DInputMatrix, Size, Size)> preprocessImageToMatrix(
   Uint8List imageData, {
   required bool normalize,
   required int requiredWidth,
   required int requiredHeight,
   FilterQuality quality = FilterQuality.medium,
+  maintainAspectRatio = true,
 }) async {
   final Image image = await decodeImageFromData(imageData);
-
-  _logger.info(
-    'Face detection preprocessing: image has dimensions ${image.width}x${image.height}',
-  );
+  final originalSize = Size(image.width.toDouble(), image.height.toDouble());
 
   if (image.width == requiredWidth && image.height == requiredHeight) {
     final ByteData imgByteData = await getByteDataFromImage(image);
-    return createInputMatrixFromImage(
-      image,
-      imgByteData,
-      normalize: normalize,
+    return (
+      createInputMatrixFromImage(
+        image,
+        imgByteData,
+        normalize: normalize,
+      ),
+      originalSize,
+      originalSize
     );
   }
 
-  final Image resizedImage = await resizeImage(
+  final (resizedImage, newSize) = await resizeImage(
     image,
     requiredWidth,
     requiredHeight,
     quality: quality,
+    maintainAspectRatio: maintainAspectRatio,
   );
 
   final ByteData imgByteData = await getByteDataFromImage(resizedImage);
@@ -449,7 +468,7 @@ Future<Num3DInputMatrix> preprocessImageToMatrix(
     normalize: normalize,
   );
 
-  return imageMatrix;
+  return (imageMatrix, originalSize, newSize);
 }
 
 /// Preprocesses [imageData] based on [faceLandmarks] to align the faces in the images.
@@ -457,35 +476,57 @@ Future<Num3DInputMatrix> preprocessImageToMatrix(
 /// Returns a list of [Uint8List] images, one for each face, in png format.
 Future<List<Uint8List>> preprocessFaceAlignToUint8List(
   Uint8List imageData,
-  List<List<List<int>>> faceLandmarks, {
+  List<List<List<double>>> faceLandmarks, {
   int width = 112,
   int height = 112,
 }) async {
   final alignedImages = <Uint8List>[];
   final Image image = await decodeImageFromData(imageData);
-  final ByteData imgByteData =
-      await getByteDataFromImage(image, format: ImageByteFormat.rawRgba);
 
   for (final faceLandmark in faceLandmarks) {
-    final (transformationMatrix, correctlyEstimated) =
+    final (alignmentResult, correctlyEstimated) =
         SimilarityTransform.instance.estimate(faceLandmark);
     if (!correctlyEstimated) {
       alignedImages.add(Uint8List(0));
       continue;
     }
-    final Uint8List alignedImageRGBA = await warpAffineToUint8List(
+    final alignmentBox = getAlignedFaceBox(alignmentResult);
+    final Image alignedFace = await cropImage(
       image,
-      imgByteData,
-      transformationMatrix,
-      width: width,
-      height: height,
+      x: alignmentBox[0],
+      y: alignmentBox[1],
+      width: alignmentBox[2] - alignmentBox[0],
+      height: alignmentBox[3] - alignmentBox[1],
+      maxSize: Size(width.toDouble(), height.toDouble()),
+      minSize: Size(width.toDouble(), height.toDouble()),
+      rotation: alignmentResult.rotation,
     );
-    final Image alignedImage =
-        await decodeImageFromRgbaBytes(alignedImageRGBA, width, height);
-    final Uint8List alignedImagePng =
-        await encodeImageToUint8List(alignedImage);
+    final Uint8List alignedFacePng = await encodeImageToUint8List(alignedFace);
+    alignedImages.add(alignedFacePng);
 
-    alignedImages.add(alignedImagePng);
+    // final Uint8List alignedImageRGBA = await warpAffineToUint8List(
+    //   image,
+    //   imgByteData,
+    //   alignmentResult.affineMatrix
+    //       .map(
+    //         (row) => row.map((e) {
+    //           if (e != 1.0) {
+    //             return e * 112;
+    //           } else {
+    //             return 1.0;
+    //           }
+    //         }).toList(),
+    //       )
+    //       .toList(),
+    //   width: width,
+    //   height: height,
+    // );
+    // final Image alignedImage =
+    //     await decodeImageFromRgbaBytes(alignedImageRGBA, width, height);
+    // final Uint8List alignedImagePng =
+    //     await encodeImageToUint8List(alignedImage);
+
+    // alignedImages.add(alignedImagePng);
   }
   return alignedImages;
 }
@@ -493,7 +534,7 @@ Future<List<Uint8List>> preprocessFaceAlignToUint8List(
 /// Preprocesses [imageData] based on [faceLandmarks] to align the faces in the images
 ///
 /// Returns a list of [Num3DInputMatrix] images, one for each face, ready for MobileFaceNet inference
-Future<(List<Double3DInputMatrix>, List<List<List<double>>>)>
+Future<(List<Num3DInputMatrix>, List<AlignmentResult>)>
     preprocessToMobileFaceNetInput(
   Uint8List imageData,
   List<Map<String, dynamic>> facesJson, {
@@ -501,7 +542,6 @@ Future<(List<Double3DInputMatrix>, List<List<List<double>>>)>
   int height = 112,
 }) async {
   final Image image = await decodeImageFromData(imageData);
-  final ByteData imgByteData = await getByteDataFromImage(image);
 
   final List<FaceDetectionRelative> relativeFaces =
       facesJson.map((face) => FaceDetectionRelative.fromJson(face)).toList();
@@ -513,32 +553,53 @@ Future<(List<Double3DInputMatrix>, List<List<List<double>>>)>
     imageHeight: image.height,
   );
 
-  final List<List<List<int>>> faceLandmarks =
+  final List<List<List<double>>> faceLandmarks =
       absoluteFaces.map((face) => face.allKeypoints.sublist(0, 4)).toList();
 
-  final alignedImages = <Double3DInputMatrix>[];
-  final transformationMatrices = <List<List<double>>>[];
+  final alignedImages = <Num3DInputMatrix>[];
+  final alignmentResults = <AlignmentResult>[];
 
   for (final faceLandmark in faceLandmarks) {
-    final (transformationMatrix, correctlyEstimated) =
+    final (alignmentResult, correctlyEstimated) =
         SimilarityTransform.instance.estimate(faceLandmark);
     if (!correctlyEstimated) {
       alignedImages.add([]);
-      transformationMatrices.add([]);
+      alignmentResults.add(AlignmentResult.empty());
       continue;
     }
-    final Double3DInputMatrix alignedImage = await warpAffineToMatrix(
+    final alignmentBox = getAlignedFaceBox(alignmentResult);
+    final Image alignedFace = await cropImage(
       image,
-      imgByteData,
-      transformationMatrix,
-      width: width,
-      height: height,
+      x: alignmentBox[0],
+      y: alignmentBox[1],
+      width: alignmentBox[2] - alignmentBox[0],
+      height: alignmentBox[3] - alignmentBox[1],
+      maxSize: Size(width.toDouble(), height.toDouble()),
+      minSize: Size(width.toDouble(), height.toDouble()),
+      rotation: alignmentResult.rotation,
+      quality: FilterQuality.medium,
+    );
+    final alignedFaceByteData = await getByteDataFromImage(alignedFace);
+    final alignedFaceMatrix = createInputMatrixFromImage(
+      alignedFace,
+      alignedFaceByteData,
       normalize: true,
     );
-    alignedImages.add(alignedImage);
-    transformationMatrices.add(transformationMatrix);
+    alignedImages.add(alignedFaceMatrix);
+    alignmentResults.add(alignmentResult);
+
+    // final Double3DInputMatrix alignedImage = await warpAffineToMatrix(
+    //   image,
+    //   imgByteData,
+    //   transformationMatrix,
+    //   width: width,
+    //   height: height,
+    //   normalize: true,
+    // );
+    // alignedImages.add(alignedImage);
+    // transformationMatrices.add(transformationMatrix);
   }
-  return (alignedImages, transformationMatrices);
+  return (alignedImages, alignmentResults);
 }
 
 /// Function to warp an image [imageData] with an affine transformation using the estimated [transformationMatrix].
@@ -814,13 +875,12 @@ Future<Uint8List> cropAndPadFaceData(
 
   final Image faceCrop = await cropImage(
     image,
-    x: (faceBox[0] * image.width).round(),
-    y: (faceBox[1] * image.height).round(),
-    width: ((faceBox[2] - faceBox[0]) * image.width).round(),
-    height: ((faceBox[3] - faceBox[1]) * image.height).round(),
+    x: (faceBox[0] * image.width),
+    y: (faceBox[1] * image.height),
+    width: ((faceBox[2] - faceBox[0]) * image.width),
+    height: ((faceBox[3] - faceBox[1]) * image.height),
     maxSize: const Size(128, 128),
     minSize: const Size(128, 128),
-    quality: FilterQuality.medium,
   );
 
   final Image facePadded = await addPaddingToImage(
