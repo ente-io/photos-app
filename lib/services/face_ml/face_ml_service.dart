@@ -341,6 +341,7 @@ class FaceMlService {
         throw CouldNotRetrieveAnyFileData();
       }
     }
+    // TODO: use smallData and largeData instead of thumbnailData and fileData again!
     final Uint8List smallData = thumbnailData ?? fileData!;
 
     final resultBuilder = FaceMlResultBuilder.fromEnteFile(enteFile);
