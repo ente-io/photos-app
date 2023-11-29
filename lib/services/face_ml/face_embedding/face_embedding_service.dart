@@ -60,7 +60,7 @@ class FaceEmbedding {
     List output;
     try {
       final stopwatchDecoding = Stopwatch()..start();
-      final (inputImageMatrix, alignmentResultsList) =
+      final (inputImageMatrix, _) =
           await ImageMlIsolate.instance.preprocessMobileFaceNet(
         imageData,
         [face],
@@ -122,6 +122,7 @@ class FaceEmbedding {
 
     _checkPreprocessedInput(inputImageMatrix); // [inputHeight, inputWidth, 3]
     final input = [inputImageMatrix];
+    // await encodeAndSaveData(inputImageMatrix, 'input_mobilefacenet');
 
     final output = <int, Object>{};
     final outputShape = outputShapes[0];
@@ -156,6 +157,7 @@ class FaceEmbedding {
       // _logger.info("The $i-th embedding: $embedding");
       embeddings.add(embedding);
     }
+    // await encodeAndSaveData(embeddings, 'output_mobilefacenet');
 
     stopwatch.stop();
     _logger.info(
