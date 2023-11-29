@@ -1,5 +1,4 @@
 import 'dart:math' show atan2;
-import "package:logging/logging.dart";
 import 'package:ml_linalg/linalg.dart';
 import 'package:photos/extensions/ml_linalg_extensions.dart';
 import "package:photos/services/face_ml/face_alignment/alignment_result.dart";
@@ -10,9 +9,8 @@ import "package:photos/services/face_ml/face_alignment/alignment_result.dart";
 /// The class estimates the parameters of the similarity transformation via the `estimate` function.
 /// After estimation, the transformation can be applied to an image using the `warpAffine` function.
 class SimilarityTransform {
-  final _logger = Logger("SimilarityTransform");
 
-  var _params = Matrix.fromList([
+  Matrix _params = Matrix.fromList([
     [1.0, 0.0, 0.0],
     [0.0, 1.0, 0.0],
     [0, 0, 1],
@@ -70,9 +68,9 @@ class SimilarityTransform {
     _rotation = rotation;
     final alignmentResult = AlignmentResult(
       affineMatrix: paramsList,
-      center: center,
-      size: size,
-      rotation: rotation,
+      center: _center,
+      size: _size,
+      rotation: _rotation,
     );
     // We check for NaN in the transformation matrix params.
     final isNoNanInParam =
