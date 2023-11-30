@@ -232,8 +232,7 @@ Future<Uint8List> encodeImageToUint8List(
 
 /// Resizes the [image] to the specified [width] and [height].
 /// Returns the resized image and its size as a [Size] object. Note that this size excludes any empty pixels, hence it can be different than the actual image size if [maintainAspectRatio] is true.
-/// 
-/// 
+///
 /// [quality] determines the interpolation quality. The default [FilterQuality.medium] works best for most cases, unless you're scaling by a factor of 5-10 or more
 /// [maintainAspectRatio] determines whether to maintain the aspect ratio of the original image or not. Note that maintaining aspect ratio here does not change the size of the image, but instead often means empty pixels that have to be taken into account
 Future<(Image, Size)> resizeImage(
@@ -903,4 +902,33 @@ int bilinearInterpolation(
 ) {
   return (val1 * fx1 * fy1 + val2 * fx * fy1 + val3 * fx1 * fy + val4 * fx * fy)
       .round();
+}
+
+List<double> getAlignedFaceBox(AlignmentResult alignment) {
+  final List<double> box = [
+    // [xMinBox, yMinBox, xMaxBox, yMaxBox]
+    alignment.center[0] - alignment.size / 2,
+    alignment.center[1] - alignment.size / 2,
+    alignment.center[0] + alignment.size / 2,
+    alignment.center[1] + alignment.size / 2,
+  ];
+  box.roundBoxToDouble();
+  return box;
+}
+
+/// Returns an enlarged version of the [box] by a factor of [factor].
+/// The [box] is in absolute coordinates: [xMinBox, yMinBox, xMaxBox, yMaxBox].
+List<double> getEnlargedAbsoluteBox(List<double> box, [double factor = 2]) {
+  final boxCopy = List<double>.from(box, growable: false);
+  // The four values of the box in order are: [xMinBox, yMinBox, xMaxBox, yMaxBox].
+
+  final width = boxCopy[2] - boxCopy[0];
+  final height = boxCopy[3] - boxCopy[1];
+
+  boxCopy[0] -= width * (factor - 1) / 2;
+  boxCopy[1] -= height * (factor - 1) / 2;
+  boxCopy[2] += width * (factor - 1) / 2;
+  boxCopy[3] += height * (factor - 1) / 2;
+
+  return boxCopy;
 }

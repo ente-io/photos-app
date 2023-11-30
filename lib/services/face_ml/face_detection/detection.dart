@@ -2,7 +2,6 @@ import 'dart:convert' show utf8;
 import 'dart:math' show sqrt, pow;
 import 'dart:ui' show Size;
 import 'package:crypto/crypto.dart' show sha256;
-import "package:photos/services/face_ml/face_alignment/alignment_result.dart";
 
 abstract class Detection {
   final double score;
@@ -461,33 +460,6 @@ List<FaceDetectionAbsolute> relativeToAbsoluteDetections({
 
 /// Returns an enlarged version of the [box] by a factor of [factor].
 List<double> getEnlargedRelativeBox(List<double> box, [double factor = 2]) {
-  final boxCopy = List<double>.from(box, growable: false);
-  // The four values of the box in order are: [xMinBox, yMinBox, xMaxBox, yMaxBox].
-
-  final width = boxCopy[2] - boxCopy[0];
-  final height = boxCopy[3] - boxCopy[1];
-
-  boxCopy[0] -= width * (factor - 1) / 2;
-  boxCopy[1] -= height * (factor - 1) / 2;
-  boxCopy[2] += width * (factor - 1) / 2;
-  boxCopy[3] += height * (factor - 1) / 2;
-
-  return boxCopy;
-}
-
-List<double> getAlignedFaceBox(AlignmentResult alignment) {
-  final List<double> box = [
-    // [xMinBox, yMinBox, xMaxBox, yMaxBox]
-    alignment.center[0] - alignment.size / 2,
-    alignment.center[1] - alignment.size / 2,
-    alignment.center[0] + alignment.size / 2,
-    alignment.center[1] + alignment.size / 2,
-  ];
-  box.roundBoxToDouble();
-  return box;
-}
-
-List<double> getEnlargedAbsoluteBox(List<double> box, [double factor = 2]) {
   final boxCopy = List<double>.from(box, growable: false);
   // The four values of the box in order are: [xMinBox, yMinBox, xMaxBox, yMaxBox].
 
