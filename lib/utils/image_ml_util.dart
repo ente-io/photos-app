@@ -282,6 +282,45 @@ Future<(Image, Size)> resizeImage(
   return (resizedImage, Size(scaledWidth.toDouble(), scaledHeight.toDouble()));
 }
 
+Future<Image> resizeAndCenterCropImage(
+  Image image,
+  int size, {
+  FilterQuality quality = FilterQuality.medium,
+}) async {
+  if (image.width == size && image.height == size) {
+    return image;
+  }
+  final recorder = PictureRecorder();
+  final canvas = Canvas(
+    recorder,
+    Rect.fromPoints(
+      const Offset(0, 0),
+      Offset(size.toDouble(), size.toDouble()),
+    ),
+  );
+
+  final scale = max(size / image.width, size / image.height);
+  final scaledWidth = (image.width * scale).round();
+  final scaledHeight = (image.height * scale).round();
+
+  canvas.drawImageRect(
+    image,
+    Rect.fromPoints(
+      const Offset(0, 0),
+      Offset(image.width.toDouble(), image.height.toDouble()),
+    ),
+    Rect.fromPoints(
+      const Offset(0, 0),
+      Offset(scaledWidth.toDouble(), scaledHeight.toDouble()),
+    ),
+    Paint()..filterQuality = quality,
+  );
+
+  final picture = recorder.endRecording();
+  final resizedImage = await picture.toImage(size, size);
+  return resizedImage;
+}
+
 /// Crops an [image] based on the specified [x], [y], [width] and [height].
 /// Optionally, the cropped image can be resized to comply with a [maxSize] and/or [minSize].
 /// Optionally, the cropped image can be rotated from the center by [rotation] radians.
