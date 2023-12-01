@@ -7,6 +7,7 @@ import "package:photos/core/configuration.dart";
 import 'package:photos/core/errors.dart';
 import 'package:photos/db/file_updation_db.dart';
 import 'package:photos/db/files_db.dart';
+import "package:photos/extensions/stop_watch.dart";
 import 'package:photos/models/file/file.dart';
 import 'package:photos/models/file/file_type.dart';
 import 'package:photos/utils/file_uploader_util.dart';
@@ -19,6 +20,8 @@ class LocalFileUpdateService {
   late FileUpdationDB _fileUpdationDB;
   late SharedPreferences _prefs;
   late Logger _logger;
+  final String _iosLivePhotoSizeKey = 'fm_ios_live_photo_size';
+  final String _doneIosLivePhotoSizeKey = 'fm_done_ios_live_photo_size';
   final List<String> _oldMigrationKeys = [
     'fm_badCreationTime',
     'fm_badCreationTimeCompleted',
@@ -52,6 +55,8 @@ class LocalFileUpdateService {
       await _markFilesWhichAreActuallyUpdated();
       if (Platform.isAndroid) {
         _cleanUpOlderMigration().ignore();
+      } else {
+        await _importLivePhotoReUploadCandidates();
       }
     } catch (e, s) {
       _logger.severe('failed to perform migration', e, s);
@@ -197,6 +202,24 @@ class LocalFileUpdateService {
       processedIDs.toList(),
       FileUpdationDB.modificationTimeUpdated,
     );
+  }
+
+  Future<void> _importLivePhotoReUploadCandidates() async {
+    if (_prefs.containsKey(_doneIosLivePhotoSizeKey)) {
+      return;
+    }
+    _logger.info('_importLivePhotoReUploadCandidates');
+    final EnteWatch watch = EnteWatch("_importLivePhotoReUploadCandidates");
+    final int ownerID = Configuration.instance.getUserID()!;
+    final List<String> localIDs =
+        await FilesDB.instance.getLivePhotosWithBadSize(ownerID);
+
+    await _fileUpdationDB.insertMultiple(
+      localIDs,
+      FileUpdationDB.livePhotoSize,
+    );
+    watch.log("imported ${localIDs.length} files");
+    await _prefs.setBool(_doneIosLivePhotoSizeKey, true);
   }
 
   Future<MediaUploadData> getUploadData(EnteFile file) async {

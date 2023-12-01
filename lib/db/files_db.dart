@@ -1450,6 +1450,24 @@ class FilesDB {
     return result;
   }
 
+  // For a given userID, return unique uploadedFileId for the given userID
+  Future<List<String>> getLivePhotosWithBadSize(int userId) async {
+    final db = await instance.database;
+    final rows = await db.query(
+      filesTable,
+      columns: [columnLocalID],
+      distinct: true,
+      where: '$columnOwnerID = ? AND $columnFileSize IS NOT NULL AND '
+          '$columnFileSize < ? AND $columnFileType = ? AND $columnLocalID IS NOT NULL',
+      whereArgs: [userId, 5242880, getInt(FileType.livePhoto)],
+    );
+    final result = <String>[];
+    for (final row in rows) {
+      result.add(row[columnLocalID] as String);
+    }
+    return result;
+  }
+
   // updateSizeForUploadIDs takes a map of upploadedFileID and fileSize and
   // update the fileSize for the given uploadedFileID
   Future<void> updateSizeForUploadIDs(
