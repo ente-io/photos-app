@@ -36,7 +36,7 @@ class _FullScreenMemoryState extends State<FullScreenMemory> {
   bool _showCounter = false;
   bool _showStepIndicator = true;
   PageController? _pageController;
-  final bool _shouldDisableScroll = false;
+  bool _shouldDisableScroll = false;
   late int currentUserID;
   final GlobalKey shareButtonKey = GlobalKey();
 
