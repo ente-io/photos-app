@@ -26,6 +26,7 @@ import "package:photos/utils/toast_util.dart";
 
 class ZoomableImage extends StatefulWidget {
   final EnteFile photo;
+  final Function(bool)? shouldDisableScroll;
   final String? tagPrefix;
   final Decoration? backgroundDecoration;
   final bool shouldCover;
@@ -33,6 +34,7 @@ class ZoomableImage extends StatefulWidget {
   const ZoomableImage(
     this.photo, {
     Key? key,
+    this.shouldDisableScroll,
     required this.tagPrefix,
     this.backgroundDecoration,
     this.shouldCover = false,
@@ -52,14 +54,23 @@ class _ZoomableImageState extends State<ZoomableImage>
   bool _loadedLargeThumbnail = false;
   bool _loadingFinalImage = false;
   bool _loadedFinalImage = false;
+  ValueChanged<PhotoViewScaleState>? _scaleStateChangedCallback;
+  bool _isZooming = false;
   PhotoViewController _photoViewController = PhotoViewController();
-  double? _initialScale;
 
   @override
   void initState() {
     _photo = widget.photo;
     _logger = Logger("ZoomableImage");
     _logger.info('initState for ${_photo.generatedID} with tag ${_photo.tag}');
+    _scaleStateChangedCallback = (value) {
+      if (widget.shouldDisableScroll != null) {
+        widget.shouldDisableScroll!(value != PhotoViewScaleState.initial);
+      }
+      _isZooming = value != PhotoViewScaleState.initial;
+      debugPrint("isZooming = $_isZooming, currentState $value");
+      // _logger.info('is reakky zooming $_isZooming with state $value');
+    };
     super.initState();
   }
 
@@ -81,6 +92,7 @@ class _ZoomableImageState extends State<ZoomableImage>
     if (_imageProvider != null) {
       content = PhotoViewGallery.builder(
         gaplessPlayback: true,
+        scaleStateChangedCallback: _scaleStateChangedCallback,
         backgroundDecoration: widget.backgroundDecoration as BoxDecoration?,
         builder: (context, index) {
           return PhotoViewGalleryPageOptions(
@@ -100,24 +112,21 @@ class _ZoomableImageState extends State<ZoomableImage>
       content = const EnteLoadingWidget();
     }
 
-    dragFunction(d) => {
-          if (d.delta.dy > dragSensitivity)
-            {
-              {Navigator.of(context).pop()},
-            }
-          else if (d.delta.dy < (dragSensitivity * -1))
-            {
-              showDetailsSheet(context, widget.photo),
-            },
-        };
-
-    verticalDragCallback(d) {
-      if (_initialScale == null ||
-          _photoViewController.scale! <= _initialScale!) {
-        dragFunction(d);
-      }
-    }
-
+    final GestureDragUpdateCallback? verticalDragCallback = _isZooming
+        ? null
+        : (d) => {
+              if (!_isZooming)
+                {
+                  if (d.delta.dy > dragSensitivity)
+                    {
+                      {Navigator.of(context).pop()},
+                    }
+                  else if (d.delta.dy < (dragSensitivity * -1))
+                    {
+                      showDetailsSheet(context, widget.photo),
+                    },
+                },
+            };
     return GestureDetector(
       onVerticalDragUpdate: verticalDragCallback,
       child: content,
@@ -258,14 +267,15 @@ class _ZoomableImageState extends State<ZoomableImage>
     required ImageProvider? previewImageProvider,
     required ImageProvider finalImageProvider,
   }) async {
-    final bool shouldFixPosition =
-        previewImageProvider != null && _photoViewController.scale != null;
+    final bool shouldFixPosition = previewImageProvider != null &&
+        _isZooming &&
+        _photoViewController.scale != null;
     ImageInfo? finalImageInfo;
     if (shouldFixPosition) {
       if (kDebugMode) {
         showToast(
           context,
-          'Updating photo scale zooming and scale: ${_photoViewController.scale}',
+          'Updating photo scale zooming: $_isZooming and scale: ${_photoViewController.scale}',
         );
       }
       final prevImageInfo = await getImageInfo(previewImageProvider);
@@ -282,9 +292,6 @@ class _ZoomableImageState extends State<ZoomableImage>
         initialPosition: newPosition,
         initialScale: scale,
       );
-      setState(() {
-        _initialScale = scale;
-      });
     }
     final bool canUpdateMetadata = _photo.canEditMetaInfo;
     // forcefully get finalImageInfo is dimensions are not available in metadata

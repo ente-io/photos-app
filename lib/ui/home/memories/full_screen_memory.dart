@@ -327,6 +327,14 @@ class _FullScreenMemoryState extends State<FullScreenMemory> {
             file,
             autoPlay: false,
             tagPrefix: "memories",
+            shouldDisableScroll: (value) {
+              if (value == _shouldDisableScroll) {
+                return;
+              }
+              setState(() {
+                _shouldDisableScroll = value;
+              });
+            },
             backgroundDecoration: const BoxDecoration(
               color: Colors.transparent,
             ),
