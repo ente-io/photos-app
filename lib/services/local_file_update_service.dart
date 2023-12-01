@@ -23,7 +23,7 @@ class LocalFileUpdateService {
   late Logger _logger;
   final String _iosLivePhotoSizeMigrationDone = 'fm_ios_live_photo_size';
   final String _doneLivePhotoImport = 'fm_import_ios_live_photo_size';
-  static int fiveMBInBytes = 5242880;
+  static int fourMBWithChunkSize = 4194338;
   final List<String> _oldMigrationKeys = [
     'fm_badCreationTime',
     'fm_badCreationTimeCompleted',
@@ -216,7 +216,7 @@ class LocalFileUpdateService {
       // singleRunLimit indicates number of files to check during single
       // invocation of this method. The limit act as a crude way to limit the
       // resource consumed by the method
-      const int singleRunLimit = 10;
+      const int singleRunLimit = 50;
       final localIDsToProcess =
           await _fileUpdationDB.getLocalIDsForPotentialReUpload(
         singleRunLimit,
@@ -284,39 +284,29 @@ class LocalFileUpdateService {
       } else if (file.fileType != FileType.livePhoto) {
         _logger.severe('fileType is not livePhoto, skip this file');
         continue;
-      } else if (file.fileSize! > fiveMBInBytes) {
-        // back-filled size is larger
+      } else if (file.fileSize! != fourMBWithChunkSize) {
+        // back-filled size is not of our interest
         processedIDs.add(file.localID!);
         continue;
       }
       if (processedIDs.contains(file.localID)) {
         continue;
       }
-      MediaUploadData uploadData;
       try {
-        uploadData = await getUploadData(file);
-        if (uploadData.sourceFile != null) {
-          final int size = await uploadData.sourceFile!.length();
-          if (size < fiveMBInBytes) {
-            _logger.severe('file photo size is less than 5MB, skip this file');
-            continue;
-          } else {
-            _logger.info(
-              "found size more than 5M : $size, mark for reupload ${file.tag}",
-            );
-            await clearCache(file);
-            await FilesDB.instance.markFilesForReUpload(
-              userID,
-              file.localID!,
-              file.title,
-              file.location,
-              file.creationTime!,
-              file.modificationTime!,
-              file.fileType,
-            );
-          }
-          processedIDs.add(file.localID!);
-        }
+        final MediaUploadData uploadData = await getUploadData(file);
+        _logger.info(
+            'Found livePhoto on local with hash ${uploadData.hashData?.fileHash ?? "null"} and existing hash ${file.hash ?? "null"}');
+        await clearCache(file);
+        await FilesDB.instance.markFilesForReUpload(
+          userID,
+          file.localID!,
+          file.title,
+          file.location,
+          file.creationTime!,
+          file.modificationTime!,
+          file.fileType,
+        );
+        processedIDs.add(file.localID!);
       } on InvalidFileError catch (e) {
         if (e.reason == InvalidReason.livePhotoToImageTypeChanged ||
             e.reason == InvalidReason.imageToLivePhotoTypeChanged) {
@@ -346,8 +336,8 @@ class LocalFileUpdateService {
     _logger.info('_importLivePhotoReUploadCandidates');
     final EnteWatch watch = EnteWatch("_importLivePhotoReUploadCandidates");
     final int ownerID = Configuration.instance.getUserID()!;
-    final List<String> localIDs =
-        await FilesDB.instance.getLivePhotosWithBadSize(ownerID, fiveMBInBytes);
+    final List<String> localIDs = await FilesDB.instance
+        .getLivePhotosWithBadSize(ownerID, fourMBWithChunkSize);
     await _fileUpdationDB.insertMultiple(
       localIDs,
       FileUpdationDB.livePhotoSize,
