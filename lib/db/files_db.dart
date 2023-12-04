@@ -1459,7 +1459,7 @@ class FilesDB {
       filesTable,
       columns: [columnLocalID],
       distinct: true,
-      where: '($columnOwnerID = ? AND $columnOwnerID IS NOT NULL) AND '
+      where: '$columnOwnerID = ? AND '
           '($columnFileSize IS NULL OR $columnFileSize = ?) AND '
           '$columnFileType = ? AND $columnLocalID IS NOT NULL',
       whereArgs: [userId, sizeInBytes, getInt(FileType.livePhoto)],
