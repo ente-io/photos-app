@@ -113,8 +113,9 @@ class UserService {
           ),
         );
         return;
+      } else {
+        throw Exception("send-ott action failed, non-200");
       }
-      unawaited(showGenericErrorDialog(context: context));
     } on DioError catch (e) {
       await dialog.hide();
       _logger.info(e);
@@ -127,12 +128,14 @@ class UserService {
           ),
         );
       } else {
-        unawaited(showGenericErrorDialog(context: context));
+        unawaited(showGenericErrorDialog(context: context, error: e));
       }
-    } catch (e) {
+    } catch (e, s) {
       await dialog.hide();
-      _logger.severe(e);
-      unawaited(showGenericErrorDialog(context: context));
+      _logger.severe(e, s);
+      unawaited(
+        showGenericErrorDialog(context: context, error: e),
+      );
     }
   }
 
@@ -259,7 +262,7 @@ class UserService {
       //to close and only then to show the error dialog.
       Future.delayed(
         const Duration(milliseconds: 150),
-        () => showGenericErrorDialog(context: context),
+        () => showGenericErrorDialog(context: context, error: null),
       );
     }
   }
@@ -279,7 +282,7 @@ class UserService {
       }
     } catch (e) {
       _logger.severe(e);
-      await showGenericErrorDialog(context: context);
+      await showGenericErrorDialog(context: context, error: e);
       return null;
     }
   }
@@ -335,7 +338,7 @@ class UserService {
         Widget page;
         final String twoFASessionID = response.data["twoFactorSessionID"];
         if (twoFASessionID.isNotEmpty) {
-          setTwoFactor(value: true);
+          await setTwoFactor(value: true);
           page = TwoFactorAuthenticationPage(twoFASessionID);
         } else {
           await _saveConfiguration(response);
@@ -351,7 +354,7 @@ class UserService {
             );
           }
         }
-        Navigator.of(context).pushAndRemoveUntil(
+        await Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
             builder: (BuildContext context) {
               return page;
@@ -737,9 +740,10 @@ class UserService {
       );
       await dialog.hide();
       if (response.statusCode == 200) {
-        showShortToast(context, S.of(context).authenticationSuccessful);
+        showShortToast(context, S.of(context).authenticationSuccessful)
+            .ignore();
         await _saveConfiguration(response);
-        Navigator.of(context).pushAndRemoveUntil(
+        await Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
             builder: (BuildContext context) {
               return const PasswordReentryPage();
@@ -752,8 +756,8 @@ class UserService {
       await dialog.hide();
       _logger.severe(e);
       if (e.response != null && e.response!.statusCode == 404) {
-        showToast(context, "Session expired");
-        Navigator.of(context).pushAndRemoveUntil(
+        showToast(context, "Session expired").ignore();
+        await Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
             builder: (BuildContext context) {
               return const LoginPage();
@@ -806,7 +810,7 @@ class UserService {
     } on DioError catch (e) {
       _logger.severe(e);
       if (e.response != null && e.response!.statusCode == 404) {
-        showToast(context, S.of(context).sessionExpired);
+        showToast(context, S.of(context).sessionExpired).ignore();
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
             builder: (BuildContext context) {
@@ -956,7 +960,7 @@ class UserService {
     try {
       recoveryKey = await getOrCreateRecoveryKey(context);
     } catch (e) {
-      showGenericErrorDialog(context: context);
+      await showGenericErrorDialog(context: context, error: e);
       return false;
     }
     final dialog = createProgressDialog(context, S.of(context).verifying);

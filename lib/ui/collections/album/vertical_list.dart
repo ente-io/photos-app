@@ -109,8 +109,9 @@ class AlbumVerticalListWidget extends StatelessWidget {
         textCapitalization: TextCapitalization.words,
       );
       if (result is Exception) {
-        showGenericErrorDialog(
+        await showGenericErrorDialog(
           context: context,
+          error: result,
         );
         _logger.severe(
           "Failed to name album",
@@ -310,7 +311,7 @@ class AlbumVerticalListWidget extends StatelessWidget {
           );
           return true;
         } catch (e) {
-          showGenericErrorDialog(context: context);
+          await showGenericErrorDialog(context: context, error: e);
           return false;
         }
       }
@@ -333,7 +334,7 @@ class AlbumVerticalListWidget extends StatelessWidget {
           ),
         );
       } else {
-        showGenericErrorDialog(context: context);
+        await showGenericErrorDialog(context: context, error: result);
         _logger.severe("Cannot share collections owned by others");
       }
     }
@@ -352,7 +353,10 @@ class AlbumVerticalListWidget extends StatelessWidget {
         ),
       );
     } else {
-      showGenericErrorDialog(context: context);
+      showGenericErrorDialog(
+        context: context,
+        error: Exception("Can not share collection owned by others"),
+      ).ignore();
       _logger.severe("Cannot share collections owned by others");
     }
     return Future.value(true);
@@ -409,7 +413,7 @@ class AlbumVerticalListWidget extends StatelessWidget {
     } catch (e, s) {
       _logger.severe("Could not move to album", e, s);
       await dialog.hide();
-      showGenericErrorDialog(context: context);
+      await showGenericErrorDialog(context: context, error: e);
       return false;
     }
   }
@@ -438,7 +442,7 @@ class AlbumVerticalListWidget extends StatelessWidget {
     } catch (e, s) {
       _logger.severe("Could not move to album", e, s);
       await dialog.hide();
-      showGenericErrorDialog(context: context);
+      await showGenericErrorDialog(context: context, error: e);
       return false;
     }
   }
