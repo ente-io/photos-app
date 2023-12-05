@@ -16,6 +16,7 @@ import "package:photos/ui/viewer/gallery/component/multiple_groups_gallery_view.
 import 'package:photos/ui/viewer/gallery/empty_state.dart';
 import "package:photos/ui/viewer/gallery/state/gallery_context_state.dart";
 import 'package:photos/utils/date_time_util.dart';
+import "package:photos/utils/debouncer.dart";
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 typedef GalleryLoader = Future<FileLoadResult> Function(
@@ -43,6 +44,8 @@ class Gallery extends StatefulWidget {
   final bool enableFileGrouping;
   final Widget loadingWidget;
   final bool disableScroll;
+  final Duration reloadDebounceTime;
+  final Duration reloadDebounceExecutionInterval;
 
   /// When true, selection will be limited to one item. Tapping on any item
   /// will select even when no other item is selected.
@@ -78,20 +81,23 @@ class Gallery extends StatefulWidget {
     this.sortAsyncFn,
     this.showSelectAllByDefault = true,
     this.isScrollablePositionedList = true,
+    this.reloadDebounceTime = const Duration(milliseconds: 500),
+    this.reloadDebounceExecutionInterval = const Duration(seconds: 2),
     Key? key,
   }) : super(key: key);
 
   @override
   State<Gallery> createState() {
-    return _GalleryState();
+    return GalleryState();
   }
 }
 
-class _GalleryState extends State<Gallery> {
+class GalleryState extends State<Gallery> {
   static const int kInitialLoadLimit = 100;
+  late final Debouncer _debouncer;
 
   late Logger _logger;
-  List<List<EnteFile>> _currentGroupedFiles = [];
+  List<List<EnteFile>> currentGroupedFiles = [];
   bool _hasLoadedFiles = false;
   late ItemScrollController _itemScroller;
   StreamSubscription<FilesUpdatedEvent>? _reloadEventSubscription;
@@ -106,20 +112,31 @@ class _GalleryState extends State<Gallery> {
         "Gallery_${widget.tagPrefix}${kDebugMode ? "_" + widget.albumName! : ""}";
     _logger = Logger(_logTag);
     _logger.finest("init Gallery");
+    _debouncer = Debouncer(
+      widget.reloadDebounceTime,
+      executionInterval: widget.reloadDebounceExecutionInterval,
+    );
     _sortOrderAsc = widget.sortAsyncFn != null ? widget.sortAsyncFn!() : false;
     _itemScroller = ItemScrollController();
     if (widget.reloadEvent != null) {
       _reloadEventSubscription = widget.reloadEvent!.listen((event) async {
-        // In soft refresh, setState is called for entire gallery only when
-        // number of child change
-        _logger.finest("Soft refresh all files on ${event.reason} ");
-        final result = await _loadFiles();
-        final bool hasReloaded = _onFilesLoaded(result.files);
-        if (hasReloaded && kDebugMode) {
-          _logger.finest(
-            "Reloaded gallery on soft refresh all files on ${event.reason}",
-          );
-        }
+        _debouncer.run(() async {
+          // In soft refresh, setState is called for entire gallery only when
+          // number of child change
+          _logger.finest("Soft refresh all files on ${event.reason} ");
+          final result = await _loadFiles();
+          final bool hasReloaded = _onFilesLoaded(result.files);
+          if (hasReloaded && kDebugMode) {
+            _logger.finest(
+              "Reloaded gallery on soft refresh all files on ${event.reason}",
+            );
+          }
+          if (event.type == EventType.deletedFromDevice ||
+              event.type == EventType.deletedFromEverywhere ||
+              event.type == EventType.deletedFromRemote) {
+            setState(() {});
+          }
+        });
       });
     }
     _tabDoubleTapEvent =
@@ -137,11 +154,13 @@ class _GalleryState extends State<Gallery> {
       for (final event in widget.forceReloadEvents!) {
         _forceReloadEventSubscriptions.add(
           event.listen((event) async {
-            _logger.finest("Force refresh all files on ${event.reason}");
-            _sortOrderAsc =
-                widget.sortAsyncFn != null ? widget.sortAsyncFn!() : false;
-            final result = await _loadFiles();
-            _setFilesAndReload(result.files);
+            _debouncer.run(() async {
+              _logger.finest("Force refresh all files on ${event.reason}");
+              _sortOrderAsc =
+                  widget.sortAsyncFn != null ? widget.sortAsyncFn!() : false;
+              final result = await _loadFiles();
+              _setFilesAndReload(result.files);
+            });
           }),
         );
       }
@@ -197,17 +216,17 @@ class _GalleryState extends State<Gallery> {
   bool _onFilesLoaded(List<EnteFile> files) {
     final updatedGroupedFiles =
         widget.enableFileGrouping ? _groupFiles(files) : [files];
-    if (_currentGroupedFiles.length != updatedGroupedFiles.length ||
-        _currentGroupedFiles.isEmpty) {
+    if (currentGroupedFiles.length != updatedGroupedFiles.length ||
+        currentGroupedFiles.isEmpty) {
       if (mounted) {
         setState(() {
           _hasLoadedFiles = true;
-          _currentGroupedFiles = updatedGroupedFiles;
+          currentGroupedFiles = updatedGroupedFiles;
         });
       }
       return true;
     } else {
-      _currentGroupedFiles = updatedGroupedFiles;
+      currentGroupedFiles = updatedGroupedFiles;
       return false;
     }
   }
@@ -219,6 +238,7 @@ class _GalleryState extends State<Gallery> {
     for (final subscription in _forceReloadEventSubscriptions) {
       subscription.cancel();
     }
+    _debouncer.cancelDebounce();
     super.dispose();
   }
 
@@ -233,7 +253,7 @@ class _GalleryState extends State<Gallery> {
       inSelectionMode: widget.inSelectionMode,
       child: MultipleGroupsGalleryView(
         itemScroller: _itemScroller,
-        groupedFiles: _currentGroupedFiles,
+        groupedFiles: currentGroupedFiles,
         disableScroll: widget.disableScroll,
         emptyState: widget.emptyState,
         asyncLoader: widget.asyncLoader,

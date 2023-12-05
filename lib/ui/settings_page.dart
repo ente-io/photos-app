@@ -84,9 +84,11 @@ class SettingsPage extends StatelessWidget {
     const sectionSpacing = SizedBox(height: 8);
     contents.add(const SizedBox(height: 8));
     if (hasLoggedIn) {
+      final showStorageBonusBanner =
+          StorageBonusService.instance.shouldShowStorageBonus();
       contents.addAll([
         const StorageCardWidget(),
-        StorageBonusService.instance.shouldShowStorageBonus()
+        (showStorageBonusBanner)
             ? RepaintBoundary(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -150,6 +152,7 @@ class SettingsPage extends StatelessWidget {
     return SafeArea(
       bottom: false,
       child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

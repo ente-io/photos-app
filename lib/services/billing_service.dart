@@ -166,7 +166,8 @@ class BillingService {
     BuildContext context,
     UserDetails userDetails,
   ) async {
-    if (userDetails.subscription.productID == freeProductID) {
+    if (userDetails.subscription.productID == freeProductID &&
+        !userDetails.hasPaidAddon()) {
       await showErrorDialog(
         context,
         S.of(context).familyPlans,
@@ -183,7 +184,7 @@ class BillingService {
     try {
       final String jwtToken = await UserService.instance.getFamiliesToken();
       final bool familyExist = userDetails.isPartOfFamily();
-      Navigator.of(context).push(
+      await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (BuildContext context) {
             return WebPage(
@@ -195,7 +196,7 @@ class BillingService {
       );
     } catch (e) {
       await dialog.hide();
-      showGenericErrorDialog(context: context);
+      await showGenericErrorDialog(context: context, error: e);
     }
     await dialog.hide();
   }

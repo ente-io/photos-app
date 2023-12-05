@@ -73,7 +73,6 @@ class DetailPage extends StatefulWidget {
 class _DetailPageState extends State<DetailPage> {
   static const kLoadLimit = 100;
   final _logger = Logger("DetailPageState");
-  bool _shouldDisableScroll = false;
   List<EnteFile>? _files;
   late PageController _pageController;
   final _selectedIndexNotifier = ValueNotifier(0);
@@ -164,7 +163,6 @@ class _DetailPageState extends State<DetailPage> {
   }
 
   Widget _buildPageView(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
     return PageView.builder(
       itemBuilder: (context, index) {
         final file = _files![index];
@@ -173,24 +171,11 @@ class _DetailPageState extends State<DetailPage> {
           file,
           autoPlay: shouldAutoPlay(),
           tagPrefix: widget.config.tagPrefix,
-          shouldDisableScroll: (value) {
-            if (_shouldDisableScroll != value) {
-              setState(() {
-                _logger.fine('setState $_shouldDisableScroll to $value');
-                _shouldDisableScroll = value;
-              });
-            }
+          playbackCallback: (isPlaying) {
+            Future.delayed(Duration.zero, () {
+              _toggleFullScreen(shouldEnable: isPlaying);
+            });
           },
-          //Noticed that when the video is seeked, the video pops and moves the
-          //seek bar along with it and it happens when bottomPadding is 0. So we
-          //don't toggle full screen for cases where this issue happens.
-          playbackCallback: bottomPadding != 0
-              ? (isPlaying) {
-                  Future.delayed(Duration.zero, () {
-                    _toggleFullScreen();
-                  });
-                }
-              : null,
           backgroundDecoration: const BoxDecoration(color: Colors.black),
         );
         return GestureDetector(
@@ -228,9 +213,7 @@ class _DetailPageState extends State<DetailPage> {
         }
         _preloadEntries();
       },
-      physics: _shouldDisableScroll
-          ? const NeverScrollableScrollPhysics()
-          : const FastScrollPhysics(speedFactor: 4.0),
+      physics: const FastScrollPhysics(speedFactor: 4.0),
       controller: _pageController,
       itemCount: _files!.length,
     );
@@ -244,7 +227,10 @@ class _DetailPageState extends State<DetailPage> {
     return false;
   }
 
-  void _toggleFullScreen() {
+  void _toggleFullScreen({bool? shouldEnable}) {
+    if (shouldEnable != null) {
+      if (_enableFullScreenNotifier.value == shouldEnable) return;
+    }
     _enableFullScreenNotifier.value = !_enableFullScreenNotifier.value;
 
     Future.delayed(const Duration(milliseconds: 125), () {

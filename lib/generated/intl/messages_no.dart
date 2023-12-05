@@ -33,21 +33,29 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Bekreft sletting av konto"),
         "confirmDeletePrompt": MessageLookupByLibrary.simpleMessage(
             "Ja, jeg ønsker å slette denne kontoen og all dataen dens permanent."),
+        "contacts": MessageLookupByLibrary.simpleMessage("Contacts"),
         "deleteAccount": MessageLookupByLibrary.simpleMessage("Slett konto"),
         "deleteAccountFeedbackPrompt": MessageLookupByLibrary.simpleMessage(
             "Vi er lei oss for at du forlater oss. Gi oss gjerne en tilbakemelding så vi kan forbedre oss."),
+        "deleteConfirmDialogBody": MessageLookupByLibrary.simpleMessage(
+            "This account is linked to other ente apps, if you use any.\\n\\nYour uploaded data, across all ente apps, will be scheduled for deletion, and your account will be permanently deleted."),
         "email": MessageLookupByLibrary.simpleMessage("E-post"),
         "enterValidEmail": MessageLookupByLibrary.simpleMessage(
             "Vennligst skriv inn en gyldig e-postadresse."),
         "enterYourEmailAddress": MessageLookupByLibrary.simpleMessage(
             "Skriv inn e-postadressen din"),
         "feedback": MessageLookupByLibrary.simpleMessage("Tilbakemelding"),
+        "fileTypes": MessageLookupByLibrary.simpleMessage("File types"),
         "invalidEmailAddress":
             MessageLookupByLibrary.simpleMessage("Ugyldig e-postadresse"),
         "kindlyHelpUsWithThisInformation": MessageLookupByLibrary.simpleMessage(
             "Vær vennlig og hjelp oss med denne informasjonen"),
+        "modifyYourQueryOrTrySearchingFor":
+            MessageLookupByLibrary.simpleMessage(
+                "Modify your query, or try searching for"),
         "moveToHiddenAlbum":
             MessageLookupByLibrary.simpleMessage("Move to hidden album"),
-        "verify": MessageLookupByLibrary.simpleMessage("Bekreft")
+        "verify": MessageLookupByLibrary.simpleMessage("Bekreft"),
+        "yourMap": MessageLookupByLibrary.simpleMessage("Your map")
       };
 }

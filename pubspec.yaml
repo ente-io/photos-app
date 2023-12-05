@@ -12,7 +12,7 @@ description: ente photos application
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 
-version: 0.7.96+496
+version: 0.8.11+531
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -37,10 +37,11 @@ dependencies:
       url: https://github.com/ente-io/plus_plugins.git
       ref: check_mobile_first
       path: packages/connectivity_plus/connectivity_plus/
+  cross_file: ^0.3.3
   crypto: ^3.0.2
   cupertino_icons: ^1.0.0
   defer_pointer: ^0.0.2
-  device_info: ^2.0.2
+  device_info_plus: ^9.0.3
   dio: ^4.0.6
   dots_indicator: ^2.0.0
   dotted_border: ^2.0.0+2
@@ -52,7 +53,12 @@ dependencies:
   expandable: ^5.0.1
   expansion_tile_card: ^3.0.0
   extended_image: ^8.1.1
+  fade_indexed_stack: ^0.2.2
   fast_base58: ^0.2.1
+
+  file_saver:
+    # Use forked version till this PR is merged: https://github.com/incrediblezayed/file_saver/pull/87
+    git: https://github.com/jesims/file_saver.git
   firebase_core: ^2.13.1
   firebase_messaging: ^14.6.2
   fk_user_agent: ^2.0.1
@@ -96,21 +102,9 @@ dependencies:
   lottie: ^1.2.2
   media_extension: ^1.0.1
   ml_linalg: ^13.11.31
-  media_kit:
-    git:
-      url: https://github.com/ashilkn/media-kit.git
-      ref: main
-      path: media_kit
-  media_kit_libs_video: 
-    git: 
-      url: https://github.com/ashilkn/media-kit.git
-      ref: main
-      path: libs/universal/media_kit_libs_video
-  media_kit_video: 
-    git: 
-      url: https://github.com/ashilkn/media-kit.git
-      ref: main
-      path: media_kit_video                
+  media_kit: ^1.1.10+1
+  media_kit_libs_video: ^1.0.4
+  media_kit_video: ^1.2.4
   modal_bottom_sheet: ^3.0.0-pre
   motion_photos:
     git: "https://github.com/ente-io/motion_photo.git"
@@ -158,7 +152,7 @@ dependencies:
     git:
       url: https://github.com/ente-io/packages.git
       ref: android_video_roation_fix
-      path: packages/video_player/video_player/p
+      path: packages/video_player/video_player/
   video_thumbnail: ^0.5.3
   visibility_detector: ^0.3.3
   wakelock_plus: ^1.1.1

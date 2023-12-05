@@ -190,16 +190,6 @@ class S {
     );
   }
 
-  /// `You are about to permanently delete your account and all its data.\nThis action is irreversible.`
-  String get deleteConfirmDialogBody {
-    return Intl.message(
-      'You are about to permanently delete your account and all its data.\nThis action is irreversible.',
-      name: 'deleteConfirmDialogBody',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Delete Account Permanently`
   String get deleteAccountPermanentlyButton {
     return Intl.message(
@@ -3904,10 +3894,10 @@ class S {
     );
   }
 
-  /// `Renews on {endDate}`
+  /// `Subscription renews on {endDate}`
   String renewsOn(Object endDate) {
     return Intl.message(
-      'Renews on $endDate',
+      'Subscription renews on $endDate',
       name: 'renewsOn',
       desc: '',
       args: [endDate],
@@ -3921,6 +3911,26 @@ class S {
       name: 'freeTrialValidTill',
       desc: '',
       args: [endDate],
+    );
+  }
+
+  /// `Valid till {endDate}`
+  String validTill(Object endDate) {
+    return Intl.message(
+      'Valid till $endDate',
+      name: 'validTill',
+      desc: '',
+      args: [endDate],
+    );
+  }
+
+  /// `Your {storageAmount} add-on is valid till {endDate}`
+  String addOnValidTill(Object storageAmount, Object endDate) {
+    return Intl.message(
+      'Your $storageAmount add-on is valid till $endDate',
+      name: 'addOnValidTill',
+      desc: '',
+      args: [storageAmount, endDate],
     );
   }
 
@@ -6519,6 +6529,26 @@ class S {
     );
   }
 
+  /// `Unable to connect to Ente, please check your network settings and contact support if the error persists.`
+  String get networkHostLookUpErr {
+    return Intl.message(
+      'Unable to connect to Ente, please check your network settings and contact support if the error persists.',
+      name: 'networkHostLookUpErr',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unable to connect to Ente, please retry after sometime. If the error persists, please contact support.`
+  String get networkConnectionRefusedErr {
+    return Intl.message(
+      'Unable to connect to Ente, please retry after sometime. If the error persists, please contact support.',
+      name: 'networkConnectionRefusedErr',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Cached data`
   String get cachedData {
     return Intl.message(
@@ -6799,6 +6829,116 @@ class S {
     );
   }
 
+  /// `Photo descriptions`
+  String get photoDescriptions {
+    return Intl.message(
+      'Photo descriptions',
+      name: 'photoDescriptions',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `File types and names`
+  String get fileTypesAndNames {
+    return Intl.message(
+      'File types and names',
+      name: 'fileTypesAndNames',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Location`
+  String get location {
+    return Intl.message(
+      'Location',
+      name: 'location',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Moments`
+  String get moments {
+    return Intl.message(
+      'Moments',
+      name: 'moments',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Find all photos of a person`
+  String get searchFaceEmptySection {
+    return Intl.message(
+      'Find all photos of a person',
+      name: 'searchFaceEmptySection',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Search by a date, month or year`
+  String get searchDatesEmptySection {
+    return Intl.message(
+      'Search by a date, month or year',
+      name: 'searchDatesEmptySection',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Group photos that are taken within some radius of a photo`
+  String get searchLocationEmptySection {
+    return Intl.message(
+      'Group photos that are taken within some radius of a photo',
+      name: 'searchLocationEmptySection',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Invite people, and you'll see all photos shared by them here`
+  String get searchPeopleEmptySection {
+    return Intl.message(
+      'Invite people, and you\'ll see all photos shared by them here',
+      name: 'searchPeopleEmptySection',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Albums`
+  String get searchAlbumsEmptySection {
+    return Intl.message(
+      'Albums',
+      name: 'searchAlbumsEmptySection',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `File types and names`
+  String get searchFileTypesAndNamesEmptySection {
+    return Intl.message(
+      'File types and names',
+      name: 'searchFileTypesAndNamesEmptySection',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add descriptions like "#trip" in photo info to quickly find them here`
+  String get searchCaptionEmptySection {
+    return Intl.message(
+      'Add descriptions like "#trip" in photo info to quickly find them here',
+      name: 'searchCaptionEmptySection',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Language`
   String get language {
     return Intl.message(
@@ -6844,16 +6984,6 @@ class S {
     return Intl.message(
       'Group nearby photos',
       name: 'groupNearbyPhotos',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Location`
-  String get location {
-    return Intl.message(
-      'Location',
-      name: 'location',
       desc: '',
       args: [],
     );
@@ -7710,6 +7840,319 @@ class S {
     return Intl.message(
       'Move to hidden album',
       name: 'moveToHiddenAlbum',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `File types`
+  String get fileTypes {
+    return Intl.message(
+      'File types',
+      name: 'fileTypes',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `This account is linked to other ente apps, if you use any.\n\nYour uploaded data, across all ente apps, will be scheduled for deletion, and your account will be permanently deleted.`
+  String get deleteConfirmDialogBody {
+    return Intl.message(
+      'This account is linked to other ente apps, if you use any.\\n\\nYour uploaded data, across all ente apps, will be scheduled for deletion, and your account will be permanently deleted.',
+      name: 'deleteConfirmDialogBody',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `How did you hear about Ente? (optional)`
+  String get hearUsWhereTitle {
+    return Intl.message(
+      'How did you hear about Ente? (optional)',
+      name: 'hearUsWhereTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `We don't track app installs. It'd help if you told us where you found us!`
+  String get hearUsExplanation {
+    return Intl.message(
+      'We don\'t track app installs. It\'d help if you told us where you found us!',
+      name: 'hearUsExplanation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `View add-ons`
+  String get viewAddOnButton {
+    return Intl.message(
+      'View add-ons',
+      name: 'viewAddOnButton',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add-ons`
+  String get addOns {
+    return Intl.message(
+      'Add-ons',
+      name: 'addOns',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Details of add-ons`
+  String get addOnPageSubtitle {
+    return Intl.message(
+      'Details of add-ons',
+      name: 'addOnPageSubtitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Your map`
+  String get yourMap {
+    return Intl.message(
+      'Your map',
+      name: 'yourMap',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Modify your query, or try searching for`
+  String get modifyYourQueryOrTrySearchingFor {
+    return Intl.message(
+      'Modify your query, or try searching for',
+      name: 'modifyYourQueryOrTrySearchingFor',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Black Friday Sale`
+  String get blackFridaySale {
+    return Intl.message(
+      'Black Friday Sale',
+      name: 'blackFridaySale',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Upto 50% off, until 4th Dec.`
+  String get upto50OffUntil4thDec {
+    return Intl.message(
+      'Upto 50% off, until 4th Dec.',
+      name: 'upto50OffUntil4thDec',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Photos`
+  String get photos {
+    return Intl.message(
+      'Photos',
+      name: 'photos',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Videos`
+  String get videos {
+    return Intl.message(
+      'Videos',
+      name: 'videos',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Live Photos`
+  String get livePhotos {
+    return Intl.message(
+      'Live Photos',
+      name: 'livePhotos',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Fast, on-device search`
+  String get searchHint1 {
+    return Intl.message(
+      'Fast, on-device search',
+      name: 'searchHint1',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Photo dates, descriptions`
+  String get searchHint2 {
+    return Intl.message(
+      'Photo dates, descriptions',
+      name: 'searchHint2',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Albums, file names, and types`
+  String get searchHint3 {
+    return Intl.message(
+      'Albums, file names, and types',
+      name: 'searchHint3',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Location`
+  String get searchHint4 {
+    return Intl.message(
+      'Location',
+      name: 'searchHint4',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Coming soon: Faces & magic search ✨`
+  String get searchHint5 {
+    return Intl.message(
+      'Coming soon: Faces & magic search ✨',
+      name: 'searchHint5',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add your photos now`
+  String get addYourPhotosNow {
+    return Intl.message(
+      'Add your photos now',
+      name: 'addYourPhotosNow',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{count, plural, one{{count} result found} other{{count} results found}}`
+  String searchResultCount(int count) {
+    return Intl.plural(
+      count,
+      one: '$count result found',
+      other: '$count results found',
+      name: 'searchResultCount',
+      desc:
+          'Text to tell user how many results were found for their search query',
+      args: [count],
+    );
+  }
+
+  /// `Faces`
+  String get faces {
+    return Intl.message(
+      'Faces',
+      name: 'faces',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Contents`
+  String get contents {
+    return Intl.message(
+      'Contents',
+      name: 'contents',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add new`
+  String get addNew {
+    return Intl.message(
+      'Add new',
+      name: 'addNew',
+      desc: 'Text to add a new item (location tag, album, caption etc)',
+      args: [],
+    );
+  }
+
+  /// `Contacts`
+  String get contacts {
+    return Intl.message(
+      'Contacts',
+      name: 'contacts',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No internet connection`
+  String get noInternetConnection {
+    return Intl.message(
+      'No internet connection',
+      name: 'noInternetConnection',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please check your internet connection and try again.`
+  String get pleaseCheckYourInternetConnectionAndTryAgain {
+    return Intl.message(
+      'Please check your internet connection and try again.',
+      name: 'pleaseCheckYourInternetConnectionAndTryAgain',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sign out from other devices`
+  String get signOutFromOtherDevices {
+    return Intl.message(
+      'Sign out from other devices',
+      name: 'signOutFromOtherDevices',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `If you think someone might know your password, you can force all other devices using your account to sign out.`
+  String get signOutOtherBody {
+    return Intl.message(
+      'If you think someone might know your password, you can force all other devices using your account to sign out.',
+      name: 'signOutOtherBody',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sign out other devices`
+  String get signOutOtherDevices {
+    return Intl.message(
+      'Sign out other devices',
+      name: 'signOutOtherDevices',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Do not sign out`
+  String get doNotSignOut {
+    return Intl.message(
+      'Do not sign out',
+      name: 'doNotSignOut',
       desc: '',
       args: [],
     );

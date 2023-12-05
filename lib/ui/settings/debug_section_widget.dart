@@ -54,7 +54,7 @@ class DebugSectionWidget extends StatelessWidget {
           trailingIconIsMuted: true,
           onTap: () async {
             await LocalSyncService.instance.resetLocalSync();
-            showShortToast(context, "Done");
+            showShortToast(context, "Done").ignore();
           },
         ),
         sectionOptionSpacing,
@@ -67,8 +67,8 @@ class DebugSectionWidget extends StatelessWidget {
           trailingIconIsMuted: true,
           onTap: () async {
             await IgnoredFilesService.instance.reset();
-            SyncService.instance.sync();
-            showShortToast(context, "Done");
+            SyncService.instance.sync().ignore();
+            showShortToast(context, "Done").ignore();
           },
         ),
         sectionOptionSpacing,

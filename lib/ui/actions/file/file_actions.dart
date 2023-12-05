@@ -125,7 +125,10 @@ Future<void> showSingleFileDeleteSheet(
   );
   if (actionResult?.action != null &&
       actionResult!.action == ButtonAction.error) {
-    showGenericErrorDialog(context: context);
+    await showGenericErrorDialog(
+      context: context,
+      error: actionResult.exception,
+    );
   }
 }
 

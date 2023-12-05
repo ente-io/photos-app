@@ -25,6 +25,8 @@ import 'package:photos/ui/payment/child_subscription_widget.dart';
 import 'package:photos/ui/payment/skip_subscription_widget.dart';
 import 'package:photos/ui/payment/subscription_common_widgets.dart';
 import 'package:photos/ui/payment/subscription_plan_widget.dart';
+import "package:photos/ui/payment/view_add_on_widget.dart";
+import "package:photos/utils/data_util.dart";
 import 'package:photos/utils/dialog_util.dart';
 import 'package:photos/utils/toast_util.dart';
 import 'package:url_launcher/url_launcher_string.dart';
@@ -50,6 +52,7 @@ class _StoreSubscriptionPageState extends State<StoreSubscriptionPage> {
   late ProgressDialog _dialog;
   late UserDetails _userDetails;
   late bool _hasActiveSubscription;
+  bool _hideCurrentPlanSelection = false;
   late FreePlan _freePlan;
   late List<BillingPlan> _plans;
   bool _hasLoadedData = false;
@@ -175,7 +178,10 @@ class _StoreSubscriptionPageState extends State<StoreSubscriptionPage> {
     _userService.getUserDetailsV2(memoryCount: false).then((userDetails) async {
       _userDetails = userDetails;
       _currentSubscription = userDetails.subscription;
+
       _hasActiveSubscription = _currentSubscription!.isValid();
+      _hideCurrentPlanSelection =
+          _currentSubscription?.attributes?.isCancelled ?? false;
       showYearlyPlan = _currentSubscription!.isYearlyPlan();
       final billingPlans = await _billingService.getBillingPlans();
       _isActiveStripeSubscriber =
@@ -237,8 +243,13 @@ class _StoreSubscriptionPageState extends State<StoreSubscriptionPage> {
       widgets.add(_showSubscriptionToggle());
     }
 
-    if (_hasActiveSubscription) {
-      widgets.add(ValidityWidget(currentSubscription: _currentSubscription));
+    if (_currentSubscription != null) {
+      widgets.add(
+        ValidityWidget(
+          currentSubscription: _currentSubscription,
+          bonusData: _userDetails.bonusData,
+        ),
+      );
     }
 
     if (_currentSubscription!.productID == freeProductID) {
@@ -290,7 +301,7 @@ class _StoreSubscriptionPageState extends State<StoreSubscriptionPage> {
     if (!widget.isOnboarding) {
       widgets.add(
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
           child: MenuItemWidget(
             captionedTextWidget: CaptionedTextWidget(
               title: _isFreePlanUser()
@@ -310,6 +321,8 @@ class _StoreSubscriptionPageState extends State<StoreSubscriptionPage> {
           ),
         ),
       );
+      widgets.add(ViewAddOnButton(_userDetails.bonusData));
+      widgets.add(const SizedBox(height: 80));
     }
     return SingleChildScrollView(
       child: Column(
@@ -449,7 +462,7 @@ class _StoreSubscriptionPageState extends State<StoreSubscriptionPage> {
               storage: plan.storage,
               price: plan.price,
               period: plan.period,
-              isActive: isActive,
+              isActive: isActive && !_hideCurrentPlanSelection,
             ),
           ),
         ),
@@ -490,7 +503,16 @@ class _StoreSubscriptionPageState extends State<StoreSubscriptionPage> {
               if (isActive) {
                 return;
               }
-              if (_userDetails.getFamilyOrPersonalUsage() > plan.storage) {
+              final int addOnBonus =
+                  _userDetails.bonusData?.totalAddOnBonus() ?? 0;
+              if (_userDetails.getFamilyOrPersonalUsage() >
+                  (plan.storage + addOnBonus)) {
+                _logger.warning(
+                  " familyUsage ${convertBytesToReadableFormat(_userDetails.getFamilyOrPersonalUsage())}"
+                  " plan storage ${convertBytesToReadableFormat(plan.storage)} "
+                  "addOnBonus ${convertBytesToReadableFormat(addOnBonus)},"
+                  "overshooting by ${convertBytesToReadableFormat(_userDetails.getFamilyOrPersonalUsage() - (plan.storage + addOnBonus))}",
+                );
                 showErrorDialog(
                   context,
                   S.of(context).sorry,
@@ -502,11 +524,14 @@ class _StoreSubscriptionPageState extends State<StoreSubscriptionPage> {
               final ProductDetailsResponse response =
                   await InAppPurchase.instance.queryProductDetails({productID});
               if (response.notFoundIDs.isNotEmpty) {
-                _logger.severe(
-                  "Could not find products: " + response.notFoundIDs.toString(),
-                );
+                final errMsg = "Could not find products: " +
+                    response.notFoundIDs.toString();
+                _logger.severe(errMsg);
                 await _dialog.hide();
-                showGenericErrorDialog(context: context);
+                await showGenericErrorDialog(
+                  context: context,
+                  error: Exception(errMsg),
+                );
                 return;
               }
               final isCrossGradingOnAndroid = Platform.isAndroid &&

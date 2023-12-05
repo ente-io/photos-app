@@ -113,15 +113,14 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
         : AppBar(
             elevation: 0,
             centerTitle: false,
-            title: TextButton(
-              child: Text(
-                _appBarTitle!,
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineSmall!
-                    .copyWith(fontSize: 16),
-              ),
-              onPressed: () => _renameAlbum(context),
+            title: Text(
+              _appBarTitle!,
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineSmall!
+                  .copyWith(fontSize: 16),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
             actions: _getDefaultActions(context),
           );
@@ -173,7 +172,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
       },
     );
     if (result is Exception) {
-      showGenericErrorDialog(context: context);
+      await showGenericErrorDialog(context: context, error: result);
     }
   }
 
@@ -205,7 +204,10 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
     );
     if (actionResult?.action != null && mounted) {
       if (actionResult!.action == ButtonAction.error) {
-        showGenericErrorDialog(context: context);
+        await showGenericErrorDialog(
+          context: context,
+          error: actionResult.exception,
+        );
       } else if (actionResult.action == ButtonAction.first) {
         Navigator.of(context).pop();
       }
@@ -225,7 +227,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
           .getBackupStatus(pathID: widget.deviceCollection!.id);
     } catch (e) {
       await dialog.hide();
-      showGenericErrorDialog(context: context);
+      unawaited(showGenericErrorDialog(context: context, error: e));
       return;
     }
 
@@ -665,7 +667,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
       } catch (e, s) {
         _logger.severe("failed to trash collection", e, s);
         await dialog.hide();
-        showGenericErrorDialog(context: context);
+        await showGenericErrorDialog(context: context, error: e);
       }
     } else {
       final bool result = await collectionActions.deleteCollectionSheet(
@@ -692,7 +694,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
       }
     } catch (e, s) {
       _logger.severe("failed to trash collection", e, s);
-      showGenericErrorDialog(context: context);
+      await showGenericErrorDialog(context: context, error: e);
     }
   }
 
@@ -727,7 +729,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
       }
     } catch (e, s) {
       _logger.severe(e, s);
-      showGenericErrorDialog(context: context);
+      await showGenericErrorDialog(context: context, error: e);
     }
   }
 
@@ -737,7 +739,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
       await showAddPhotosSheet(bContext, collection!);
     } catch (e, s) {
       _logger.severe(e, s);
-      showGenericErrorDialog(context: bContext);
+      await showGenericErrorDialog(context: bContext, error: e);
     }
   }
 

@@ -136,6 +136,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Confirme sua chave de recuperação"),
         "contactSupport":
             MessageLookupByLibrary.simpleMessage("Falar com o suporte"),
+        "contacts": MessageLookupByLibrary.simpleMessage("Contacts"),
         "continueLabel": MessageLookupByLibrary.simpleMessage("Continuar"),
         "copypasteThisCodentoYourAuthenticatorApp":
             MessageLookupByLibrary.simpleMessage(
@@ -158,7 +159,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "deleteAlbumDialog": MessageLookupByLibrary.simpleMessage(
             "Também excluir as fotos (e vídeos) presentes neste álbum de <bold>todos os</bold> outros álbuns dos quais eles fazem parte?"),
         "deleteConfirmDialogBody": MessageLookupByLibrary.simpleMessage(
-            "Você está prestes a excluir permanentemente sua conta e todos os seus dados.\nEsta ação é irreversível."),
+            "This account is linked to other ente apps, if you use any.\\n\\nYour uploaded data, across all ente apps, will be scheduled for deletion, and your account will be permanently deleted."),
         "deleteEmailRequest": MessageLookupByLibrary.simpleMessage(
             "Por favor, envie um e-mail para <warning>account-deletion@ente.io</warning> a partir do seu endereço de e-mail registrado."),
         "deletePhotos": MessageLookupByLibrary.simpleMessage("Excluir fotos"),
@@ -213,6 +214,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Não foi possível buscar informações do produto. Por favor, tente novamente mais tarde."),
         "faq": MessageLookupByLibrary.simpleMessage("Perguntas frequentes"),
         "feedback": MessageLookupByLibrary.simpleMessage("Opinião"),
+        "fileTypes": MessageLookupByLibrary.simpleMessage("File types"),
         "forgotPassword":
             MessageLookupByLibrary.simpleMessage("Esqueceu sua senha"),
         "freeStorageClaimed": MessageLookupByLibrary.simpleMessage(
@@ -259,6 +261,9 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Dispositivo perdido?"),
         "manage": MessageLookupByLibrary.simpleMessage("Gerenciar"),
         "moderateStrength": MessageLookupByLibrary.simpleMessage("Moderada"),
+        "modifyYourQueryOrTrySearchingFor":
+            MessageLookupByLibrary.simpleMessage(
+                "Modify your query, or try searching for"),
         "moveToHiddenAlbum":
             MessageLookupByLibrary.simpleMessage("Move to hidden album"),
         "noRecoveryKey": MessageLookupByLibrary.simpleMessage(
@@ -426,6 +431,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "youCanAtMaxDoubleYourStorage": MessageLookupByLibrary.simpleMessage(
             "* Você pode duplicar seu armazenamento no máximo"),
         "yourAccountHasBeenDeleted":
-            MessageLookupByLibrary.simpleMessage("Sua conta foi deletada")
+            MessageLookupByLibrary.simpleMessage("Sua conta foi deletada"),
+        "yourMap": MessageLookupByLibrary.simpleMessage("Your map")
       };
 }

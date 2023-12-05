@@ -187,6 +187,8 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m59(count) =>
       "${Intl.plural(count, zero: '', one: '1 giorno', other: '${count} giorni')}";
 
+  static String m66(endDate) => "Valido fino al ${endDate}";
+
   static String m60(email) => "Verifica ${email}";
 
   static String m61(email) =>
@@ -220,6 +222,9 @@ class MessageLookup extends MessageLookupByLibrary {
         "addLocation": MessageLookupByLibrary.simpleMessage("Aggiungi luogo"),
         "addLocationButton": MessageLookupByLibrary.simpleMessage("Aggiungi"),
         "addMore": MessageLookupByLibrary.simpleMessage("Aggiungi altri"),
+        "addOnPageSubtitle": MessageLookupByLibrary.simpleMessage(
+            "Dettagli dei componenti aggiuntivi"),
+        "addOns": MessageLookupByLibrary.simpleMessage("Componenti aggiuntivi"),
         "addPhotos": MessageLookupByLibrary.simpleMessage("Aggiungi foto"),
         "addSelected":
             MessageLookupByLibrary.simpleMessage("Aggiungi selezionate"),
@@ -441,6 +446,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "contactSupport":
             MessageLookupByLibrary.simpleMessage("Contatta il supporto"),
         "contactToManageSubscription": m10,
+        "contacts": MessageLookupByLibrary.simpleMessage("Contacts"),
         "continueLabel": MessageLookupByLibrary.simpleMessage("Continua"),
         "continueOnFreeTrial":
             MessageLookupByLibrary.simpleMessage("Continua la prova gratuita"),
@@ -502,7 +508,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Questo eliminerà tutti gli album vuoti. È utile quando si desidera ridurre l\'ingombro nella lista degli album."),
         "deleteAll": MessageLookupByLibrary.simpleMessage("Elimina tutto"),
         "deleteConfirmDialogBody": MessageLookupByLibrary.simpleMessage(
-            "Stai per eliminare definitivamente il tuo account e tutti i suoi dati.\nQuesta azione è irreversibile."),
+            "Questo account è collegato ad altre app di ente, se ne utilizzi.\\n\\nI tuoi dati caricati, su tutte le app di ente, saranno pianificati per la cancellazione e il tuo account verrà eliminato definitivamente."),
         "deleteEmailRequest": MessageLookupByLibrary.simpleMessage(
             "Invia un\'email a <warning>account-deletion@ente.io</warning> dal tuo indirizzo email registrato."),
         "deleteEmptyAlbums":
@@ -712,6 +718,10 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Concedi il permesso"),
         "groupNearbyPhotos": MessageLookupByLibrary.simpleMessage(
             "Raggruppa foto nelle vicinanze"),
+        "hearUsExplanation": MessageLookupByLibrary.simpleMessage(
+            "Non teniamo traccia del numero di installazioni dell\'app. Sarebbe utile se ci dicesse dove ci ha trovato!"),
+        "hearUsWhereTitle": MessageLookupByLibrary.simpleMessage(
+            "Come hai sentito parlare di Ente? (opzionale)"),
         "hidden": MessageLookupByLibrary.simpleMessage("Nascosti"),
         "hide": MessageLookupByLibrary.simpleMessage("Nascondi"),
         "hiding": MessageLookupByLibrary.simpleMessage("Nascondendo..."),
@@ -856,6 +866,9 @@ class MessageLookup extends MessageLookupByLibrary {
         "mobileWebDesktop":
             MessageLookupByLibrary.simpleMessage("Mobile, Web, Desktop"),
         "moderateStrength": MessageLookupByLibrary.simpleMessage("Mediocre"),
+        "modifyYourQueryOrTrySearchingFor":
+            MessageLookupByLibrary.simpleMessage(
+                "Modify your query, or try searching for"),
         "monthly": MessageLookupByLibrary.simpleMessage("Mensile"),
         "moveItem": m30,
         "moveToAlbum":
@@ -1378,6 +1391,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "useSelectedPhoto":
             MessageLookupByLibrary.simpleMessage("Usa la foto selezionata"),
         "usedSpace": MessageLookupByLibrary.simpleMessage("Spazio utilizzato"),
+        "validTill": m66,
         "verificationFailedPleaseTryAgain":
             MessageLookupByLibrary.simpleMessage(
                 "Verifica fallita, per favore prova di nuovo"),
@@ -1396,6 +1410,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "videoSmallCase": MessageLookupByLibrary.simpleMessage("video"),
         "viewActiveSessions":
             MessageLookupByLibrary.simpleMessage("Visualizza sessioni attive"),
+        "viewAddOnButton": MessageLookupByLibrary.simpleMessage(
+            "Visualizza componenti aggiuntivi"),
         "viewAll": MessageLookupByLibrary.simpleMessage("Visualizza tutte"),
         "viewAllExifData":
             MessageLookupByLibrary.simpleMessage("Mostra tutti i dati EXIF"),
@@ -1447,6 +1463,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "youHaveSuccessfullyFreedUp": m63,
         "yourAccountHasBeenDeleted": MessageLookupByLibrary.simpleMessage(
             "Il tuo account è stato eliminato"),
+        "yourMap": MessageLookupByLibrary.simpleMessage("Your map"),
         "yourPlanWasSuccessfullyDowngraded":
             MessageLookupByLibrary.simpleMessage(
                 "Il tuo piano è stato aggiornato con successo"),

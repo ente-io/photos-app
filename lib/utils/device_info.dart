@@ -1,11 +1,10 @@
 import 'dart:io';
 
-import "package:device_info/device_info.dart";
+import "package:device_info_plus/device_info_plus.dart";
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 
 DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
-
 // https://gist.github.com/adamawolf/3048717
 final Set<String> iOSLowEndMachineCodes = <String>{
   "iPhone5,1", //iPhone 5 (GSM)

@@ -25,6 +25,8 @@ import 'package:photos/ui/payment/payment_web_page.dart';
 import 'package:photos/ui/payment/skip_subscription_widget.dart';
 import 'package:photos/ui/payment/subscription_common_widgets.dart';
 import 'package:photos/ui/payment/subscription_plan_widget.dart';
+import "package:photos/ui/payment/view_add_on_widget.dart";
+import "package:photos/utils/data_util.dart";
 import 'package:photos/utils/dialog_util.dart';
 import 'package:photos/utils/toast_util.dart';
 import 'package:step_progress_indicator/step_progress_indicator.dart';
@@ -51,6 +53,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
 
   // indicates if user's subscription plan is still active
   late bool _hasActiveSubscription;
+  bool _hideCurrentPlanSelection = false;
   late FreePlan _freePlan;
   List<BillingPlan> _plans = [];
   bool _hasLoadedData = false;
@@ -71,7 +74,11 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
         .then((userDetails) async {
       _userDetails = userDetails;
       _currentSubscription = userDetails.subscription;
+
       _showYearlyPlan = _currentSubscription!.isYearlyPlan();
+      _hideCurrentPlanSelection =
+          (_currentSubscription?.attributes?.isCancelled ?? false) &&
+              userDetails.hasPaidAddon();
       _hasActiveSubscription = _currentSubscription!.isValid();
       _isStripeSubscriber = _currentSubscription!.paymentProvider == stripe;
       return _filterStripeForUI().then((value) {
@@ -208,8 +215,13 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
 
     widgets.add(_showSubscriptionToggle());
 
-    if (_hasActiveSubscription) {
-      widgets.add(ValidityWidget(currentSubscription: _currentSubscription));
+    if (_currentSubscription != null) {
+      widgets.add(
+        ValidityWidget(
+          currentSubscription: _currentSubscription,
+          bonusData: _userDetails.bonusData,
+        ),
+      );
     }
 
     if (_currentSubscription!.productID == freeProductID) {
@@ -252,7 +264,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
     if (!widget.isOnboarding) {
       widgets.add(
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
           child: MenuItemWidget(
             captionedTextWidget: CaptionedTextWidget(
               title: S.of(context).manageFamily,
@@ -270,6 +282,8 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
           ),
         ),
       );
+      widgets.add(ViewAddOnButton(_userDetails.bonusData));
+      widgets.add(const SizedBox(height: 80));
     }
 
     return SingleChildScrollView(
@@ -289,20 +303,22 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
         await _launchStripePortal();
         break;
       case playStore:
-        launchUrlString(
-          "https://play.google.com/store/account/subscriptions?sku=" +
-              _currentSubscription!.productID +
-              "&package=io.ente.photos",
+        unawaited(
+          launchUrlString(
+            "https://play.google.com/store/account/subscriptions?sku=" +
+                _currentSubscription!.productID +
+                "&package=io.ente.photos",
+          ),
         );
         break;
       case appStore:
-        launchUrlString("https://apps.apple.com/account/billing");
+        unawaited(launchUrlString("https://apps.apple.com/account/billing"));
         break;
       default:
         final String capitalizedWord = paymentProvider.isNotEmpty
             ? '${paymentProvider[0].toUpperCase()}${paymentProvider.substring(1).toLowerCase()}'
             : '';
-        showErrorDialog(
+        await showErrorDialog(
           context,
           S.of(context).sorry,
           S.of(context).contactToManageSubscription(capitalizedWord),
@@ -314,7 +330,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
     await _dialog.show();
     try {
       final String url = await _billingService.getStripeCustomerPortalUrl();
-      Navigator.of(context).push(
+      await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (BuildContext context) {
             return WebPage(S.of(context).paymentDetails, url);
@@ -323,7 +339,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
       ).then((value) => onWebPaymentGoBack);
     } catch (e) {
       await _dialog.hide();
-      showGenericErrorDialog(context: context);
+      await showGenericErrorDialog(context: context, error: e);
     }
     await _dialog.hide();
   }
@@ -331,6 +347,9 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
   Widget _stripeRenewOrCancelButton() {
     final bool isRenewCancelled =
         _currentSubscription!.attributes?.isCancelled ?? false;
+    if (isRenewCancelled && _userDetails.hasPaidAddon()) {
+      return const SizedBox.shrink();
+    }
     final String title = isRenewCancelled
         ? S.of(context).renewSubscription
         : S.of(context).cancelSubscription;
@@ -365,7 +384,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
           confirmAction = choice!.action == ButtonAction.first;
         }
         if (confirmAction) {
-          toggleStripeSubscription(isRenewCancelled);
+          await toggleStripeSubscription(isRenewCancelled);
         }
       },
     );
@@ -381,11 +400,13 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
           : await _billingService.cancelStripeSubscription();
       await _fetchSub();
     } catch (e) {
-      showShortToast(
-        context,
-        isAutoRenewDisabled
-            ? S.of(context).failedToRenew
-            : S.of(context).failedToCancel,
+      unawaited(
+        showShortToast(
+          context,
+          isAutoRenewDisabled
+              ? S.of(context).failedToRenew
+              : S.of(context).failedToCancel,
+        ),
       );
     }
     await _dialog.hide();
@@ -437,7 +458,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
               if (!_isStripeSubscriber &&
                   _hasActiveSubscription &&
                   _currentSubscription!.productID != freeProductID) {
-                showErrorDialog(
+                await showErrorDialog(
                   context,
                   S.of(context).sorry,
                   S.of(context).cancelOtherSubscription(
@@ -446,8 +467,17 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
                 );
                 return;
               }
-              if (_userDetails.getFamilyOrPersonalUsage() > plan.storage) {
-                showErrorDialog(
+              final int addOnBonus =
+                  _userDetails.bonusData?.totalAddOnBonus() ?? 0;
+              if (_userDetails.getFamilyOrPersonalUsage() >
+                  (plan.storage + addOnBonus)) {
+                logger.warning(
+                  " familyUsage ${convertBytesToReadableFormat(_userDetails.getFamilyOrPersonalUsage())}"
+                  " plan storage ${convertBytesToReadableFormat(plan.storage)} "
+                  "addOnBonus ${convertBytesToReadableFormat(addOnBonus)},"
+                  "overshooting by ${convertBytesToReadableFormat(_userDetails.getFamilyOrPersonalUsage() - (plan.storage + addOnBonus))}",
+                );
+                await showErrorDialog(
                   context,
                   S.of(context).sorry,
                   S.of(context).youCannotDowngradeToThisPlan,
@@ -469,7 +499,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
                   return;
                 }
               }
-              Navigator.push(
+              await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (BuildContext context) {
@@ -485,7 +515,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
               storage: plan.storage,
               price: plan.price,
               period: plan.period,
-              isActive: isActive,
+              isActive: isActive && !_hideCurrentPlanSelection,
             ),
           ),
         ),
@@ -576,7 +606,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
             storage: _currentSubscription!.storage,
             price: _currentSubscription!.price,
             period: _currentSubscription!.period,
-            isActive: true,
+            isActive: !_hasActiveSubscription,
           ),
         ),
       ),

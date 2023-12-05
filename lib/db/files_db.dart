@@ -699,6 +699,7 @@ class FilesDB {
   Future<List<EnteFile>> getFilesCreatedWithinDurations(
     List<List<int>> durations,
     Set<int> ignoredCollectionIDs, {
+    int? visibility,
     String order = 'ASC',
   }) async {
     if (durations.isEmpty) {
@@ -714,6 +715,8 @@ class FilesDB {
           ")";
       if (index != durations.length - 1) {
         whereClause += " OR ";
+      } else if (visibility != null) {
+        whereClause += ' AND $columnMMdVisibility = $visibility';
       }
     }
     whereClause += ")";
@@ -786,7 +789,7 @@ class FilesDB {
     return uploadedFileIDs;
   }
 
-  Future<EnteFile?> getUploadedLocalFileInAnyCollection(
+  Future<List<EnteFile>> getFilesInAllCollection(
     int uploadedFileID,
     int userID,
   ) async {
@@ -799,12 +802,11 @@ class FilesDB {
         userID,
         uploadedFileID,
       ],
-      limit: 1,
     );
     if (results.isEmpty) {
-      return null;
+      return <EnteFile>[];
     }
-    return convertToFiles(results)[0];
+    return convertToFiles(results);
   }
 
   Future<Set<String>> getExistingLocalFileIDs(int ownerID) async {
@@ -1443,6 +1445,28 @@ class FilesDB {
     final result = <int>[];
     for (final row in rows) {
       result.add(row[columnUploadedFileID] as int);
+    }
+    return result;
+  }
+
+  // For a given userID, return unique uploadedFileId for the given userID
+  Future<List<String>> getLivePhotosWithBadSize(
+    int userId,
+    int sizeInBytes,
+  ) async {
+    final db = await instance.database;
+    final rows = await db.query(
+      filesTable,
+      columns: [columnLocalID],
+      distinct: true,
+      where: '$columnOwnerID = ? AND '
+          '($columnFileSize IS NULL OR $columnFileSize = ?) AND '
+          '$columnFileType = ? AND $columnLocalID IS NOT NULL',
+      whereArgs: [userId, sizeInBytes, getInt(FileType.livePhoto)],
+    );
+    final result = <String>[];
+    for (final row in rows) {
+      result.add(row[columnLocalID] as String);
     }
     return result;
   }

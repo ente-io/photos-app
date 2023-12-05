@@ -10,7 +10,6 @@ import "package:photos/models/memory.dart";
 import "package:photos/services/memories_service.dart";
 import "package:photos/theme/text_style.dart";
 import "package:photos/ui/actions/file/file_actions.dart";
-import "package:photos/ui/extents_page_view.dart";
 import "package:photos/ui/viewer/file/file_widget.dart";
 import "package:photos/ui/viewer/file_details/favorite_widget.dart";
 import "package:photos/utils/file_util.dart";
@@ -37,7 +36,7 @@ class _FullScreenMemoryState extends State<FullScreenMemory> {
   bool _showCounter = false;
   bool _showStepIndicator = true;
   PageController? _pageController;
-  bool _shouldDisableScroll = false;
+  final bool _shouldDisableScroll = false;
   late int currentUserID;
   final GlobalKey shareButtonKey = GlobalKey();
 
@@ -60,7 +59,6 @@ class _FullScreenMemoryState extends State<FullScreenMemory> {
 
   @override
   Widget build(BuildContext context) {
-    _pageController ??= PageController(initialPage: _index);
     final file = widget.memories[_index].file;
     return Scaffold(
       appBar: AppBar(
@@ -292,7 +290,7 @@ class _FullScreenMemoryState extends State<FullScreenMemory> {
     debugPrint(
       "FullScreenbuildSwiper: $_index and total ${widget.memories.length}",
     );
-    _pageController = PageController(initialPage: _index);
+    _pageController ??= PageController(initialPage: _index);
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onTapDown: (TapDownDetails details) {
@@ -317,7 +315,7 @@ class _FullScreenMemoryState extends State<FullScreenMemory> {
           }
         }
       },
-      child: ExtentsPageView.extents(
+      child: PageView.builder(
         itemBuilder: (BuildContext context, int index) {
           if (index < widget.memories.length - 1) {
             final nextFile = widget.memories[index + 1].file;
@@ -329,21 +327,13 @@ class _FullScreenMemoryState extends State<FullScreenMemory> {
             file,
             autoPlay: false,
             tagPrefix: "memories",
-            shouldDisableScroll: (value) {
-              if (value == _shouldDisableScroll) {
-                return;
-              }
-              setState(() {
-                _shouldDisableScroll = value;
-              });
-            },
             backgroundDecoration: const BoxDecoration(
               color: Colors.transparent,
             ),
           );
         },
         itemCount: widget.memories.length,
-        controller: _pageController,
+        controller: _pageController!,
         onPageChanged: (index) async {
           unawaited(
             MemoriesService.instance.markMemoryAsSeen(widget.memories[index]),

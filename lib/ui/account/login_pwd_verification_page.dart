@@ -1,12 +1,17 @@
-
+import "package:dio/dio.dart";
+import "package:flutter/foundation.dart";
 import 'package:flutter/material.dart';
+import "package:logging/logging.dart";
 import 'package:photos/core/configuration.dart';
+import "package:photos/core/errors.dart";
 import "package:photos/generated/l10n.dart";
 import "package:photos/models/api/user/srp.dart";
 import "package:photos/services/user_service.dart";
 import "package:photos/theme/ente_theme.dart";
 import 'package:photos/ui/common/dynamic_fab.dart';
+import "package:photos/ui/components/buttons/button_widget.dart";
 import "package:photos/utils/dialog_util.dart";
+import "package:photos/utils/email_util.dart";
 
 // LoginPasswordVerificationPage is a page that allows the user to enter their password to verify their identity.
 // If the password is correct, then the user is either directed to
@@ -15,24 +20,31 @@ import "package:photos/utils/dialog_util.dart";
 // volatile password.
 class LoginPasswordVerificationPage extends StatefulWidget {
   final SrpAttributes srpAttributes;
-  const LoginPasswordVerificationPage({Key? key, required this.srpAttributes}) : super(key: key);
+
+  const LoginPasswordVerificationPage({Key? key, required this.srpAttributes})
+      : super(key: key);
 
   @override
-  State<LoginPasswordVerificationPage> createState() => _LoginPasswordVerificationPageState();
+  State<LoginPasswordVerificationPage> createState() =>
+      _LoginPasswordVerificationPageState();
 }
 
-class _LoginPasswordVerificationPageState extends
-State<LoginPasswordVerificationPage> {
+class _LoginPasswordVerificationPageState
+    extends State<LoginPasswordVerificationPage> {
   final _passwordController = TextEditingController();
   final FocusNode _passwordFocusNode = FocusNode();
   String? email;
   bool _passwordInFocus = false;
   bool _passwordVisible = false;
+  final Logger _logger = Logger("LoginPasswordVerificationPage");
 
   @override
   void initState() {
     super.initState();
     email = Configuration.instance.getEmail();
+    if (kDebugMode) {
+      _passwordController.text = const String.fromEnvironment("password");
+    }
     _passwordFocusNode.addListener(() {
       setState(() {
         _passwordInFocus = _passwordFocusNode.hasFocus;
@@ -79,14 +91,112 @@ State<LoginPasswordVerificationPage> {
         buttonText: S.of(context).logInLabel,
         onPressedFunction: () async {
           FocusScope.of(context).unfocus();
-          await UserService.instance.verifyEmailViaPassword(context, widget
-              .srpAttributes,
-              _passwordController.text,);
+          await verifyPassword(context, _passwordController.text);
         },
       ),
       floatingActionButtonLocation: fabLocation(),
       floatingActionButtonAnimator: NoScalingAnimation(),
     );
+  }
+
+  Future<void> verifyPassword(BuildContext context, String password) async {
+    final dialog = createProgressDialog(
+      context,
+      S.of(context).pleaseWait,
+      isDismissible: true,
+    );
+    await dialog.show();
+    try {
+      await UserService.instance.verifyEmailViaPassword(
+        context,
+        widget.srpAttributes,
+        password,
+        dialog,
+      );
+    } on DioError catch (e, s) {
+      await dialog.hide();
+      if (e.response != null && e.response!.statusCode == 401) {
+        _logger.severe('server reject, failed verify SRP login', e, s);
+        await _showContactSupportDialog(
+          context,
+          S.of(context).incorrectPasswordTitle,
+          S.of(context).pleaseTryAgain,
+        );
+      } else {
+        _logger.severe('API failure during SRP login', e, s);
+        if (e.type == DioErrorType.other) {
+          await _showContactSupportDialog(
+            context,
+            S.of(context).noInternetConnection,
+            S.of(context).pleaseCheckYourInternetConnectionAndTryAgain,
+          );
+        } else {
+          await _showContactSupportDialog(
+            context,
+            S.of(context).somethingWentWrong,
+            S.of(context).verificationFailedPleaseTryAgain,
+          );
+        }
+      }
+    } catch (e, s) {
+      _logger.info('error during loginViaPassword', e);
+      await dialog.hide();
+      if (e is LoginKeyDerivationError) {
+        _logger.severe('loginKey derivation error', e, s);
+        // LoginKey err, perform regular login via ott verification
+        await UserService.instance.sendOtt(
+          context,
+          email!,
+          isCreateAccountScreen: true,
+        );
+        return;
+      } else if (e is KeyDerivationError) {
+        // device is not powerful enough to perform derive key
+        final dialogChoice = await showChoiceDialog(
+          context,
+          title: S.of(context).recreatePasswordTitle,
+          body: S.of(context).recreatePasswordBody,
+          firstButtonLabel: S.of(context).useRecoveryKey,
+        );
+        if (dialogChoice!.action == ButtonAction.first) {
+          await UserService.instance.sendOtt(
+            context,
+            email!,
+            isResetPasswordScreen: true,
+          );
+        }
+        return;
+      } else {
+        _logger.severe('unexpected error while verifying password', e, s);
+        await _showContactSupportDialog(
+          context,
+          S.of(context).oops,
+          S.of(context).verificationFailedPleaseTryAgain,
+        );
+      }
+    }
+  }
+
+  Future<void> _showContactSupportDialog(
+    BuildContext context,
+    String title,
+    String message,
+  ) async {
+    final dialogChoice = await showChoiceDialog(
+      context,
+      title: title,
+      body: message,
+      firstButtonLabel: S.of(context).contactSupport,
+      secondButtonLabel: S.of(context).ok,
+    );
+    if (dialogChoice!.action == ButtonAction.first) {
+      await sendLogs(
+        context,
+        S.of(context).contactSupport,
+        "support@ente.io",
+        postShare: () {},
+      );
+    }
   }
 
   Widget _getBody() {
@@ -97,17 +207,22 @@ State<LoginPasswordVerificationPage> {
             child: ListView(
               children: [
                 Padding(
-                  padding:
-                  const EdgeInsets.only(top: 30, left: 20, right: 20),
+                  padding: const EdgeInsets.only(top: 30, left: 20, right: 20),
                   child: Text(
                     S.of(context).enterPassword,
                     style: Theme.of(context).textTheme.headlineMedium,
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 30, left: 22, right:
-                  20,),
-                  child: Text(email ?? '', style: getEnteTextTheme(context).smallMuted,),
+                  padding: const EdgeInsets.only(
+                    bottom: 30,
+                    left: 22,
+                    right: 20,
+                  ),
+                  child: Text(
+                    email ?? '',
+                    style: getEnteTextTheme(context).smallMuted,
+                  ),
                 ),
                 Visibility(
                   // hidden textForm for suggesting auto-fill service for saving
@@ -138,19 +253,19 @@ State<LoginPasswordVerificationPage> {
                       ),
                       suffixIcon: _passwordInFocus
                           ? IconButton(
-                        icon: Icon(
-                          _passwordVisible
-                              ? Icons.visibility
-                              : Icons.visibility_off,
-                          color: Theme.of(context).iconTheme.color,
-                          size: 20,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _passwordVisible = !_passwordVisible;
-                          });
-                        },
-                      )
+                              icon: Icon(
+                                _passwordVisible
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
+                                color: Theme.of(context).iconTheme.color,
+                                size: 20,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _passwordVisible = !_passwordVisible;
+                                });
+                              },
+                            )
                           : null,
                     ),
                     style: const TextStyle(
@@ -181,9 +296,11 @@ State<LoginPasswordVerificationPage> {
                       GestureDetector(
                         behavior: HitTestBehavior.opaque,
                         onTap: () async {
-                          await UserService.instance
-                              .sendOtt(context, email!,
-                              isResetPasswordScreen: true,);
+                          await UserService.instance.sendOtt(
+                            context,
+                            email!,
+                            isResetPasswordScreen: true,
+                          );
                         },
                         child: Center(
                           child: Text(
@@ -192,9 +309,9 @@ State<LoginPasswordVerificationPage> {
                                 .textTheme
                                 .titleMedium!
                                 .copyWith(
-                              fontSize: 14,
-                              decoration: TextDecoration.underline,
-                            ),
+                                  fontSize: 14,
+                                  decoration: TextDecoration.underline,
+                                ),
                           ),
                         ),
                       ),
@@ -218,9 +335,9 @@ State<LoginPasswordVerificationPage> {
                                 .textTheme
                                 .titleMedium!
                                 .copyWith(
-                              fontSize: 14,
-                              decoration: TextDecoration.underline,
-                            ),
+                                  fontSize: 14,
+                                  decoration: TextDecoration.underline,
+                                ),
                           ),
                         ),
                       ),

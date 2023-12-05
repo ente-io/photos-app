@@ -85,7 +85,7 @@ class FileAppBarState extends State<FileAppBar> {
           );
         },
       ),
-      Size.fromHeight(Platform.isAndroid ? 80 : 96),
+      Size.fromHeight(Platform.isAndroid ? 84 : 96),
     );
   }
 
@@ -104,27 +104,35 @@ class FileAppBarState extends State<FileAppBar> {
               ?.isHidden() ??
           false;
     }
-      if (kDebugMode) {
-        actions.add(
-          Text(
-            widget.file.generatedID?.toString() ?? 'null',
-            style: const TextStyle(color: Colors.white),
-          ),
-        );
-      }
+    if (kDebugMode) {
+      actions.add(
+        Text(
+          widget.file.generatedID?.toString() ?? 'null',
+          style: const TextStyle(color: Colors.white),
+        ),
+      );
+    }
     if (widget.file.isLiveOrMotionPhoto) {
       actions.add(
         IconButton(
           icon: const Icon(Icons.album_outlined),
           onPressed: () {
-            showShortToast(context, S.of(context).pressAndHoldToPlayVideoDetailed);
+            showShortToast(
+              context,
+              S.of(context).pressAndHoldToPlayVideoDetailed,
+            );
           },
         ),
       );
     }
     // only show fav option for files owned by the user
     if (isOwnedByUser && !isFileHidden && isFileUploaded) {
-      actions.add(FavoriteWidget(widget.file));
+      actions.add(
+        Padding(
+          padding: const EdgeInsets.all(8),
+          child: FavoriteWidget(widget.file),
+        ),
+      );
     }
     if (!isFileUploaded) {
       actions.add(
@@ -249,15 +257,15 @@ class FileAppBarState extends State<FileAppBar> {
         },
         onSelected: (dynamic value) async {
           if (value == 1) {
-            _download(widget.file);
+            await _download(widget.file);
           } else if (value == 2) {
             await _toggleFileArchiveStatus(widget.file);
           } else if (value == 3) {
-            _setAs(widget.file);
+            await _setAs(widget.file);
           } else if (value == 4) {
-            _handleHideRequest(context);
+            await _handleHideRequest(context);
           } else if (value == 5) {
-            _handleUnHideRequest(context);
+            await _handleUnHideRequest(context);
           }
         },
       ),
@@ -280,7 +288,7 @@ class FileAppBarState extends State<FileAppBar> {
       }
     } catch (e, s) {
       _logger.severe("failed to update file visibility", e, s);
-      await showGenericErrorDialog(context: context);
+      await showGenericErrorDialog(context: context, error: e);
     }
   }
 
@@ -363,7 +371,7 @@ class FileAppBarState extends State<FileAppBar> {
     } catch (e) {
       _logger.warning("Failed to save file", e);
       await dialog.hide();
-      showGenericErrorDialog(context: context);
+      await showGenericErrorDialog(context: context, error: e);
     } finally {
       PhotoManager.startChangeNotify();
       LocalSyncService.instance.checkAndSync().ignore();
@@ -424,7 +432,7 @@ class FileAppBarState extends State<FileAppBar> {
     } catch (e) {
       dialog.hide();
       _logger.severe("Failed to use as", e);
-      showGenericErrorDialog(context: context);
+      await showGenericErrorDialog(context: context, error: e);
     }
   }
 }
