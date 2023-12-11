@@ -2,6 +2,8 @@ import "dart:async";
 
 import 'package:flutter/material.dart';
 import "package:photos/core/error-reporting/super_logging.dart";
+import "package:photos/core/event_bus.dart";
+import "package:photos/events/force_reload_home_gallery_event.dart";
 import "package:photos/generated/l10n.dart";
 import "package:photos/services/memories_service.dart";
 import "package:photos/services/user_remote_flag_service.dart";
@@ -130,9 +132,13 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                                 value: () =>
                                     MemoriesService.instance.hideSharedItems,
                                 onChanged: () async {
-                                  unawaited(
-                                    MemoriesService.instance.setHideSharedItems(
-                                      !MemoriesService.instance.hideSharedItems,
+                                  await MemoriesService.instance
+                                      .setHideSharedItems(
+                                    !MemoriesService.instance.hideSharedItems,
+                                  );
+                                  Bus.instance.fire(
+                                    ForceReloadHomeGalleryEvent(
+                                      "Hide/show shared items",
                                     ),
                                   );
                                 },
