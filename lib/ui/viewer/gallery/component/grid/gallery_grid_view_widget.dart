@@ -2,6 +2,7 @@ import "package:flutter/widgets.dart";
 import "package:photos/core/constants.dart";
 import 'package:photos/models/file/file.dart';
 import "package:photos/models/selected_files.dart";
+import "package:photos/services/memories_service.dart";
 import "package:photos/ui/viewer/gallery/component/gallery_file_widget.dart";
 import "package:photos/ui/viewer/gallery/gallery.dart";
 
@@ -31,16 +32,19 @@ class GalleryGridViewWidget extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       // to disable GridView's scrolling
       itemBuilder: (context, index) {
-        return GalleryFileWidget(
-          file: filesInGroup[index],
-          selectedFiles: selectedFiles,
-          limitSelectionToOne: limitSelectionToOne,
-          tag: tag,
-          photoGridSize: photoGridSize,
-          currentUserID: currentUserID,
-          filesInGroup: filesInGroup,
-          asyncLoader: asyncLoader,
-        );
+        return (MemoriesService.instance.hideSharedItems &&
+                filesInGroup[index].ownerID != currentUserID)
+            ? const SizedBox.shrink()
+            : GalleryFileWidget(
+                file: filesInGroup[index],
+                selectedFiles: selectedFiles,
+                limitSelectionToOne: limitSelectionToOne,
+                tag: tag,
+                photoGridSize: photoGridSize,
+                currentUserID: currentUserID,
+                filesInGroup: filesInGroup,
+                asyncLoader: asyncLoader,
+              );
       },
       itemCount: filesInGroup.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
