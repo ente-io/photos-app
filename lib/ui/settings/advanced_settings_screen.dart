@@ -121,6 +121,28 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                             ),
                             MenuItemWidget(
                               captionedTextWidget: CaptionedTextWidget(
+                                title: S.of(context).hideSharedItems,
+                              ),
+                              menuItemColor: colorScheme.fillFaint,
+                              singleBorderRadius: 8,
+                              alignCaptionedTextToLeft: true,
+                              trailingWidget: ToggleSwitchWidget(
+                                value: () =>
+                                    MemoriesService.instance.hideSharedItems,
+                                onChanged: () async {
+                                  unawaited(
+                                    MemoriesService.instance.setHideSharedItems(
+                                      !MemoriesService.instance.hideSharedItems,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(
+                              height: 24,
+                            ),
+                            MenuItemWidget(
+                              captionedTextWidget: CaptionedTextWidget(
                                 title: S.of(context).manageDeviceStorage,
                               ),
                               menuItemColor: colorScheme.fillFaint,
@@ -131,7 +153,10 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                               singleBorderRadius: 8,
                               alignCaptionedTextToLeft: true,
                               onTap: () async {
-                                routeToPage(context, const AppStorageViewer());
+                                await routeToPage(
+                                  context,
+                                  const AppStorageViewer(),
+                                );
                               },
                             ),
                             const SizedBox(
