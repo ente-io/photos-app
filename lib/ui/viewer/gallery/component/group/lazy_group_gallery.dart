@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
+import "package:photos/core/configuration.dart";
 import 'package:photos/core/constants.dart';
 import 'package:photos/events/files_updated_event.dart';
 import 'package:photos/models/file/file.dart';
@@ -183,73 +184,81 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
     if (_files.isEmpty) {
       return const SizedBox.shrink();
     }
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            if (widget.enableFileGrouping)
-              GroupHeaderWidget(
-                timestamp: _files[0].creationTime!,
-                gridSize: widget.photoGridSize,
-              ),
-            widget.limitSelectionToOne
-                ? const SizedBox.shrink()
-                : ValueListenableBuilder(
-                    valueListenable: _showSelectAllButtonNotifier,
-                    builder: (context, dynamic value, _) {
-                      return !value
-                          ? const SizedBox.shrink()
-                          : GestureDetector(
-                              behavior: HitTestBehavior.translucent,
-                              child: SizedBox(
-                                width: 48,
-                                height: 44,
-                                child: ValueListenableBuilder(
-                                  valueListenable:
-                                      _areAllFromGroupSelectedNotifer,
-                                  builder: (context, dynamic value, _) {
-                                    return value
-                                        ? const Icon(
-                                            Icons.check_circle,
-                                            size: 18,
-                                          )
-                                        : Icon(
-                                            Icons.check_circle_outlined,
-                                            color: getEnteColorScheme(context)
-                                                .strokeMuted,
-                                            size: 18,
-                                          );
-                                  },
-                                ),
-                              ),
-                              onTap: () {
-                                widget.selectedFiles?.toggleGroupSelection(
-                                  _setOfFiles,
-                                );
-                              },
-                            );
-                    },
-                  ),
-          ],
-        ),
-        _shouldRender!
-            ? GroupGallery(
-                photoGridSize: widget.photoGridSize,
-                files: _files,
-                tag: widget.tag,
-                asyncLoader: widget.asyncLoader,
-                selectedFiles: widget.selectedFiles,
-                limitSelectionToOne: widget.limitSelectionToOne,
-              )
-            // todo: perf eval should we have separate PlaceHolder for Groups
-            //  instead of creating a large cached view
-            : PlaceHolderGridViewWidget(
-                _files.length,
-                widget.photoGridSize,
-              ),
-      ],
+    final EnteFile matchingFile = _files.firstWhere(
+      (file) => Configuration.instance.getUserID() == file.ownerID,
+      orElse: () => EnteFile(),
     );
+    return matchingFile.creationTime != null
+        ? Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (widget.enableFileGrouping)
+                    GroupHeaderWidget(
+                      timestamp: matchingFile.creationTime!,
+                      gridSize: widget.photoGridSize,
+                    ),
+                  widget.limitSelectionToOne
+                      ? const SizedBox.shrink()
+                      : ValueListenableBuilder(
+                          valueListenable: _showSelectAllButtonNotifier,
+                          builder: (context, dynamic value, _) {
+                            return !value
+                                ? const SizedBox.shrink()
+                                : GestureDetector(
+                                    behavior: HitTestBehavior.translucent,
+                                    child: SizedBox(
+                                      width: 48,
+                                      height: 44,
+                                      child: ValueListenableBuilder(
+                                        valueListenable:
+                                            _areAllFromGroupSelectedNotifer,
+                                        builder: (context, dynamic value, _) {
+                                          return value
+                                              ? const Icon(
+                                                  Icons.check_circle,
+                                                  size: 18,
+                                                )
+                                              : Icon(
+                                                  Icons.check_circle_outlined,
+                                                  color: getEnteColorScheme(
+                                                    context,
+                                                  ).strokeMuted,
+                                                  size: 18,
+                                                );
+                                        },
+                                      ),
+                                    ),
+                                    onTap: () {
+                                      widget.selectedFiles
+                                          ?.toggleGroupSelection(
+                                        _setOfFiles,
+                                      );
+                                    },
+                                  );
+                          },
+                        ),
+                ],
+              ),
+              _shouldRender!
+                  ? GroupGallery(
+                      photoGridSize: widget.photoGridSize,
+                      files: _files,
+                      tag: widget.tag,
+                      asyncLoader: widget.asyncLoader,
+                      selectedFiles: widget.selectedFiles,
+                      limitSelectionToOne: widget.limitSelectionToOne,
+                    )
+                  // todo: perf eval should we have separate PlaceHolder for Groups
+                  //  instead of creating a large cached view
+                  : PlaceHolderGridViewWidget(
+                      _files.length,
+                      widget.photoGridSize,
+                    ),
+            ],
+          )
+        : const SizedBox.shrink();
   }
 
   void _selectedFilesListener() {
