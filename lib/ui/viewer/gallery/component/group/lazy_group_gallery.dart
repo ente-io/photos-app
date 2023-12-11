@@ -185,14 +185,14 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
     if (_files.isEmpty) {
       return const SizedBox.shrink();
     }
-    EnteFile initalFile = _files[0];
+    EnteFile initialFile = _files[0];
     if (MemoriesService.instance.hideSharedItems) {
-      initalFile = _files.firstWhere(
+      initialFile = _files.firstWhere(
         (file) => Configuration.instance.getUserID() == file.ownerID,
         orElse: () => EnteFile(),
       );
     }
-    return initalFile.creationTime != null
+    return initialFile.creationTime != null
         ? Column(
             children: [
               Row(
@@ -200,7 +200,7 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
                 children: [
                   if (widget.enableFileGrouping)
                     GroupHeaderWidget(
-                      timestamp: initalFile.creationTime!,
+                      timestamp: initialFile.creationTime!,
                       gridSize: widget.photoGridSize,
                     ),
                   widget.limitSelectionToOne
