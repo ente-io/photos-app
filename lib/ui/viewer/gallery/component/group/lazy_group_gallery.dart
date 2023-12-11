@@ -8,6 +8,7 @@ import 'package:photos/core/constants.dart';
 import 'package:photos/events/files_updated_event.dart';
 import 'package:photos/models/file/file.dart';
 import 'package:photos/models/selected_files.dart';
+import "package:photos/services/memories_service.dart";
 import 'package:photos/theme/ente_theme.dart';
 import "package:photos/ui/viewer/gallery/component/grid/place_holder_grid_view_widget.dart";
 import "package:photos/ui/viewer/gallery/component/group/group_gallery.dart";
@@ -184,11 +185,14 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
     if (_files.isEmpty) {
       return const SizedBox.shrink();
     }
-    final EnteFile matchingFile = _files.firstWhere(
-      (file) => Configuration.instance.getUserID() == file.ownerID,
-      orElse: () => EnteFile(),
-    );
-    return matchingFile.creationTime != null
+    EnteFile initalFile = _files[0];
+    if (MemoriesService.instance.hideSharedItems) {
+      initalFile = _files.firstWhere(
+        (file) => Configuration.instance.getUserID() == file.ownerID,
+        orElse: () => EnteFile(),
+      );
+    }
+    return initalFile.creationTime != null
         ? Column(
             children: [
               Row(
@@ -196,7 +200,7 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
                 children: [
                   if (widget.enableFileGrouping)
                     GroupHeaderWidget(
-                      timestamp: matchingFile.creationTime!,
+                      timestamp: initalFile.creationTime!,
                       gridSize: widget.photoGridSize,
                     ),
                   widget.limitSelectionToOne
