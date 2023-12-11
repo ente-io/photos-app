@@ -23,6 +23,7 @@ class MemoriesService extends ChangeNotifier {
   static const daysBefore = 7;
   static const daysAfter = 1;
   static const _showMemoryKey = "memories.enabled";
+  static const _hideSharedItemsKey = "memories.hideSharedItems";
 
   List<Memory>? _cachedMemories;
   Future<List<Memory>>? _future;
@@ -65,8 +66,17 @@ class MemoriesService extends ChangeNotifier {
     return _prefs.getBool(_showMemoryKey) ?? true;
   }
 
+  bool get hideSharedItems {
+    return _prefs.getBool(_hideSharedItemsKey) ?? false;
+  }
+
   Future<void> setShowMemories(bool value) async {
     await _prefs.setBool(_showMemoryKey, value);
+    Bus.instance.fire(MemoriesSettingChanged());
+  }
+
+  Future<void> setHideSharedItems(bool value) async {
+    await _prefs.setBool(_hideSharedItemsKey, value);
     Bus.instance.fire(MemoriesSettingChanged());
   }
 
