@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:isolate';
-import 'dart:typed_data' show Uint8List;
+import 'dart:typed_data' show Float32List, Uint8List;
 import 'dart:ui';
 
 import 'package:flutter_isolate/flutter_isolate.dart';
@@ -12,7 +12,8 @@ import "package:photos/utils/image_ml_util.dart";
 import "package:synchronized/synchronized.dart";
 
 enum ImageOperation {
-  preprocessStandard,
+  preprocessBlazeFace,
+  preprocessYoloOnnx,
   preprocessFaceAlign,
   preprocessMobileFaceNet,
   generateFaceThumbnail,
@@ -93,9 +94,10 @@ class ImageMlIsolate {
       final sendPort = message[2] as SendPort;
 
       switch (function) {
-        case ImageOperation.preprocessStandard:
+        case ImageOperation.preprocessBlazeFace:
           final imageData = args['imageData'] as Uint8List;
           final normalize = args['normalize'] as bool;
+          final int normalization = normalize ? 2 : -1;
           final requiredWidth = args['requiredWidth'] as int;
           final requiredHeight = args['requiredHeight'] as int;
           final qualityIndex = args['quality'] as int;
@@ -103,7 +105,32 @@ class ImageMlIsolate {
           final quality = FilterQuality.values[qualityIndex];
           final (result, originalSize, newSize) = await preprocessImageToMatrix(
             imageData,
-            normalize: normalize,
+            normalization: normalization,
+            requiredWidth: requiredWidth,
+            requiredHeight: requiredHeight,
+            quality: quality,
+            maintainAspectRatio: maintainAspectRatio,
+          );
+          sendPort.send({
+            'inputs': result,
+            'originalWidth': originalSize.width,
+            'originalHeight': originalSize.height,
+            'newWidth': newSize.width,
+            'newHeight': newSize.height,
+          });
+        case ImageOperation.preprocessYoloOnnx:
+          final imageData = args['imageData'] as Uint8List;
+          final normalize = args['normalize'] as bool;
+          final int normalization = normalize ? 1 : -1;
+          final requiredWidth = args['requiredWidth'] as int;
+          final requiredHeight = args['requiredHeight'] as int;
+          final qualityIndex = args['quality'] as int;
+          final maintainAspectRatio = args['maintainAspectRatio'] as bool;
+          final quality = FilterQuality.values[qualityIndex];
+          final (result, originalSize, newSize) =
+              await preprocessImageToFloat32ChannelsFirst(
+            imageData,
+            normalization: normalization,
             requiredWidth: requiredWidth,
             requiredHeight: requiredHeight,
             quality: quality,
@@ -200,10 +227,10 @@ class ImageMlIsolate {
 
   /// Preprocesses [imageData] for standard ML models inside a separate isolate.
   ///
-  /// Returns a [Num3DInputMatrix] image usable for ML inference.
+  /// Returns a [Num3DInputMatrix] image usable for ML inference with BlazeFace.
   ///
   /// Uses [preprocessImageToMatrix] inside the isolate.
-  Future<(Num3DInputMatrix, Size, Size)> preprocessImage(
+  Future<(Num3DInputMatrix, Size, Size)> preprocessImageBlazeFace(
     Uint8List imageData, {
     required bool normalize,
     required int requiredWidth,
@@ -213,7 +240,7 @@ class ImageMlIsolate {
   }) async {
     final Map<String, dynamic> results = await _runInIsolate(
       (
-        ImageOperation.preprocessStandard,
+        ImageOperation.preprocessBlazeFace,
         {
           'imageData': imageData,
           'normalize': normalize,
@@ -236,6 +263,40 @@ class ImageMlIsolate {
     return (inputs, originalSize, newSize);
   }
 
+  /// Uses [preprocessImageToFloat32ChannelsFirst] inside the isolate.
+  Future<(Float32List, Size, Size)> preprocessImageYoloOnnx(
+    Uint8List imageData, {
+    required bool normalize,
+    required int requiredWidth,
+    required int requiredHeight,
+    FilterQuality quality = FilterQuality.medium,
+    bool maintainAspectRatio = true,
+  }) async {
+    final Map<String, dynamic> results = await _runInIsolate(
+      (
+        ImageOperation.preprocessYoloOnnx,
+        {
+          'imageData': imageData,
+          'normalize': normalize,
+          'requiredWidth': requiredWidth,
+          'requiredHeight': requiredHeight,
+          'quality': quality.index,
+          'maintainAspectRatio': maintainAspectRatio,
+        },
+      ),
+    );
+    final inputs = results['inputs'] as Float32List;
+    final originalSize = Size(
+      results['originalWidth'] as double,
+      results['originalHeight'] as double,
+    );
+    final newSize = Size(
+      results['newWidth'] as double,
+      results['newHeight'] as double,
+    );
+    return (inputs, originalSize, newSize);
+  }
+
   /// Preprocesses [imageData] for face alignment inside a separate isolate, to display the aligned faces. Mostly used for debugging.
   ///
   /// Returns a list of [Uint8List] images, one for each face, in png format.
@@ -247,8 +308,7 @@ class ImageMlIsolate {
     Uint8List imageData,
     List<FaceDetectionAbsolute> faces,
   ) async {
-    final faceLandmarks =
-        faces.map((face) => face.allKeypoints.sublist(0, 4)).toList();
+    final faceLandmarks = faces.map((face) => face.allKeypoints).toList();
     return await _runInIsolate(
       (
         ImageOperation.preprocessFaceAlign,

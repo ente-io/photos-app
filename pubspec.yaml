@@ -160,6 +160,7 @@ dependencies:
   wechat_assets_picker: ^8.6.3
   widgets_to_image: ^0.0.2
   flutter_isolate: ^2.0.4
+  onnxruntime: ^1.1.0
 
 dependency_overrides:
   # current fork of tfite_flutter_helper depends on ffi: ^1.x.x

@@ -12,8 +12,8 @@ import 'package:photos/models/ml/ml_typedefs.dart';
 import "package:photos/models/ml/ml_versions.dart";
 import "package:photos/services/face_ml/face_clustering/face_clustering_service.dart";
 import "package:photos/services/face_ml/face_detection/detection.dart";
-import "package:photos/services/face_ml/face_detection/face_detection_exceptions.dart";
-import "package:photos/services/face_ml/face_detection/face_detection_service.dart";
+import "package:photos/services/face_ml/face_detection/yolov5face/yolo_face_detection_exceptions.dart";
+import "package:photos/services/face_ml/face_detection/yolov5face/yolo_face_detection_onnx.dart";
 import "package:photos/services/face_ml/face_embedding/face_embedding_exceptions.dart";
 import "package:photos/services/face_ml/face_embedding/face_embedding_service.dart";
 import "package:photos/services/face_ml/face_ml_exceptions.dart";
@@ -48,7 +48,7 @@ class FaceMlService {
     }
     _logger.info("init called");
     try {
-      await FaceDetection.instance.init();
+      await YoloOnnxFaceDetection.instance.init();
     } catch (e, s) {
       _logger.severe("Could not initialize blazeface", e, s);
     }
@@ -443,7 +443,7 @@ class FaceMlService {
     try {
       // Get the bounding boxes of the faces
       final List<FaceDetectionRelative> faces =
-          await FaceDetection.instance.predict(thumbnailData);
+          await YoloOnnxFaceDetection.instance.predict(thumbnailData);
 
       // Add detected faces to the resultBuilder
       if (resultBuilder != null) {
@@ -451,11 +451,10 @@ class FaceMlService {
       }
 
       return faces;
-    } on BlazeFaceInterpreterInitializationException {
+    } on YOLOInterpreterInitializationException {
       throw CouldNotInitializeFaceDetector();
-    } on BlazeFaceInterpreterRunException {
+    } on YOLOInterpreterRunException {
       throw CouldNotRunFaceDetector();
-      // ignore: avoid_catches_without_on_clauses
     } catch (e) {
       _logger.severe('Face detection failed: $e');
       throw GeneralFaceMlException('Face detection failed: $e');

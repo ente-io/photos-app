@@ -1,6 +1,6 @@
 import "dart:async";
 import "dart:math" show min, max;
-import "dart:typed_data" show Uint8List, ByteData;
+import "dart:typed_data" show Float32List, Uint8List, ByteData;
 import "dart:ui";
 
 // import 'package:flutter/material.dart'
@@ -56,17 +56,42 @@ int _rgbaToArgb(int rgbaColor) {
 /// number of channels. The function returns a matrix filled with zeros.
 ///
 /// Throws an [ArgumentError] if the `shape` argument is invalid.
-List createEmptyOutputMatrix(List<int> shape) {
-  if (shape.length < 2 || shape.length > 3) {
-    throw ArgumentError('Shape must have length 2 or 3');
+List createEmptyOutputMatrix(List<int> shape, [double fillValue = 0.0]) {
+  if (shape.length > 5) {
+    throw ArgumentError('Shape must have length 1-5');
   }
-  if (shape.length == 2) {
-    return List.generate(shape[0], (_) => List.filled(shape[1], 0.0));
-  } else {
+
+  if (shape.length == 1) {
+    return List.filled(shape[0], fillValue);
+  } else if (shape.length == 2) {
+    return List.generate(shape[0], (_) => List.filled(shape[1], fillValue));
+  } else if (shape.length == 3) {
     return List.generate(
       shape[0],
-      (_) => List.generate(shape[1], (_) => List.filled(shape[2], 0.0)),
+      (_) => List.generate(shape[1], (_) => List.filled(shape[2], fillValue)),
     );
+  } else if (shape.length == 4) {
+    return List.generate(
+      shape[0],
+      (_) => List.generate(
+        shape[1],
+        (_) => List.generate(shape[2], (_) => List.filled(shape[3], fillValue)),
+      ),
+    );
+  } else if (shape.length == 5) {
+    return List.generate(
+      shape[0],
+      (_) => List.generate(
+        shape[1],
+        (_) => List.generate(
+          shape[2],
+          (_) =>
+              List.generate(shape[3], (_) => List.filled(shape[4], fillValue)),
+        ),
+      ),
+    );
+  } else {
+    throw ArgumentError('Shape must have length 2 or 3');
   }
 }
 
@@ -84,7 +109,7 @@ List createEmptyOutputMatrix(List<int> shape) {
 Num3DInputMatrix createInputMatrixFromImage(
   Image image,
   ByteData byteDataRgba, {
-  bool normalize = true,
+  double Function(num) normFunction = normalizePixelRange2,
 }) {
   return List.generate(
     image.height,
@@ -93,13 +118,36 @@ Num3DInputMatrix createInputMatrixFromImage(
       (x) {
         final pixel = readPixelColor(image, byteDataRgba, x, y);
         return [
-          normalize ? normalizePixel(pixel.red) : pixel.red,
-          normalize ? normalizePixel(pixel.green) : pixel.green,
-          normalize ? normalizePixel(pixel.blue) : pixel.blue,
+          normFunction(pixel.red),
+          normFunction(pixel.green),
+          normFunction(pixel.blue),
         ];
       },
     ),
   );
+}
+
+Float32List createFloat32ListFromImageChannelsFirst(
+  Image image,
+  ByteData byteDataRgba, {
+  double Function(num) normFunction = normalizePixelRange2,
+}) {
+  final convertedBytes = Float32List(3 * image.height * image.width);
+  final buffer = Float32List.view(convertedBytes.buffer);
+
+  int pixelIndex = 0;
+  final int channelOffsetGreen = image.height * image.width;
+  final int channelOffsetBlue = 2 * image.height * image.width;
+  for (var h = 0; h < image.height; h++) {
+    for (var w = 0; w < image.width; w++) {
+      final pixel = readPixelColor(image, byteDataRgba, w, h);
+      buffer[pixelIndex] = normFunction(pixel.red);
+      buffer[pixelIndex + channelOffsetGreen] = normFunction(pixel.green);
+      buffer[pixelIndex + channelOffsetBlue] = normFunction(pixel.blue);
+      pixelIndex++;
+    }
+  }
+  return convertedBytes.buffer.asFloat32List();
 }
 
 /// Creates an input matrix from the specified image, which can be used for inference
@@ -128,7 +176,7 @@ Num3DInputMatrix createInputMatrixFromImageChannelsFirst(
   );
 
   // Determine which function to use to get the pixel value.
-  final pixelValue = normalize ? normalizePixel : (num value) => value;
+  final pixelValue = normalize ? normalizePixelRange2 : (num value) => value;
 
   for (int y = 0; y < image.height; y++) {
     for (int x = 0; x < image.width; x++) {
@@ -147,8 +195,19 @@ Num3DInputMatrix createInputMatrixFromImageChannelsFirst(
 /// Function normalizes the pixel value to be in range [-1, 1].
 ///
 /// It assumes that the pixel value is originally in range [0, 255]
-double normalizePixel(num pixelValue) {
+double normalizePixelRange2(num pixelValue) {
   return (pixelValue / 127.5) - 1;
+}
+
+/// Function normalizes the pixel value to be in range [0, 1].
+///
+/// It assumes that the pixel value is originally in range [0, 255]
+double normalizePixelRange1(num pixelValue) {
+  return (pixelValue / 255);
+}
+
+double normalizePixelNoRange(num pixelValue) {
+  return pixelValue.toDouble();
 }
 
 /// Decodes [Uint8List] image data to an ui.[Image] object.
@@ -252,6 +311,14 @@ Future<(Image, Size)> resizeImage(
       const Offset(0, 0),
       Offset(width.toDouble(), height.toDouble()),
     ),
+  );
+  // Pre-fill the canvas with RGB color (114, 114, 114)
+  canvas.drawRect(
+    Rect.fromPoints(
+      const Offset(0, 0),
+      Offset(width.toDouble(), height.toDouble()),
+    ),
+    Paint()..color = const Color.fromARGB(255, 114, 114, 114),
   );
 
   double scaleW = width / image.width;
@@ -469,12 +536,17 @@ Future<Image> addPaddingToImage(
 /// The [maintainAspectRatio] argument determines whether the aspect ratio of the image is maintained.
 Future<(Num3DInputMatrix, Size, Size)> preprocessImageToMatrix(
   Uint8List imageData, {
-  required bool normalize,
+  required int normalization,
   required int requiredWidth,
   required int requiredHeight,
   FilterQuality quality = FilterQuality.medium,
   maintainAspectRatio = true,
 }) async {
+  final normFunction = normalization == 2
+      ? normalizePixelRange2
+      : normalization == 1
+          ? normalizePixelRange1
+          : normalizePixelNoRange;
   final Image image = await decodeImageFromData(imageData);
   final originalSize = Size(image.width.toDouble(), image.height.toDouble());
 
@@ -484,7 +556,7 @@ Future<(Num3DInputMatrix, Size, Size)> preprocessImageToMatrix(
       createInputMatrixFromImage(
         image,
         imgByteData,
-        normalize: normalize,
+        normFunction: normFunction,
       ),
       originalSize,
       originalSize
@@ -503,10 +575,57 @@ Future<(Num3DInputMatrix, Size, Size)> preprocessImageToMatrix(
   final Num3DInputMatrix imageMatrix = createInputMatrixFromImage(
     resizedImage,
     imgByteData,
-    normalize: normalize,
+    normFunction: normFunction,
   );
 
   return (imageMatrix, originalSize, newSize);
+}
+
+Future<(Float32List, Size, Size)> preprocessImageToFloat32ChannelsFirst(
+  Uint8List imageData, {
+  required int normalization,
+  required int requiredWidth,
+  required int requiredHeight,
+  FilterQuality quality = FilterQuality.medium,
+  maintainAspectRatio = true,
+}) async {
+  final normFunction = normalization == 2
+      ? normalizePixelRange2
+      : normalization == 1
+          ? normalizePixelRange1
+          : normalizePixelNoRange;
+  final Image image = await decodeImageFromData(imageData);
+  final originalSize = Size(image.width.toDouble(), image.height.toDouble());
+
+  if (image.width == requiredWidth && image.height == requiredHeight) {
+    final ByteData imgByteData = await getByteDataFromImage(image);
+    return (
+      createFloat32ListFromImageChannelsFirst(
+        image,
+        imgByteData,
+        normFunction: normFunction,
+      ),
+      originalSize,
+      originalSize
+    );
+  }
+
+  final (resizedImage, newSize) = await resizeImage(
+    image,
+    requiredWidth,
+    requiredHeight,
+    quality: quality,
+    maintainAspectRatio: maintainAspectRatio,
+  );
+
+  final ByteData imgByteData = await getByteDataFromImage(resizedImage);
+  final Float32List imageFloat32List = createFloat32ListFromImageChannelsFirst(
+    resizedImage,
+    imgByteData,
+    normFunction: normFunction,
+  );
+
+  return (imageFloat32List, originalSize, newSize);
 }
 
 /// Preprocesses [imageData] based on [faceLandmarks] to align the faces in the images.
@@ -592,7 +711,7 @@ Future<(List<Num3DInputMatrix>, List<AlignmentResult>)>
   );
 
   final List<List<List<double>>> faceLandmarks =
-      absoluteFaces.map((face) => face.allKeypoints.sublist(0, 4)).toList();
+      absoluteFaces.map((face) => face.allKeypoints).toList();
 
   final alignedImages = <Num3DInputMatrix>[];
   final alignmentResults = <AlignmentResult>[];
@@ -621,7 +740,7 @@ Future<(List<Num3DInputMatrix>, List<AlignmentResult>)>
     final alignedFaceMatrix = createInputMatrixFromImage(
       alignedFace,
       alignedFaceByteData,
-      normalize: true,
+      normFunction: normalizePixelRange2,
     );
     alignedImages.add(alignedFaceMatrix);
     alignmentResults.add(alignmentResult);
@@ -771,7 +890,7 @@ Future<Double3DInputMatrix> warpAffineToMatrix(
     ),
   );
   final double Function(num) pixelValue =
-      normalize ? normalizePixel : (num value) => value.toDouble();
+      normalize ? normalizePixelRange2 : (num value) => value.toDouble();
 
   if (width != 112 || height != 112) {
     throw Exception(

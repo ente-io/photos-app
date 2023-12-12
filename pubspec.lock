@@ -1346,6 +1346,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.2"
+  onnxruntime:
+    dependency: "direct main"
+    description:
+      name: onnxruntime
+      sha256: "56d0a16c24f4d1be4cf976cdc6321fb33d81515429e6e81c58d02e77d8631e0f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
   open_mail_app:
     dependency: "direct main"
     description:

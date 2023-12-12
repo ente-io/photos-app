@@ -246,6 +246,7 @@ class _ZoomableImageState extends State<ZoomableImage>
       disposeImageIsolateAfterUse: false,
     );
     _logger.info("FaceMlService result: $result");
+    _logger.info("Number of faces detected: ${result.faces.length}");
     _logger.info("Box: ${result.faces[0].detection.box}");
     _logger.info("Landmarks: ${result.faces[0].detection.allKeypoints}");
     log("Embedding: ${result.faces[0].embedding}");

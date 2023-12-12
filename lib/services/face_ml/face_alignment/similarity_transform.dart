@@ -3,13 +3,11 @@ import 'package:ml_linalg/linalg.dart';
 import 'package:photos/extensions/ml_linalg_extensions.dart';
 import "package:photos/services/face_ml/face_alignment/alignment_result.dart";
 
-
 /// Class to compute the similarity transform between two sets of points.
 ///
 /// The class estimates the parameters of the similarity transformation via the `estimate` function.
 /// After estimation, the transformation can be applied to an image using the `warpAffine` function.
 class SimilarityTransform {
-
   Matrix _params = Matrix.fromList([
     [1.0, 0.0, 0.0],
     [0.0, 1.0, 0.0],
@@ -19,13 +17,23 @@ class SimilarityTransform {
   double _size = 1; // 1 / scale
   double _rotation = 0; // atan2(simRotation[1][0], simRotation[0][0]);
 
-  final arcface = [
+  final arcface4Landmarks = [
     <double>[38.2946, 51.6963],
     <double>[73.5318, 51.5014],
     <double>[56.0252, 71.7366],
     <double>[56.1396, 92.2848],
   ];
-  get arcfaceNormalized => arcface
+  final arcface5Landmarks = [
+    <double>[38.2946, 51.6963],
+    <double>[73.5318, 51.5014],
+    <double>[56.0252, 71.7366],
+    <double>[41.5493, 92.3655],
+    <double>[70.7299, 92.2041],
+  ];
+  get arcfaceNormalized4 => arcface4Landmarks
+      .map((list) => list.map((value) => value / 112.0).toList())
+      .toList();
+  get arcfaceNormalized5 => arcface5Landmarks
       .map((list) => list.map((value) => value / 112.0).toList())
       .toList();
 
@@ -61,7 +69,7 @@ class SimilarityTransform {
   (AlignmentResult, bool) estimate(List<List<double>> src) {
     _cleanParams();
     final (params, center, size, rotation) =
-        _umeyama(src, arcfaceNormalized, true);
+        _umeyama(src, arcfaceNormalized5, true);
     _params = params;
     _center = center;
     _size = size;
