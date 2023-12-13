@@ -37,7 +37,7 @@ class HomeGalleryWidget extends StatelessWidget {
             Configuration.instance.hasSelectedAllFoldersForBackup();
         final archivedOrHiddenCollectionIDs =
             CollectionsService.instance.archivedOrHiddenCollectionIds();
-        final Set<int> collectionsToHide;
+        final collectionsToHide;
         if (LocalSettings.instance.getHideSharedItem()) {
           final incomingSharedCollectionIDs = CollectionsService.instance
               .getSharedCollections()
