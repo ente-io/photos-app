@@ -130,11 +130,11 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                               alignCaptionedTextToLeft: true,
                               trailingWidget: ToggleSwitchWidget(
                                 value: () =>
-                                  LocalSettings.instance.hideSharedItems,
+                                  LocalSettings.instance.getHideSharedItem(),
                                 onChanged: () async {
                                   await LocalSettings.instance
-                                      .setHideSharedItems(
-                                    !LocalSettings.instance.hideSharedItems,
+                                      .setHideSharedItem(
+                                    !LocalSettings.instance.getHideSharedItem(),
                                   );
                                   Bus.instance.fire(
                                     ForceReloadHomeGalleryEvent(
