@@ -123,22 +123,22 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                             ),
                             MenuItemWidget(
                               captionedTextWidget: CaptionedTextWidget(
-                                title: S.of(context).archiveSharedAlbums,
+                                title: S.of(context).archiveSharedItems,
                               ),
                               menuItemColor: colorScheme.fillFaint,
                               singleBorderRadius: 8,
                               alignCaptionedTextToLeft: true,
                               trailingWidget: ToggleSwitchWidget(
                                 value: () =>
-                                    LocalSettings.instance.archiveSharedAlbums,
+                                    LocalSettings.instance.archiveSharedItems,
                                 onChanged: () async {
                                   await LocalSettings.instance
-                                      .setArchiveSharedAlbums(
-                                    !LocalSettings.instance.archiveSharedAlbums,
+                                      .setArchiveSharedItems(
+                                    !LocalSettings.instance.archiveSharedItems,
                                   );
                                   Bus.instance.fire(
                                     ForceReloadHomeGalleryEvent(
-                                      "Hide/show shared albums",
+                                      "Hide/show shared items",
                                     ),
                                   );
                                 },
