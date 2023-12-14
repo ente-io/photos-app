@@ -14,7 +14,7 @@ class YOLOModelConfig {
 final YOLOModelConfig yoloV5FaceS640x640DynamicBatchonnx = YOLOModelConfig(
   modelPath: ModelFile.yoloV5FaceS640x640DynamicBatchonnx,
   faceOptions: FaceDetectionOptionsYOLO(
-    minScoreSigmoidThreshold: 0.6,
+    minScoreSigmoidThreshold: 0.75,
     iouThreshold: 0.4,
     inputWidth: 640,
     inputHeight: 640,
