@@ -1,5 +1,5 @@
 import 'dart:io';
-import "dart:math" show min, max;
+import "dart:math" show min, max, sqrt;
 // import 'dart:math' as math show min, max;
 import 'dart:typed_data' show Uint8List;
 
@@ -92,6 +92,12 @@ class FaceEmbedding {
     // Get output tensors
     final embedding = output[0] as List<double>;
 
+    // Normalize the embedding
+    final norm = sqrt(embedding.map((e) => e * e).reduce((a, b) => a + b));
+    for (int i = 0; i < embedding.length; i++) {
+      embedding[i] /= norm;
+    }
+
     stopwatch.stop();
     _logger.info(
       'predict() executed in ${stopwatch.elapsedMilliseconds}ms',
@@ -158,6 +164,15 @@ class FaceEmbedding {
       embeddings.add(embedding);
     }
     // await encodeAndSaveData(embeddings, 'output_mobilefacenet');
+
+    // Normalize the embedding
+    for (int i = 0; i < embeddings.length; i++) {
+      final embedding = embeddings[i];
+      final norm = sqrt(embedding.map((e) => e * e).reduce((a, b) => a + b));
+      for (int j = 0; j < embedding.length; j++) {
+        embedding[j] /= norm;
+      }
+    }
 
     stopwatch.stop();
     _logger.info(

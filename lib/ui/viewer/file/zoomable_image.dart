@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer' show log;
 import 'dart:io' as io;
+import 'dart:math' as math show sqrt;
 
 import "package:flutter/foundation.dart";
 import 'package:flutter/material.dart';
@@ -249,7 +250,15 @@ class _ZoomableImageState extends State<ZoomableImage>
     _logger.info("Number of faces detected: ${result.faces.length}");
     _logger.info("Box: ${result.faces[0].detection.box}");
     _logger.info("Landmarks: ${result.faces[0].detection.allKeypoints}");
-    log("Embedding: ${result.faces[0].embedding}");
+    final embedding = result.faces[0].embedding;
+    // Calculate the magnitude of the embedding vector
+    double sum = 0;
+    for (final double value in embedding) {
+      sum += value * value;
+    }
+    final magnitude = math.sqrt(sum);
+    log("Magnitude: $magnitude");
+    // log("Embedding: $embedding");
     if (mounted) {
       precacheImage(imageProvider, context).then((value) async {
         if (mounted) {
