@@ -291,7 +291,7 @@ class FaceMlService {
     _checkEnteFileForID(enteFile);
 
     final Uint8List? thumbnailData =
-        await _getDataForML(enteFile, typeOfData: FileDataForML.thumbnailData);
+        await _getDataForML(enteFile, typeOfData: FileDataForML.fileData);
     Uint8List? fileData;
 
     // // TODO: remove/optimize this later. Not now though: premature optimization
@@ -383,7 +383,7 @@ class FaceMlService {
     switch (typeOfData) {
       case FileDataForML.fileData:
         final stopwatch = Stopwatch()..start();
-        final io.File? actualIoFile = await getFile(enteFile);
+        final io.File? actualIoFile = await getFile(enteFile, isOrigin: true);
         if (actualIoFile != null) {
           data = await actualIoFile.readAsBytes();
         }
