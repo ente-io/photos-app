@@ -1295,6 +1295,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.4"
+  ml_linalg:
+    dependency: "direct main"
+    description:
+      name: ml_linalg
+      sha256: "36b658c6619c4e1b47f8e2edd100308fd75a5b71d1e6359d8be0cbe06214b441"
+      url: "https://pub.dev"
+    source: hosted
+    version: "13.11.31"
   modal_bottom_sheet:
     dependency: "direct main"
     description:

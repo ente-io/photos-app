@@ -107,6 +107,7 @@ dependencies:
   media_kit: ^1.1.10+1
   media_kit_libs_video: ^1.0.4
   media_kit_video: ^1.2.4
+  ml_linalg: ^13.11.31
   modal_bottom_sheet: ^3.0.0-pre
   motion_photos:
     git: "https://github.com/ente-io/motion_photo.git"

@@ -3,6 +3,8 @@ import "dart:collection";
 
 import "package:computer/computer.dart";
 import "package:logging/logging.dart";
+import "package:ml_linalg/matrix.dart";
+import "package:ml_linalg/vector.dart";
 import "package:photos/core/cache/lru_map.dart";
 import "package:photos/core/configuration.dart";
 import "package:photos/core/event_bus.dart";
@@ -37,6 +39,7 @@ class SemanticSearchService {
   final _logger = Logger("SemanticSearchService");
   final _queue = Queue<EnteFile>();
   final _cachedEmbeddings = <Embedding>[];
+  Matrix? _cachedMatrix;
   final _mlFramework = ONNX();
   final _frameworkInitialization = Completer<void>();
 
@@ -156,6 +159,8 @@ class SemanticSearchService {
       _logger.info("Updated embeddings: " + embeddings.length.toString());
       _cachedEmbeddings.clear();
       _cachedEmbeddings.addAll(embeddings);
+      _cachedMatrix =
+          Matrix.fromList(embeddings.map((e) => e.embedding).toList());
       Bus.instance.fire(EmbeddingUpdatedEvent());
     });
   }
@@ -307,10 +312,20 @@ class SemanticSearchService {
 
   Future<List<QueryResult>> _getScores(List<double> textEmbedding) async {
     final startTime = DateTime.now();
+    // final List<QueryResult> queryResults = await _computer.compute(
+    //   computeBulkScore,
+    //   param: {
+    //     "imageEmbeddings": _cachedEmbeddings,
+    //     "textEmbedding": textEmbedding,
+    //   },
+    //   taskName: "computeBulkScore",
+    // );
+
     final List<QueryResult> queryResults = await _computer.compute(
-      computeBulkScore,
+      computeBulkScore2,
       param: {
         "imageEmbeddings": _cachedEmbeddings,
+        "imageMatrix": _cachedMatrix,
         "textEmbedding": textEmbedding,
       },
       taskName: "computeBulkScore",
@@ -324,6 +339,27 @@ class SemanticSearchService {
     );
     return queryResults;
   }
+}
+
+List<QueryResult> computeBulkScore2(Map args) {
+  final queryResults = <QueryResult>[];
+  final imageEmbeddings = args["imageEmbeddings"] as List<Embedding>;
+  final imageMatrix = args["imageMatrix"] as Matrix;
+  final textEmbedding = args["textEmbedding"] as List<double>;
+
+  final textMatrix = Vector.fromList(textEmbedding);
+  final scores = imageMatrix * textMatrix;
+
+  int index = 0;
+  for (final score in scores) {
+    if (score.first >= SemanticSearchService.kScoreThreshold) {
+      queryResults.add(QueryResult(imageEmbeddings[index].fileID, score.first));
+    }
+    index++;
+  }
+
+  queryResults.sort((first, second) => second.score.compareTo(first.score));
+  return queryResults;
 }
 
 List<QueryResult> computeBulkScore(Map args) {
