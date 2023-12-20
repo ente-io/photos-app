@@ -18,8 +18,17 @@ import "package:photos/ui/viewer/file/thumbnail_widget.dart";
 import "package:photos/utils/dialog_util.dart";
 import "package:photos/utils/file_util.dart";
 import "package:photos/utils/toast_util.dart";
+import "package:visibility_detector/visibility_detector.dart";
 
 class VideoWidgetNew extends StatefulWidget {
+  /// On most android devices (device with opaque bottom inset?), when the video
+  /// changes it's fullscreen state, this widget resizes a bit. When pausing a
+  /// video, it goes out of fullscreen. This causes the VisibilityDetector
+  /// to trigger the onVisibilityChanged callback used in this widget. This flag
+  /// is used to prevent the player from playing the video when it's manually
+  /// paused. To understand why this is needed, remove the use of this flag in
+  /// the visiblityDetector used here and pause it on an android device.
+  static bool justPlayedOrPaused = false;
   final EnteFile file;
   final String? tagPrefix;
   final Function(bool)? playbackCallback;
@@ -106,55 +115,69 @@ class _VideoWidgetNewState extends State<VideoWidgetNew>
   @override
   Widget build(BuildContext context) {
     final colorScheme = getEnteColorScheme(context);
-    return Hero(
-      tag: widget.tagPrefix! + widget.file.tag,
-      child: MaterialVideoControlsTheme(
-        normal: MaterialVideoControlsThemeData(
-          backdropColor: null,
-          automaticallyImplySkipNextButton: false,
-          automaticallyImplySkipPreviousButton: false,
-          seekOnDoubleTap: false,
-          displaySeekBar: true,
-          seekBarMargin: const EdgeInsets.only(bottom: verticalMargin),
-          bottomButtonBarMargin: const EdgeInsets.only(bottom: 112),
-          controlsHoverDuration: const Duration(seconds: 3),
-          seekBarHeight: 2,
-          seekBarThumbSize: 16,
-          seekBarBufferColor: Colors.transparent,
-          seekBarThumbColor: backgroundElevatedLight,
-          seekBarColor: fillMutedDark,
-          seekBarPositionColor: colorScheme.primary300,
-          seekBarContainerHeight: 56,
-          seekBarAlignment: Alignment.center,
+    return VisibilityDetector(
+      key: ValueKey(widget.file.tag),
+      onVisibilityChanged: (info) {
+        if (info.visibleFraction == 1) {
+          if (!VideoWidgetNew.justPlayedOrPaused) {
+            player.play();
+          }
+        } else {
+          if (!VideoWidgetNew.justPlayedOrPaused) {
+            player.pause();
+          }
+        }
+      },
+      child: Hero(
+        tag: widget.tagPrefix! + widget.file.tag,
+        child: MaterialVideoControlsTheme(
+          normal: MaterialVideoControlsThemeData(
+            backdropColor: null,
+            automaticallyImplySkipNextButton: false,
+            automaticallyImplySkipPreviousButton: false,
+            seekOnDoubleTap: false,
+            displaySeekBar: true,
+            seekBarMargin: const EdgeInsets.only(bottom: verticalMargin),
+            bottomButtonBarMargin: const EdgeInsets.only(bottom: 112),
+            controlsHoverDuration: const Duration(seconds: 3),
+            seekBarHeight: 2,
+            seekBarThumbSize: 16,
+            seekBarBufferColor: Colors.transparent,
+            seekBarThumbColor: backgroundElevatedLight,
+            seekBarColor: fillMutedDark,
+            seekBarPositionColor: colorScheme.primary300,
+            seekBarContainerHeight: 56,
+            seekBarAlignment: Alignment.center,
 
-          ///topButtonBarMargin is needed for keeping the buffering loading
-          ///indicator to be center aligned
-          topButtonBarMargin: const EdgeInsets.only(top: verticalMargin),
-          bottomButtonBar: [
-            const Spacer(),
-            PausePlayAndDuration(controller?.player),
-            const Spacer(),
-          ],
-          primaryButtonBar: [],
-        ),
-        fullscreen: const MaterialVideoControlsThemeData(),
-        child: GestureDetector(
-          onVerticalDragUpdate: (d) => {
-            if (d.delta.dy > dragSensitivity)
-              {
-                Navigator.of(context).pop(),
-              }
-            else if (d.delta.dy < (dragSensitivity * -1))
-              {
-                showDetailsSheet(context, widget.file),
-              },
-          },
-          child: Center(
-            child: controller != null
-                ? Video(
-                    controller: controller!,
-                  )
-                : _getLoadingWidget(),
+            ///topButtonBarMargin is needed for keeping the buffering loading
+            ///indicator to be center aligned
+            topButtonBarMargin: const EdgeInsets.only(top: verticalMargin),
+            bottomButtonBar: [
+              const Spacer(),
+              PausePlayAndDuration(controller?.player),
+              const Spacer(),
+            ],
+            primaryButtonBar: [],
+          ),
+          fullscreen: const MaterialVideoControlsThemeData(),
+          child: GestureDetector(
+            onVerticalDragUpdate: (d) => {
+              if (d.delta.dy > dragSensitivity)
+                {
+                  Navigator.of(context).pop(),
+                }
+              else if (d.delta.dy < (dragSensitivity * -1))
+                {
+                  showDetailsSheet(context, widget.file),
+                },
+            },
+            child: Center(
+              child: controller != null
+                  ? Video(
+                      controller: controller!,
+                    )
+                  : _getLoadingWidget(),
+            ),
           ),
         ),
       ),
@@ -246,7 +269,9 @@ class _VideoWidgetNewState extends State<VideoWidgetNew>
       setState(() {
         player.setPlaylistMode(PlaylistMode.single);
         controller = VideoController(player);
-        player.open(Media(url), play: _isAppInFG);
+        //todo: remove use of _isAppInFG after using visibility detector to pause/play video
+        // player.open(Media(url), play: _isAppInFG);
+        player.open(Media(url), play: false);
       });
     }
   }
@@ -288,7 +313,13 @@ class _PausePlayAndDurationState extends State<PausePlayAndDuration> {
           }
         });
       },
-      onTap: () => widget.player!.playOrPause(),
+      onTap: () {
+        widget.player!.playOrPause();
+        VideoWidgetNew.justPlayedOrPaused = true;
+        Future.delayed(const Duration(milliseconds: 750), () {
+          VideoWidgetNew.justPlayedOrPaused = false;
+        });
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         curve: Curves.easeInBack,
