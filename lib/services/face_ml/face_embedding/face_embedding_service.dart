@@ -3,6 +3,7 @@ import "dart:math" show min, max, sqrt;
 // import 'dart:math' as math show min, max;
 import 'dart:typed_data' show Uint8List;
 
+import "package:flutter/foundation.dart";
 import "package:logging/logging.dart";
 import 'package:photos/models/ml/ml_typedefs.dart';
 import "package:photos/services/face_ml/face_detection/detection.dart";
@@ -194,7 +195,9 @@ class FaceEmbedding {
       // TODO: Make sure this works on both platforms: Android and iOS
       if (Platform.isAndroid) {
         // Use GPU Delegate (GPU). WARNING: It doesn't work on emulator
-        interpreterOptions.addDelegate(GpuDelegateV2());
+        if (!kDebugMode) {
+          interpreterOptions.addDelegate(GpuDelegateV2());
+        }
         // Use XNNPACK Delegate (CPU)
         interpreterOptions.addDelegate(XNNPackDelegate());
       }
