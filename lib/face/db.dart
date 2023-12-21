@@ -1,9 +1,14 @@
 import 'dart:async';
+import "dart:convert";
+import "dart:math";
 
 import 'package:logging/logging.dart';
 import 'package:path/path.dart' show join;
 import 'package:path_provider/path_provider.dart';
 import 'package:photos/face/db_fields.dart';
+import "package:photos/face/db_model_mappers.dart";
+import "package:photos/face/model/detection.dart";
+import "package:photos/face/model/face.dart";
 import 'package:sqflite/sqflite.dart';
 
 /// Stores all data for the ML-related features. The database can be accessed by `MlDataDB.instance.database`.
@@ -44,6 +49,65 @@ class FaceMLDataDB {
     await db.execute(createPeopleTable);
   }
 
+  // bulkInsertFaces inserts the faces in the database in batches of 1000.
+  // This is done to avoid the error "too many SQL variables" when inserting
+  // a large number of faces.
+  Future<void> bulkInsertFaces(List<Face> faces) async {
+    final db = await instance.database;
+    const batchSize = 500;
+    final numBatches = (faces.length / batchSize).ceil();
+    for (int i = 0; i < numBatches; i++) {
+      final start = i * batchSize;
+      final end = min((i + 1) * batchSize, faces.length);
+      final batch = faces.sublist(start, end);
+      final batchInsert = db.batch();
+      for (final face in batch) {
+        batchInsert.insert(
+          facesTable,
+          mapRemoteToFaceDB(face),
+          conflictAlgorithm: ConflictAlgorithm.ignore,
+        );
+      }
+      await batchInsert.commit(noResult: true);
+    }
+  }
+
+  // Get face_id to embedding map. only select face_id and embedding columns
+  Future<Map<String, List<double>>> getFaceEmbeddingMap() async {
+    _logger.info('reading as float');
+    final db = await instance.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      facesTable,
+      columns: [faceIDColumn, faceEmbedding],
+    );
+    final Map<String, List<double>> result = {};
+    for (final map in maps) {
+      final faceID = map[faceIDColumn] as String;
+      final embedding = map[faceEmbedding] as String;
+      final embeddingList = List<double>.from(jsonDecode(embedding));
+      result[faceID] = embeddingList;
+    }
+    return result;
+  }
+
+  // Get face_id to embedding map. only select face_id and embedding columns
+  Future<Map<String, Detection>> getFaceEmbeddingStrMap() async {
+    _logger.info('reading as string');
+    final db = await instance.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      facesTable,
+      columns: [faceIDColumn, faceDetectionColumn],
+    );
+    final Map<String, Detection> result = {};
+    for (final map in maps) {
+      final faceID = map[faceIDColumn] as String;
+      final embedding =
+          Detection.fromJson(jsonDecode(map[faceDetectionColumn]));
+      result[faceID] = embedding;
+    }
+    return result;
+  }
+
   /// WARNING: This will delete ALL data in the database! Only use this for debug/testing purposes!
   Future<void> cleanTables({
     bool cleanFaces = false,
@@ -71,49 +135,5 @@ class FaceMLDataDB {
 
     await db.execute(createFacesTable);
     await db.execute(createPeopleTable);
-  }
-
-  Future<bool> doesFaceMlResultExist(int fileId, {int? mlVersion}) async {
-    _logger.fine('doesFaceMlResultExist called');
-    final db = await instance.database;
-
-    String whereString = '$fileIDColumn = ?';
-    final List<dynamic> whereArgs = [fileId];
-
-    if (mlVersion != null) {
-      whereString += ' AND $mlVersionColumn = ?';
-      whereArgs.add(mlVersion);
-    }
-
-    final result = await db.query(
-      facesTable,
-      where: whereString,
-      whereArgs: whereArgs,
-      limit: 1,
-    );
-    return result.isNotEmpty;
-  }
-
-  /// getAllFileIDs returns a set of all fileIDs from the facesTable, meaning all the fileIDs for which a FaceMlResult exists, optionally filtered by mlVersion.
-  Future<Set<int>> getAllFaceMlResultFileIDs({int? mlVersion}) async {
-    _logger.fine('getAllFaceMlResultFileIDs called');
-    final db = await instance.database;
-
-    String? whereString;
-    List<dynamic>? whereArgs;
-
-    if (mlVersion != null) {
-      whereString = '$mlVersionColumn = ?';
-      whereArgs = [mlVersion];
-    }
-
-    final List<Map<String, Object?>> results = await db.query(
-      facesTable,
-      where: whereString,
-      whereArgs: whereArgs,
-      orderBy: fileIDColumn,
-    );
-
-    return results.map((result) => result[fileIDColumn] as int).toSet();
   }
 }

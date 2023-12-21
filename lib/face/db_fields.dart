@@ -2,7 +2,9 @@
 const facesTable = 'faces';
 const fileIDColumn = 'file_id';
 const faceIDColumn = 'face_id';
-const faceMlResultColumn = 'face_ml_result';
+const faceDetectionColumn = 'detection';
+const faceEmbedding = 'embeddings';
+const faceScore = 'score';
 const facePersonIDColumn = 'person_id';
 const faceConfirmedColumn = 'confirmed';
 const faceClosestDistColumn = 'close_dist';
@@ -12,9 +14,12 @@ const mlVersionColumn = 'ml_version';
 const createFacesTable = '''CREATE TABLE IF NOT EXISTS $facesTable (
   $fileIDColumn	INTEGER NOT NULL,
   $faceIDColumn  TEXT NOT NULL,
-	$faceMlResultColumn	TEXT NOT NULL,
+	$faceDetectionColumn	TEXT NOT NULL,
+  $faceEmbedding  TEXT NOT NULL,
+  $faceScore  REAL NOT NULL,
 	$facePersonIDColumn	INTEGER,
 	$faceClosestDistColumn	REAL,
+  $faceClosestFaceID  TEXT,
 	$faceConfirmedColumn  INTEGER NOT NULL DEFAULT 0,
   $mlVersionColumn	INTEGER NOT NULL DEFAULT -1,
   PRIMARY KEY($fileIDColumn, $faceIDColumn)
@@ -35,7 +40,7 @@ const createPeopleTable = '''CREATE TABLE IF NOT EXISTS $peopleTable (
   $personIDColumn	INTEGER NOT NULL UNIQUE,
 	$personNameColumn	TEXT NOT NULL DEFAULT '',
   $personHiddenColumn	INTEGER NOT NULL DEFAULT 0,
-  $personNameColumn	TEXT NOT NULL,
+  $personFaceIDsColumn	TEXT NOT NULL,
 	PRIMARY KEY($personIDColumn)
   );
   ''';

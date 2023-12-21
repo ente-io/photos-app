@@ -1,6 +1,7 @@
 import "dart:convert";
 
 import 'package:photos/face/db_fields.dart';
+import "package:photos/face/model/face.dart";
 import 'package:photos/face/model/person_face.dart';
 
 int boolToSQLInt(bool? value, {bool defaultValue = false}) {
@@ -23,11 +24,22 @@ bool sqlIntToBool(int? value, {bool defaultValue = false}) {
 
 Map<String, dynamic> mapToFaceDB(PersonFace personFace) {
   return {
-    faceIDColumn: personFace.face.id,
-    faceMlResultColumn: json.encode(personFace.face.toJson()),
+    faceIDColumn: personFace.face.faceID,
+    faceDetectionColumn: json.encode(personFace.face.detection.toJson()),
     faceConfirmedColumn: boolToSQLInt(personFace.confirmed),
     facePersonIDColumn: personFace.personID,
     faceClosestDistColumn: personFace.closeDist,
     faceClosestFaceID: personFace.closeFaceID,
+  };
+}
+
+Map<String, dynamic> mapRemoteToFaceDB(Face face) {
+  return {
+    faceIDColumn: face.faceID,
+    fileIDColumn: face.fileID,
+    faceDetectionColumn: json.encode(face.detection.toJson()),
+    faceEmbedding: json.encode(face.embedding),
+    faceScore: face.score,
+    mlVersionColumn: 1,
   };
 }

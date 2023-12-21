@@ -13,10 +13,48 @@ class FaceBox {
 
   factory FaceBox.fromJson(Map<String, dynamic> json) {
     return FaceBox(
-      x: json['x'] as double,
-      y: json['y'] as double,
-      width: json['width'] as double,
-      height: json['height'] as double,
+      x: (json['x'] is int
+          ? (json['x'] as int).toDouble()
+          : json['x'] as double),
+      y: (json['y'] is int
+          ? (json['y'] as int).toDouble()
+          : json['y'] as double),
+      width: (json['width'] is int
+          ? (json['width'] as int).toDouble()
+          : json['width'] as double),
+      height: (json['height'] is int
+          ? (json['height'] as int).toDouble()
+          : json['height'] as double),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'x': x,
+        'y': y,
+        'width': width,
+        'height': height,
+      };
+}
+
+class CropBox {
+  final int x;
+  final int y;
+  final int width;
+  final int height;
+
+  CropBox({
+    required this.x,
+    required this.y,
+    required this.width,
+    required this.height,
+  });
+
+  factory CropBox.fromJson(Map<String, dynamic> json) {
+    return CropBox(
+      x: json['x'] as int,
+      y: json['y'] as int,
+      width: json['width'] as int,
+      height: json['height'] as int,
     );
   }
 

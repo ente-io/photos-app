@@ -4,7 +4,7 @@ import "package:photos/face/model/landmark.dart";
 class Detection {
   FaceBox box;
   List<Landmark> landmarks;
-  FaceBox cropBox;
+  CropBox cropBox;
 
   Detection({
     required this.box,
@@ -25,7 +25,7 @@ class Detection {
         json['landmarks']
             .map((x) => Landmark.fromJson(x as Map<String, dynamic>)),
       ),
-      cropBox: FaceBox.fromJson(json['cropBox'] as Map<String, dynamic>),
+      cropBox: CropBox.fromJson(json['cropBox'] as Map<String, dynamic>),
     );
   }
 }
