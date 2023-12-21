@@ -24,6 +24,7 @@ import "package:photos/models/search/search_types.dart";
 import 'package:photos/services/collections_service.dart';
 import "package:photos/services/face_ml/face_search_service.dart";
 import "package:photos/services/location_service.dart";
+import 'package:photos/services/semantic_search/semantic_search_service.dart';
 import "package:photos/states/location_screen_state.dart";
 import "package:photos/ui/viewer/location/location_screen.dart";
 import 'package:photos/utils/date_time_util.dart';
@@ -56,8 +57,10 @@ class SearchService {
       return _cachedFilesFuture!;
     }
     _logger.fine("Reading all files from db");
-    _cachedFilesFuture =
-        FilesDB.instance.getAllFilesFromDB(ignoreCollections());
+    _cachedFilesFuture = FilesDB.instance.getAllFilesFromDB(
+      ignoreCollections(),
+      dedupeByUploadId: true,
+    );
     return _cachedFilesFuture!;
   }
 
@@ -785,6 +788,18 @@ class SearchService {
           ),
         );
       }
+    }
+    return searchResults;
+  }
+
+  Future<List<GenericSearchResult>> getMagicSearchResults(
+    BuildContext context,
+    String query,
+  ) async {
+    final List<GenericSearchResult> searchResults = [];
+    final files = await SemanticSearchService.instance.search(query);
+    if (files.isNotEmpty) {
+      searchResults.add(GenericSearchResult(ResultType.magic, query, files));
     }
     return searchResults;
   }

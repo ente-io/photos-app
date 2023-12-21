@@ -2846,6 +2846,76 @@ class S {
     );
   }
 
+  /// `Machine learning`
+  String get machineLearning {
+    return Intl.message(
+      'Machine learning',
+      name: 'machineLearning',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Magic search`
+  String get magicSearch {
+    return Intl.message(
+      'Magic search',
+      name: 'magicSearch',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please use our Desktop app to index the pending items in your library.`
+  String get magicSearchDescription {
+    return Intl.message(
+      'Please use our Desktop app to index the pending items in your library.',
+      name: 'magicSearchDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Status`
+  String get status {
+    return Intl.message(
+      'Status',
+      name: 'status',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Indexed items`
+  String get indexedItems {
+    return Intl.message(
+      'Indexed items',
+      name: 'indexedItems',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Pending items`
+  String get pendingItems {
+    return Intl.message(
+      'Pending items',
+      name: 'pendingItems',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Clear indexes`
+  String get clearIndexes {
+    return Intl.message(
+      'Clear indexes',
+      name: 'clearIndexes',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Select folders for backup`
   String get selectFoldersForBackup {
     return Intl.message(
@@ -4906,6 +4976,16 @@ class S {
     );
   }
 
+  /// `Processing {currentlyProcessing} / {totalCount}`
+  String genericProgress(int currentlyProcessing, int totalCount) {
+    return Intl.message(
+      'Processing $currentlyProcessing / $totalCount',
+      name: 'genericProgress',
+      desc: 'Generic progress text to display when processing multiple items',
+      args: [currentlyProcessing, totalCount],
+    );
+  }
+
   /// `Permanently delete`
   String get permanentlyDelete {
     return Intl.message(
@@ -5965,16 +6045,6 @@ class S {
     );
   }
 
-  /// `Time`
-  String get time {
-    return Intl.message(
-      'Time',
-      name: 'time',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Long-press on an item to view in full-screen`
   String get longpressOnAnItemToViewInFullscreen {
     return Intl.message(
@@ -6300,7 +6370,7 @@ class S {
   }
 
   /// `{completed}/{total} memories preserved`
-  String syncProgress(int completed, int total) {
+  String syncProgress(String completed, String total) {
     return Intl.message(
       '$completed/$total memories preserved',
       name: 'syncProgress',
@@ -8153,6 +8223,66 @@ class S {
     return Intl.message(
       'Do not sign out',
       name: 'doNotSignOut',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Edit location`
+  String get editLocation {
+    return Intl.message(
+      'Edit location',
+      name: 'editLocation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Select a location`
+  String get selectALocation {
+    return Intl.message(
+      'Select a location',
+      name: 'selectALocation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Select a location first`
+  String get selectALocationFirst {
+    return Intl.message(
+      'Select a location first',
+      name: 'selectALocationFirst',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Change location of selected items?`
+  String get changeLocationOfSelectedItems {
+    return Intl.message(
+      'Change location of selected items?',
+      name: 'changeLocationOfSelectedItems',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Edits to location will only be seen within Ente`
+  String get editsToLocationWillOnlyBeSeenWithinEnte {
+    return Intl.message(
+      'Edits to location will only be seen within Ente',
+      name: 'editsToLocationWillOnlyBeSeenWithinEnte',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Clean Uncategorized`
+  String get cleanUncategorized {
+    return Intl.message(
+      'Clean Uncategorized',
+      name: 'cleanUncategorized',
       desc: '',
       args: [],
     );

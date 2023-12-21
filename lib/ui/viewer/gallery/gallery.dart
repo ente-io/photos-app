@@ -131,11 +131,8 @@ class GalleryState extends State<Gallery> {
               "Reloaded gallery on soft refresh all files on ${event.reason}",
             );
           }
-          if (event.type == EventType.deletedFromDevice ||
-              event.type == EventType.deletedFromEverywhere ||
-              event.type == EventType.deletedFromRemote) {
-            setState(() {});
-          }
+
+          setState(() {});
         });
       });
     }
@@ -144,7 +141,7 @@ class GalleryState extends State<Gallery> {
       // todo: Assign ID to Gallery and fire generic event with ID &
       //  target index/date
       if (mounted && event.selectedIndex == 0) {
-        _itemScroller.scrollTo(
+        await _itemScroller.scrollTo(
           index: 0,
           duration: const Duration(milliseconds: 150),
         );

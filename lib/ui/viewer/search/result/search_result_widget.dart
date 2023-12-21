@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import "package:intl/intl.dart";
 import 'package:photos/ente_theme_data.dart';
 import "package:photos/models/search/recent_searches.dart";
 import 'package:photos/models/search/search_result.dart';
@@ -80,7 +81,10 @@ class SearchResultWidget extends StatelessWidget {
                             final noOfMemories = snapshot.data;
 
                             return Text(
-                              " \u2022 " + noOfMemories.toString(),
+                              " \u2022 " +
+                                  (noOfMemories! > 9999
+                                      ? NumberFormat().format(noOfMemories)
+                                      : noOfMemories.toString()),
                               style: textTheme.smallMuted,
                             );
                           } else {
@@ -112,7 +116,10 @@ class SearchResultWidget extends StatelessWidget {
         } else {
           routeToPage(
             context,
-            SearchResultPage(searchResult),
+            SearchResultPage(
+              searchResult,
+              enableGrouping: searchResult.type() != ResultType.magic,
+            ),
           );
         }
       },
@@ -139,6 +146,8 @@ class SearchResultWidget extends StatelessWidget {
         return "File extension";
       case ResultType.fileCaption:
         return "Description";
+      case ResultType.magic:
+        return "Magic";
       case ResultType.shared:
         return "Shared";
       default:

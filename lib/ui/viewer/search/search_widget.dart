@@ -4,6 +4,7 @@ import "package:flutter/material.dart";
 import "package:flutter/scheduler.dart";
 import "package:logging/logging.dart";
 import "package:photos/core/event_bus.dart";
+import "package:photos/events/clear_and_unfocus_search_bar_event.dart";
 import "package:photos/events/tab_changed_event.dart";
 import "package:photos/models/search/search_result.dart";
 import "package:photos/services/search_service.dart";
@@ -25,7 +26,7 @@ class SearchWidget extends StatefulWidget {
 class SearchWidgetState extends State<SearchWidget> {
   static String query = "";
   final _searchService = SearchService.instance;
-  final _debouncer = Debouncer(const Duration(milliseconds: 100));
+  final _debouncer = Debouncer(const Duration(milliseconds: 200));
   final Logger _logger = Logger((SearchWidgetState).toString());
   late FocusNode focusNode;
   StreamSubscription<TabDoubleTapEvent>? _tabDoubleTapEvent;
@@ -33,6 +34,8 @@ class SearchWidgetState extends State<SearchWidget> {
   double _distanceOfWidgetFromBottom = 0;
   GlobalKey widgetKey = GlobalKey();
   TextEditingController textController = TextEditingController();
+  late final StreamSubscription<ClearAndUnfocusSearchBar>
+      _clearAndUnfocusSearchBar;
 
   @override
   void initState() {
@@ -62,6 +65,12 @@ class SearchWidgetState extends State<SearchWidget> {
       textController.addListener(textControllerListener);
     });
     textController.text = query;
+
+    _clearAndUnfocusSearchBar =
+        Bus.instance.on<ClearAndUnfocusSearchBar>().listen((event) {
+      textController.clear();
+      focusNode.unfocus();
+    });
   }
 
   @override
@@ -81,6 +90,7 @@ class SearchWidgetState extends State<SearchWidget> {
     _tabDoubleTapEvent?.cancel();
     textController.removeListener(textControllerListener);
     textController.dispose();
+    _clearAndUnfocusSearchBar.cancel();
     super.dispose();
   }
 
@@ -255,6 +265,10 @@ class SearchWidgetState extends State<SearchWidget> {
       final possibleEvents =
           await _searchService.getDateResults(context, query);
       allResults.addAll(possibleEvents);
+
+      final magicResults =
+          await _searchService.getMagicSearchResults(context, query);
+      allResults.addAll(magicResults);
 
       final contactResults =
           await _searchService.getContactSearchResults(query);

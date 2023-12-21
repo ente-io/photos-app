@@ -1,3 +1,5 @@
+import "dart:async";
+
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:photos/core/configuration.dart';
@@ -113,7 +115,7 @@ class CollectionActions {
       S.of(context).creatingLink,
       isDismissible: true,
     );
-    dialog.show();
+    await dialog.show();
     try {
       // create album with emptyName, use collectionCreationTime on UI to
       // show name
@@ -141,10 +143,10 @@ class CollectionActions {
       await collectionsService.addToCollection(collection.id, files);
       logger.finest("creating public link for the newly created album");
       await CollectionsService.instance.createShareUrl(collection);
-      dialog.hide();
+      await dialog.hide();
       return collection;
     } catch (e, s) {
-      dialog.hide();
+      await dialog.hide();
       await showGenericErrorDialog(context: context, error: e);
       logger.severe("Failing to create link for selected files", e, s);
     }
@@ -257,8 +259,10 @@ class CollectionActions {
             labelText: S.of(context).sendInvite,
             isInAlert: true,
             onTap: () async {
-              shareText(
-                S.of(context).shareTextRecommendUsingEnte,
+              unawaited(
+                shareText(
+                  S.of(context).shareTextRecommendUsingEnte,
+                ),
               );
             },
           ),
@@ -382,6 +386,23 @@ class CollectionActions {
     await moveFilesFromCurrentCollection(bContext, collection, files);
     // collection should be empty on server now
     await collectionsService.trashEmptyCollection(collection);
+  }
+
+  Future<void> removeFromUncatIfPresentInOtherAlbum(
+    Collection collection,
+    BuildContext bContext,
+  ) async {
+    try {
+      final List<EnteFile> files =
+          await FilesDB.instance.getAllFilesCollection(collection.id);
+      await moveFilesFromCurrentCollection(bContext, collection, files);
+    } catch (e) {
+      logger.severe("Failed to remove files from uncategorized", e);
+      await showErrorDialogForException(
+        context: bContext,
+        exception: e as Exception,
+      );
+    }
   }
 
   // _confirmSharedAlbumDeletion should be shown when user tries to delete an
@@ -528,7 +549,20 @@ class CollectionActions {
 
     for (MapEntry<int, List<EnteFile>> entry
         in destCollectionToFilesMap.entries) {
-      await collectionsService.move(entry.key, collection.id, entry.value);
+      if (collection.type == CollectionType.uncategorized &&
+          entry.key == collection.id) {
+        // skip moving files to uncategorized collection from uncategorized
+        // this flow is triggered while cleaning up uncategerized collection
+        logger.info(
+          'skipping moving ${entry.value.length} files to uncategorized collection',
+        );
+      } else {
+        await collectionsService.move(
+          entry.key,
+          collection.id,
+          entry.value,
+        );
+      }
     }
   }
 

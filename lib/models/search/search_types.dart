@@ -30,6 +30,7 @@ enum ResultType {
   event,
   shared,
   faces,
+  magic,
 }
 
 enum SectionType {

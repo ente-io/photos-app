@@ -214,7 +214,7 @@ class FaceEmbedding {
         options: interpreterOptions,
       );
       _isolateInterpreter ??=
-          IsolateInterpreter(address: _interpreter!.address);
+          await IsolateInterpreter.create(address: _interpreter!.address);
 
       _logger.info('Interpreter created from asset: ${config.modelPath}');
 
