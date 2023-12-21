@@ -4,7 +4,6 @@ class Face {
   final int fileID;
   final String id;
   final List<double> embedding;
-  final List<(double, double)>? landmarks;
   Detection detection;
   final double score;
 
@@ -13,9 +12,8 @@ class Face {
     this.fileID,
     this.embedding,
     this.score,
-    this.detection, {
-    this.landmarks,
-  });
+    this.detection,
+  );
 
   factory Face.fromJson(Map<String, dynamic> json) {
     return Face(
@@ -24,7 +22,6 @@ class Face {
       List<double>.from(json['embedding'] as List),
       json['confidence'] as double,
       Detection.fromJson(json['detection'] as Map<String, dynamic>),
-      landmarks: json['landmarks'] as List<(double, double)>?,
     );
   }
 
