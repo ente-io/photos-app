@@ -17,15 +17,22 @@ import 'dart:typed_data' as $typed_data;
 const CenterBox$json = {
   '1': 'CenterBox',
   '2': [
-    {'1': 'x', '3': 1, '4': 2, '5': 2, '10': 'x'},
-    {'1': 'y', '3': 2, '4': 2, '5': 2, '10': 'y'},
-    {'1': 'height', '3': 3, '4': 2, '5': 2, '10': 'height'},
-    {'1': 'width', '3': 4, '4': 2, '5': 2, '10': 'width'},
+    {'1': 'x', '3': 1, '4': 1, '5': 2, '9': 0, '10': 'x', '17': true},
+    {'1': 'y', '3': 2, '4': 1, '5': 2, '9': 1, '10': 'y', '17': true},
+    {'1': 'height', '3': 3, '4': 1, '5': 2, '9': 2, '10': 'height', '17': true},
+    {'1': 'width', '3': 4, '4': 1, '5': 2, '9': 3, '10': 'width', '17': true},
+  ],
+  '8': [
+    {'1': '_x'},
+    {'1': '_y'},
+    {'1': '_height'},
+    {'1': '_width'},
   ],
 };
 
 /// Descriptor for `CenterBox`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List centerBoxDescriptor = $convert.base64Decode(
-    'CglDZW50ZXJCb3gSDAoBeBgBIAIoAlIBeBIMCgF5GAIgAigCUgF5EhYKBmhlaWdodBgDIAIoAl'
-    'IGaGVpZ2h0EhQKBXdpZHRoGAQgAigCUgV3aWR0aA==');
+    'CglDZW50ZXJCb3gSEQoBeBgBIAEoAkgAUgF4iAEBEhEKAXkYAiABKAJIAVIBeYgBARIbCgZoZW'
+    'lnaHQYAyABKAJIAlIGaGVpZ2h0iAEBEhkKBXdpZHRoGAQgASgCSANSBXdpZHRoiAEBQgQKAl94'
+    'QgQKAl95QgkKB19oZWlnaHRCCAoGX3dpZHRo');
 

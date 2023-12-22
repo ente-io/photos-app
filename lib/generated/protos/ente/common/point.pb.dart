@@ -13,6 +13,7 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
+/// EPoint is a point in 2D space
 class EPoint extends $pb.GeneratedMessage {
   factory EPoint({
     $core.double? x,
@@ -31,9 +32,10 @@ class EPoint extends $pb.GeneratedMessage {
   factory EPoint.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory EPoint.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EPoint', createEmptyInstance: create)
-    ..a<$core.double>(1, _omitFieldNames ? '' : 'x', $pb.PbFieldType.QF)
-    ..a<$core.double>(2, _omitFieldNames ? '' : 'y', $pb.PbFieldType.QF)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EPoint', package: const $pb.PackageName(_omitMessageNames ? '' : 'ente.common'), createEmptyInstance: create)
+    ..a<$core.double>(1, _omitFieldNames ? '' : 'x', $pb.PbFieldType.OF)
+    ..a<$core.double>(2, _omitFieldNames ? '' : 'y', $pb.PbFieldType.OF)
+    ..hasRequiredFields = false
   ;
 
   @$core.Deprecated(

@@ -17,12 +17,17 @@ import 'dart:typed_data' as $typed_data;
 const EPoint$json = {
   '1': 'EPoint',
   '2': [
-    {'1': 'x', '3': 1, '4': 2, '5': 2, '10': 'x'},
-    {'1': 'y', '3': 2, '4': 2, '5': 2, '10': 'y'},
+    {'1': 'x', '3': 1, '4': 1, '5': 2, '9': 0, '10': 'x', '17': true},
+    {'1': 'y', '3': 2, '4': 1, '5': 2, '9': 1, '10': 'y', '17': true},
+  ],
+  '8': [
+    {'1': '_x'},
+    {'1': '_y'},
   ],
 };
 
 /// Descriptor for `EPoint`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List ePointDescriptor = $convert.base64Decode(
-    'CgZFUG9pbnQSDAoBeBgBIAIoAlIBeBIMCgF5GAIgAigCUgF5');
+    'CgZFUG9pbnQSEQoBeBgBIAEoAkgAUgF4iAEBEhEKAXkYAiABKAJIAVIBeYgBAUIECgJfeEIECg'
+    'JfeQ==');
 

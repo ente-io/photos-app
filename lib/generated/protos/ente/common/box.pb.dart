@@ -40,11 +40,12 @@ class CenterBox extends $pb.GeneratedMessage {
   factory CenterBox.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory CenterBox.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CenterBox', createEmptyInstance: create)
-    ..a<$core.double>(1, _omitFieldNames ? '' : 'x', $pb.PbFieldType.QF)
-    ..a<$core.double>(2, _omitFieldNames ? '' : 'y', $pb.PbFieldType.QF)
-    ..a<$core.double>(3, _omitFieldNames ? '' : 'height', $pb.PbFieldType.QF)
-    ..a<$core.double>(4, _omitFieldNames ? '' : 'width', $pb.PbFieldType.QF)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CenterBox', package: const $pb.PackageName(_omitMessageNames ? '' : 'ente.common'), createEmptyInstance: create)
+    ..a<$core.double>(1, _omitFieldNames ? '' : 'x', $pb.PbFieldType.OF)
+    ..a<$core.double>(2, _omitFieldNames ? '' : 'y', $pb.PbFieldType.OF)
+    ..a<$core.double>(3, _omitFieldNames ? '' : 'height', $pb.PbFieldType.OF)
+    ..a<$core.double>(4, _omitFieldNames ? '' : 'width', $pb.PbFieldType.OF)
+    ..hasRequiredFields = false
   ;
 
   @$core.Deprecated(
