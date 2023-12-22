@@ -3,6 +3,7 @@ import "dart:convert";
 import 'package:photos/face/db_fields.dart';
 import "package:photos/face/model/face.dart";
 import 'package:photos/face/model/person_face.dart';
+import "package:photos/generated/protos/ente/common/vector.pb.dart";
 
 int boolToSQLInt(bool? value, {bool defaultValue = false}) {
   final bool v = value ?? defaultValue;
@@ -38,7 +39,9 @@ Map<String, dynamic> mapRemoteToFaceDB(Face face) {
     faceIDColumn: face.faceID,
     fileIDColumn: face.fileID,
     faceDetectionColumn: json.encode(face.detection.toJson()),
-    faceEmbedding: json.encode(face.embedding),
+    faceEmbeddingBlob: EVector(
+      values: face.embedding,
+    ).writeToBuffer(),
     faceScore: face.score,
     mlVersionColumn: 1,
   };

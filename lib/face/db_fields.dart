@@ -3,7 +3,7 @@ const facesTable = 'faces';
 const fileIDColumn = 'file_id';
 const faceIDColumn = 'face_id';
 const faceDetectionColumn = 'detection';
-const faceEmbedding = 'embeddings';
+const faceEmbeddingBlob = 'eBlob';
 const faceScore = 'score';
 const facePersonIDColumn = 'person_id';
 const faceConfirmedColumn = 'confirmed';
@@ -15,7 +15,7 @@ const createFacesTable = '''CREATE TABLE IF NOT EXISTS $facesTable (
   $fileIDColumn	INTEGER NOT NULL,
   $faceIDColumn  TEXT NOT NULL,
 	$faceDetectionColumn	TEXT NOT NULL,
-  $faceEmbedding  TEXT NOT NULL,
+  $faceEmbeddingBlob BLOB NOT NULL,
   $faceScore  REAL NOT NULL,
 	$facePersonIDColumn	INTEGER,
 	$faceClosestDistColumn	REAL,

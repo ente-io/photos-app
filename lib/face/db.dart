@@ -1,14 +1,14 @@
 import 'dart:async';
-import "dart:convert";
 import "dart:math";
+import "dart:typed_data";
 
 import 'package:logging/logging.dart';
 import 'package:path/path.dart' show join;
 import 'package:path_provider/path_provider.dart';
 import 'package:photos/face/db_fields.dart';
 import "package:photos/face/db_model_mappers.dart";
-import "package:photos/face/model/detection.dart";
 import "package:photos/face/model/face.dart";
+import "package:photos/generated/protos/ente/common/vector.pb.dart";
 import 'package:sqflite/sqflite.dart';
 
 /// Stores all data for the ML-related features. The database can be accessed by `MlDataDB.instance.database`.
@@ -73,65 +73,66 @@ class FaceMLDataDB {
   }
 
   // Get face_id to embedding map. only select face_id and embedding columns
-  Future<Map<String, List<double>>> getFaceEmbeddingMap() async {
+  Future<Map<String, EVector>> getFaceEmbeddingMap() async {
     _logger.info('reading as float');
     final db = await instance.database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      facesTable,
-      columns: [faceIDColumn, faceEmbedding],
-    );
-    final Map<String, List<double>> result = {};
-    for (final map in maps) {
-      final faceID = map[faceIDColumn] as String;
-      final embedding = map[faceEmbedding] as String;
-      final embeddingList = List<double>.from(jsonDecode(embedding));
-      result[faceID] = embeddingList;
+
+    // Define the batch size
+    const batchSize = 10000;
+    int offset = 0;
+
+    final Map<String, EVector> result = {};
+
+    while (true) {
+      // Query a batch of rows
+      final List<Map<String, dynamic>> maps = await db.query(
+        facesTable,
+        columns: [faceIDColumn, faceEmbeddingBlob],
+        limit: batchSize,
+        offset: offset,
+      );
+      // Break the loop if no more rows
+      if (maps.isEmpty) {
+        break;
+      }
+      for (final map in maps) {
+        final faceID = map[faceIDColumn] as String;
+        final embeddingList =
+            EVector.fromBuffer(map[faceEmbeddingBlob] as Uint8List);
+        result[faceID] = embeddingList;
+      }
+
+      // Increase the offset for the next batch
+      offset += batchSize;
     }
+
     return result;
   }
 
-  // Get face_id to embedding map. only select face_id and embedding columns
-  Future<Map<String, Detection>> getFaceEmbeddingStrMap() async {
-    _logger.info('reading as string');
-    final db = await instance.database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      facesTable,
-      columns: [faceIDColumn, faceDetectionColumn],
-    );
-    final Map<String, Detection> result = {};
-    for (final map in maps) {
-      final faceID = map[faceIDColumn] as String;
-      final embedding =
-          Detection.fromJson(jsonDecode(map[faceDetectionColumn]));
-      result[faceID] = embedding;
-    }
-    return result;
-  }
+  // // Get face_id to embedding map. only select face_id and embedding columns
+  // Future<Map<String, Detection>> getFaceEmbeddingStrMap() async {
+  //   _logger.info('reading as string');
+  //   final db = await instance.database;
+  //   final List<Map<String, dynamic>> maps = await db.query(
+  //     facesTable,
+  //     columns: [faceIDColumn, faceDetectionColumn],
+  //   );
+  //   final Map<String, Detection> result = {};
+  //   for (final map in maps) {
+  //     final faceID = map[faceIDColumn] as String;
+  //     final embedding =
+  //         Detection.fromJson(jsonDecode(map[faceDetectionColumn]));
+  //     result[faceID] = embedding;
+  //   }
+  //   return result;
+  // }
 
   /// WARNING: This will delete ALL data in the database! Only use this for debug/testing purposes!
-  Future<void> cleanTables({
-    bool cleanFaces = false,
-    bool cleanPeople = false,
-    bool cleanFeedback = false,
-  }) async {
+  Future<void> cleanTables() async {
     _logger.fine('`cleanTables()` called');
     final db = await instance.database;
-
-    if (cleanFaces) {
-      _logger.fine('`cleanTables()`: Cleaning faces table');
-      await db.execute(deleteFacesTable);
-    }
-
-    if (cleanPeople) {
-      _logger.fine('`cleanTables()`: Cleaning people table');
-      await db.execute(deletePeopleTable);
-    }
-
-    if (!cleanFaces && !cleanPeople && !cleanFeedback) {
-      _logger.fine(
-        '`cleanTables()`: No tables cleaned, since no table was specified. Please be careful with this function!',
-      );
-    }
+    await db.execute(deleteFacesTable);
+    await db.execute(deletePeopleTable);
 
     await db.execute(createFacesTable);
     await db.execute(createPeopleTable);
