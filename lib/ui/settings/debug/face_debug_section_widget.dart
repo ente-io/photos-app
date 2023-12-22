@@ -68,25 +68,21 @@ class FaceDebugSectionWidget extends StatelessWidget {
           trailingIconIsMuted: true,
           onTap: () async {
             final EnteWatch watch = EnteWatch("read_embeddings")..start();
-            // final result = await FaceMLDataDB.instance.getFaceEmbeddingMap();
-            // watch.logAndReset('read embeddings ${result.length} ');
-            final result2 =
-                await FaceMLDataDB.instance.getFaceEmbeddingStrMap();
-            watch.logAndReset('read embeddings as string ${result2.length} ');
+            final result = await FaceMLDataDB.instance.getFaceEmbeddingMap();
+            watch.logAndReset('read embeddings ${result.length} ');
             showShortToast(context, "Done");
           },
         ),
         sectionOptionSpacing,
         MenuItemWidget(
           captionedTextWidget: const CaptionedTextWidget(
-            title: "Allow auto-upload for ignored files",
+            title: "Drop and recreate DB",
           ),
           pressedColor: getEnteColorScheme(context).fillFaint,
           trailingIcon: Icons.chevron_right_outlined,
           trailingIconIsMuted: true,
           onTap: () async {
-            await IgnoredFilesService.instance.reset();
-            SyncService.instance.sync().ignore();
+            await FaceMLDataDB.instance.cleanTables();
             showShortToast(context, "Done");
           },
         ),
