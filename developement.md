@@ -25,3 +25,14 @@ sudo xcodebuild -runFirstLaunch
 ```bash
 cd ios && pod install && cd ..
 ```
+
+
+### Updating Protos
+If you wish to update the protos, make the change in the central repo and **get it reviewed** to ensure you are not accidently making a breaking change.
+```
+
+cd protos/
+git pull origin main
+cd ..
+protoc --proto_path=protos/ --dart_out=grpc:lib/generated/protos/ protos/**/*.proto 
+```
