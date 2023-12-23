@@ -1,5 +1,6 @@
 import "dart:async";
 import "dart:collection";
+import "dart:math";
 
 import "package:computer/computer.dart";
 import "package:logging/logging.dart";
@@ -17,7 +18,6 @@ import "package:photos/objectbox.g.dart";
 import "package:photos/services/semantic_search/embedding_store.dart";
 import "package:photos/services/semantic_search/frameworks/ml_framework.dart";
 import 'package:photos/services/semantic_search/frameworks/onnx/onnx.dart';
-import "package:photos/utils/file_util.dart";
 import "package:photos/utils/local_settings.dart";
 import "package:photos/utils/thumbnail_util.dart";
 
@@ -90,7 +90,7 @@ class SemanticSearchService {
     }
     _isSyncing = true;
     await EmbeddingStore.instance.pullEmbeddings();
-    await _backFill();
+    // await _backFill();
     _isSyncing = false;
   }
 
@@ -263,27 +263,27 @@ class SemanticSearchService {
       return;
     }
     try {
-      final filePath = (await getFile(file))!.path;
+      final filePath = (await getThumbnailForUploadedFile(file))!.path;
       _logger.info("Running clip over $file");
       final result = await _mlFramework.getImageEmbedding(filePath);
       if (result.length != kEmbeddingLength) {
         _logger.severe("Discovered incorrect embedding for $file - $result");
         return;
       }
-      // dev.log(result.toString());
-      // dev.log(computeScore(result, webEmbedding).toString());
-      // dev.log(computeScore(result, pyEmbedding).toString());
-      // dev.log(computeScore(pyEmbedding, webEmbedding).toString());
+      final existingEmbedding = _cachedEmbeddings
+          .firstWhere((element) => element.fileID == file.uploadedFileID);
+      final score = computeScore(result, existingEmbedding.embedding);
+      _logger.info("Score = " + score.toString());
 
-      final embedding = Embedding(
-        fileID: file.uploadedFileID!,
-        model: _mlFramework.getFrameworkName() + "-" + kModelName,
-        embedding: result,
-      );
-      await EmbeddingStore.instance.storeEmbedding(
-        file,
-        embedding,
-      );
+      // final embedding = Embedding(
+      //   fileID: file.uploadedFileID!,
+      //   model: _mlFramework.getFrameworkName() + "-" + kModelName,
+      //   embedding: result,
+      // );
+      // await EmbeddingStore.instance.storeEmbedding(
+      //   file,
+      //   embedding,
+      // );
     } catch (e, s) {
       _logger.severe(e, s);
     }
@@ -350,9 +350,13 @@ double computeScore(List<double> imageEmbedding, List<double> textEmbedding) {
     "The two embeddings should have the same length",
   );
   double score = 0;
+  double normalization = 0, normalization2 = 0;
   for (int index = 0; index < imageEmbedding.length; index++) {
     score += imageEmbedding[index] * textEmbedding[index];
+    normalization += imageEmbedding[index] * imageEmbedding[index];
+    normalization2 += textEmbedding[index] * textEmbedding[index];
   }
+  score /= sqrt((normalization * normalization2));
   return score;
 }
 

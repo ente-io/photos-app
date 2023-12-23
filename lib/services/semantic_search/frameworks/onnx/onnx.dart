@@ -24,7 +24,7 @@ class ONNX extends MLFramework {
 
   @override
   String getImageModelRemotePath() {
-    return "";
+    return kModelBucketEndpoint + kImageModel;
   }
 
   @override

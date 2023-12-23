@@ -17,6 +17,7 @@ import "package:photos/models/file/extensions/file_props.dart";
 import 'package:photos/models/file/file.dart';
 import "package:photos/models/metadata/file_magic.dart";
 import "package:photos/services/file_magic_service.dart";
+import "package:photos/services/semantic_search/semantic_search_service.dart";
 import "package:photos/ui/actions/file/file_actions.dart";
 import 'package:photos/ui/common/loading_widget.dart';
 import 'package:photos/utils/file_util.dart';
@@ -58,6 +59,7 @@ class _ZoomableImageState extends State<ZoomableImage>
   @override
   void initState() {
     _photo = widget.photo;
+    SemanticSearchService.instance.computeImageEmbedding(_photo);
     _logger = Logger("ZoomableImage");
     _logger.info('initState for ${_photo.generatedID} with tag ${_photo.tag}');
     _scaleStateChangedCallback = (value) {
