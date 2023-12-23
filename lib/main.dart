@@ -34,6 +34,7 @@ import 'package:photos/services/memories_service.dart';
 import 'package:photos/services/push_service.dart';
 import 'package:photos/services/remote_sync_service.dart';
 import 'package:photos/services/search_service.dart';
+import 'package:photos/services/semantic_search/semantic_search_service.dart';
 import "package:photos/services/storage_bonus_service.dart";
 import 'package:photos/services/sync_service.dart';
 import 'package:photos/services/trash_sync_service.dart';
@@ -104,9 +105,11 @@ Future<void> _runBackgroundTask(String taskId, {String mode = 'normal'}) async {
     await _sync('bgTaskActiveProcess');
     BackgroundFetch.finish(taskId);
   } else {
+    // ignore: unawaited_futures
     _runWithLogs(
       () async {
         _logger.info("Starting background task in $mode mode");
+        // ignore: unawaited_futures
         _runInBackground(taskId);
       },
       prefix: "[bg]",
@@ -150,7 +153,7 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
   _logger.info("Initializing...  inBG =$isBackground via: $via");
   final SharedPreferences preferences = await SharedPreferences.getInstance();
   await _logFGHeartBeatInfo();
-  _scheduleHeartBeat(preferences, isBackground);
+  unawaited(_scheduleHeartBeat(preferences, isBackground));
   AppLifecycleService.instance.init(preferences);
   if (isBackground) {
     AppLifecycleService.instance.onAppInBackground('init via: $via');
@@ -158,7 +161,7 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
     AppLifecycleService.instance.onAppInForeground('init via: $via');
   }
   // Start workers asynchronously. No need to wait for them to start
-  Computer.shared().turnOn(workersCount: 4, verbose: kDebugMode).ignore();
+  Computer.shared().turnOn(workersCount: 4).ignore();
   CryptoUtil.init();
   await NetworkClient.instance.init();
   await Configuration.instance.init();
@@ -182,14 +185,17 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
   SearchService.instance.init();
   StorageBonusService.instance.init(preferences);
   if (Platform.isIOS) {
+    // ignore: unawaited_futures
     PushService.instance.init().then((_) {
       FirebaseMessaging.onBackgroundMessage(
         _firebaseMessagingBackgroundHandler,
       );
     });
   }
-  FeatureFlagService.instance.init();
-
+  unawaited(FeatureFlagService.instance.init());
+  if (!isBackground) {
+    unawaited(SemanticSearchService.instance.init());
+  }
   // Can not including existing tf/ml binaries as they are not being built
   // from source.
   // See https://gitlab.com/fdroid/fdroiddata/-/merge_requests/12671#note_1294346819
@@ -238,6 +244,7 @@ Future<void> _scheduleHeartBeat(
     DateTime.now().microsecondsSinceEpoch,
   );
   Future.delayed(kHeartBeatFrequency, () async {
+    // ignore: unawaited_futures
     _scheduleHeartBeat(prefs, isBackground);
   });
 }
@@ -277,7 +284,7 @@ Future<void> _killBGTask([String? taskId]) async {
     DateTime.now().microsecondsSinceEpoch,
   );
   final prefs = await SharedPreferences.getInstance();
-  prefs.remove(kLastBGTaskHeartBeatTime);
+  await prefs.remove(kLastBGTaskHeartBeatTime);
   if (taskId != null) {
     BackgroundFetch.finish(taskId);
   }
@@ -295,6 +302,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     }
   } else {
     // App is dead
+    // ignore: unawaited_futures
     _runWithLogs(
       () async {
         _logger.info("Background push received");
