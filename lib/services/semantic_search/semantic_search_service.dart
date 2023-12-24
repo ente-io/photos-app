@@ -3,7 +3,6 @@ import "dart:collection";
 
 import "package:computer/computer.dart";
 import "package:logging/logging.dart";
-import "package:photos/core/cache/lru_map.dart";
 import "package:photos/core/configuration.dart";
 import "package:photos/core/event_bus.dart";
 import "package:photos/db/files_db.dart";
@@ -27,7 +26,6 @@ class SemanticSearchService {
   static final SemanticSearchService instance =
       SemanticSearchService._privateConstructor();
   static final Computer _computer = Computer.shared();
-  static final LRUMap<String, List<double>> _queryCache = LRUMap(20);
 
   static const kModelName = "clip";
   static const kEmbeddingLength = 512;
@@ -291,13 +289,8 @@ class SemanticSearchService {
 
   Future<List<double>> _getTextEmbedding(String query) async {
     _logger.info("Searching for " + query);
-    final cachedResult = _queryCache.get(query);
-    if (cachedResult != null) {
-      return cachedResult;
-    }
     try {
       final result = await _mlFramework.getTextEmbedding(query);
-      _queryCache.put(query, result);
       return result;
     } catch (e) {
       _logger.severe("Could not get text embedding", e);
