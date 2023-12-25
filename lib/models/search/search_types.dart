@@ -96,7 +96,7 @@ extension SectionTypeExtensions on SectionType {
   bool get isCTAVisible {
     switch (this) {
       case SectionType.face:
-        return false;
+        return true;
       case SectionType.content:
         return false;
       case SectionType.moment:

@@ -67,7 +67,7 @@ class _AllSearchSectionsState extends State<AllSearchSections> {
   Widget build(BuildContext context) {
     final searchTypes = SectionType.values.toList(growable: true);
     // remove face and content sectionType
-    searchTypes.remove(SectionType.face);
+    // searchTypes.remove(SectionType.face);
     searchTypes.remove(SectionType.content);
     return Padding(
       padding: const EdgeInsets.only(top: 8),
