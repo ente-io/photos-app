@@ -23,7 +23,6 @@ import 'package:photos/models/search/album_search_result.dart';
 import 'package:photos/models/search/generic_search_result.dart';
 import "package:photos/models/search/search_types.dart";
 import 'package:photos/services/collections_service.dart';
-import "package:photos/services/face_ml/face_search_service.dart";
 import "package:photos/services/location_service.dart";
 import 'package:photos/services/semantic_search/semantic_search_service.dart';
 import "package:photos/states/location_screen_state.dart";
@@ -146,27 +145,6 @@ class SearchService {
             ),
           );
         }
-      }
-    }
-    return searchResults;
-  }
-
-  Future<List<GenericSearchResult>> getFacesResult(String query) async {
-    final List<GenericSearchResult> searchResults = [];
-    final List<int> personOrClusterID =
-        await FaceSearchService.instance.getAllPeople();
-    for (var person in personOrClusterID) {
-      final List<EnteFile> filesForPerson =
-          await FaceSearchService.instance.getFilesForPerson(person);
-      if (filesForPerson.isNotEmpty) {
-        searchResults.add(
-          GenericSearchResult(
-            ResultType.faces,
-            'Person $person',
-            filesForPerson,
-            params: {'personID': person},
-          ),
-        );
       }
     }
     return searchResults;
@@ -727,7 +705,6 @@ class SearchService {
     }
     for (final personID in personIDToFiles.keys) {
       final files = personIDToFiles[personID]!;
-
       facesResult.add(
         GenericSearchResult(
           ResultType.faces,
