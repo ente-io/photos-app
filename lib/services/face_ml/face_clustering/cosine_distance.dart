@@ -32,3 +32,16 @@ double cosineDistance(List<double> vector1, List<double> vector2) {
   // Cosine distance is the complement of cosine similarity
   return 1.0 - similarity;
 }
+
+// cosineDistForNormVectors calculates the cosine distance between two normalized embeddings/vectors.
+@pragma('vm:entry-point')
+double cosineDistForNormVectors(List<double> vector1, List<double> vector2) {
+  if (vector1.length != vector2.length) {
+    throw ArgumentError('Vectors must be the same length');
+  }
+  double dotProduct = 0.0;
+  for (int i = 0; i < vector1.length; i++) {
+    dotProduct += vector1[i] * vector2[i];
+  }
+  return 1.0 - dotProduct;
+}
