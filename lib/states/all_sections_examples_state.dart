@@ -86,8 +86,14 @@ class _AllSectionsExamplesProviderState
             sectionType.getData(context, limit: searchSectionLimit),
           );
         }
-        allSectionsExamplesFuture =
-            Future.wait<List<SearchResult>>(allSectionsExamples);
+        try {
+          allSectionsExamplesFuture = Future.wait<List<SearchResult>>(
+            allSectionsExamples,
+            eagerError: false,
+          );
+        } catch (e) {
+          _logger.severe("Error reloading all sections: $e");
+        }
       });
     });
   }
