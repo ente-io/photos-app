@@ -240,8 +240,7 @@ extension SectionTypeExtensions on SectionType {
   }) {
     switch (this) {
       case SectionType.face:
-        return SearchService.instance.getAllLocationTags(limit);
-
+        return SearchService.instance.getAllFace(limit);
       case SectionType.content:
         return SearchService.instance.getAllLocationTags(limit);
 

@@ -10,6 +10,7 @@ import 'package:photos/data/years.dart';
 import 'package:photos/db/files_db.dart';
 import 'package:photos/events/local_photos_updated_event.dart';
 import "package:photos/extensions/string_ext.dart";
+import "package:photos/face/db.dart";
 import "package:photos/models/api/collection/user.dart";
 import 'package:photos/models/collection/collection.dart';
 import 'package:photos/models/collection/collection_items.dart';
@@ -701,6 +702,46 @@ class SearchService {
       }
     }
     return searchResults;
+  }
+
+  Future<List<GenericSearchResult>> getAllFace(int? limit) async {
+    debugPrint("getting faces");
+    final Map<int, Set<int>> result =
+        await FaceMLDataDB.instance.getFileIdToPersonIDs();
+    debugPrint("building result");
+    final List<GenericSearchResult> facesResult = [];
+    final Map<int, List<EnteFile>> personIDToFiles = {};
+    final allFiles = await getAllFiles();
+    for (final f in allFiles) {
+      if (!result.containsKey(f.uploadedFileID ?? -1)) {
+        continue;
+      }
+      final personIDs = result[f.uploadedFileID ?? -1]!;
+      for (final personID in personIDs) {
+        if (personIDToFiles.containsKey(personID)) {
+          personIDToFiles[personID]!.add(f);
+        } else {
+          personIDToFiles[personID] = [f];
+        }
+      }
+    }
+    for (final personID in personIDToFiles.keys) {
+      final files = personIDToFiles[personID]!;
+
+      facesResult.add(
+        GenericSearchResult(
+          ResultType.faces,
+          "P: $personID (${files.length})",
+          files,
+          params: {'personID': personID},
+        ),
+      );
+    }
+    if (limit != null) {
+      return facesResult.sublist(0, min(limit, facesResult.length));
+    } else {
+      return facesResult;
+    }
   }
 
   Future<List<GenericSearchResult>> getAllLocationTags(int? limit) async {

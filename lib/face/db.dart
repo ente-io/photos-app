@@ -8,7 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:photos/face/db_fields.dart';
 import "package:photos/face/db_model_mappers.dart";
 import "package:photos/face/model/face.dart";
-import "package:photos/generated/protos/ente/common/vector.pb.dart";
+import "package:photos/objectbox.g.dart";
 import 'package:sqflite/sqflite.dart';
 
 /// Stores all data for the ML-related features. The database can be accessed by `MlDataDB.instance.database`.
@@ -72,8 +72,59 @@ class FaceMLDataDB {
     }
   }
 
+  Future<Map<int, int>> getFileIdToCount() async {
+    final Map<int, int> result = {};
+    final db = await instance.database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      'SELECT $fileIDColumn, COUNT(*) as count FROM $facesTable where $faceScore > 0.8 GROUP BY $fileIDColumn',
+    );
+
+    for (final map in maps) {
+      result[map[fileIDColumn] as int] = map['count'] as int;
+    }
+    return result;
+  }
+
+  Future<Map<int, Set<int>>> getFileIdToPersonIDs() async {
+    final Map<int, Set<int>> result = {};
+    final db = await instance.database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      'SELECT $facePersonIDColumn, $fileIDColumn FROM $facesTable where $facePersonIDColumn IS NOT NULL',
+    );
+
+    for (final map in maps) {
+      final personID = map[facePersonIDColumn] as int;
+      final fileID = map[fileIDColumn] as int;
+      result[fileID] = (result[fileID] ?? {})..add(personID);
+    }
+    return result;
+  }
+
+  Future<void> updatePersonIDForFaceIDIFNotSet(
+    Map<String, int> faceIDToPersonID,
+  ) async {
+    final db = await instance.database;
+
+    // Start a batch
+    final batch = db.batch();
+
+    for (final map in faceIDToPersonID.entries) {
+      final faceID = map.key;
+      final personID = map.value;
+      batch.update(
+        facesTable,
+        {facePersonIDColumn: personID},
+        where: '$faceIDColumn = ? AND $facePersonIDColumn IS NULL',
+        whereArgs: [faceID],
+      );
+    }
+    // Commit the batch
+    await batch.commit(noResult: true);
+  }
+
   // Get face_id to embedding map. only select face_id and embedding columns
-  Future<Map<String, EVector>> getFaceEmbeddingMap() async {
+  // where score is greater than 0.5
+  Future<Map<String, Uint8List>> getFaceEmbeddingMap() async {
     _logger.info('reading as float');
     final db = await instance.database;
 
@@ -81,15 +132,16 @@ class FaceMLDataDB {
     const batchSize = 10000;
     int offset = 0;
 
-    final Map<String, EVector> result = {};
-
+    final Map<String, Uint8List> result = {};
     while (true) {
       // Query a batch of rows
       final List<Map<String, dynamic>> maps = await db.query(
         facesTable,
         columns: [faceIDColumn, faceEmbeddingBlob],
+        where: '$faceScore > 0.8',
         limit: batchSize,
         offset: offset,
+        orderBy: '$faceIDColumn DESC',
       );
       // Break the loop if no more rows
       if (maps.isEmpty) {
@@ -97,35 +149,52 @@ class FaceMLDataDB {
       }
       for (final map in maps) {
         final faceID = map[faceIDColumn] as String;
-        final embeddingList =
-            EVector.fromBuffer(map[faceEmbeddingBlob] as Uint8List);
-        result[faceID] = embeddingList;
+        result[faceID] = map[faceEmbeddingBlob] as Uint8List;
       }
-
-      // Increase the offset for the next batch
+      if (result.length > 10000) {
+        break;
+      }
       offset += batchSize;
     }
-
     return result;
   }
 
-  // // Get face_id to embedding map. only select face_id and embedding columns
-  // Future<Map<String, Detection>> getFaceEmbeddingStrMap() async {
-  //   _logger.info('reading as string');
-  //   final db = await instance.database;
-  //   final List<Map<String, dynamic>> maps = await db.query(
-  //     facesTable,
-  //     columns: [faceIDColumn, faceDetectionColumn],
-  //   );
-  //   final Map<String, Detection> result = {};
-  //   for (final map in maps) {
-  //     final faceID = map[faceIDColumn] as String;
-  //     final embedding =
-  //         Detection.fromJson(jsonDecode(map[faceDetectionColumn]));
-  //     result[faceID] = embedding;
-  //   }
-  //   return result;
-  // }
+  Future<Map<String, Uint8List>> getFaceEmbeddingMapForFile(
+    List<int> fileIDs,
+  ) async {
+    _logger.info('reading as float');
+    final db = await instance.database;
+
+    // Define the batch size
+    const batchSize = 10000;
+    int offset = 0;
+
+    final Map<String, Uint8List> result = {};
+    while (true) {
+      // Query a batch of rows
+      final List<Map<String, dynamic>> maps = await db.query(
+        facesTable,
+        columns: [faceIDColumn, faceEmbeddingBlob],
+        where: '$faceScore > 0.8 AND $fileIDColumn IN (${fileIDs.join(",")})',
+        limit: batchSize,
+        offset: offset,
+        orderBy: '$faceIDColumn DESC',
+      );
+      // Break the loop if no more rows
+      if (maps.isEmpty) {
+        break;
+      }
+      for (final map in maps) {
+        final faceID = map[faceIDColumn] as String;
+        result[faceID] = map[faceEmbeddingBlob] as Uint8List;
+      }
+      if (result.length > 10000) {
+        break;
+      }
+      offset += batchSize;
+    }
+    return result;
+  }
 
   /// WARNING: This will delete ALL data in the database! Only use this for debug/testing purposes!
   Future<void> cleanTables() async {
