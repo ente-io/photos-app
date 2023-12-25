@@ -704,11 +704,15 @@ class SearchService {
       }
     }
     for (final personID in personIDToFiles.keys) {
+      // format lenth as 000d
       final files = personIDToFiles[personID]!;
+      final clusterName =
+          "(${files.length.toString().padLeft(4, '0')}) P:$personID ";
+
       facesResult.add(
         GenericSearchResult(
           ResultType.faces,
-          "P: $personID (${files.length})",
+          clusterName,
           files,
           params: {'personID': personID},
         ),
