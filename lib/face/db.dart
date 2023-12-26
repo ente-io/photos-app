@@ -196,6 +196,14 @@ class FaceMLDataDB {
     return result;
   }
 
+  Future<void> resetPersonIDs() async {
+    final db = await instance.database;
+    await db.update(
+      facesTable,
+      {facePersonIDColumn: null},
+    );
+  }
+
   /// WARNING: This will delete ALL data in the database! Only use this for debug/testing purposes!
   Future<void> cleanTables() async {
     _logger.fine('`cleanTables()` called');

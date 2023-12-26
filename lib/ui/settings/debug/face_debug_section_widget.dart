@@ -113,12 +113,13 @@ class FaceDebugSectionWidget extends StatelessWidget {
                 ..add(fileID);
             }
             final List<int> singleFaceFiles = faceCountToFiles[1] ?? [];
-            // final List<int> twoFaceFiles = faceCountToFiles[2] ?? [];
-            // await FaceMLDataDB.instance.getFileIdToCount();
+            final List<int> twoFaceFiles = faceCountToFiles[2] ?? [];
 
             final EnteWatch watch = EnteWatch("cluster")..start();
-            final result = await FaceMLDataDB.instance
-                .getFaceEmbeddingMapForFile(singleFaceFiles);
+            final result =
+                await FaceMLDataDB.instance.getFaceEmbeddingMapForFile(
+              singleFaceFiles..addAll(twoFaceFiles),
+            );
             // final result = await FaceMLDataDB.instance.getFaceEmbeddingMap();
             watch.logAndReset('read embeddings ${result.length} ');
             final faceIdToCluster =
@@ -128,6 +129,19 @@ class FaceDebugSectionWidget extends StatelessWidget {
             watch.logAndReset('done with clustering ${result.length} ');
 
             showShortToast(context, "done");
+          },
+        ),
+        sectionOptionSpacing,
+        MenuItemWidget(
+          captionedTextWidget: const CaptionedTextWidget(
+            title: "Drop clusters",
+          ),
+          pressedColor: getEnteColorScheme(context).fillFaint,
+          trailingIcon: Icons.chevron_right_outlined,
+          trailingIconIsMuted: true,
+          onTap: () async {
+            await FaceMLDataDB.instance.resetPersonIDs();
+            showShortToast(context, "Done");
           },
         ),
         sectionOptionSpacing,
