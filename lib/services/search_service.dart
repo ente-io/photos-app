@@ -27,6 +27,7 @@ import "package:photos/services/location_service.dart";
 import 'package:photos/services/semantic_search/semantic_search_service.dart';
 import "package:photos/states/location_screen_state.dart";
 import "package:photos/ui/viewer/location/location_screen.dart";
+import "package:photos/ui/viewer/people/people_page.dart";
 import 'package:photos/utils/date_time_util.dart';
 import "package:photos/utils/navigation_util.dart";
 import 'package:tuple/tuple.dart';
@@ -715,6 +716,15 @@ class SearchService {
           clusterName,
           files,
           params: {'personID': personID},
+          onResultTap: (ctx) {
+            routeToPage(
+              ctx,
+              PeoplePage(
+                files,
+                tagPrefix: "${ResultType.location.toString()}_$clusterName",
+              ),
+            );
+          },
         ),
       );
     }

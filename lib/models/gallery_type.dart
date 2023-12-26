@@ -18,6 +18,7 @@ enum GalleryType {
   searchResults,
   locationTag,
   quickLink,
+  peopleTag,
 }
 
 extension GalleyTypeExtension on GalleryType {
@@ -32,6 +33,7 @@ extension GalleyTypeExtension on GalleryType {
       case GalleryType.locationTag:
       case GalleryType.quickLink:
       case GalleryType.uncategorized:
+      case GalleryType.peopleTag:
         return true;
 
       case GalleryType.hiddenSection:
@@ -50,6 +52,7 @@ extension GalleyTypeExtension on GalleryType {
         return true;
 
       case GalleryType.hiddenSection:
+      case GalleryType.peopleTag:
       case GalleryType.hiddenOwnedCollection:
       case GalleryType.favorite:
       case GalleryType.searchResults:
@@ -75,6 +78,7 @@ extension GalleyTypeExtension on GalleryType {
       case GalleryType.uncategorized:
       case GalleryType.locationTag:
       case GalleryType.quickLink:
+      case GalleryType.peopleTag:
         return true;
       case GalleryType.trash:
       case GalleryType.archive:
@@ -98,6 +102,7 @@ extension GalleyTypeExtension on GalleryType {
       case GalleryType.localFolder:
       case GalleryType.locationTag:
       case GalleryType.quickLink:
+      case GalleryType.peopleTag:
         return true;
       case GalleryType.trash:
       case GalleryType.sharedCollection:
@@ -114,6 +119,7 @@ extension GalleyTypeExtension on GalleryType {
       case GalleryType.archive:
       case GalleryType.uncategorized:
       case GalleryType.locationTag:
+      case GalleryType.peopleTag:
         return true;
       case GalleryType.hiddenSection:
       case GalleryType.hiddenOwnedCollection:
@@ -132,6 +138,7 @@ extension GalleyTypeExtension on GalleryType {
       case GalleryType.quickLink:
         return true;
       case GalleryType.hiddenSection:
+      case GalleryType.peopleTag:
       case GalleryType.hiddenOwnedCollection:
       case GalleryType.uncategorized:
       case GalleryType.favorite:
@@ -154,6 +161,7 @@ extension GalleyTypeExtension on GalleryType {
         return true;
 
       case GalleryType.hiddenSection:
+      case GalleryType.peopleTag:
       case GalleryType.hiddenOwnedCollection:
       case GalleryType.favorite:
       case GalleryType.searchResults:
@@ -182,6 +190,7 @@ extension GalleyTypeExtension on GalleryType {
         return true;
 
       case GalleryType.hiddenSection:
+      case GalleryType.peopleTag:
       case GalleryType.hiddenOwnedCollection:
       case GalleryType.localFolder:
       case GalleryType.trash:
@@ -203,6 +212,7 @@ extension GalleyTypeExtension on GalleryType {
       case GalleryType.searchResults:
       case GalleryType.uncategorized:
       case GalleryType.locationTag:
+      case GalleryType.peopleTag:
         return true;
 
       case GalleryType.hiddenSection:
@@ -335,6 +345,7 @@ extension GalleryAppBarExtn on GalleryType {
       case GalleryType.searchResults:
         return false;
       case GalleryType.uncategorized:
+      case GalleryType.peopleTag:
       case GalleryType.ownedCollection:
       case GalleryType.sharedCollection:
       case GalleryType.quickLink:
