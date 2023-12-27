@@ -1,12 +1,10 @@
 class Person {
   final String remoteID;
   final PersonAttr attr;
-  int? id;
-  Person({
-    required this.remoteID,
-    required this.attr,
-    this.id,
-  });
+  Person(
+    this.remoteID,
+    this.attr,
+  );
 }
 
 class PersonAttr {

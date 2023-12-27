@@ -722,6 +722,7 @@ class SearchService {
               PeoplePage(
                 files,
                 tagPrefix: "${ResultType.location.toString()}_$clusterName",
+                cluserID: personID,
               ),
             );
           },

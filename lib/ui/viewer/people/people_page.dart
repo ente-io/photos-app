@@ -11,7 +11,9 @@ import 'package:photos/models/selected_files.dart';
 import 'package:photos/ui/viewer/actions/file_selection_overlay_bar.dart';
 import 'package:photos/ui/viewer/gallery/gallery.dart';
 import 'package:photos/ui/viewer/gallery/gallery_app_bar_widget.dart';
+import "package:photos/ui/viewer/people/add_person_action_sheet.dart";
 import "package:photos/ui/viewer/search/result/search_result_page.dart";
+import "package:photos/utils/toast_util.dart";
 
 class PeoplePage extends StatefulWidget {
   final List<EnteFile> searchResult;
@@ -97,10 +99,19 @@ class _SearchResultPageState extends State<PeoplePage> {
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(50.0),
-        child: GalleryAppBarWidget(
-          SearchResultPage.appBarType,
-          "Add name",
-          _selectedFiles,
+        child: GestureDetector(
+          onTap: () {
+            if (widget.cluserID != null) {
+              showAssignPersonAction(context, clusterID: widget.cluserID!);
+            } else {
+              showShortToast(context, "11No personID or clusterID");
+            }
+          },
+          child: GalleryAppBarWidget(
+            SearchResultPage.appBarType,
+            "Add name",
+            _selectedFiles,
+          ),
         ),
       ),
       body: Stack(
