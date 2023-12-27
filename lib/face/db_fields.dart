@@ -31,19 +31,36 @@ const deleteFacesTable = 'DROP TABLE IF EXISTS $facesTable';
 
 // People Table Fields & Schema Queries
 const peopleTable = 'people';
-const personIDColumn = 'id';
-const personNameColumn = 'name';
+const idColumn = 'id';
+const nameColumn = 'name';
 const personHiddenColumn = 'hidden';
-const personFaceIDsColumn = 'face_ids';
+const clusterToFaceIdJson = 'clusterToFaceIds';
+const coverFaceIDColumn = 'cover_face_id';
 
 const createPeopleTable = '''CREATE TABLE IF NOT EXISTS $peopleTable (
-  $personIDColumn	INTEGER NOT NULL UNIQUE,
-	$personNameColumn	TEXT NOT NULL DEFAULT '',
+  $idColumn	TEXT NOT NULL UNIQUE,
+	$nameColumn	TEXT NOT NULL DEFAULT '',
   $personHiddenColumn	INTEGER NOT NULL DEFAULT 0,
-  $personFaceIDsColumn	TEXT NOT NULL,
-	PRIMARY KEY($personIDColumn)
+  $clusterToFaceIdJson	TEXT NOT NULL DEFAULT '{}',
+  $coverFaceIDColumn	TEXT,
+	PRIMARY KEY($idColumn)
   );
   ''';
 
 const deletePeopleTable = 'DROP TABLE IF EXISTS $peopleTable';
 //End People Table Fields & Schema Queries
+
+// PersonToClusterID Table Fields & Schema Queries
+const personToClusterIDTable = 'person_to_cluster_id';
+const personToClusterIDPersonIDColumn = 'person_id';
+const personToClusterIDClusterIDColumn = 'cluster_id';
+
+const createPersonClusterTable = '''
+CREATE TABLE IF NOT EXISTS $personToClusterIDTable (
+  $personToClusterIDPersonIDColumn	TEXT NOT NULL,
+  $personToClusterIDClusterIDColumn	TEXT NOT NULL,
+  PRIMARY KEY($personToClusterIDPersonIDColumn, $personToClusterIDClusterIDColumn)
+);
+''';
+const dropPersonClusterTable = 'DROP TABLE IF EXISTS $personToClusterIDTable';
+// End PersonToClusterID Table Fields & Schema Queries 

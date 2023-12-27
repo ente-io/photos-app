@@ -208,10 +208,12 @@ class FaceMLDataDB {
   Future<void> cleanTables() async {
     _logger.fine('`cleanTables()` called');
     final db = await instance.database;
-    await db.execute(deleteFacesTable);
+    // await db.execute(deleteFacesTable);
     await db.execute(deletePeopleTable);
+    await db.execute(dropPersonClusterTable);
 
-    await db.execute(createFacesTable);
+    // await db.execute(createFacesTable);
     await db.execute(createPeopleTable);
+    await db.execute(createPersonClusterTable);
   }
 }
