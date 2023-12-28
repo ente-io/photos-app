@@ -2,6 +2,7 @@ import 'dart:async';
 import "dart:math";
 import "dart:typed_data";
 
+import "package:flutter/foundation.dart";
 import 'package:logging/logging.dart';
 import 'package:path/path.dart' show join;
 import 'package:path_provider/path_provider.dart';
@@ -139,7 +140,7 @@ class FaceMLDataDB {
       final List<Map<String, dynamic>> maps = await db.query(
         facesTable,
         columns: [faceIDColumn, faceEmbeddingBlob],
-        where: '$faceScore > 0.8',
+        where: '$faceScore > 0.7',
         limit: batchSize,
         offset: offset,
         orderBy: '$faceIDColumn DESC',
@@ -206,6 +207,7 @@ class FaceMLDataDB {
   }
 
   Future<void> insert(Person p, int cluserID) async {
+    debugPrint("inserting person");
     final db = await instance.database;
     await db.insert(
       peopleTable,
@@ -220,17 +222,59 @@ class FaceMLDataDB {
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+    debugPrint("person inserted");
   }
 
-  Future<Map<String, String>> getCluserIDToPersonMap() async {
+  Future<Map<int, String>> getCluserIDToPersonMap() async {
     final db = await instance.database;
     final List<Map<String, dynamic>> maps = await db.rawQuery(
       'SELECT $personToClusterIDPersonIDColumn, $cluserIDColumn FROM $personToClusterIDTable',
     );
-    final Map<String, String> result = {};
+    final Map<int, String> result = {};
     for (final map in maps) {
-      result[map[cluserIDColumn] as String] =
+      result[map[cluserIDColumn] as int] =
           map[personToClusterIDPersonIDColumn] as String;
+    }
+    return result;
+  }
+
+  Future<Map<int, Person>> getClusterIdToPerson() async {
+    final db = await instance.database;
+    final Map<String, Person> peopleMap = await getPeopleMap();
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      'SELECT $personToClusterIDPersonIDColumn, $cluserIDColumn FROM $personToClusterIDTable',
+    );
+
+    final Map<int, Person> result = {};
+    for (final map in maps) {
+      final Person? p =
+          peopleMap[map[personToClusterIDPersonIDColumn] as String];
+      if (p != null) {
+        result[map[cluserIDColumn] as int] = p!;
+      } else {
+        _logger.warning(
+          'Person with id ${map[personToClusterIDPersonIDColumn]} not found',
+        );
+      }
+    }
+    return result;
+  }
+
+  Future<Map<String, Person>> getPeopleMap() async {
+    final db = await instance.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      peopleTable,
+      columns: [
+        idColumn,
+        nameColumn,
+        personHiddenColumn,
+        clusterToFaceIdJson,
+        coverFaceIDColumn,
+      ],
+    );
+    final Map<String, Person> result = {};
+    for (final map in maps) {
+      result[map[idColumn] as String] = mapRowToPerson(map);
     }
     return result;
   }

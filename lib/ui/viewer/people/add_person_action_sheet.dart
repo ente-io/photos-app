@@ -1,8 +1,11 @@
 import "dart:async";
-import 'dart:math';
+import "dart:developer";
+import "dart:math" as math;
 
 import 'package:flutter/material.dart';
+import "package:logging/logging.dart";
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
+import "package:photos/face/db.dart";
 import "package:photos/face/model/person.dart";
 import "package:photos/generated/l10n.dart";
 import 'package:photos/theme/colors.dart';
@@ -15,6 +18,8 @@ import "package:photos/ui/components/text_input_widget.dart";
 import 'package:photos/ui/components/title_bar_title_widget.dart';
 import "package:photos/ui/viewer/people/new_person_item_widget.dart";
 import "package:photos/ui/viewer/people/person_row_item.dart";
+import "package:photos/utils/dialog_util.dart";
+import "package:uuid/uuid.dart";
 
 enum PersonActionType {
   assignPerson,
@@ -42,9 +47,10 @@ void showAssignPersonAction(
   showBarModalBottomSheet(
     context: context,
     builder: (context) {
-      return CollectionActionSheet(
+      return PersonActionSheet(
         actionType: actionType,
         showOptionToCreateNewAlbum: showOptionToCreateNewAlbum,
+        cluserID: clusterID,
       );
     },
     shape: const RoundedRectangleBorder(
@@ -60,20 +66,22 @@ void showAssignPersonAction(
   );
 }
 
-class CollectionActionSheet extends StatefulWidget {
+class PersonActionSheet extends StatefulWidget {
   final PersonActionType actionType;
+  final int cluserID;
   final bool showOptionToCreateNewAlbum;
-  const CollectionActionSheet({
+  const PersonActionSheet({
     required this.actionType,
+    required this.cluserID,
     required this.showOptionToCreateNewAlbum,
     super.key,
   });
 
   @override
-  State<CollectionActionSheet> createState() => _CollectionActionSheetState();
+  State<PersonActionSheet> createState() => _PersonActionSheetState();
 }
 
-class _CollectionActionSheetState extends State<CollectionActionSheet> {
+class _PersonActionSheetState extends State<PersonActionSheet> {
   static const int cancelButtonSize = 80;
   String _searchQuery = "";
 
@@ -95,7 +103,7 @@ class _CollectionActionSheetState extends State<CollectionActionSheet> {
         children: [
           ConstrainedBox(
             constraints: BoxConstraints(
-              maxWidth: min(428, MediaQuery.of(context).size.width),
+              maxWidth: math.min(428, MediaQuery.of(context).size.width),
             ),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(0, 32, 0, 8),
@@ -170,6 +178,7 @@ class _CollectionActionSheetState extends State<CollectionActionSheet> {
           future: _getPersons(),
           builder: (context, snapshot) {
             if (snapshot.hasError) {
+              log("Error: ${snapshot.error} ${snapshot.stackTrace}}");
               //Need to show an error on the UI here
               return const SizedBox.shrink();
             } else if (snapshot.hasData) {
@@ -197,6 +206,13 @@ class _CollectionActionSheetState extends State<CollectionActionSheet> {
                       if (index == 0 && shouldShowCreateAlbum) {
                         return GestureDetector(
                           child: const NewPersonItemWidget(),
+                          onTap: () async => {
+                            addNewPerson(
+                              context,
+                              initValue: _searchQuery.trim(),
+                              clusterID: widget.cluserID,
+                            ),
+                          },
                         );
                       }
                       final person = searchResults[
@@ -221,23 +237,44 @@ class _CollectionActionSheetState extends State<CollectionActionSheet> {
     );
   }
 
+  Future<void> addNewPerson(
+    BuildContext context, {
+    String initValue = '',
+    required int clusterID,
+  }) async {
+    final result = await showTextInputDialog(
+      context,
+      title: S.of(context).newAlbum,
+      submitButtonLabel: S.of(context).create,
+      hintText: 'Add name',
+      alwaysShowSuccessState: false,
+      initialValue: "",
+      textCapitalization: TextCapitalization.words,
+      onSubmit: (String text) async {
+        // indicates user cancelled the rename request
+        if (text.trim() == "") {
+          return;
+        }
+        try {
+          final String id = const Uuid().v4().toString();
+          final Person p = Person(
+            id,
+            PersonAttr(name: text, faces: <String>[]),
+          );
+          await FaceMLDataDB.instance.insert(p, clusterID);
+          log("inserted person");
+        } catch (e, s) {
+          Logger("CreateNewAlbumIcon").severe("Failed to rename album", e, s);
+          rethrow;
+        }
+      },
+    );
+    if (result is Exception) {
+      await showGenericErrorDialog(context: context, error: result);
+    }
+  }
+
   Future<List<Person>> _getPersons() async {
-    // return dummy data
-    return [
-      Person(
-        "1",
-        PersonAttr(
-          name: "Mahesh",
-          faces: {},
-        ),
-      ),
-      Person(
-        "2",
-        PersonAttr(
-          name: "Neeraj",
-          faces: {},
-        ),
-      ),
-    ];
+    return FaceMLDataDB.instance.getPeople();
   }
 }
