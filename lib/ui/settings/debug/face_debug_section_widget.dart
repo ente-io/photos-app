@@ -1,5 +1,3 @@
-import "dart:developer";
-
 import 'package:flutter/material.dart';
 import "package:logging/logging.dart";
 import 'package:photos/core/configuration.dart';
@@ -7,10 +5,6 @@ import "package:photos/extensions/stop_watch.dart";
 import "package:photos/face/db.dart";
 import "package:photos/face/utils/import_from_zip.dart";
 import "package:photos/services/face_ml/face_clusterting_linear/linear_clustering.dart";
-import 'package:photos/services/ignored_files_service.dart';
-import 'package:photos/services/local_sync_service.dart';
-import 'package:photos/services/sync_service.dart';
-import 'package:photos/services/update_service.dart';
 import 'package:photos/theme/ente_theme.dart';
 import 'package:photos/ui/components/captioned_text_widget.dart';
 import 'package:photos/ui/components/expandable_menu_item_widget.dart';
@@ -94,7 +88,7 @@ class FaceDebugSectionWidget extends StatelessWidget {
         ),
         MenuItemWidget(
           captionedTextWidget: const CaptionedTextWidget(
-            title: "Faces Stats",
+            title: "< 2 faces clustering",
           ),
           pressedColor: getEnteColorScheme(context).fillFaint,
           trailingIcon: Icons.chevron_right_outlined,
