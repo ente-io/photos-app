@@ -125,8 +125,10 @@ class FaceMLDataDB {
   }
 
   // Get face_id to embedding map. only select face_id and embedding columns
-  // where score is greater than 0.5
-  Future<Map<String, Uint8List>> getFaceEmbeddingMap() async {
+  // where score is greater than 0.
+  Future<Map<String, Uint8List>> getFaceEmbeddingMap({
+    double minScore = 0.8,
+  }) async {
     _logger.info('reading as float');
     final db = await instance.database;
 
@@ -140,7 +142,7 @@ class FaceMLDataDB {
       final List<Map<String, dynamic>> maps = await db.query(
         facesTable,
         columns: [faceIDColumn, faceEmbeddingBlob],
-        where: '$faceScore > 0.7',
+        where: '$faceScore > $minScore',
         limit: batchSize,
         offset: offset,
         orderBy: '$faceIDColumn DESC',

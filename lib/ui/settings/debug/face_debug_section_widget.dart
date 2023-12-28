@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import "package:logging/logging.dart";
-import 'package:photos/core/configuration.dart';
 import "package:photos/extensions/stop_watch.dart";
 import "package:photos/face/db.dart";
 import "package:photos/face/utils/import_from_zip.dart";
@@ -10,7 +9,6 @@ import 'package:photos/ui/components/captioned_text_widget.dart';
 import 'package:photos/ui/components/expandable_menu_item_widget.dart';
 import 'package:photos/ui/components/menu_item_widget/menu_item_widget.dart';
 import 'package:photos/ui/settings/common_settings.dart';
-import 'package:photos/utils/crypto_util.dart';
 import "package:photos/utils/dialog_util.dart";
 import 'package:photos/utils/toast_util.dart';
 
@@ -72,17 +70,22 @@ class FaceDebugSectionWidget extends StatelessWidget {
         ),
         MenuItemWidget(
           captionedTextWidget: const CaptionedTextWidget(
-            title: "Full clustering",
+            title: "Full clustering (min:0.75)",
           ),
           pressedColor: getEnteColorScheme(context).fillFaint,
           trailingIcon: Icons.chevron_right_outlined,
           trailingIconIsMuted: true,
           onTap: () async {
             final EnteWatch watch = EnteWatch("cluster")..start();
-            final result = await FaceMLDataDB.instance.getFaceEmbeddingMap();
+            final result = await FaceMLDataDB.instance.getFaceEmbeddingMap(
+              minScore: 0.75,
+            );
             watch.logAndReset('read embeddings ${result.length} ');
-            await FaceLinearClustering.instance.predict(result);
+            final faceIdToCluster =
+                await FaceLinearClustering.instance.predict(result);
             watch.logAndReset('done with clustering ${result.length} ');
+            await FaceMLDataDB.instance
+                .updatePersonIDForFaceIDIFNotSet(faceIdToCluster!);
             showShortToast(context, "Done");
           },
         ),
@@ -152,58 +155,6 @@ class FaceDebugSectionWidget extends StatelessWidget {
           },
         ),
       ],
-    );
-  }
-
-  void _showKeyAttributesDialog(BuildContext context) {
-    final keyAttributes = Configuration.instance.getKeyAttributes()!;
-    final AlertDialog alert = AlertDialog(
-      title: const Text("key attributes"),
-      content: SingleChildScrollView(
-        child: Column(
-          children: [
-            const Text(
-              "Key",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text(CryptoUtil.bin2base64(Configuration.instance.getKey()!)),
-            const Padding(padding: EdgeInsets.all(12)),
-            const Text(
-              "Encrypted Key",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text(keyAttributes.encryptedKey),
-            const Padding(padding: EdgeInsets.all(12)),
-            const Text(
-              "Key Decryption Nonce",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text(keyAttributes.keyDecryptionNonce),
-            const Padding(padding: EdgeInsets.all(12)),
-            const Text(
-              "KEK Salt",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text(keyAttributes.kekSalt),
-            const Padding(padding: EdgeInsets.all(12)),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          child: const Text("OK"),
-          onPressed: () {
-            Navigator.of(context, rootNavigator: true).pop('dialog');
-          },
-        ),
-      ],
-    );
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return alert;
-      },
     );
   }
 }
