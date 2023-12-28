@@ -2,6 +2,7 @@ import "dart:convert";
 
 import 'package:photos/face/db_fields.dart';
 import "package:photos/face/model/face.dart";
+import "package:photos/face/model/person.dart";
 import 'package:photos/face/model/person_face.dart';
 import "package:photos/generated/protos/ente/common/vector.pb.dart";
 
@@ -32,6 +33,28 @@ Map<String, dynamic> mapToFaceDB(PersonFace personFace) {
     faceClosestDistColumn: personFace.closeDist,
     faceClosestFaceID: personFace.closeFaceID,
   };
+}
+
+Map<String, dynamic> mapPersonToRow(Person p) {
+  return {
+    idColumn: p.remoteID,
+    nameColumn: p.attr.name,
+    personHiddenColumn: boolToSQLInt(p.attr.isHidden),
+    coverFaceIDColumn: p.attr.avatarFaceId,
+    clusterToFaceIdJson: jsonEncode(p.attr.faces),
+  };
+}
+
+Person mapRowToPerson(Map<String, dynamic> row) {
+  return Person(
+    row[idColumn] as String,
+    PersonAttr(
+      name: row[nameColumn] as String,
+      isHidden: sqlIntToBool(row[personHiddenColumn] as int),
+      avatarFaceId: row[coverFaceIDColumn] as String?,
+      faces: jsonDecode(row[clusterToFaceIdJson] as String),
+    ),
+  );
 }
 
 Map<String, dynamic> mapRemoteToFaceDB(Face face) {

@@ -78,7 +78,7 @@ class FaceDebugSectionWidget extends StatelessWidget {
         ),
         MenuItemWidget(
           captionedTextWidget: const CaptionedTextWidget(
-            title: "Run clustering",
+            title: "Full clustering",
           ),
           pressedColor: getEnteColorScheme(context).fillFaint,
           trailingIcon: Icons.chevron_right_outlined,
@@ -140,7 +140,7 @@ class FaceDebugSectionWidget extends StatelessWidget {
           trailingIcon: Icons.chevron_right_outlined,
           trailingIconIsMuted: true,
           onTap: () async {
-            await FaceMLDataDB.instance.resetPersonIDs();
+            await FaceMLDataDB.instance.resetClusterIDs();
             showShortToast(context, "Done");
           },
         ),

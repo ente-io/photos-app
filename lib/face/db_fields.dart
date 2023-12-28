@@ -53,13 +53,13 @@ const deletePeopleTable = 'DROP TABLE IF EXISTS $peopleTable';
 // PersonToClusterID Table Fields & Schema Queries
 const personToClusterIDTable = 'person_to_cluster_id';
 const personToClusterIDPersonIDColumn = 'person_id';
-const personToClusterIDClusterIDColumn = 'cluster_id';
+const cluserIDColumn = 'cluster_id';
 
 const createPersonClusterTable = '''
 CREATE TABLE IF NOT EXISTS $personToClusterIDTable (
   $personToClusterIDPersonIDColumn	TEXT NOT NULL,
-  $personToClusterIDClusterIDColumn	TEXT NOT NULL,
-  PRIMARY KEY($personToClusterIDPersonIDColumn, $personToClusterIDClusterIDColumn)
+  $cluserIDColumn	INTEGER  NOT NULL,
+  PRIMARY KEY($personToClusterIDPersonIDColumn, $cluserIDColumn)
 );
 ''';
 const dropPersonClusterTable = 'DROP TABLE IF EXISTS $personToClusterIDTable';

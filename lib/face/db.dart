@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:photos/face/db_fields.dart';
 import "package:photos/face/db_model_mappers.dart";
 import "package:photos/face/model/face.dart";
+import "package:photos/face/model/person.dart";
 import "package:photos/objectbox.g.dart";
 import 'package:sqflite/sqflite.dart';
 
@@ -196,12 +197,57 @@ class FaceMLDataDB {
     return result;
   }
 
-  Future<void> resetPersonIDs() async {
+  Future<void> resetClusterIDs() async {
     final db = await instance.database;
     await db.update(
       facesTable,
       {facePersonIDColumn: null},
     );
+  }
+
+  Future<void> insert(Person p, int cluserID) async {
+    final db = await instance.database;
+    await db.insert(
+      peopleTable,
+      mapPersonToRow(p),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+    await db.insert(
+      personToClusterIDTable,
+      {
+        personToClusterIDPersonIDColumn: p.remoteID,
+        cluserIDColumn: cluserID,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<Map<String, String>> getCluserIDToPersonMap() async {
+    final db = await instance.database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      'SELECT $personToClusterIDPersonIDColumn, $cluserIDColumn FROM $personToClusterIDTable',
+    );
+    final Map<String, String> result = {};
+    for (final map in maps) {
+      result[map[cluserIDColumn] as String] =
+          map[personToClusterIDPersonIDColumn] as String;
+    }
+    return result;
+  }
+
+  Future<List<Person>> getPeople() async {
+    final db = await instance.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      peopleTable,
+      columns: [
+        idColumn,
+        nameColumn,
+        personHiddenColumn,
+        clusterToFaceIdJson,
+        coverFaceIDColumn,
+      ],
+    );
+    return maps.map((map) => mapRowToPerson(map)).toList();
   }
 
   /// WARNING: This will delete ALL data in the database! Only use this for debug/testing purposes!
