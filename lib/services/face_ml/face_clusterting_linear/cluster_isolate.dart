@@ -7,7 +7,6 @@ import "package:computer/computer.dart";
 import "package:logging/logging.dart";
 import "package:photos/generated/protos/ente/common/vector.pb.dart";
 import "package:photos/services/face_ml/face_clustering/cosine_distance.dart";
-import 'package:simple_cluster/simple_cluster.dart';
 import 'package:synchronized/synchronized.dart';
 
 class FaceInfo {
