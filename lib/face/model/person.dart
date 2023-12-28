@@ -11,7 +11,7 @@ class PersonAttr {
   final String name;
   final bool isHidden;
   final String? avatarFaceId;
-  final Set<String> faces;
+  final List<String> faces;
   final String? birthDatae;
   PersonAttr({
     required this.name,
@@ -34,7 +34,7 @@ class PersonAttr {
   factory PersonAttr.fromJson(Map<String, dynamic> json) {
     return PersonAttr(
       name: json['name'] as String,
-      faces: (json['faces'] as List).map((e) => e as String).toSet(),
+      faces: List<String>.from(json['faces'] as List<dynamic>),
       avatarFaceId: json['avatarFaceId'] as String?,
       isHidden: json['isHidden'] as bool? ?? false,
       birthDatae: json['birthDatae'] as String?,

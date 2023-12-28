@@ -41,7 +41,7 @@ Map<String, dynamic> mapPersonToRow(Person p) {
     nameColumn: p.attr.name,
     personHiddenColumn: boolToSQLInt(p.attr.isHidden),
     coverFaceIDColumn: p.attr.avatarFaceId,
-    clusterToFaceIdJson: jsonEncode(p.attr.faces),
+    clusterToFaceIdJson: jsonEncode(p.attr.faces.toList()),
   };
 }
 
@@ -52,7 +52,9 @@ Person mapRowToPerson(Map<String, dynamic> row) {
       name: row[nameColumn] as String,
       isHidden: sqlIntToBool(row[personHiddenColumn] as int),
       avatarFaceId: row[coverFaceIDColumn] as String?,
-      faces: jsonDecode(row[clusterToFaceIdJson] as String),
+      faces: (jsonDecode(row[clusterToFaceIdJson]) as List)
+          .map((e) => e.toString())
+          .toList(),
     ),
   );
 }
