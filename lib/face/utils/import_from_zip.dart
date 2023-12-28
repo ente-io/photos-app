@@ -9,9 +9,9 @@ import "package:photos/face/model/face.dart";
 final _logger = Logger("import_from_zip");
 Future<List<Face>> downloadZip() async {
   final List<Face> result = [];
-  for (int i = 0; i < 13; i++) {
+  for (int i = 0; i < 2; i++) {
     _logger.info("downloading $i");
-    final remoteZipUrl = "http://192.168.1.5:8700/cx_ml_json_${i}.json";
+    final remoteZipUrl = "http://192.168.1.13:8700/ml/cx_ml_json_${i}.json";
     final response = await NetworkClient.instance.getDio().get(
           remoteZipUrl,
           options: Options(

@@ -12,6 +12,7 @@ import 'package:photos/db/files_db.dart';
 import 'package:photos/events/local_photos_updated_event.dart';
 import "package:photos/extensions/string_ext.dart";
 import "package:photos/face/db.dart";
+import "package:photos/face/model/person.dart";
 import "package:photos/models/api/collection/user.dart";
 import 'package:photos/models/collection/collection.dart';
 import 'package:photos/models/collection/collection_items.dart';
@@ -687,31 +688,36 @@ class SearchService {
 
   Future<List<GenericSearchResult>> getAllFace(int? limit) async {
     debugPrint("getting faces");
-    final Map<int, Set<int>> result =
+    final Map<int, Set<int>> fileIdToClusterID =
         await FaceMLDataDB.instance.getFileIdToPersonIDs();
+    final Map<int, Person> clusterIDToPerson =
+        await FaceMLDataDB.instance.getClusterIdToPerson();
     debugPrint("building result");
     final List<GenericSearchResult> facesResult = [];
     final Map<int, List<EnteFile>> personIDToFiles = {};
     final allFiles = await getAllFiles();
     for (final f in allFiles) {
-      if (!result.containsKey(f.uploadedFileID ?? -1)) {
+      if (!fileIdToClusterID.containsKey(f.uploadedFileID ?? -1)) {
         continue;
       }
-      final personIDs = result[f.uploadedFileID ?? -1]!;
-      for (final personID in personIDs) {
-        if (personIDToFiles.containsKey(personID)) {
-          personIDToFiles[personID]!.add(f);
+      final cluserIds = fileIdToClusterID[f.uploadedFileID ?? -1]!;
+      for (final cluster in cluserIds) {
+        if (personIDToFiles.containsKey(cluster)) {
+          personIDToFiles[cluster]!.add(f);
         } else {
-          personIDToFiles[personID] = [f];
+          personIDToFiles[cluster] = [f];
         }
       }
     }
     for (final personID in personIDToFiles.keys) {
       // format lenth as 000d
       final files = personIDToFiles[personID]!;
-      final clusterName =
+      String clusterName =
           "(${files.length.toString().padLeft(4, '0')}) P:$personID ";
-
+      final Person? p = clusterIDToPerson[personID];
+      if (p != null) {
+        clusterName = ' ${p.attr.name}';
+      }
       facesResult.add(
         GenericSearchResult(
           ResultType.faces,
@@ -723,7 +729,7 @@ class SearchService {
               ctx,
               PeoplePage(
                 files,
-                tagPrefix: "${ResultType.location.toString()}_$clusterName",
+                tagPrefix: "${ResultType.faces.toString()}_$clusterName",
                 cluserID: personID,
               ),
             );

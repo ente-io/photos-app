@@ -52,7 +52,7 @@ extension SectionTypeExtensions on SectionType {
   String sectionTitle(BuildContext context) {
     switch (this) {
       case SectionType.face:
-        return S.of(context).faces;
+        return S.of(context).people;
       case SectionType.content:
         return S.of(context).contents;
       case SectionType.moment:
