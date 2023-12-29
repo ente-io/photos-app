@@ -23,8 +23,8 @@ class ClusterPage extends StatefulWidget {
   final int cluserID;
   final Person? personID;
 
-  static const GalleryType appBarType = GalleryType.peopleTag;
-  static const GalleryType overlayType = GalleryType.peopleTag;
+  static const GalleryType appBarType = GalleryType.cluster;
+  static const GalleryType overlayType = GalleryType.cluster;
 
   const ClusterPage(
     this.searchResult, {
@@ -102,7 +102,7 @@ class _ClusterPageState extends State<ClusterPage> {
         preferredSize: const Size.fromHeight(50.0),
         child: GestureDetector(
           onTap: () {
-            if (widget.personID != null) {
+            if (widget.personID == null) {
               showAssignPersonAction(context, clusterID: widget.cluserID!);
             } else {
               showShortToast(context, "11No personID or clusterID");

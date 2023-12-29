@@ -1,0 +1,182 @@
+import 'dart:async';
+
+import "package:flutter/cupertino.dart";
+import 'package:flutter/material.dart';
+import 'package:logging/logging.dart';
+import 'package:photos/core/configuration.dart';
+import 'package:photos/core/event_bus.dart';
+import 'package:photos/events/subscription_purchased_event.dart';
+import "package:photos/face/model/person.dart";
+import "package:photos/generated/l10n.dart";
+import 'package:photos/models/gallery_type.dart';
+import 'package:photos/models/selected_files.dart';
+import 'package:photos/services/collections_service.dart';
+import 'package:photos/ui/actions/collection/collection_sharing_actions.dart';
+
+class PeopleAppBar extends StatefulWidget {
+  final GalleryType type;
+  final String? title;
+  final SelectedFiles selectedFiles;
+  final Person person;
+
+  const PeopleAppBar(
+    this.type,
+    this.title,
+    this.selectedFiles,
+    this.person, {
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  State<PeopleAppBar> createState() => _AppBarWidgetState();
+}
+
+enum PeoplPopupAction {
+  rename,
+  setCover,
+  viewPhotos,
+  confirmPhotos,
+  hide,
+}
+
+class _AppBarWidgetState extends State<PeopleAppBar> {
+  final _logger = Logger("_AppBarWidgetState");
+  late StreamSubscription _userAuthEventSubscription;
+  late Function() _selectedFilesListener;
+  String? _appBarTitle;
+  late CollectionActions collectionActions;
+  final GlobalKey shareButtonKey = GlobalKey();
+  bool isQuickLink = false;
+  late GalleryType galleryType;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedFilesListener = () {
+      setState(() {});
+    };
+    collectionActions = CollectionActions(CollectionsService.instance);
+    widget.selectedFiles.addListener(_selectedFilesListener);
+    _userAuthEventSubscription =
+        Bus.instance.on<SubscriptionPurchasedEvent>().listen((event) {
+      setState(() {});
+    });
+    _appBarTitle = widget.title;
+    galleryType = widget.type;
+  }
+
+  @override
+  void dispose() {
+    _userAuthEventSubscription.cancel();
+    widget.selectedFiles.removeListener(_selectedFilesListener);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBar(
+      elevation: 0,
+      centerTitle: false,
+      title: Text(
+        _appBarTitle!,
+        style:
+            Theme.of(context).textTheme.headlineSmall!.copyWith(fontSize: 16),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
+      actions: _getDefaultActions(context),
+    );
+  }
+
+  Future<dynamic> _renameAlbum(BuildContext context) async {}
+
+  List<Widget> _getDefaultActions(BuildContext context) {
+    final List<Widget> actions = <Widget>[];
+    // If the user has selected files, don't show any actions
+    if (widget.selectedFiles.files.isNotEmpty ||
+        !Configuration.instance.hasConfiguredAccount()) {
+      return actions;
+    }
+
+    final List<PopupMenuItem<PeoplPopupAction>> items = [];
+
+    items.addAll(
+      [
+        PopupMenuItem(
+          value: PeoplPopupAction.rename,
+          child: Row(
+            children: [
+              const Icon(Icons.edit),
+              const Padding(
+                padding: EdgeInsets.all(8),
+              ),
+              Text(S.of(context).rename),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: PeoplPopupAction.setCover,
+          child: Row(
+            children: [
+              const Icon(Icons.image_outlined),
+              const Padding(
+                padding: EdgeInsets.all(8),
+              ),
+              Text(S.of(context).setCover),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
+          value: PeoplPopupAction.viewPhotos,
+          child: Row(
+            children: [
+              Icon(Icons.view_array_outlined),
+              Padding(
+                padding: EdgeInsets.all(8),
+              ),
+              Text('View confirmed photos'),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
+          value: PeoplPopupAction.confirmPhotos,
+          child: Row(
+            children: [
+              Icon(CupertinoIcons.square_stack_3d_down_right),
+              Padding(
+                padding: EdgeInsets.all(8),
+              ),
+              Text('Review confirmed photos'),
+            ],
+          ),
+        ),
+      ],
+    );
+
+    // Do not show archive option for favorite collection. If collection is
+    // already archived, allow user to unarchive that collection.
+
+    if (items.isNotEmpty) {
+      actions.add(
+        PopupMenuButton(
+          itemBuilder: (context) {
+            return items;
+          },
+          onSelected: (PeoplPopupAction value) async {},
+        ),
+      );
+    }
+
+    return actions;
+  }
+
+  Future<void> setCoverPhoto(BuildContext context) async {
+    // final int? coverPhotoID = await showPickCoverPhotoSheet(
+    //   context,
+    //   widget.collection!,
+    // );
+    // if (coverPhotoID != null) {
+    //   unawaited(changeCoverPhoto(context, widget.collection!, coverPhotoID));
+    // }
+  }
+}

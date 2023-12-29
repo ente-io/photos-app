@@ -713,10 +713,10 @@ class SearchService {
     for (final personID in personIDToFiles.keys) {
       // format lenth as 000d
       final files = personIDToFiles[personID]!;
-      String clusterName = "${files.length} P:$personID ";
+      String clusterName = "${files.length}";
       final Person? p = clusterIDToPerson[personID];
       if (p != null) {
-        clusterName = ' ${p.attr.name}';
+        clusterName = '${p.attr.name}';
       }
       facesResult.add(
         GenericSearchResult(
@@ -731,7 +731,7 @@ class SearchService {
                 PeoplePage(
                   files,
                   tagPrefix: "${ResultType.faces.toString()}_$clusterName",
-                  personID: p,
+                  person: p,
                 ),
               );
             } else {
