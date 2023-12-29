@@ -220,7 +220,15 @@ class _PersonActionSheetState extends State<PersonActionSheet> {
                           index - (shouldShowCreateAlbum ? 1 : 0)];
                       return PersonRowItem(
                         person: person,
-                        onTap: () => {},
+                        onTap: () async => {
+                          await FaceMLDataDB.instance.assignClusterToPerson(
+                            personID: person.remoteID,
+                            clusterID: widget.cluserID,
+                          ),
+                          Navigator.pop(context, {
+                            "personID": person.remoteID,
+                          }),
+                        },
                       );
                     },
                     separatorBuilder: (context, index) {

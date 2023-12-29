@@ -227,6 +227,20 @@ class FaceMLDataDB {
     debugPrint("person inserted");
   }
 
+  Future<void> assignClusterToPerson({
+    required String personID,
+    required int clusterID,
+  }) async {
+    final db = await instance.database;
+    await db.insert(
+      personToClusterIDTable,
+      {
+        personToClusterIDPersonIDColumn: personID,
+        cluserIDColumn: clusterID,
+      },
+    );
+  }
+
   Future<Map<int, String>> getCluserIDToPersonMap() async {
     final db = await instance.database;
     final List<Map<String, dynamic>> maps = await db.rawQuery(
