@@ -16,30 +16,30 @@ import "package:photos/ui/viewer/people/add_person_action_sheet.dart";
 import "package:photos/ui/viewer/search/result/search_result_page.dart";
 import "package:photos/utils/toast_util.dart";
 
-class PeoplePage extends StatefulWidget {
+class ClusterPage extends StatefulWidget {
   final List<EnteFile> searchResult;
   final bool enableGrouping;
   final String tagPrefix;
-  final int? cluserID;
-  final Person personID;
+  final int cluserID;
+  final Person? personID;
 
   static const GalleryType appBarType = GalleryType.peopleTag;
   static const GalleryType overlayType = GalleryType.peopleTag;
 
-  const PeoplePage(
+  const ClusterPage(
     this.searchResult, {
     this.enableGrouping = true,
     this.tagPrefix = "",
-    this.cluserID,
-    required this.personID,
+    required this.cluserID,
+    this.personID,
     Key? key,
   }) : super(key: key);
 
   @override
-  State<PeoplePage> createState() => _SearchResultPageState();
+  State<ClusterPage> createState() => _ClusterPageState();
 }
 
-class _SearchResultPageState extends State<PeoplePage> {
+class _ClusterPageState extends State<ClusterPage> {
   final _selectedFiles = SelectedFiles();
   late final List<EnteFile> files;
   late final StreamSubscription<LocalPhotosUpdatedEvent> _filesUpdatedEvent;
@@ -102,7 +102,7 @@ class _SearchResultPageState extends State<PeoplePage> {
         preferredSize: const Size.fromHeight(50.0),
         child: GestureDetector(
           onTap: () {
-            if (widget.cluserID != null) {
+            if (widget.personID != null) {
               showAssignPersonAction(context, clusterID: widget.cluserID!);
             } else {
               showShortToast(context, "11No personID or clusterID");
@@ -110,7 +110,7 @@ class _SearchResultPageState extends State<PeoplePage> {
           },
           child: GalleryAppBarWidget(
             SearchResultPage.appBarType,
-            widget.personID.attr.name,
+            widget.personID != null ? widget.personID!.attr.name : "Add name",
             _selectedFiles,
           ),
         ),
@@ -120,7 +120,7 @@ class _SearchResultPageState extends State<PeoplePage> {
         children: [
           gallery,
           FileSelectionOverlayBar(
-            PeoplePage.overlayType,
+            ClusterPage.overlayType,
             _selectedFiles,
           ),
         ],

@@ -64,6 +64,8 @@ class _AllSectionsExamplesProviderState
         if (hasPendingUpdate) {
           hasPendingUpdate = false;
           reloadAllSections();
+        } else {
+          reloadAllSections();
         }
       } else {
         isOnSearchTab = false;

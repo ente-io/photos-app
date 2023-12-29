@@ -30,6 +30,7 @@ import "package:photos/services/location_service.dart";
 import 'package:photos/services/semantic_search/semantic_search_service.dart';
 import "package:photos/states/location_screen_state.dart";
 import "package:photos/ui/viewer/location/location_screen.dart";
+import "package:photos/ui/viewer/people/cluster_page.dart";
 import "package:photos/ui/viewer/people/people_page.dart";
 import 'package:photos/utils/date_time_util.dart';
 import "package:photos/utils/navigation_util.dart";
@@ -712,8 +713,7 @@ class SearchService {
     for (final personID in personIDToFiles.keys) {
       // format lenth as 000d
       final files = personIDToFiles[personID]!;
-      String clusterName =
-          "(${files.length.toString().padLeft(4, '0')}) P:$personID ";
+      String clusterName = "${files.length} P:$personID ";
       final Person? p = clusterIDToPerson[personID];
       if (p != null) {
         clusterName = ' ${p.attr.name}';
@@ -725,14 +725,25 @@ class SearchService {
           files,
           params: {'personID': personID},
           onResultTap: (ctx) {
-            routeToPage(
-              ctx,
-              PeoplePage(
-                files,
-                tagPrefix: "${ResultType.faces.toString()}_$clusterName",
-                cluserID: personID,
-              ),
-            );
+            if (p != null) {
+              routeToPage(
+                ctx,
+                PeoplePage(
+                  files,
+                  tagPrefix: "${ResultType.faces.toString()}_$clusterName",
+                  personID: p,
+                ),
+              );
+            } else {
+              routeToPage(
+                ctx,
+                ClusterPage(
+                  files,
+                  tagPrefix: "${ResultType.faces.toString()}_$clusterName",
+                  cluserID: personID,
+                ),
+              );
+            }
           },
         ),
       );

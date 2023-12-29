@@ -19,6 +19,7 @@ enum GalleryType {
   locationTag,
   quickLink,
   peopleTag,
+  cluster,
 }
 
 extension GalleyTypeExtension on GalleryType {
@@ -40,6 +41,7 @@ extension GalleyTypeExtension on GalleryType {
       case GalleryType.hiddenOwnedCollection:
       case GalleryType.trash:
       case GalleryType.sharedCollection:
+      case GalleryType.cluster:
         return false;
     }
   }
@@ -62,6 +64,7 @@ extension GalleyTypeExtension on GalleryType {
       case GalleryType.trash:
       case GalleryType.sharedCollection:
       case GalleryType.locationTag:
+      case GalleryType.cluster:
         return false;
     }
   }
@@ -85,6 +88,7 @@ extension GalleyTypeExtension on GalleryType {
       case GalleryType.hiddenSection:
       case GalleryType.hiddenOwnedCollection:
       case GalleryType.sharedCollection:
+      case GalleryType.cluster:
         return false;
     }
   }
@@ -105,6 +109,7 @@ extension GalleyTypeExtension on GalleryType {
       case GalleryType.peopleTag:
         return true;
       case GalleryType.trash:
+      case GalleryType.cluster:
       case GalleryType.sharedCollection:
         return false;
     }
@@ -122,6 +127,7 @@ extension GalleyTypeExtension on GalleryType {
       case GalleryType.peopleTag:
         return true;
       case GalleryType.hiddenSection:
+      case GalleryType.cluster:
       case GalleryType.hiddenOwnedCollection:
       case GalleryType.localFolder:
       case GalleryType.trash:
@@ -146,6 +152,7 @@ extension GalleyTypeExtension on GalleryType {
       case GalleryType.homepage:
       case GalleryType.archive:
       case GalleryType.localFolder:
+      case GalleryType.cluster:
       case GalleryType.trash:
       case GalleryType.locationTag:
         return false;
@@ -170,6 +177,7 @@ extension GalleyTypeExtension on GalleryType {
       case GalleryType.trash:
       case GalleryType.sharedCollection:
       case GalleryType.locationTag:
+      case GalleryType.cluster:
         return false;
     }
   }
@@ -195,6 +203,7 @@ extension GalleyTypeExtension on GalleryType {
       case GalleryType.localFolder:
       case GalleryType.trash:
       case GalleryType.favorite:
+      case GalleryType.cluster:
       case GalleryType.sharedCollection:
         return false;
     }
@@ -219,6 +228,7 @@ extension GalleyTypeExtension on GalleryType {
       case GalleryType.hiddenOwnedCollection:
       case GalleryType.quickLink:
       case GalleryType.favorite:
+      case GalleryType.cluster:
       case GalleryType.archive:
       case GalleryType.localFolder:
       case GalleryType.trash:
@@ -344,6 +354,7 @@ extension GalleryAppBarExtn on GalleryType {
       case GalleryType.locationTag:
       case GalleryType.searchResults:
         return false;
+      case GalleryType.cluster:
       case GalleryType.uncategorized:
       case GalleryType.peopleTag:
       case GalleryType.ownedCollection:

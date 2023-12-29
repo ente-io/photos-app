@@ -1,5 +1,6 @@
 import "dart:async";
 
+import "package:collection/collection.dart";
 import "package:flutter/material.dart";
 import "package:flutter_animate/flutter_animate.dart";
 import "package:photos/events/event.dart";
@@ -83,8 +84,10 @@ class _SearchSectionAllPageState extends State<SearchSectionAllPage> {
                   builder: (context, snapshot) {
                     if (snapshot.hasData) {
                       final sectionResults = snapshot.data!;
-                      sectionResults
-                          .sort((a, b) => a.name().compareTo(b.name()));
+                      sectionResults.sort(
+                        (a, b) =>
+                            compareAsciiLowerCaseNatural(b.name(), a.name()),
+                      );
                       return Text(sectionResults.length.toString())
                           .animate()
                           .fadeIn(
