@@ -691,11 +691,13 @@ class SearchService {
     debugPrint("getting faces");
     final Map<int, Set<int>> fileIdToClusterID =
         await FaceMLDataDB.instance.getFileIdToPersonIDs();
-    final Map<int, Person> clusterIDToPerson =
+    final (clusterIDToPerson, personIdToPerson) =
         await FaceMLDataDB.instance.getClusterIdToPerson();
+
     debugPrint("building result");
     final List<GenericSearchResult> facesResult = [];
-    final Map<int, List<EnteFile>> personIDToFiles = {};
+    final Map<int, List<EnteFile>> clusterIdToFiles = {};
+    final Map<String, List<EnteFile>> personIdToFiles = {};
     final allFiles = await getAllFiles();
     for (final f in allFiles) {
       if (!fileIdToClusterID.containsKey(f.uploadedFileID ?? -1)) {
@@ -703,47 +705,67 @@ class SearchService {
       }
       final cluserIds = fileIdToClusterID[f.uploadedFileID ?? -1]!;
       for (final cluster in cluserIds) {
-        if (personIDToFiles.containsKey(cluster)) {
-          personIDToFiles[cluster]!.add(f);
+        final Person? p = clusterIDToPerson[cluster];
+        if (p != null) {
+          if (personIdToFiles.containsKey(p.remoteID)) {
+            personIdToFiles[p.remoteID]!.add(f);
+          } else {
+            personIdToFiles[p.remoteID] = [f];
+          }
         } else {
-          personIDToFiles[cluster] = [f];
+          if (clusterIdToFiles.containsKey(cluster)) {
+            clusterIdToFiles[cluster]!.add(f);
+          } else {
+            clusterIdToFiles[cluster] = [f];
+          }
         }
       }
     }
-    for (final personID in personIDToFiles.keys) {
+    for (final personID in personIdToFiles.keys) {
+      final files = personIdToFiles[personID]!;
+      final Person p = personIdToPerson[personID]!;
+      facesResult.add(
+        GenericSearchResult(
+          ResultType.faces,
+          p.attr.name,
+          files,
+          params: {'personID': personID},
+          onResultTap: (ctx) {
+            routeToPage(
+              ctx,
+              PeoplePage(
+                files,
+                tagPrefix: "${ResultType.faces.toString()}_${p.attr.name}",
+                person: p,
+              ),
+            );
+          },
+        ),
+      );
+    }
+    for (final clusterId in clusterIdToFiles.keys) {
       // format lenth as 000d
-      final files = personIDToFiles[personID]!;
-      String clusterName = "${files.length}";
-      final Person? p = clusterIDToPerson[personID];
+      final files = clusterIdToFiles[clusterId]!;
+      final String clusterName = "${files.length}";
+      final Person? p = clusterIDToPerson[clusterId];
       if (p != null) {
-        clusterName = '${p.attr.name}';
+        throw Exception("Person should  be null");
       }
       facesResult.add(
         GenericSearchResult(
           ResultType.faces,
           clusterName,
           files,
-          params: {'personID': personID},
+          params: {'personID': clusterId},
           onResultTap: (ctx) {
-            if (p != null) {
-              routeToPage(
-                ctx,
-                PeoplePage(
-                  files,
-                  tagPrefix: "${ResultType.faces.toString()}_$clusterName",
-                  person: p,
-                ),
-              );
-            } else {
-              routeToPage(
-                ctx,
-                ClusterPage(
-                  files,
-                  tagPrefix: "${ResultType.faces.toString()}_$clusterName",
-                  cluserID: personID,
-                ),
-              );
-            }
+            routeToPage(
+              ctx,
+              ClusterPage(
+                files,
+                tagPrefix: "${ResultType.faces.toString()}_$clusterName",
+                cluserID: clusterId,
+              ),
+            );
           },
         ),
       );

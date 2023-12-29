@@ -240,7 +240,7 @@ class FaceMLDataDB {
     return result;
   }
 
-  Future<Map<int, Person>> getClusterIdToPerson() async {
+  Future<(Map<int, Person>, Map<String, Person>)> getClusterIdToPerson() async {
     final db = await instance.database;
     final Map<String, Person> peopleMap = await getPeopleMap();
     final List<Map<String, dynamic>> maps = await db.rawQuery(
@@ -259,7 +259,7 @@ class FaceMLDataDB {
         );
       }
     }
-    return result;
+    return (result, peopleMap);
   }
 
   Future<Map<String, Person>> getPeopleMap() async {

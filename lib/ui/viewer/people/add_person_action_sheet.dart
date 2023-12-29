@@ -183,8 +183,6 @@ class _PersonActionSheetState extends State<PersonActionSheet> {
               return const SizedBox.shrink();
             } else if (snapshot.hasData) {
               final persons = snapshot.data as List<Person>;
-              final shouldShowCreateAlbum =
-                  widget.showOptionToCreateNewAlbum && _searchQuery.isEmpty;
               final searchResults = _searchQuery.isNotEmpty
                   ? persons
                       .where(
@@ -194,6 +192,9 @@ class _PersonActionSheetState extends State<PersonActionSheet> {
                       )
                       .toList()
                   : persons;
+              final shouldShowCreateAlbum = widget.showOptionToCreateNewAlbum &&
+                  (_searchQuery.isEmpty || searchResults.isEmpty);
+
               return Scrollbar(
                 thumbVisibility: true,
                 radius: const Radius.circular(2),
@@ -244,11 +245,11 @@ class _PersonActionSheetState extends State<PersonActionSheet> {
   }) async {
     final result = await showTextInputDialog(
       context,
-      title: S.of(context).newAlbum,
-      submitButtonLabel: S.of(context).create,
+      title: "New person",
+      submitButtonLabel: 'Add',
       hintText: 'Add name',
       alwaysShowSuccessState: false,
-      initialValue: "",
+      initialValue: initValue,
       textCapitalization: TextCapitalization.words,
       onSubmit: (String text) async {
         // indicates user cancelled the rename request
