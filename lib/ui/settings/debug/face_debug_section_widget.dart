@@ -150,7 +150,21 @@ class FaceDebugSectionWidget extends StatelessWidget {
           trailingIcon: Icons.chevron_right_outlined,
           trailingIconIsMuted: true,
           onTap: () async {
-            await FaceMLDataDB.instance.cleanTables();
+            await FaceMLDataDB.instance.resetClusterIDs();
+            await FaceMLDataDB.instance.dropClustersAndPeople();
+            showShortToast(context, "Done");
+          },
+        ),
+        sectionOptionSpacing,
+        MenuItemWidget(
+          captionedTextWidget: const CaptionedTextWidget(
+            title: "Drop everything",
+          ),
+          pressedColor: getEnteColorScheme(context).fillFaint,
+          trailingIcon: Icons.chevron_right_outlined,
+          trailingIconIsMuted: true,
+          onTap: () async {
+            await FaceMLDataDB.instance.dropClustersAndPeople(faces: true);
             showShortToast(context, "Done");
           },
         ),

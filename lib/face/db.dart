@@ -333,10 +333,11 @@ class FaceMLDataDB {
   }
 
   /// WARNING: This will delete ALL data in the database! Only use this for debug/testing purposes!
-  Future<void> cleanTables() async {
-    _logger.fine('`cleanTables()` called');
+  Future<void> dropClustersAndPeople({bool faces = false}) async {
     final db = await instance.database;
-    // await db.execute(deleteFacesTable);
+    if (faces) {
+      await db.execute(deleteFacesTable);
+    }
     await db.execute(deletePeopleTable);
     await db.execute(dropPersonClusterTable);
 
