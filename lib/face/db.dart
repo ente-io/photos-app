@@ -10,7 +10,6 @@ import 'package:photos/face/db_fields.dart';
 import "package:photos/face/db_model_mappers.dart";
 import "package:photos/face/model/face.dart";
 import "package:photos/face/model/person.dart";
-import "package:photos/objectbox.g.dart";
 import 'package:sqflite/sqflite.dart';
 
 /// Stores all data for the ML-related features. The database can be accessed by `MlDataDB.instance.database`.
