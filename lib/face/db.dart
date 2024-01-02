@@ -49,6 +49,7 @@ class FaceMLDataDB {
   Future _onCreate(Database db, int version) async {
     await db.execute(createFacesTable);
     await db.execute(createPeopleTable);
+    await db.execute(createPersonClusterTable);
   }
 
   // bulkInsertFaces inserts the faces in the database in batches of 1000.
