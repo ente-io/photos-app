@@ -1,9 +1,6 @@
 import 'dart:async';
-import 'dart:developer' show log;
 import 'dart:io' as io;
-import 'dart:math' as math show sqrt;
 
-import "package:flutter/foundation.dart";
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:logging/logging.dart';
@@ -18,7 +15,6 @@ import 'package:photos/events/local_photos_updated_event.dart';
 import "package:photos/models/file/extensions/file_props.dart";
 import 'package:photos/models/file/file.dart';
 import "package:photos/models/metadata/file_magic.dart";
-import "package:photos/services/face_ml/face_ml_service.dart";
 import "package:photos/services/file_magic_service.dart";
 import "package:photos/ui/actions/file/file_actions.dart";
 import 'package:photos/ui/common/loading_widget.dart';

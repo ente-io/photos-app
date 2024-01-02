@@ -337,6 +337,7 @@ class FaceMLDataDB {
     final db = await instance.database;
     if (faces) {
       await db.execute(deleteFacesTable);
+      await db.execute(createFacesTable);
     }
     await db.execute(deletePeopleTable);
     await db.execute(dropPersonClusterTable);
