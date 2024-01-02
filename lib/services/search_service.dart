@@ -687,6 +687,32 @@ class SearchService {
     return searchResults;
   }
 
+  Future<Map<int, List<EnteFile>>> getClusterFilesForPersonID(
+    String personID,
+  ) async {
+    _logger.info('getClusterFilesForPersonID $personID');
+    final Map<int, Set<int>> fileIdToClusterID =
+        await FaceMLDataDB.instance.getFileIdToClusterIDSet(personID);
+    _logger.info('faceDbDone getClusterFilesForPersonID $personID');
+    final Map<int, List<EnteFile>> clusterIDToFiles = {};
+    final allFiles = await getAllFiles();
+    for (final f in allFiles) {
+      if (!fileIdToClusterID.containsKey(f.uploadedFileID ?? -1)) {
+        continue;
+      }
+      final cluserIds = fileIdToClusterID[f.uploadedFileID ?? -1]!;
+      for (final cluster in cluserIds) {
+        if (clusterIDToFiles.containsKey(cluster)) {
+          clusterIDToFiles[cluster]!.add(f);
+        } else {
+          clusterIDToFiles[cluster] = [f];
+        }
+      }
+    }
+    _logger.info('done getClusterFilesForPersonID $personID');
+    return clusterIDToFiles;
+  }
+
   Future<List<GenericSearchResult>> getAllFace(int? limit) async {
     debugPrint("getting faces");
     final Map<int, Set<int>> fileIdToClusterID =

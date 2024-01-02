@@ -264,7 +264,7 @@ extension GalleyTypeExtension on GalleryType {
   }
 
   bool showEditLocation() {
-    return this != GalleryType.sharedCollection;
+    return this != GalleryType.sharedCollection && this != GalleryType.cluster;
   }
 }
 

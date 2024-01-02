@@ -12,6 +12,9 @@ import 'package:photos/models/gallery_type.dart';
 import 'package:photos/models/selected_files.dart';
 import 'package:photos/services/collections_service.dart';
 import 'package:photos/ui/actions/collection/collection_sharing_actions.dart';
+import "package:photos/ui/viewer/people/person_cluserts.dart";
+import "package:photos/ui/viewer/people/person_cluster_suggestion.dart";
+import "package:photos/utils/navigation_util.dart";
 
 class PeopleAppBar extends StatefulWidget {
   final GalleryType type;
@@ -126,6 +129,18 @@ class _AppBarWidgetState extends State<PeopleAppBar> {
             ],
           ),
         ),
+        PopupMenuItem(
+          value: PeoplPopupAction.rename,
+          child: Row(
+            children: [
+              const Icon(Icons.visibility_off),
+              const Padding(
+                padding: EdgeInsets.all(8),
+              ),
+              Text(S.of(context).hide),
+            ],
+          ),
+        ),
         const PopupMenuItem(
           value: PeoplPopupAction.viewPhotos,
           child: Row(
@@ -146,15 +161,12 @@ class _AppBarWidgetState extends State<PeopleAppBar> {
               Padding(
                 padding: EdgeInsets.all(8),
               ),
-              Text('Review confirmed photos'),
+              Text('Review suggestions'),
             ],
           ),
         ),
       ],
     );
-
-    // Do not show archive option for favorite collection. If collection is
-    // already archived, allow user to unarchive that collection.
 
     if (items.isNotEmpty) {
       actions.add(
@@ -162,7 +174,34 @@ class _AppBarWidgetState extends State<PeopleAppBar> {
           itemBuilder: (context) {
             return items;
           },
-          onSelected: (PeoplPopupAction value) async {},
+          onSelected: (PeoplPopupAction value) async {
+            if (value == PeoplPopupAction.viewPhotos) {
+              // ignore: unawaited_futures
+              unawaited(
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => PersonClusters(widget.person),
+                  ),
+                ),
+              );
+            } else if (value == PeoplPopupAction.confirmPhotos) {
+              // ignore: unawaited_futures
+              unawaited(
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        PersonReviewClusterSuggestion(widget.person),
+                  ),
+                ),
+              );
+            } else if (value == PeoplPopupAction.rename) {
+              await _renameAlbum(context);
+            } else if (value == PeoplPopupAction.setCover) {
+              await setCoverPhoto(context);
+            } else if (value == PeoplPopupAction.hide) {
+              // ignore: unawaited_futures
+            }
+          },
         ),
       );
     }

@@ -1,6 +1,7 @@
 import "dart:async";
 
 import 'package:fast_base58/fast_base58.dart';
+import "package:flutter/cupertino.dart";
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import "package:modal_bottom_sheet/modal_bottom_sheet.dart";
@@ -29,6 +30,7 @@ import 'package:photos/ui/sharing/manage_links_widget.dart';
 import "package:photos/ui/tools/collage/collage_creator_page.dart";
 import "package:photos/ui/viewer/location/update_location_data_widget.dart";
 import 'package:photos/utils/delete_file_util.dart';
+import "package:photos/utils/dialog_util.dart";
 import 'package:photos/utils/magic_util.dart';
 import 'package:photos/utils/navigation_util.dart';
 import "package:photos/utils/share_util.dart";
@@ -373,6 +375,16 @@ class _FileSelectionActionsWidgetState
         ),
       ),
     );
+
+    if (widget.type == GalleryType.cluster) {
+      items.add(
+        SelectionActionButton(
+          labelText: 'Remove',
+          icon: CupertinoIcons.minus,
+          onTap: () => showToast(context, 'yet to implement'),
+        ),
+      );
+    }
 
     if (items.isNotEmpty) {
       final scrollController = ScrollController();
