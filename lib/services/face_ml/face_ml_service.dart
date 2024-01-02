@@ -100,33 +100,33 @@ class FaceMlService {
       }
 
       // Run the clustering
-      final clusteringResult =
-          await FaceClustering.instance.predict(allFaceEmbeddings);
-      final labels = FaceClustering.instance.labels;
-      if (labels == null) {
-        _logger.severe("Clustering failed");
-        throw GeneralFaceMlException("Clustering failed");
-      }
+      // final clusteringResult =
+      //     await FaceClustering.instance.predict(allFaceEmbeddings);
+      // final labels = FaceClustering.instance.labels;
+      // if (labels == null) {
+      //   _logger.severe("Clustering failed");
+      //   throw GeneralFaceMlException("Clustering failed");
+      // }
 
       // Create the clusters
-      final List<ClusterResultBuilder> clusterResultBuilders = [
-        for (final clusterIndices in clusteringResult)
-          ClusterResultBuilder.createFromIndices(
-            clusterIndices: clusterIndices,
-            labels: labels,
-            allEmbeddings: allFaceEmbeddings,
-            allFileIds: allFileIDs,
-            allFaceIds: allFaceIDs,
-          ),
-      ];
-      final List<ClusterResult> clusterResults =
-          await ClusterResultBuilder.buildClusters(clusterResultBuilders);
-      _logger.info(
-        "`clusterAllImages`: Finished clustering,  ${clusterResults.length} clusters found (after feedback)",
-      );
+      // final List<ClusterResultBuilder> clusterResultBuilders = [
+      //   for (final clusterIndices in clusteringResult)
+      //     ClusterResultBuilder.createFromIndices(
+      //       clusterIndices: clusterIndices,
+      //       labels: labels,
+      //       allEmbeddings: allFaceEmbeddings,
+      //       allFileIds: allFileIDs,
+      //       allFaceIds: allFaceIDs,
+      //     ),
+      // ];
+      // final List<ClusterResult> clusterResults =
+      //     await ClusterResultBuilder.buildClusters(clusterResultBuilders);
+      // _logger.info(
+      //   "`clusterAllImages`: Finished clustering,  ${clusterResults.length} clusters found (after feedback)",
+      // );
 
       // Store the clusters in the database
-      await MlDataDB.instance.createAllClusterResults(clusterResults);
+      // await MlDataDB.instance.createAllClusterResults(clusterResults);
     } catch (e, s) {
       _logger.severe("`clusterAllImages` failed", e, s);
     }
