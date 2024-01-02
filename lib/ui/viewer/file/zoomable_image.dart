@@ -22,6 +22,7 @@ import "package:photos/services/face_ml/face_ml_service.dart";
 import "package:photos/services/file_magic_service.dart";
 import "package:photos/ui/actions/file/file_actions.dart";
 import 'package:photos/ui/common/loading_widget.dart';
+// import "package:photos/utils/debug_ml_export_data.dart";
 import 'package:photos/utils/file_util.dart';
 import 'package:photos/utils/image_util.dart';
 import 'package:photos/utils/thumbnail_util.dart';
@@ -241,6 +242,9 @@ class _ZoomableImageState extends State<ZoomableImage>
   }
 
   void _onFinalImageLoaded(ImageProvider imageProvider) async {
+    _logger.info(
+      "FileID ${_photo.uploadedFileID} and displayname ${_photo.displayName} loaded",
+    );
     final result = await FaceMlService.instance.analyzeImage(
       _photo,
       preferUsingThumbnailForEverything: false,
@@ -258,7 +262,23 @@ class _ZoomableImageState extends State<ZoomableImage>
     }
     final magnitude = math.sqrt(sum);
     log("Magnitude: $magnitude");
+    // final embeddings = result.faces.map((e) => e.embedding).toList();
+    // log("Embeddings: $embeddings");
+    // int i = 0;
+    // for (final embedding in embeddings) {
+    //   log("Embedding $i: $embedding");
+    //   i++;
+    // }
     // log("Embedding: $embedding");
+    // try {
+    //   await encodeAndSaveData(
+    //     result,
+    //     'sample_yolo_mobile_embeddings',
+    //     'yolo_mobile',
+    //   );
+    // } catch (e) {
+    //   log("Error saving embedding: $e");
+    // }
     if (mounted) {
       precacheImage(imageProvider, context).then((value) async {
         if (mounted) {
