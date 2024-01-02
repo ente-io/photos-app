@@ -29,7 +29,7 @@ Map<String, dynamic> mapToFaceDB(PersonFace personFace) {
     faceIDColumn: personFace.face.faceID,
     faceDetectionColumn: json.encode(personFace.face.detection.toJson()),
     faceConfirmedColumn: boolToSQLInt(personFace.confirmed),
-    facePersonIDColumn: personFace.personID,
+    faceClusterId: personFace.personID,
     faceClosestDistColumn: personFace.closeDist,
     faceClosestFaceID: personFace.closeFaceID,
   };

@@ -2,7 +2,7 @@ import "dart:developer";
 import "dart:typed_data";
 
 import "package:logging/logging.dart";
-import "package:photos/services/face_ml/face_clusterting_linear/cluster_isolate.dart";
+import 'package:photos/services/face_ml/face_clustering/cluster_isolate.dart';
 
 class FaceLinearClustering {
   final _logger = Logger("FaceLinearClustering");

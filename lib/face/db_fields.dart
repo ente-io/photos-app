@@ -5,7 +5,7 @@ const faceIDColumn = 'face_id';
 const faceDetectionColumn = 'detection';
 const faceEmbeddingBlob = 'eBlob';
 const faceScore = 'score';
-const facePersonIDColumn = 'person_id';
+const faceClusterId = 'cluster_id';
 const faceConfirmedColumn = 'confirmed';
 const faceClosestDistColumn = 'close_dist';
 const faceClosestFaceID = 'close_face_id';
@@ -17,7 +17,7 @@ const createFacesTable = '''CREATE TABLE IF NOT EXISTS $facesTable (
 	$faceDetectionColumn	TEXT NOT NULL,
   $faceEmbeddingBlob BLOB NOT NULL,
   $faceScore  REAL NOT NULL,
-	$facePersonIDColumn	INTEGER,
+	$faceClusterId	INTEGER,
 	$faceClosestDistColumn	REAL,
   $faceClosestFaceID  TEXT,
 	$faceConfirmedColumn  INTEGER NOT NULL DEFAULT 0,

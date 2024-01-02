@@ -92,11 +92,11 @@ class FaceMLDataDB {
     final Map<int, Set<int>> result = {};
     final db = await instance.database;
     final List<Map<String, dynamic>> maps = await db.rawQuery(
-      'SELECT $facePersonIDColumn, $fileIDColumn FROM $facesTable where $facePersonIDColumn IS NOT NULL',
+      'SELECT $faceClusterId, $fileIDColumn FROM $facesTable where $faceClusterId IS NOT NULL',
     );
 
     for (final map in maps) {
-      final personID = map[facePersonIDColumn] as int;
+      final personID = map[faceClusterId] as int;
       final fileID = map[fileIDColumn] as int;
       result[fileID] = (result[fileID] ?? {})..add(personID);
     }
@@ -116,8 +116,8 @@ class FaceMLDataDB {
       final personID = map.value;
       batch.update(
         facesTable,
-        {facePersonIDColumn: personID},
-        where: '$faceIDColumn = ? AND $facePersonIDColumn IS NULL',
+        {faceClusterId: personID},
+        where: '$faceIDColumn = ? AND $faceClusterId IS NULL',
         whereArgs: [faceID],
       );
     }
@@ -129,6 +129,7 @@ class FaceMLDataDB {
   // where score is greater than 0.
   Future<Map<String, Uint8List>> getFaceEmbeddingMap({
     double minScore = 0.8,
+    int maxRows = 20000,
   }) async {
     _logger.info('reading as float');
     final db = await instance.database;
@@ -156,7 +157,7 @@ class FaceMLDataDB {
         final faceID = map[faceIDColumn] as String;
         result[faceID] = map[faceEmbeddingBlob] as Uint8List;
       }
-      if (result.length > 10000) {
+      if (result.length >= 20000) {
         break;
       }
       offset += batchSize;
@@ -205,7 +206,7 @@ class FaceMLDataDB {
     final db = await instance.database;
     await db.update(
       facesTable,
-      {facePersonIDColumn: null},
+      {faceClusterId: null},
     );
   }
 
@@ -249,7 +250,7 @@ class FaceMLDataDB {
       final List<Map<String, dynamic>> maps = await db.rawQuery(
         'SELECT $cluserIDColumn, $fileIDColumn FROM $facesTable '
         'INNER JOIN $personToClusterIDTable '
-        'ON $facesTable.$facePersonIDColumn = $personToClusterIDTable.$cluserIDColumn '
+        'ON $facesTable.$faceClusterId = $personToClusterIDTable.$cluserIDColumn '
         'WHERE $personToClusterIDTable.$personToClusterIDPersonIDColumn = ?',
         [personID],
       );

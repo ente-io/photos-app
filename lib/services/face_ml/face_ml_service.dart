@@ -10,7 +10,6 @@ import "package:photos/models/file/file.dart";
 import "package:photos/models/file/file_type.dart";
 import 'package:photos/models/ml/ml_typedefs.dart';
 import "package:photos/models/ml/ml_versions.dart";
-import "package:photos/services/face_ml/face_clustering/face_clustering_service.dart";
 import "package:photos/services/face_ml/face_detection/detection.dart";
 import "package:photos/services/face_ml/face_detection/yolov5face/yolo_face_detection_exceptions.dart";
 import "package:photos/services/face_ml/face_detection/yolov5face/yolo_face_detection_onnx.dart";

@@ -3,7 +3,7 @@ import "package:logging/logging.dart";
 import "package:photos/extensions/stop_watch.dart";
 import "package:photos/face/db.dart";
 import "package:photos/face/utils/import_from_zip.dart";
-import "package:photos/services/face_ml/face_clusterting_linear/linear_clustering.dart";
+import 'package:photos/services/face_ml/face_clustering/linear_clustering.dart';
 import 'package:photos/theme/ente_theme.dart';
 import 'package:photos/ui/components/captioned_text_widget.dart';
 import 'package:photos/ui/components/expandable_menu_item_widget.dart';
@@ -144,7 +144,7 @@ class FaceDebugSectionWidget extends StatelessWidget {
         sectionOptionSpacing,
         MenuItemWidget(
           captionedTextWidget: const CaptionedTextWidget(
-            title: "Drop and recreate DB",
+            title: "Drop Persons DB",
           ),
           pressedColor: getEnteColorScheme(context).fillFaint,
           trailingIcon: Icons.chevron_right_outlined,
