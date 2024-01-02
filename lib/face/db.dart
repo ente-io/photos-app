@@ -241,6 +241,27 @@ class FaceMLDataDB {
     );
   }
 
+  // for a given personID, return a map of clusterID to fileIDs using join query
+  Future<Map<int, Set<int>>> getFileIdToClusterIDSet(String personID) {
+    final db = instance.database;
+    return db.then((db) async {
+      final List<Map<String, dynamic>> maps = await db.rawQuery(
+        'SELECT $cluserIDColumn, $fileIDColumn FROM $facesTable '
+        'INNER JOIN $personToClusterIDTable '
+        'ON $facesTable.$facePersonIDColumn = $personToClusterIDTable.$cluserIDColumn '
+        'WHERE $personToClusterIDTable.$personToClusterIDPersonIDColumn = ?',
+        [personID],
+      );
+      final Map<int, Set<int>> result = {};
+      for (final map in maps) {
+        final clusterID = map[cluserIDColumn] as int;
+        final fileID = map[fileIDColumn] as int;
+        result[fileID] = (result[fileID] ?? {})..add(clusterID);
+      }
+      return result;
+    });
+  }
+
   Future<Map<int, String>> getCluserIDToPersonMap() async {
     final db = await instance.database;
     final List<Map<String, dynamic>> maps = await db.rawQuery(

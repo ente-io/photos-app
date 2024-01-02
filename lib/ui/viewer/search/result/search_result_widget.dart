@@ -42,16 +42,10 @@ class SearchResultWidget extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            searchResult.type() == ResultType.faces
-                ? PersonThumbnailWidget(
-                    searchResult.previewThumbnail(),
-                    params!['personID'] as int,
-                    heroTagPrefix,
-                  )
-                : SearchThumbnailWidget(
-                    searchResult.previewThumbnail(),
-                    heroTagPrefix,
-                  ),
+            SearchThumbnailWidget(
+              searchResult.previewThumbnail(),
+              heroTagPrefix,
+            ),
             const SizedBox(width: 12),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 2),
@@ -150,6 +144,8 @@ class SearchResultWidget extends StatelessWidget {
         return "Magic";
       case ResultType.shared:
         return "Shared";
+      case ResultType.faces:
+        return "Person";
       default:
         return type.name.toUpperCase();
     }

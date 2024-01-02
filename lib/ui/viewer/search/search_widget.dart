@@ -1,4 +1,5 @@
 import "dart:async";
+import "dart:developer";
 
 import "package:flutter/material.dart";
 import "package:flutter/scheduler.dart";
@@ -247,6 +248,16 @@ class SearchWidgetState extends State<SearchWidget> {
 
       final locationResult = await _searchService.getLocationResults(query);
       allResults.addAll(locationResult);
+      log("Starting face results");
+      _logger.info('starting face results');
+      final faceReuls = await _searchService.getAllFace(null);
+      faceReuls.removeWhere(
+        (element) =>
+            !element.name().toLowerCase().contains(query.toLowerCase()),
+      );
+      log('face results: ${faceReuls.length}');
+      _logger.info('face results: ${faceReuls.length}');
+      allResults.addAll(faceReuls);
 
       final collectionResults =
           await _searchService.getCollectionSearchResults(query);
@@ -327,6 +338,15 @@ class SearchWidgetState extends State<SearchWidget> {
 
     _searchService.getLocationResults(query).then(
       (locationResult) {
+        onResultsReceived(locationResult);
+      },
+    );
+    _searchService.getAllFace(null).then(
+      (locationResult) {
+        locationResult.removeWhere(
+          (element) =>
+              !element.name().toLowerCase().contains(query.toLowerCase()),
+        );
         onResultsReceived(locationResult);
       },
     );
