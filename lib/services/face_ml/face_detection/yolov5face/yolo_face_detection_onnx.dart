@@ -100,9 +100,9 @@ class YoloOnnxFaceDetection {
     List<OrtValue?>? outputs;
     try {
       final runOptions = OrtRunOptions();
-      outputs = await _session?.runAsync(runOptions, inputs);
-      inputOrt.release();
-      runOptions.release();
+      outputs = _session?.run(runOptions, inputs);
+      // inputOrt.release();
+      // runOptions.release();
     } catch (e, s) {
       _logger.severe('Error while running inference: $e \n $s');
       throw YOLOInterpreterRunException();
@@ -134,9 +134,9 @@ class YoloOnnxFaceDetection {
     );
 
     // Release outputs
-    outputs?.forEach((element) {
-      element?.release();
-    });
+    // outputs?.forEach((element) {
+    //   element?.release();
+    // });
 
     // Account for the fact that the aspect ratio was maintained
     for (final faceDetection in relativeDetections) {
@@ -170,9 +170,9 @@ class YoloOnnxFaceDetection {
 
   /// Detects faces in the given image data.
   /// This method is optimized for batch processing.
-  /// 
+  ///
   /// `imageDataList`: The image data to analyze.
-  /// 
+  ///
   /// WARNING: Currently this method only returns the detections for the first image in the batch.
   /// Change the function to output all detection before actually using it in production.
   Future<List<FaceDetectionRelative>> predictBatch(
