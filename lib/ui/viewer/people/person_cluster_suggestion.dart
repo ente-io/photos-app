@@ -12,7 +12,6 @@ import "package:photos/ui/components/models/button_type.dart";
 import "package:photos/ui/viewer/file/no_thumbnail_widget.dart";
 import "package:photos/ui/viewer/file/thumbnail_widget.dart";
 import "package:photos/ui/viewer/people/cluster_page.dart";
-import "package:photos/utils/toast_util.dart";
 
 class PersonReviewClusterSuggestion extends StatefulWidget {
   final Person person;

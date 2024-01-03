@@ -6,6 +6,7 @@ import "package:flutter_image_compress/flutter_image_compress.dart";
 import "package:logging/logging.dart";
 import "package:photos/core/configuration.dart";
 import "package:photos/db/ml_data_db.dart";
+import "package:photos/face/db.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/models/file/file_type.dart";
 import 'package:photos/models/ml/ml_typedefs.dart';
@@ -98,32 +99,6 @@ class FaceMlService {
         return;
       }
 
-      // Run the clustering
-      // final clusteringResult =
-      //     await FaceClustering.instance.predict(allFaceEmbeddings);
-      // final labels = FaceClustering.instance.labels;
-      // if (labels == null) {
-      //   _logger.severe("Clustering failed");
-      //   throw GeneralFaceMlException("Clustering failed");
-      // }
-
-      // Create the clusters
-      // final List<ClusterResultBuilder> clusterResultBuilders = [
-      //   for (final clusterIndices in clusteringResult)
-      //     ClusterResultBuilder.createFromIndices(
-      //       clusterIndices: clusterIndices,
-      //       labels: labels,
-      //       allEmbeddings: allFaceEmbeddings,
-      //       allFileIds: allFileIDs,
-      //       allFaceIds: allFaceIDs,
-      //     ),
-      // ];
-      // final List<ClusterResult> clusterResults =
-      //     await ClusterResultBuilder.buildClusters(clusterResultBuilders);
-      // _logger.info(
-      //   "`clusterAllImages`: Finished clustering,  ${clusterResults.length} clusters found (after feedback)",
-      // );
-
       // Store the clusters in the database
       // await MlDataDB.instance.createAllClusterResults(clusterResults);
     } catch (e, s) {
@@ -135,11 +110,11 @@ class FaceMlService {
   ///
   /// This function first checks if the image has already been analyzed with the lastest faceMlVersion and stored in the database. If so, it skips the image.
   Future<void> indexAllImages() async {
-    _logger.info("`indexAllImages()` called");
+    _logger.info('starting image indexing');
 
     final List<EnteFile> enteFiles = await SearchService.instance.getAllFiles();
-    final Set<int> alreadyIndexedWithLatestVersionIDs = await MlDataDB.instance
-        .getAllFaceMlResultFileIDs(mlVersion: faceMlVersion);
+    final Set<int> alreadyIndexedFiles =
+        await FaceMLDataDB.instance.getIndexedFileIds();
 
     // Make sure the image conversion isolate is spawned
     await ImageMlIsolate.instance.ensureSpawned();
@@ -150,7 +125,7 @@ class FaceMlService {
     for (final enteFile in enteFiles) {
       if (_skipAnalysisEnteFile(
         enteFile,
-        alreadyIndexedWithLatestVersionIDs: alreadyIndexedWithLatestVersionIDs,
+        alreadyIndexedFiles,
       )) {
         fileSkippedCount++;
         continue;
@@ -185,48 +160,6 @@ class FaceMlService {
 
     // Close the image conversion isolate
     ImageMlIsolate.instance.dispose();
-  }
-
-  /// Updates the results of the given images in the database. Updates regardless of the ml version, set [updateHigherVersionOnly] to true to only update if the ml version is higher than the one in the database.
-  Future<int> updateResultSelectedImages(
-    List<EnteFile> enteFiles, {
-    bool updateHigherVersionOnly = false,
-  }) async {
-    int updatedImagesCount = 0;
-    for (final enteFile in enteFiles) {
-      if (_skipAnalysisEnteFile(enteFile)) {
-        continue;
-      }
-
-      _logger.info(
-        "`updateResultSelectedImages()`: start processing image with uploadedFileID: ${enteFile.uploadedFileID}",
-      );
-
-      try {
-        final result = await analyzeImage(
-          enteFile,
-          preferUsingThumbnailForEverything: false,
-          disposeImageIsolateAfterUse: false,
-        );
-        await MlDataDB.instance.updateFaceMlResult(
-          result,
-          updateHigherVersionOnly: updateHigherVersionOnly,
-        );
-        updatedImagesCount++;
-        continue;
-      } catch (e, s) {
-        _logger.severe(
-          "`indexAllImages()`: Could not analyze image with uploadedFileID ${enteFile.uploadedFileID}",
-          e,
-          s,
-        );
-      }
-    }
-
-    // Close the image conversion isolate
-    ImageMlIsolate.instance.dispose();
-
-    return updatedImagesCount;
   }
 
   /// Analyzes the given image data by running the full pipeline using [analyzeImage] and stores the result in the database [MlDataDB].
@@ -534,7 +467,7 @@ class FaceMlService {
 
   /// Checks if the ente file to be analyzed actually can be analyzed: it must be uploaded and in the correct format.
   void _checkEnteFileForID(EnteFile enteFile) {
-    if (_skipAnalysisEnteFile(enteFile)) {
+    if (_skipAnalysisEnteFile(enteFile, <int>{})) {
       _logger.severe(
         "Skipped analysis of image with enteFile ${enteFile.toString()} because it is the wrong format or has no uploadedFileID",
       );
@@ -542,10 +475,7 @@ class FaceMlService {
     }
   }
 
-  bool _skipAnalysisEnteFile(
-    EnteFile enteFile, {
-    Set<int>? alreadyIndexedWithLatestVersionIDs,
-  }) {
+  bool _skipAnalysisEnteFile(EnteFile enteFile, Set<int> indexedFileIds) {
     // Skip if the file is not uploaded
     if (!enteFile.isUploaded) {
       return true;
@@ -555,22 +485,13 @@ class FaceMlService {
     if (enteFile.fileType == FileType.video) {
       return true;
     }
-
     // I don't know how motionPhotos and livePhotos work, so I'm also just skipping them for now
-    if (enteFile.fileType == FileType.other ||
-        enteFile.fileType == FileType.livePhoto) {
+    if (enteFile.fileType == FileType.other) {
       return true;
     }
-
     // Skip if the file is already analyzed with the latest ml version
-    if (alreadyIndexedWithLatestVersionIDs != null) {
-      final id = enteFile.uploadedFileID!;
-      if (alreadyIndexedWithLatestVersionIDs.contains(id)) {
-        return true;
-      }
-    }
-
-    return false;
+    final id = enteFile.uploadedFileID!;
+    return indexedFileIds.contains(id);
   }
 
   Future<FaceMlResult?> _checkForExistingUpToDateResult(

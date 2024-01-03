@@ -74,6 +74,14 @@ class FaceMLDataDB {
     }
   }
 
+  Future<Set<int>> getIndexedFileIds() async {
+    final db = await instance.database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      'SELECT DISTINCT $fileIDColumn FROM $facesTable',
+    );
+    return maps.map((e) => e[fileIDColumn] as int).toSet();
+  }
+
   Future<Map<int, int>> getFileIdToCount() async {
     final Map<int, int> result = {};
     final db = await instance.database;
