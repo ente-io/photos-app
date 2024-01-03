@@ -4,16 +4,15 @@ import "package:flutter/material.dart";
 import "package:flutter/scheduler.dart";
 import "package:logging/logging.dart";
 import "package:photos/core/event_bus.dart";
+import "package:photos/events/clear_and_unfocus_search_bar_event.dart";
 import "package:photos/events/tab_changed_event.dart";
+import "package:photos/models/search/index_of_indexed_stack.dart";
 import "package:photos/models/search/search_result.dart";
 import "package:photos/services/search_service.dart";
-import "package:photos/states/search_results_state.dart";
 import "package:photos/theme/ente_theme.dart";
 import "package:photos/ui/viewer/search/search_suffix_icon_widget.dart";
 import "package:photos/utils/date_time_util.dart";
 import "package:photos/utils/debouncer.dart";
-
-bool isSearchQueryEmpty = true;
 
 class SearchWidget extends StatefulWidget {
   const SearchWidget({Key? key}) : super(key: key);
@@ -23,9 +22,17 @@ class SearchWidget extends StatefulWidget {
 }
 
 class SearchWidgetState extends State<SearchWidget> {
+  static final ValueNotifier<Stream<List<SearchResult>>?>
+      searchResultsStreamNotifier = ValueNotifier(null);
+
+  ///This stores the query that is being searched for. When going to other tabs
+  ///when searching, this state gets disposed and when coming back to the
+  ///search tab, this query is used to populate the search bar.
   static String query = "";
+  //Debouncing + querying
+  static final isLoading = ValueNotifier(false);
   final _searchService = SearchService.instance;
-  final _debouncer = Debouncer(const Duration(milliseconds: 100));
+  final _debouncer = Debouncer(const Duration(milliseconds: 200));
   final Logger _logger = Logger((SearchWidgetState).toString());
   late FocusNode focusNode;
   StreamSubscription<TabDoubleTapEvent>? _tabDoubleTapEvent;
@@ -33,6 +40,8 @@ class SearchWidgetState extends State<SearchWidget> {
   double _distanceOfWidgetFromBottom = 0;
   GlobalKey widgetKey = GlobalKey();
   TextEditingController textController = TextEditingController();
+  late final StreamSubscription<ClearAndUnfocusSearchBar>
+      _clearAndUnfocusSearchBar;
 
   @override
   void initState() {
@@ -61,7 +70,16 @@ class SearchWidgetState extends State<SearchWidget> {
 
       textController.addListener(textControllerListener);
     });
+
+    //Populate the serach tab with the latest query when coming back
+    //to the serach tab.
     textController.text = query;
+
+    _clearAndUnfocusSearchBar =
+        Bus.instance.on<ClearAndUnfocusSearchBar>().listen((event) {
+      textController.clear();
+      focusNode.unfocus();
+    });
   }
 
   @override
@@ -81,29 +99,20 @@ class SearchWidgetState extends State<SearchWidget> {
     _tabDoubleTapEvent?.cancel();
     textController.removeListener(textControllerListener);
     textController.dispose();
+    _clearAndUnfocusSearchBar.cancel();
     super.dispose();
   }
 
   Future<void> textControllerListener() async {
-    //query in local varialbe
-    final value = textController.text;
-    isSearchQueryEmpty = value.isEmpty;
-    //latest query in global variable
-    query = textController.text;
-
-    final List<SearchResult> allResults =
-        await getSearchResultsForQuery(context, value);
-    /*checking if query == value to make sure that the results are from the current query
-                      and not from the previous query (race condition).*/
-    //checking if query == value to make sure that the latest query's result
-    //(allResults) is passed to updateResult. Due to race condition, the previous
-    //query's allResults could be passed to updateResult after the lastest query's
-    //allResults is passed.
-
-    if (mounted && query == value) {
-      final inheritedSearchResults = InheritedSearchResults.of(context);
-      inheritedSearchResults.updateResults(allResults);
-    }
+    isLoading.value = true;
+    _debouncer.run(() async {
+      if (mounted) {
+        query = textController.text;
+        IndexOfStackNotifier().isSearchQueryEmpty = query.isEmpty;
+        searchResultsStreamNotifier.value =
+            _getSearchResultsStream(context, query);
+      }
+    });
   }
 
   @override
@@ -167,14 +176,14 @@ class SearchWidgetState extends State<SearchWidget> {
                       /*Using valueListenableBuilder inside a stateful widget because this widget is only rebuild when
                       setState is called when deboucncing is over and the spinner needs to be shown while debouncing */
                       suffixIcon: ValueListenableBuilder(
-                        valueListenable: _debouncer.debounceActiveNotifier,
+                        valueListenable: isLoading,
                         builder: (
                           BuildContext context,
-                          bool isDebouncing,
+                          bool isSearching,
                           Widget? child,
                         ) {
                           return SearchSuffixIcon(
-                            isDebouncing,
+                            isSearching,
                           );
                         },
                       ),
@@ -251,6 +260,10 @@ class SearchWidgetState extends State<SearchWidget> {
           await _searchService.getDateResults(context, query);
       allResults.addAll(possibleEvents);
 
+      final magicResults =
+          await _searchService.getMagicSearchResults(context, query);
+      allResults.addAll(magicResults);
+
       final contactResults =
           await _searchService.getContactSearchResults(query);
       allResults.addAll(contactResults);
@@ -258,6 +271,103 @@ class SearchWidgetState extends State<SearchWidget> {
       _logger.severe("error during search", e, s);
     }
     completer.complete(allResults);
+  }
+
+  Stream<List<SearchResult>> _getSearchResultsStream(
+    BuildContext context,
+    String query,
+  ) {
+    int resultCount = 0;
+    final maxResultCount = _isYearValid(query) ? 12 : 11;
+    final streamController = StreamController<List<SearchResult>>();
+
+    if (query.isEmpty) {
+      streamController.sink.add([]);
+      streamController.close();
+      return streamController.stream;
+    }
+
+    void onResultsReceived(List<SearchResult> results) {
+      streamController.sink.add(results);
+      resultCount++;
+      if (resultCount == maxResultCount) {
+        streamController.close();
+      }
+    }
+
+    if (_isYearValid(query)) {
+      _searchService.getYearSearchResults(query).then((yearSearchResults) {
+        onResultsReceived(yearSearchResults);
+      });
+    }
+
+    _searchService.getHolidaySearchResults(context, query).then(
+      (holidayResults) {
+        onResultsReceived(holidayResults);
+      },
+    );
+
+    _searchService.getFileTypeResults(context, query).then(
+      (fileTypeSearchResults) {
+        onResultsReceived(fileTypeSearchResults);
+      },
+    );
+
+    _searchService.getCaptionAndNameResults(query).then(
+      (captionAndDisplayNameResult) {
+        onResultsReceived(captionAndDisplayNameResult);
+      },
+    );
+
+    _searchService.getFileExtensionResults(query).then(
+      (fileExtnResult) {
+        onResultsReceived(fileExtnResult);
+      },
+    );
+
+    _searchService.getLocationResults(query).then(
+      (locationResult) {
+        onResultsReceived(locationResult);
+      },
+    );
+
+    _searchService.getCityResults(query).then(
+      (results) {
+        onResultsReceived(results);
+      },
+    );
+
+    _searchService.getCollectionSearchResults(query).then(
+      (collectionResults) {
+        onResultsReceived(collectionResults);
+      },
+    );
+
+    _searchService.getMonthSearchResults(context, query).then(
+      (monthResults) {
+        onResultsReceived(monthResults);
+      },
+    );
+
+    _searchService.getDateResults(context, query).then(
+      (possibleEvents) {
+        onResultsReceived(possibleEvents);
+      },
+    );
+
+    _searchService.getMagicSearchResults(context, query).then(
+      (magicResults) {
+        onResultsReceived(magicResults);
+      },
+    );
+
+    _searchService.getContactSearchResults(query).then(
+      (contactResults) {
+        onResultsReceived(contactResults);
+      },
+    );
+
+    return streamController.stream;
   }
 
   bool _isYearValid(String year) {

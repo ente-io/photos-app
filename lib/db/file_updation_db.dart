@@ -14,7 +14,7 @@ class FileUpdationDB {
   static const tableName = 're_upload_tracker';
   static const columnLocalID = 'local_id';
   static const columnReason = 'reason';
-  static const livePhotoSize = 'livePhotoSize';
+  static const livePhotoCheck = 'livePhotoCheck';
 
   static const modificationTimeUpdated = 'modificationTimeUpdated';
 
@@ -126,6 +126,18 @@ class FileUpdationDB {
       WHERE $columnLocalID IN ($inParam) AND $columnReason = '$reason';
     ''',
     );
+  }
+
+  // check if entry existing for given localID and reason
+  Future<bool> isExisting(String localID, String reason) async {
+    final db = await instance.database;
+    final String whereClause =
+        '$columnLocalID = "$localID" AND $columnReason = "$reason"';
+    final rows = await db.query(
+      tableName,
+      where: whereClause,
+    );
+    return rows.isNotEmpty;
   }
 
   Future<List<String>> getLocalIDsForPotentialReUpload(
