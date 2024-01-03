@@ -4,6 +4,7 @@ import "package:photos/extensions/stop_watch.dart";
 import "package:photos/face/db.dart";
 import "package:photos/face/utils/import_from_zip.dart";
 import 'package:photos/services/face_ml/face_clustering/linear_clustering.dart';
+import "package:photos/services/face_ml/face_ml_service.dart";
 import 'package:photos/theme/ente_theme.dart';
 import 'package:photos/ui/components/captioned_text_widget.dart';
 import 'package:photos/ui/components/expandable_menu_item_widget.dart';
@@ -55,8 +56,18 @@ class FaceDebugSectionWidget extends StatelessWidget {
         ),
         sectionOptionSpacing,
         MenuItemWidget(
-          captionedTextWidget: const CaptionedTextWidget(
-            title: "Read embeddings from DB",
+          captionedTextWidget: FutureBuilder<Set<int>>(
+            future: FaceMLDataDB.instance.getIndexedFileIds(),
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                return CaptionedTextWidget(
+                  title: "Read embeddings for ${snapshot.data!.length} files",
+                );
+              }
+              return const CaptionedTextWidget(
+                title: "Loading...",
+              );
+            },
           ),
           pressedColor: getEnteColorScheme(context).fillFaint,
           trailingIcon: Icons.chevron_right_outlined,
@@ -66,6 +77,22 @@ class FaceDebugSectionWidget extends StatelessWidget {
             final result = await FaceMLDataDB.instance.getFaceEmbeddingMap();
             watch.logAndReset('read embeddings ${result.length} ');
             showShortToast(context, "Done");
+          },
+        ),
+        MenuItemWidget(
+          captionedTextWidget: const CaptionedTextWidget(
+            title: "Start indexing...",
+          ),
+          pressedColor: getEnteColorScheme(context).fillFaint,
+          trailingIcon: Icons.chevron_right_outlined,
+          trailingIconIsMuted: true,
+          onTap: () async {
+            try {
+              await FaceMlService.instance.indexAllImages();
+            } catch (e, s) {
+              _logger.warning('indexing failed ', e, s);
+              await showGenericErrorDialog(context: context, error: e);
+            }
           },
         ),
         MenuItemWidget(

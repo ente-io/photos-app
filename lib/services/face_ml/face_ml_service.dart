@@ -7,10 +7,12 @@ import "package:logging/logging.dart";
 import "package:photos/core/configuration.dart";
 import "package:photos/db/ml_data_db.dart";
 import "package:photos/face/db.dart";
+import "package:photos/face/model/face.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/models/file/file_type.dart";
 import 'package:photos/models/ml/ml_typedefs.dart';
 import "package:photos/models/ml/ml_versions.dart";
+import "package:photos/face/model/detection.dart" as faceDetection;
 import "package:photos/services/face_ml/face_detection/detection.dart";
 import "package:photos/services/face_ml/face_detection/yolov5face/yolo_face_detection_exceptions.dart";
 import "package:photos/services/face_ml/face_detection/yolov5face/yolo_face_detection_onnx.dart";
@@ -136,12 +138,38 @@ class FaceMlService {
       );
 
       try {
-        final result = await analyzeImage(
+        final FaceMlResult result = await analyzeImage(
           enteFile,
           preferUsingThumbnailForEverything: false,
           disposeImageIsolateAfterUse: false,
         );
-        await MlDataDB.instance.createFaceMlResult(result);
+        final List<Face> faces = [];
+        if (!result.hasFaces) {
+          faces.add(
+            Face(
+              '${result.fileId}-0',
+              result.fileId,
+              <double>[],
+              0.0,
+              faceDetection.Detection.empty(),
+            ),
+          );
+        } else {
+          for (int i = 0; i < result.faces.length; ++i) {
+            final FaceResult faceRes = result.faces[i];
+            faces.add(
+              Face(
+                faceRes.faceId,
+                result.fileId,
+                faceRes.embedding,
+                faceRes.detection.score,
+                faceDetection.Detection.empty(),
+              ),
+            );
+          }
+        }
+        await FaceMLDataDB.instance.bulkInsertFaces(faces);
+        // await MlDataDB.instance.createFaceMlResult(result);
         fileAnalyzedCount++;
         continue;
       } catch (e, s) {

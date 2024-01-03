@@ -12,6 +12,22 @@ class Detection {
     required this.cropBox,
   });
 
+  // emoty box
+  Detection.empty()
+      : box = FaceBox(
+          x: 0,
+          y: 0,
+          width: 0,
+          height: 0,
+        ),
+        landmarks = [],
+        cropBox = CropBox(
+          x: 0,
+          y: 0,
+          width: 0,
+          height: 0,
+        );
+
   Map<String, dynamic> toJson() => {
         'box': box.toJson(),
         'landmarks': landmarks.map((x) => x.toJson()).toList(),
