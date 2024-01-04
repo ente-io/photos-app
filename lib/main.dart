@@ -190,6 +190,7 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
     //   );
     // });
   }
+  unawaited(FeatureFlagService.instance.init());
 
   if (!isBackground) {
     unawaited(SemanticSearchService.instance.init());
@@ -288,7 +289,6 @@ Future<void> _killBGTask([String? taskId]) async {
   }
 }
 
-<<<<<<< HEAD
 // Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 //   final bool isRunningInFG = await _isRunningInForeground(); // hb
 //   final bool isInForeground = AppLifecycleService.instance.isForeground;
@@ -316,36 +316,6 @@ Future<void> _killBGTask([String? taskId]) async {
 //     );
 //   }
 // }
-=======
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  final bool isRunningInFG = await _isRunningInForeground(); // hb
-  final bool isInForeground = AppLifecycleService.instance.isForeground;
-  if (_isProcessRunning) {
-    _logger.info(
-      "Background push received when app is alive and runningInFS: $isRunningInFG inForeground: $isInForeground",
-    );
-    if (PushService.shouldSync(message)) {
-      await _sync('firebaseBgSyncActiveProcess');
-    }
-  } else {
-    // App is dead
-    // ignore: unawaited_futures
-    _runWithLogs(
-      () async {
-        _logger.info("Background push received");
-        if (Platform.isIOS) {
-          _scheduleSuicide(kBGPushTimeout); // To prevent OS from punishing us
-        }
-        await _init(true, via: 'firebasePush');
-        if (PushService.shouldSync(message)) {
-          await _sync('firebaseBgSyncNoActiveProcess');
-        }
-      },
-      prefix: "[fbg]",
-    );
-  }
-}
->>>>>>> main
 
 Future<void> _logFGHeartBeatInfo() async {
   final bool isRunningInFG = await _isRunningInForeground();
