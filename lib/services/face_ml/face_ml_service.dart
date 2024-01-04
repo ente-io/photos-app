@@ -171,10 +171,9 @@ class FaceMlService {
         await FaceMLDataDB.instance.bulkInsertFaces(faces);
         // await MlDataDB.instance.createFaceMlResult(result);
         fileAnalyzedCount++;
-        continue;
       } catch (e, s) {
         _logger.severe(
-          "`indexAllImages()`: Could not analyze image with uploadedFileID ${enteFile.uploadedFileID}",
+          "failed to analyze for faceEmbedding ${enteFile.uploadedFileID}",
           e,
           s,
         );
