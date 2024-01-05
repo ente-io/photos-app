@@ -211,8 +211,8 @@ class FaceDebugSectionWidget extends StatelessWidget {
                   continue;
                 }
                 final otherAvg = clusterAvg[otherClusterID]!;
-                final distance = calculateSqrDistance(avg, otherAvg);
-                if (distance < 0.5) {
+                final distance = cosineDistForNormVectors(avg, otherAvg);
+                if (distance < 0.4) {
                   distances
                       .add({'clusterID': otherClusterID, 'distance': distance});
                 }
@@ -229,7 +229,7 @@ class FaceDebugSectionWidget extends StatelessWidget {
                 continue;
               }
               dev.log(
-                "Closest cluster: ${entry.key} -> ${entry.value}",
+                "Closest cluster (cosine): ${entry.key} -> ${entry.value}",
               );
               // dev.log(
               //     "Closest cluster: ${entry.key} -> ${entry.value.map((e) => 'ClusterID: ${e['clusterID']}, Distance: ${e['distance']}').join(', ')}");
