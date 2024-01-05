@@ -7,6 +7,7 @@ import "package:logging/logging.dart";
 import "package:photos/core/event_bus.dart";
 import "package:photos/events/clear_and_unfocus_search_bar_event.dart";
 import "package:photos/events/tab_changed_event.dart";
+import "package:photos/models/search/generic_search_result.dart";
 import "package:photos/models/search/index_of_indexed_stack.dart";
 import "package:photos/models/search/search_result.dart";
 import "package:photos/services/search_service.dart";
@@ -289,7 +290,7 @@ class SearchWidgetState extends State<SearchWidget> {
     String query,
   ) {
     int resultCount = 0;
-    final maxResultCount = _isYearValid(query) ? 12 : 11;
+    final maxResultCount = _isYearValid(query) ? 13 : 12;
     final streamController = StreamController<List<SearchResult>>();
 
     if (query.isEmpty) {
@@ -303,6 +304,11 @@ class SearchWidgetState extends State<SearchWidget> {
       resultCount++;
       if (resultCount == maxResultCount) {
         streamController.close();
+      }
+      if (resultCount > maxResultCount) {
+        _logger.warning(
+          "More results than expected. Expected: $maxResultCount, actual: $resultCount",
+        );
       }
     }
 
@@ -343,11 +349,13 @@ class SearchWidgetState extends State<SearchWidget> {
     );
     _searchService.getAllFace(null).then(
       (locationResult) {
-        locationResult.removeWhere(
-          (element) =>
-              !element.name().toLowerCase().contains(query.toLowerCase()),
-        );
-        onResultsReceived(locationResult);
+        final List<GenericSearchResult> filteredResults = [];
+        for (final result in locationResult) {
+          if (result.name().toLowerCase().contains(query.toLowerCase())) {
+            filteredResults.add(result);
+          }
+        }
+        onResultsReceived(filteredResults);
       },
     );
 

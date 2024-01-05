@@ -772,7 +772,7 @@ class SearchService {
     for (final clusterId in clusterIdToFiles.keys) {
       // format lenth as 000d
       final files = clusterIdToFiles[clusterId]!;
-      final String clusterName = "${files.length}";
+      final String clusterName = "ID:$clusterId,  ${files.length}";
       final Person? p = clusterIDToPerson[clusterId];
       if (p != null) {
         throw Exception("Person should  be null");

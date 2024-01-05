@@ -82,6 +82,27 @@ class FaceMLDataDB {
     return maps.map((e) => e[fileIDColumn] as int).toSet();
   }
 
+  Future<Map<int, int>> clusterIdToFaceCount() async {
+    final db = await instance.database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      'SELECT $cluserIDColumn, COUNT(*) as count FROM $facesTable where $cluserIDColumn IS NOT NULL GROUP BY $cluserIDColumn ',
+    );
+    final Map<int, int> result = {};
+    for (final map in maps) {
+      result[map[cluserIDColumn] as int] = map['count'] as int;
+    }
+    return result;
+  }
+
+  Future<Iterable<Uint8List>> getFaceEmbeddingsForCluster(int clusterID) async {
+    final db = await instance.database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      'SELECT $faceEmbeddingBlob FROM $facesTable where $cluserIDColumn = ?',
+      [clusterID],
+    );
+    return maps.map((e) => e[faceEmbeddingBlob] as Uint8List);
+  }
+
   Future<Map<int, int>> getFileIdToCount() async {
     final Map<int, int> result = {};
     final db = await instance.database;
@@ -296,7 +317,7 @@ class FaceMLDataDB {
       final Person? p =
           peopleMap[map[personToClusterIDPersonIDColumn] as String];
       if (p != null) {
-        result[map[cluserIDColumn] as int] = p!;
+        result[map[cluserIDColumn] as int] = p;
       } else {
         _logger.warning(
           'Person with id ${map[personToClusterIDPersonIDColumn]} not found',
