@@ -157,6 +157,7 @@ class FaceMlService {
         } else {
           for (int i = 0; i < result.faces.length; ++i) {
             final FaceResult faceRes = result.faces[i];
+
             faces.add(
               Face(
                 faceRes.faceId,
