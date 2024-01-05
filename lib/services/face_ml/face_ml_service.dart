@@ -7,12 +7,14 @@ import "package:logging/logging.dart";
 import "package:photos/core/configuration.dart";
 import "package:photos/db/ml_data_db.dart";
 import "package:photos/face/db.dart";
+import "package:photos/face/model/box.dart";
+import "package:photos/face/model/detection.dart" as face_detection;
 import "package:photos/face/model/face.dart";
+import "package:photos/face/model/landmark.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/models/file/file_type.dart";
 import 'package:photos/models/ml/ml_typedefs.dart';
 import "package:photos/models/ml/ml_versions.dart";
-import "package:photos/face/model/detection.dart" as faceDetection;
 import "package:photos/services/face_ml/face_detection/detection.dart";
 import "package:photos/services/face_ml/face_detection/yolov5face/yolo_face_detection_exceptions.dart";
 import "package:photos/services/face_ml/face_detection/yolov5face/yolo_face_detection_onnx.dart";
@@ -151,12 +153,33 @@ class FaceMlService {
               result.fileId,
               <double>[],
               0.0,
-              faceDetection.Detection.empty(),
+              face_detection.Detection.empty(),
             ),
           );
         } else {
           for (int i = 0; i < result.faces.length; ++i) {
             final FaceResult faceRes = result.faces[i];
+            final FaceDetectionAbsolute absoluteDetection =
+                faceRes.detection.toAbsolute(
+              imageWidth: enteFile.width,
+              imageHeight: enteFile.height,
+            );
+            final detection = face_detection.Detection(
+              box: FaceBox(
+                x: absoluteDetection.xMinBox,
+                y: absoluteDetection.yMinBox,
+                width: absoluteDetection.width,
+                height: absoluteDetection.height,
+              ),
+              landmarks: absoluteDetection.allKeypoints
+                  .map(
+                    (keypoint) => Landmark(
+                      x: keypoint[0],
+                      y: keypoint[0],
+                    ),
+                  )
+                  .toList(),
+            );
 
             faces.add(
               Face(
@@ -164,7 +187,8 @@ class FaceMlService {
                 result.fileId,
                 faceRes.embedding,
                 faceRes.detection.score,
-                faceDetection.Detection.empty(),
+                detection,
+                // face_detection.Detection.empty(),
               ),
             );
           }

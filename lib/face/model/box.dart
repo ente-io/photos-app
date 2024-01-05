@@ -1,3 +1,8 @@
+/// Bounding box of a face. 
+/// 
+/// [`x`] and [y] are the coordinates of the top left corner of the box, so the minimim values
+/// [width] and [height] are the width and height of the box.
+/// All values are in absolute pixels relative to the original image size.
 class FaceBox {
   final double x;
   final double y;
