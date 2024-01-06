@@ -1,0 +1,1 @@
+const kLaplacianThreshold = 10;

@@ -154,6 +154,7 @@ class FaceMlService {
               <double>[],
               0.0,
               face_detection.Detection.empty(),
+              0.0,
             ),
           );
         } else {
@@ -188,6 +189,7 @@ class FaceMlService {
                 faceRes.embedding,
                 faceRes.detection.score,
                 detection,
+                faceRes.blurValue,
                 // face_detection.Detection.empty(),
               ),
             );
@@ -459,8 +461,9 @@ class FaceMlService {
     FaceMlResultBuilder? resultBuilder,
   }) async {
     try {
-      final (alignedFaces, alignmentResults) = await ImageMlIsolate.instance
-          .preprocessMobileFaceNet(imageData, faces);
+      final (alignedFaces, alignmentResults, isBlurs, blurValues) =
+          await ImageMlIsolate.instance
+              .preprocessMobileFaceNet(imageData, faces);
 
       if (resultBuilder != null) {
         for (int faceIndex = 0; faceIndex < faces.length; ++faceIndex) {
@@ -468,6 +471,7 @@ class FaceMlService {
             alignmentResults[faceIndex],
             faceIndex,
           );
+          resultBuilder.faces[faceIndex].blurValue = blurValues[faceIndex];
         }
       }
 

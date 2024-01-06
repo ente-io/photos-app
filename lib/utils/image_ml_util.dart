@@ -16,6 +16,7 @@ import 'package:flutter/painting.dart' as paint show decodeImageFromList;
 import "package:logging/logging.dart";
 import 'package:ml_linalg/linalg.dart';
 import 'package:photos/models/ml/ml_typedefs.dart';
+import "package:photos/services/face_ml/blur_detection/blur_detection_service.dart";
 import "package:photos/services/face_ml/face_alignment/alignment_result.dart";
 import "package:photos/services/face_ml/face_alignment/similarity_transform.dart";
 import "package:photos/services/face_ml/face_detection/detection.dart";
@@ -122,6 +123,25 @@ Num3DInputMatrix createInputMatrixFromImage(
           normFunction(pixel.green),
           normFunction(pixel.blue),
         ];
+      },
+    ),
+  );
+}
+
+List<List<int>> createGrayscaleIntMatrixFromImage(
+  Image image,
+  ByteData byteDataRgba,
+) {
+  return List.generate(
+    image.height,
+    (y) => List.generate(
+      image.width,
+      (x) {
+        // 0.299 ∙ Red + 0.587 ∙ Green + 0.114 ∙ Blue
+        final pixel = readPixelColor(image, byteDataRgba, x, y);
+        return (0.299 * pixel.red + 0.587 * pixel.green + 0.114 * pixel.blue)
+            .round()
+            .clamp(0, 255);
       },
     ),
   );
@@ -691,8 +711,13 @@ Future<List<Uint8List>> preprocessFaceAlignToUint8List(
 /// Preprocesses [imageData] based on [faceLandmarks] to align the faces in the images
 ///
 /// Returns a list of [Num3DInputMatrix] images, one for each face, ready for MobileFaceNet inference
-Future<(List<Num3DInputMatrix>, List<AlignmentResult>)>
-    preprocessToMobileFaceNetInput(
+Future<
+    (
+      List<Num3DInputMatrix>,
+      List<AlignmentResult>,
+      List<bool>,
+      List<double>
+    )> preprocessToMobileFaceNetInput(
   Uint8List imageData,
   List<Map<String, dynamic>> facesJson, {
   int width = 112,
@@ -715,6 +740,8 @@ Future<(List<Num3DInputMatrix>, List<AlignmentResult>)>
 
   final alignedImages = <Num3DInputMatrix>[];
   final alignmentResults = <AlignmentResult>[];
+  final isBlurs = <bool>[];
+  final blurValues = <double>[];
 
   for (final faceLandmark in faceLandmarks) {
     final (alignmentResult, correctlyEstimated) =
@@ -744,6 +771,14 @@ Future<(List<Num3DInputMatrix>, List<AlignmentResult>)>
     );
     alignedImages.add(alignedFaceMatrix);
     alignmentResults.add(alignmentResult);
+    final faceGrayMatrix = createGrayscaleIntMatrixFromImage(
+      alignedFace,
+      alignedFaceByteData,
+    );
+    final (isBlur, blurValue) = await BlurDetectionService.instance
+        .predictIsBlurGrayLaplacian(faceGrayMatrix);
+    isBlurs.add(isBlur);
+    blurValues.add(blurValue);
 
     // final Double3DInputMatrix alignedImage = await warpAffineToMatrix(
     //   image,
@@ -756,7 +791,7 @@ Future<(List<Num3DInputMatrix>, List<AlignmentResult>)>
     // alignedImages.add(alignedImage);
     // transformationMatrices.add(transformationMatrix);
   }
-  return (alignedImages, alignmentResults);
+  return (alignedImages, alignmentResults, isBlurs, blurValues);
 }
 
 /// Function to warp an image [imageData] with an affine transformation using the estimated [transformationMatrix].

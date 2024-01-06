@@ -61,7 +61,7 @@ class FaceEmbedding {
     List output;
     try {
       final stopwatchDecoding = Stopwatch()..start();
-      final (inputImageMatrix, _) =
+      final (inputImageMatrix, _, _, _) =
           await ImageMlIsolate.instance.preprocessMobileFaceNet(
         imageData,
         [face],

@@ -6,6 +6,7 @@ import "package:photos/db/ml_data_db.dart";
 import "package:photos/models/file/file.dart";
 import 'package:photos/models/ml/ml_typedefs.dart';
 import "package:photos/models/ml/ml_versions.dart";
+import "package:photos/services/face_ml/blur_detection/blur_constants.dart";
 import "package:photos/services/face_ml/face_alignment/alignment_result.dart";
 import "package:photos/services/face_ml/face_clustering/cosine_distance.dart";
 import "package:photos/services/face_ml/face_detection/detection.dart";
@@ -620,13 +621,17 @@ class FaceMlResultBuilder {
 @immutable
 class FaceResult {
   final FaceDetectionRelative detection;
+  final double blurValue;
   final AlignmentResult alignment;
   final Embedding embedding;
   final int fileId;
   final String faceId;
 
+  bool get isBlurry => blurValue < kLaplacianThreshold;
+
   const FaceResult({
     required this.detection,
+    required this.blurValue,
     required this.alignment,
     required this.embedding,
     required this.fileId,
@@ -635,6 +640,7 @@ class FaceResult {
 
   Map<String, dynamic> toJson() => {
         'detection': detection.toJson(),
+        'blurValue': blurValue,
         'alignment': alignment.toJson(),
         'embedding': embedding,
         'fileId': fileId,
@@ -644,6 +650,7 @@ class FaceResult {
   static FaceResult fromJson(Map<String, dynamic> json) {
     return FaceResult(
       detection: FaceDetectionRelative.fromJson(json['detection']),
+      blurValue: json['blurValue'],
       alignment: AlignmentResult.fromJson(json['alignment']),
       embedding: Embedding.from(json['embedding']),
       fileId: json['fileId'],
@@ -655,10 +662,13 @@ class FaceResult {
 class FaceResultBuilder {
   FaceDetectionRelative detection =
       FaceDetectionRelative.defaultInitialization();
+  double blurValue = 1000;
   AlignmentResult alignment = AlignmentResult.empty();
   Embedding embedding = <double>[];
   int fileId = -1;
   String faceId = '';
+
+  bool get isBlurry => blurValue < kLaplacianThreshold;
 
   FaceResultBuilder({
     required this.fileId,
@@ -679,6 +689,7 @@ class FaceResultBuilder {
     assert(detection.box[0] <= 1);
     return FaceResult(
       detection: detection,
+      blurValue: blurValue,
       alignment: alignment,
       embedding: embedding,
       fileId: fileId,

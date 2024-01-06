@@ -1,4 +1,5 @@
 import "package:photos/face/model/detection.dart";
+import "package:photos/services/face_ml/blur_detection/blur_constants.dart";
 
 class Face {
   final int fileID;
@@ -6,6 +7,9 @@ class Face {
   final List<double> embedding;
   Detection detection;
   final double score;
+  final double blur;
+
+  bool get isBlurry => blur < kLaplacianThreshold;
 
   Face(
     this.faceID,
@@ -13,6 +17,7 @@ class Face {
     this.embedding,
     this.score,
     this.detection,
+    this.blur,
   );
 
   factory Face.fromJson(Map<String, dynamic> json) {
@@ -22,6 +27,7 @@ class Face {
       List<double>.from(json['embeddings'] as List),
       json['score'] as double,
       Detection.fromJson(json['detection'] as Map<String, dynamic>),
+      json['blur'] as double,
     );
   }
 
@@ -31,5 +37,6 @@ class Face {
         'embeddings': embedding,
         'detection': detection.toJson(),
         'score': score,
+        'blur': blur,
       };
 }
