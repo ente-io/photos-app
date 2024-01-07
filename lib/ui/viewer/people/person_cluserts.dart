@@ -1,5 +1,6 @@
 import "package:flutter/cupertino.dart";
 import "package:flutter/material.dart";
+import "package:logging/logging.dart";
 import "package:photos/face/model/person.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/services/search_service.dart";
@@ -21,6 +22,7 @@ class PersonClusters extends StatefulWidget {
 }
 
 class _PersonClustersState extends State<PersonClusters> {
+  final Logger _logger = Logger("_PersonClustersState");
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -100,6 +102,7 @@ class _PersonClustersState extends State<PersonClusters> {
               },
             );
           } else if (snapshot.hasError) {
+            _logger.warning("Failed to get cluster", snapshot.error);
             return const Center(child: Text("Error"));
           } else {
             return const Center(child: CircularProgressIndicator());

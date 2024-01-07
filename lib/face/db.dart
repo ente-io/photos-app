@@ -276,7 +276,7 @@ class FaceMLDataDB {
     final db = instance.database;
     return db.then((db) async {
       final List<Map<String, dynamic>> maps = await db.rawQuery(
-        'SELECT $cluserIDColumn, $fileIDColumn FROM $facesTable '
+        'SELECT $personToClusterIDTable.$cluserIDColumn, $fileIDColumn FROM $facesTable '
         'INNER JOIN $personToClusterIDTable '
         'ON $facesTable.$faceClusterId = $personToClusterIDTable.$cluserIDColumn '
         'WHERE $personToClusterIDTable.$personToClusterIDPersonIDColumn = ?',
