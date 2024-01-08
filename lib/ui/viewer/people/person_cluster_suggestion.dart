@@ -1,9 +1,7 @@
 import "dart:math";
 
-import "package:flutter/cupertino.dart";
 import "package:flutter/material.dart";
 import "package:photos/face/model/person.dart";
-import "package:photos/generated/l10n.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/services/search_service.dart";
 import "package:photos/theme/ente_theme.dart";

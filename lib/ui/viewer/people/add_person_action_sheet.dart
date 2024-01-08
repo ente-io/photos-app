@@ -38,13 +38,13 @@ String _actionName(
   return text;
 }
 
-void showAssignPersonAction(
+Future<dynamic> showAssignPersonAction(
   BuildContext context, {
   required int clusterID,
   PersonActionType actionType = PersonActionType.assignPerson,
   bool showOptionToCreateNewAlbum = true,
 }) {
-  showBarModalBottomSheet(
+  return showBarModalBottomSheet(
     context: context,
     builder: (context) {
       return PersonActionSheet(
@@ -225,9 +225,7 @@ class _PersonActionSheetState extends State<PersonActionSheet> {
                             personID: person.remoteID,
                             clusterID: widget.cluserID,
                           ),
-                          Navigator.pop(context, {
-                            "personID": person.remoteID,
-                          }),
+                          Navigator.pop(context, person),
                         },
                       );
                     },
@@ -271,9 +269,11 @@ class _PersonActionSheetState extends State<PersonActionSheet> {
             PersonAttr(name: text, faces: <String>[]),
           );
           await FaceMLDataDB.instance.insert(p, clusterID);
+          Navigator.pop(context, p);
           log("inserted person");
         } catch (e, s) {
-          Logger("CreateNewAlbumIcon").severe("Failed to rename album", e, s);
+          Logger("_PersonActionSheetState")
+              .severe("Failed to rename album", e, s);
           rethrow;
         }
       },

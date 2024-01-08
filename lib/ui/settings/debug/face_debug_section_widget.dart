@@ -8,7 +8,6 @@ import "package:photos/extensions/stop_watch.dart";
 import "package:photos/face/db.dart";
 import "package:photos/face/utils/import_from_zip.dart";
 import "package:photos/generated/protos/ente/common/vector.pb.dart";
-import "package:photos/objectbox.g.dart";
 import "package:photos/services/face_ml/face_clustering/cosine_distance.dart";
 import 'package:photos/services/face_ml/face_clustering/linear_clustering.dart';
 import "package:photos/services/face_ml/face_ml_service.dart";

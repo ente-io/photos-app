@@ -1,6 +1,7 @@
 import "dart:async";
 
 import 'package:flutter/material.dart';
+import "package:logging/logging.dart";
 import 'package:photos/core/event_bus.dart';
 import 'package:photos/events/files_updated_event.dart';
 import 'package:photos/events/local_photos_updated_event.dart';
@@ -13,7 +14,9 @@ import 'package:photos/ui/viewer/actions/file_selection_overlay_bar.dart';
 import 'package:photos/ui/viewer/gallery/gallery.dart';
 import 'package:photos/ui/viewer/gallery/gallery_app_bar_widget.dart';
 import "package:photos/ui/viewer/people/add_person_action_sheet.dart";
+import "package:photos/ui/viewer/people/people_page.dart";
 import "package:photos/ui/viewer/search/result/search_result_page.dart";
+import "package:photos/utils/navigation_util.dart";
 import "package:photos/utils/toast_util.dart";
 
 class ClusterPage extends StatefulWidget {
@@ -101,9 +104,17 @@ class _ClusterPageState extends State<ClusterPage> {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(50.0),
         child: GestureDetector(
-          onTap: () {
+          onTap: () async {
             if (widget.personID == null) {
-              showAssignPersonAction(context, clusterID: widget.cluserID!);
+              final result = await showAssignPersonAction(
+                context,
+                clusterID: widget.cluserID!,
+              );
+              if (result != null && result is Person) {
+                Navigator.pop(context);
+                // ignore: unawaited_futures
+                routeToPage(context, PeoplePage(const [], person: result));
+              }
             } else {
               showShortToast(context, "11No personID or clusterID");
             }
