@@ -78,7 +78,7 @@ class FaceMLDataDB {
   Future<Set<int>> getIndexedFileIds() async {
     final db = await instance.database;
     final List<Map<String, dynamic>> maps = await db.rawQuery(
-      'SELECT DISTINCT $fileIDColumn FROM $facesTable',
+      'SELECT DISTINCT $fileIDColumn FROM $facesTable where $faceBlur > $kLaplacianThreshold AND $faceScore > 0.0',
     );
     return maps.map((e) => e[fileIDColumn] as int).toSet();
   }
