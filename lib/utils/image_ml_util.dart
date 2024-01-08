@@ -15,6 +15,7 @@ import "dart:ui";
 import 'package:flutter/painting.dart' as paint show decodeImageFromList;
 import "package:logging/logging.dart";
 import 'package:ml_linalg/linalg.dart';
+import "package:photos/face/model/box.dart";
 import 'package:photos/models/ml/ml_typedefs.dart';
 import "package:photos/services/face_ml/blur_detection/blur_detection_service.dart";
 import "package:photos/services/face_ml/face_alignment/alignment_result.dart";
@@ -1049,6 +1050,35 @@ Future<Uint8List> generateFaceThumbnailFromData(
     faceThumbnail,
     format: ImageByteFormat.png,
   );
+}
+
+/// Generates a face thumbnail from [imageData] and a [faceDetection].
+///
+/// Returns a [Uint8List] image, in png format.
+Future<List<Uint8List>> generateFaceThumbnailsFromDataAndDetections(
+  Uint8List imageData,
+  List<FaceBox> faceBoxes,
+) async {
+  final Image image = await decodeImageFromData(imageData);
+
+  final List<Uint8List> faceThumbnails = [];
+
+  for (final faceBox in faceBoxes) {
+    final Image faceThumbnail = await cropImage(
+      image,
+      x: faceBox.x - faceBox.width / 4,
+      y: faceBox.y - faceBox.height / 4,
+      width: faceBox.width * 1.5,
+      height: faceBox.height * 1.5,
+    );
+    final Uint8List faceThumbnailPng = await encodeImageToUint8List(
+      faceThumbnail,
+      format: ImageByteFormat.png,
+    );
+    faceThumbnails.add(faceThumbnailPng);
+  }
+
+  return faceThumbnails;
 }
 
 /// Generates cropped and padded image data from [imageData] and a [faceBox].
