@@ -150,30 +150,30 @@ class _AppBarWidgetState extends State<PeopleAppBar> {
             ],
           ),
         ),
-        PopupMenuItem(
-          value: PeoplPopupAction.setCover,
-          child: Row(
-            children: [
-              const Icon(Icons.image_outlined),
-              const Padding(
-                padding: EdgeInsets.all(8),
-              ),
-              Text(S.of(context).setCover),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: PeoplPopupAction.rename,
-          child: Row(
-            children: [
-              const Icon(Icons.visibility_off),
-              const Padding(
-                padding: EdgeInsets.all(8),
-              ),
-              Text(S.of(context).hide),
-            ],
-          ),
-        ),
+        // PopupMenuItem(
+        //   value: PeoplPopupAction.setCover,
+        //   child: Row(
+        //     children: [
+        //       const Icon(Icons.image_outlined),
+        //       const Padding(
+        //         padding: EdgeInsets.all(8),
+        //       ),
+        //       Text(S.of(context).setCover),
+        //     ],
+        //   ),
+        // ),
+        // PopupMenuItem(
+        //   value: PeoplPopupAction.rename,
+        //   child: Row(
+        //     children: [
+        //       const Icon(Icons.visibility_off),
+        //       const Padding(
+        //         padding: EdgeInsets.all(8),
+        //       ),
+        //       Text(S.of(context).hide),
+        //     ],
+        //   ),
+        // ),
         const PopupMenuItem(
           value: PeoplPopupAction.viewPhotos,
           child: Row(
