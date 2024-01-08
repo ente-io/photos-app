@@ -7,12 +7,14 @@ import "package:photos/events/event.dart";
 import "package:photos/models/search/album_search_result.dart";
 import "package:photos/models/search/generic_search_result.dart";
 import "package:photos/models/search/recent_searches.dart";
+import "package:photos/models/search/search_constants.dart";
 import "package:photos/models/search/search_result.dart";
 import "package:photos/models/search/search_types.dart";
 import "package:photos/theme/ente_theme.dart";
 import "package:photos/ui/viewer/file/no_thumbnail_widget.dart";
 import "package:photos/ui/viewer/file/thumbnail_widget.dart";
 import "package:photos/ui/viewer/gallery/collection_page.dart";
+import "package:photos/ui/viewer/search/result/cluster_or_person_face_widget.dart";
 import "package:photos/ui/viewer/search/result/go_to_map_widget.dart";
 import "package:photos/ui/viewer/search/result/search_result_page.dart";
 import 'package:photos/ui/viewer/search/result/search_section_all_page.dart';
@@ -247,10 +249,12 @@ class SearchExample extends StatelessWidget {
                     ? Hero(
                         tag: heroTag,
                         child: ClipOval(
-                          child: ThumbnailWidget(
-                            searchResult.previewThumbnail()!,
-                            shouldShowSyncStatus: false,
-                          ),
+                          child: searchResult.type() != ResultType.faces
+                              ? ThumbnailWidget(
+                                  searchResult.previewThumbnail()!,
+                                  shouldShowSyncStatus: false,
+                                )
+                              : FaceSearchResult(searchResult, heroTag),
                         ),
                       )
                     : const ClipOval(
@@ -273,6 +277,22 @@ class SearchExample extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class FaceSearchResult extends StatelessWidget {
+  final SearchResult searchResult;
+  final String heroTagPrefix;
+  const FaceSearchResult(this.searchResult, this.heroTagPrefix, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClusterOrPersonWidget(
+      searchResult.previewThumbnail()!,
+      heroTagPrefix,
+      personId: (searchResult as GenericSearchResult).params[kPersonParamID],
+      clusterID: (searchResult as GenericSearchResult).params[kClusterParamId],
     );
   }
 }

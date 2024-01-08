@@ -21,7 +21,7 @@ class Person {
 class PersonAttr {
   final String name;
   final bool isHidden;
-  final String? avatarFaceId;
+  String? avatarFaceId;
   final List<String> faces;
   final String? birthDatae;
   PersonAttr({

@@ -1,6 +1,7 @@
 import "dart:convert";
 
 import 'package:photos/face/db_fields.dart';
+import "package:photos/face/model/detection.dart";
 import "package:photos/face/model/face.dart";
 import "package:photos/face/model/person.dart";
 import 'package:photos/face/model/person_face.dart';
@@ -71,4 +72,15 @@ Map<String, dynamic> mapRemoteToFaceDB(Face face) {
     faceBlur: face.blur,
     mlVersionColumn: 1,
   };
+}
+
+Face mapRowToFace(Map<String, dynamic> row) {
+  return Face(
+    row[faceIDColumn] as String,
+    row[fileIDColumn] as int,
+    EVector.fromBuffer(row[faceEmbeddingBlob] as List<int>).values,
+    row[faceScore] as double,
+    Detection.fromJson(json.decode(row[faceDetectionColumn] as String)),
+    row[faceBlur] as double,
+  );
 }

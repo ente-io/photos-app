@@ -117,7 +117,95 @@ class FaceMLDataDB {
     return result;
   }
 
-  Future<Map<int, Set<int>>> getFileIdToPersonIDs() async {
+  Future<Face?> getCoverFaceForPerson({
+    required int recentFileID,
+    String? personID,
+    int? clusterID,
+  }) async {
+    // read person from db
+    final db = await instance.database;
+    if (personID != null) {
+      _logger.info('getting for person $personID');
+      final List<Map<String, dynamic>> maps = await db.rawQuery(
+        'SELECT * FROM $peopleTable where $idColumn = $personID',
+      );
+      if (maps.isEmpty) {
+        throw Exception("Person with id $personID not found");
+      }
+      final person = mapRowToPerson(maps.first);
+      if (person.attr.avatarFaceId != null) {
+        final face = await getFaceForFaceID(person.attr.avatarFaceId!);
+        if (face != null) {
+          return face;
+        }
+      }
+      final cluterRows = await db.query(
+        personToClusterIDTable,
+        columns: [cluserIDColumn],
+        where: '$personToClusterIDPersonIDColumn = ?',
+        whereArgs: [personID],
+      );
+      final clusterIDs =
+          cluterRows.map((e) => e[cluserIDColumn] as int).toList();
+      final List<Map<String, dynamic>> faceMaps = await db.rawQuery(
+        'SELECT * FROM $facesTable where $faceClusterId IN (${clusterIDs.join(",")}) AND $faceIDColumn = $recentFileID ',
+      );
+      if (faceMaps.isNotEmpty) {
+        return mapRowToFace(faceMaps.first);
+      }
+    }
+    if (clusterID != null) {
+      _logger.info('getting for cluster $clusterID');
+      final clusterIDs = [clusterID];
+      final List<Map<String, dynamic>> faceMaps = await db.rawQuery(
+        'SELECT * FROM $facesTable where $faceClusterId IN (${clusterIDs.join(",")}) AND $fileIDColumn = $recentFileID ',
+      );
+      if (faceMaps.isNotEmpty) {
+        return mapRowToFace(faceMaps.first);
+      }
+    }
+    if (personID == null && clusterID == null) {
+      throw Exception("personID and clusterID cannot be null");
+    }
+    return null;
+  }
+
+  Future<List<Face>> getFacesForGivenFileID(int fileUploadID) async {
+    final db = await instance.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      facesTable,
+      columns: [
+        fileIDColumn,
+        faceIDColumn,
+        faceDetectionColumn,
+        faceEmbeddingBlob,
+        faceScore,
+        faceBlur,
+        faceClusterId,
+        faceClosestDistColumn,
+        faceClosestFaceID,
+        faceConfirmedColumn,
+        mlVersionColumn,
+      ],
+      where: '$fileIDColumn = ?',
+      whereArgs: [fileUploadID],
+    );
+    return maps.map((e) => mapRowToFace(e)).toList();
+  }
+
+  Future<Face?> getFaceForFaceID(String faceID) async {
+    final db = await instance.database;
+    final result = await db.rawQuery(
+      'SELECT * FROM $facesTable where $faceIDColumn = ?',
+      [faceID],
+    );
+    if (result.isEmpty) {
+      return null;
+    }
+    return mapRowToFace(result.first);
+  }
+
+  Future<Map<int, Set<int>>> getFileIdToClusterIds() async {
     final Map<int, Set<int>> result = {};
     final db = await instance.database;
     final List<Map<String, dynamic>> maps = await db.rawQuery(

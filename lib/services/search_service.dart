@@ -24,6 +24,7 @@ import "package:photos/models/location/location.dart";
 import "package:photos/models/location_tag/location_tag.dart";
 import 'package:photos/models/search/album_search_result.dart';
 import 'package:photos/models/search/generic_search_result.dart';
+import "package:photos/models/search/search_constants.dart";
 import "package:photos/models/search/search_types.dart";
 import 'package:photos/services/collections_service.dart';
 import "package:photos/services/location_service.dart";
@@ -716,7 +717,7 @@ class SearchService {
   Future<List<GenericSearchResult>> getAllFace(int? limit) async {
     debugPrint("getting faces");
     final Map<int, Set<int>> fileIdToClusterID =
-        await FaceMLDataDB.instance.getFileIdToPersonIDs();
+        await FaceMLDataDB.instance.getFileIdToClusterIds();
     final (clusterIDToPerson, personIdToPerson) =
         await FaceMLDataDB.instance.getClusterIdToPerson();
 
@@ -749,13 +750,19 @@ class SearchService {
     }
     for (final personID in personIdToFiles.keys) {
       final files = personIdToFiles[personID]!;
+      if (files.isEmpty) {
+        continue;
+      }
       final Person p = personIdToPerson[personID]!;
       facesResult.add(
         GenericSearchResult(
           ResultType.faces,
           p.attr.name,
           files,
-          params: {'personID': personID},
+          params: {
+            kPersonParamID: personID,
+            kFileID: files.first.uploadedFileID,
+          },
           onResultTap: (ctx) {
             routeToPage(
               ctx,
@@ -786,7 +793,10 @@ class SearchService {
           ResultType.faces,
           clusterName,
           files,
-          params: {'personID': clusterId},
+          params: {
+            kClusterParamId: clusterId,
+            kFileID: files.first.uploadedFileID,
+          },
           onResultTap: (ctx) {
             routeToPage(
               ctx,
