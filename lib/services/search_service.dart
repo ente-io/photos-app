@@ -769,8 +769,12 @@ class SearchService {
         ),
       );
     }
-    for (final clusterId in clusterIdToFiles.keys) {
-      // format lenth as 000d
+    final sortedClusterIds = clusterIdToFiles.keys.toList()
+      ..sort((a, b) =>
+          clusterIdToFiles[b]!.length.compareTo(clusterIdToFiles[a]!.length));
+
+    for (final clusterId in sortedClusterIds) {
+      // format length as 000d
       final files = clusterIdToFiles[clusterId]!;
       final String clusterName = "ID:$clusterId,  ${files.length}";
       final Person? p = clusterIDToPerson[clusterId];
