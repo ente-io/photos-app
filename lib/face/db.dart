@@ -49,7 +49,7 @@ class FaceMLDataDB {
   Future _onCreate(Database db, int version) async {
     await db.execute(createFacesTable);
     await db.execute(createPeopleTable);
-    await db.execute(createPersonClusterTable);
+    await db.execute(clusterTable);
   }
 
   // bulkInsertFaces inserts the faces in the database in batches of 1000.
@@ -141,9 +141,9 @@ class FaceMLDataDB {
         }
       }
       final cluterRows = await db.query(
-        personToClusterIDTable,
+        clustersTable,
         columns: [cluserIDColumn],
-        where: '$personToClusterIDPersonIDColumn = ?',
+        where: '$personIdColumn = ?',
         whereArgs: [personID],
       );
       final clusterIDs =
@@ -342,9 +342,9 @@ class FaceMLDataDB {
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
     await db.insert(
-      personToClusterIDTable,
+      clustersTable,
       {
-        personToClusterIDPersonIDColumn: p.remoteID,
+        personIdColumn: p.remoteID,
         cluserIDColumn: cluserID,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
@@ -368,9 +368,9 @@ class FaceMLDataDB {
   }) async {
     final db = await instance.database;
     await db.insert(
-      personToClusterIDTable,
+      clustersTable,
       {
-        personToClusterIDPersonIDColumn: personID,
+        personIdColumn: personID,
         cluserIDColumn: clusterID,
       },
     );
@@ -381,10 +381,10 @@ class FaceMLDataDB {
     final db = instance.database;
     return db.then((db) async {
       final List<Map<String, dynamic>> maps = await db.rawQuery(
-        'SELECT $personToClusterIDTable.$cluserIDColumn, $fileIDColumn FROM $facesTable '
-        'INNER JOIN $personToClusterIDTable '
-        'ON $facesTable.$faceClusterId = $personToClusterIDTable.$cluserIDColumn '
-        'WHERE $personToClusterIDTable.$personToClusterIDPersonIDColumn = ?',
+        'SELECT $clustersTable.$cluserIDColumn, $fileIDColumn FROM $facesTable '
+        'INNER JOIN $clustersTable '
+        'ON $facesTable.$faceClusterId = $clustersTable.$cluserIDColumn '
+        'WHERE $clustersTable.$personIdColumn = ?',
         [personID],
       );
       final Map<int, Set<int>> result = {};
@@ -400,12 +400,11 @@ class FaceMLDataDB {
   Future<Map<int, String>> getCluserIDToPersonMap() async {
     final db = await instance.database;
     final List<Map<String, dynamic>> maps = await db.rawQuery(
-      'SELECT $personToClusterIDPersonIDColumn, $cluserIDColumn FROM $personToClusterIDTable',
+      'SELECT $personIdColumn, $cluserIDColumn FROM $clustersTable',
     );
     final Map<int, String> result = {};
     for (final map in maps) {
-      result[map[cluserIDColumn] as int] =
-          map[personToClusterIDPersonIDColumn] as String;
+      result[map[cluserIDColumn] as int] = map[personIdColumn] as String;
     }
     return result;
   }
@@ -414,18 +413,17 @@ class FaceMLDataDB {
     final db = await instance.database;
     final Map<String, Person> peopleMap = await getPeopleMap();
     final List<Map<String, dynamic>> maps = await db.rawQuery(
-      'SELECT $personToClusterIDPersonIDColumn, $cluserIDColumn FROM $personToClusterIDTable',
+      'SELECT $personIdColumn, $cluserIDColumn FROM $clustersTable',
     );
 
     final Map<int, Person> result = {};
     for (final map in maps) {
-      final Person? p =
-          peopleMap[map[personToClusterIDPersonIDColumn] as String];
+      final Person? p = peopleMap[map[personIdColumn] as String];
       if (p != null) {
         result[map[cluserIDColumn] as int] = p;
       } else {
         _logger.warning(
-          'Person with id ${map[personToClusterIDPersonIDColumn]} not found',
+          'Person with id ${map[personIdColumn]} not found',
         );
       }
     }
@@ -474,10 +472,10 @@ class FaceMLDataDB {
       await db.execute(createFacesTable);
     }
     await db.execute(deletePeopleTable);
-    await db.execute(dropPersonClusterTable);
+    await db.execute(dropClustersTable);
 
     // await db.execute(createFacesTable);
     await db.execute(createPeopleTable);
-    await db.execute(createPersonClusterTable);
+    await db.execute(clusterTable);
   }
 }
