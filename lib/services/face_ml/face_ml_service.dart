@@ -572,7 +572,7 @@ class FaceMlService {
     if (!enteFile.isUploaded) {
       return true;
     }
-    if ((enteFile.localID ?? '') == '' && !kDebugMode) {
+    if ((enteFile.localID ?? '') == '') {
       return true;
     }
 

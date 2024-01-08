@@ -78,7 +78,7 @@ class FaceMLDataDB {
   Future<Set<int>> getIndexedFileIds() async {
     final db = await instance.database;
     final List<Map<String, dynamic>> maps = await db.rawQuery(
-      'SELECT DISTINCT $fileIDColumn FROM $facesTable where $faceBlur > $kLaplacianThreshold AND $faceScore > 0.0',
+      'SELECT DISTINCT $fileIDColumn FROM $facesTable',
     );
     return maps.map((e) => e[fileIDColumn] as int).toSet();
   }
@@ -243,7 +243,7 @@ class FaceMLDataDB {
   }
 
   /// Returns a map of faceID to record of faceClusterID and faceEmbeddingBlob
-  /// 
+  ///
   /// Only selects faces with score greater than [minScore] and blur score greater than [minClarity]
   Future<Map<String, (int?, Uint8List)>> getFaceEmbeddingMap({
     double minScore = 0.8,
@@ -262,7 +262,7 @@ class FaceMLDataDB {
       // Query a batch of rows
       final List<Map<String, dynamic>> maps = await db.query(
         facesTable,
-        columns: [faceIDColumn, faceClusterId,faceEmbeddingBlob],
+        columns: [faceIDColumn, faceClusterId, faceEmbeddingBlob],
         where: '$faceScore > $minScore and $faceBlur > $minClarity',
         limit: batchSize,
         offset: offset,
@@ -275,7 +275,8 @@ class FaceMLDataDB {
       }
       for (final map in maps) {
         final faceID = map[faceIDColumn] as String;
-        result[faceID] = (map[faceClusterId] as int?, map[faceEmbeddingBlob] as Uint8List);
+        result[faceID] =
+            (map[faceClusterId] as int?, map[faceEmbeddingBlob] as Uint8List);
       }
       if (result.length >= 20000) {
         break;
