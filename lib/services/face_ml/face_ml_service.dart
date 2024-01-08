@@ -1,3 +1,4 @@
+import "dart:async";
 import "dart:io" as io;
 import "dart:typed_data" show Uint8List;
 
@@ -5,7 +6,9 @@ import "package:flutter/foundation.dart";
 import "package:flutter_image_compress/flutter_image_compress.dart";
 import "package:logging/logging.dart";
 import "package:photos/core/configuration.dart";
+import "package:photos/core/event_bus.dart";
 import "package:photos/db/ml_data_db.dart";
+import "package:photos/events/diff_sync_complete_event.dart";
 import "package:photos/face/db.dart";
 import "package:photos/face/model/box.dart";
 import "package:photos/face/model/detection.dart" as face_detection;
@@ -25,6 +28,7 @@ import "package:photos/services/face_ml/face_ml_result.dart";
 import "package:photos/services/search_service.dart";
 import "package:photos/utils/file_util.dart";
 import 'package:photos/utils/image_ml_isolate.dart';
+import "package:photos/utils/local_settings.dart";
 import "package:photos/utils/thumbnail_util.dart";
 
 enum FileDataForML { thumbnailData, fileData, compressedFileData }
@@ -45,6 +49,7 @@ class FaceMlService {
   factory FaceMlService() => instance;
 
   bool initialized = false;
+  bool isImageIndexRunning = false;
 
   Future<void> init() async {
     if (initialized) {
@@ -66,6 +71,12 @@ class FaceMlService {
     } catch (e, s) {
       _logger.severe("Could not initialize mobilefacenet", e, s);
     }
+    Bus.instance.on<DiffSyncCompleteEvent>().listen((event) async {
+      if (LocalSettings.instance.isFaceIndexingEnabled == false) {
+        return;
+      }
+      unawaited(indexAllImages());
+    });
     initialized = true;
   }
 
@@ -114,106 +125,131 @@ class FaceMlService {
   ///
   /// This function first checks if the image has already been analyzed with the lastest faceMlVersion and stored in the database. If so, it skips the image.
   Future<void> indexAllImages() async {
-    _logger.info('starting image indexing');
+    if (isImageIndexRunning) {
+      _logger.warning("indexAllImages is already running, skipping");
+      return;
+    }
+    // verify indexing is enabled
+    if (LocalSettings.instance.isFaceIndexingEnabled == false) {
+      debugPrint("indexAllImages is disabled");
+      return;
+    }
+    try {
+      isImageIndexRunning = true;
+      _logger.info('starting image indexing');
 
-    final List<EnteFile> enteFiles = await SearchService.instance.getAllFiles();
-    final Set<int> alreadyIndexedFiles =
-        await FaceMLDataDB.instance.getIndexedFileIds();
+      final List<EnteFile> enteFiles =
+          await SearchService.instance.getAllFiles();
+      final Set<int> alreadyIndexedFiles =
+          await FaceMLDataDB.instance.getIndexedFileIds();
 
-    // Make sure the image conversion isolate is spawned
-    await ImageMlIsolate.instance.ensureSpawned();
+      // Make sure the image conversion isolate is spawned
+      await ImageMlIsolate.instance.ensureSpawned();
 
-    int fileAnalyzedCount = 0;
-    int fileSkippedCount = 0;
-    final stopwatch = Stopwatch()..start();
-    for (final enteFile in enteFiles) {
-      if (_skipAnalysisEnteFile(
-        enteFile,
-        alreadyIndexedFiles,
-      )) {
-        fileSkippedCount++;
-        continue;
-      }
-
-      _logger.info(
-        "`indexAllImages()` on file number $fileAnalyzedCount: start processing image with uploadedFileID: ${enteFile.uploadedFileID}",
-      );
-
-      try {
-        final FaceMlResult result = await analyzeImage(
+      int fileAnalyzedCount = 0;
+      int fileSkippedCount = 0;
+      final stopwatch = Stopwatch()..start();
+      for (final enteFile in enteFiles) {
+        if (isImageIndexRunning == false) {
+          _logger.info("indexAllImages() was paused, stopping");
+          break;
+        }
+        if (_skipAnalysisEnteFile(
           enteFile,
-          preferUsingThumbnailForEverything: false,
-          disposeImageIsolateAfterUse: false,
-        );
-        final List<Face> faces = [];
-        if (!result.hasFaces) {
-          faces.add(
-            Face(
-              '${result.fileId}-0',
-              result.fileId,
-              <double>[],
-              0.0,
-              face_detection.Detection.empty(),
-              0.0,
-            ),
-          );
-        } else {
-          for (int i = 0; i < result.faces.length; ++i) {
-            final FaceResult faceRes = result.faces[i];
-            final FaceDetectionAbsolute absoluteDetection =
-                faceRes.detection.toAbsolute(
-              imageWidth: enteFile.width,
-              imageHeight: enteFile.height,
-            );
-            final detection = face_detection.Detection(
-              box: FaceBox(
-                x: absoluteDetection.xMinBox,
-                y: absoluteDetection.yMinBox,
-                width: absoluteDetection.width,
-                height: absoluteDetection.height,
-              ),
-              landmarks: absoluteDetection.allKeypoints
-                  .map(
-                    (keypoint) => Landmark(
-                      x: keypoint[0],
-                      y: keypoint[0],
-                    ),
-                  )
-                  .toList(),
-            );
+          alreadyIndexedFiles,
+        )) {
+          fileSkippedCount++;
+          continue;
+        }
 
+        _logger.info(
+          "`indexAllImages()` on file number $fileAnalyzedCount: start processing image with uploadedFileID: ${enteFile.uploadedFileID}",
+        );
+
+        try {
+          final FaceMlResult result = await analyzeImage(
+            enteFile,
+            preferUsingThumbnailForEverything: false,
+            disposeImageIsolateAfterUse: false,
+          );
+          final List<Face> faces = [];
+          if (!result.hasFaces) {
             faces.add(
               Face(
-                faceRes.faceId,
+                '${result.fileId}-0',
                 result.fileId,
-                faceRes.embedding,
-                faceRes.detection.score,
-                detection,
-                faceRes.blurValue,
-                // face_detection.Detection.empty(),
+                <double>[],
+                0.0,
+                face_detection.Detection.empty(),
+                0.0,
               ),
             );
+          } else {
+            for (int i = 0; i < result.faces.length; ++i) {
+              final FaceResult faceRes = result.faces[i];
+              final FaceDetectionAbsolute absoluteDetection =
+                  faceRes.detection.toAbsolute(
+                imageWidth: enteFile.width,
+                imageHeight: enteFile.height,
+              );
+              final detection = face_detection.Detection(
+                box: FaceBox(
+                  x: absoluteDetection.xMinBox,
+                  y: absoluteDetection.yMinBox,
+                  width: absoluteDetection.width,
+                  height: absoluteDetection.height,
+                ),
+                landmarks: absoluteDetection.allKeypoints
+                    .map(
+                      (keypoint) => Landmark(
+                        x: keypoint[0],
+                        y: keypoint[0],
+                      ),
+                    )
+                    .toList(),
+              );
+
+              faces.add(
+                Face(
+                  faceRes.faceId,
+                  result.fileId,
+                  faceRes.embedding,
+                  faceRes.detection.score,
+                  detection,
+                  faceRes.blurValue,
+                  // face_detection.Detection.empty(),
+                ),
+              );
+            }
           }
+          await FaceMLDataDB.instance.bulkInsertFaces(faces);
+          // await MlDataDB.instance.createFaceMlResult(result);
+          fileAnalyzedCount++;
+        } catch (e, s) {
+          _logger.severe(
+            "failed to analyze for faceEmbedding ${enteFile.uploadedFileID}",
+            e,
+            s,
+          );
         }
-        await FaceMLDataDB.instance.bulkInsertFaces(faces);
-        // await MlDataDB.instance.createFaceMlResult(result);
-        fileAnalyzedCount++;
-      } catch (e, s) {
-        _logger.severe(
-          "failed to analyze for faceEmbedding ${enteFile.uploadedFileID}",
-          e,
-          s,
-        );
       }
+
+      stopwatch.stop();
+      _logger.info(
+        "`indexAllImages()` finished. Analyzed $fileAnalyzedCount images, skipped $fileSkippedCount images, in ${stopwatch.elapsedMilliseconds} ms",
+      );
+
+      // Close the image conversion isolate
+      ImageMlIsolate.instance.dispose();
+    } catch (e, s) {
+      _logger.severe("indexAllImages failed", e, s);
+    } finally {
+      isImageIndexRunning = false;
     }
+  }
 
-    stopwatch.stop();
-    _logger.info(
-      "`indexAllImages()` finished. Analyzed $fileAnalyzedCount images, skipped $fileSkippedCount images, in ${stopwatch.elapsedMilliseconds} ms",
-    );
-
-    // Close the image conversion isolate
-    ImageMlIsolate.instance.dispose();
+  void pauseIndexing() {
+    isImageIndexRunning = false;
   }
 
   /// Analyzes the given image data by running the full pipeline using [analyzeImage] and stores the result in the database [MlDataDB].
@@ -534,6 +570,9 @@ class FaceMlService {
   bool _skipAnalysisEnteFile(EnteFile enteFile, Set<int> indexedFileIds) {
     // Skip if the file is not uploaded
     if (!enteFile.isUploaded) {
+      return true;
+    }
+    if ((enteFile.localID ?? '') == '') {
       return true;
     }
 

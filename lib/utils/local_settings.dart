@@ -14,6 +14,8 @@ class LocalSettings {
   static const kCollectionSortPref = "collection_sort_pref";
   static const kPhotoGridSize = "photo_grid_size";
   static const kEnableMagicSearch = "enable_magic_search";
+  static const kEnableFaceIndexing = "enable_face_indexing";
+  static const kEnableFaceClustering = "enable_face_clustering";
   static const kRateUsShownCount = "rate_us_shown_count";
   static const kRateUsPromptThreshold = 2;
 
@@ -68,5 +70,23 @@ class LocalSettings {
 
   bool shouldPromptToRateUs() {
     return getRateUsShownCount() < kRateUsPromptThreshold;
+  }
+
+  bool get isFaceIndexingEnabled =>
+      _prefs.getBool(kEnableFaceIndexing) ?? false;
+
+  bool get isFaceClusteringEnabled =>
+      _prefs.getBool(kEnableFaceIndexing) ?? false;
+
+  /// toggleFaceIndexing toggles the face indexing setting and returns the new value
+  Future<bool> toggleFaceIndexing() async {
+    await _prefs.setBool(kEnableFaceIndexing, !isFaceIndexingEnabled);
+    return isFaceIndexingEnabled;
+  }
+
+  /// toggleFaceClustering toggles the face clustering setting and returns the new value
+  Future<bool> toggleFaceClustering() async {
+    await _prefs.setBool(kEnableFaceClustering, !isFaceClusteringEnabled);
+    return isFaceClusteringEnabled;
   }
 }

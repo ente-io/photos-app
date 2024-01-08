@@ -1,3 +1,4 @@
+import "dart:async";
 import "dart:developer" as dev;
 import "dart:math";
 import "dart:typed_data";
@@ -18,10 +19,33 @@ import 'package:photos/ui/components/expandable_menu_item_widget.dart';
 import 'package:photos/ui/components/menu_item_widget/menu_item_widget.dart';
 import 'package:photos/ui/settings/common_settings.dart';
 import "package:photos/utils/dialog_util.dart";
+import "package:photos/utils/local_settings.dart";
 import 'package:photos/utils/toast_util.dart';
 
-class FaceDebugSectionWidget extends StatelessWidget {
+class FaceDebugSectionWidget extends StatefulWidget {
   const FaceDebugSectionWidget({Key? key}) : super(key: key);
+
+  @override
+  State<FaceDebugSectionWidget> createState() => _FaceDebugSectionWidgetState();
+}
+
+class _FaceDebugSectionWidgetState extends State<FaceDebugSectionWidget> {
+  Timer? _timer;
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      setState(() {
+        // Your state update logic here
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,15 +112,26 @@ class FaceDebugSectionWidget extends StatelessWidget {
           },
         ),
         MenuItemWidget(
-          captionedTextWidget: const CaptionedTextWidget(
-            title: "Start indexing...",
+          captionedTextWidget: CaptionedTextWidget(
+            title: LocalSettings.instance.isFaceIndexingEnabled
+                ? "Disable Indexing"
+                : "Enable indexing",
           ),
           pressedColor: getEnteColorScheme(context).fillFaint,
           trailingIcon: Icons.chevron_right_outlined,
           trailingIconIsMuted: true,
           onTap: () async {
             try {
-              await FaceMlService.instance.indexAllImages();
+              final isEnabled =
+                  await LocalSettings.instance.toggleFaceIndexing();
+              if (isEnabled) {
+                FaceMlService.instance.indexAllImages().ignore();
+              } else {
+                FaceMlService.instance.pauseIndexing();
+              }
+              if (mounted) {
+                setState(() {});
+              }
             } catch (e, s) {
               _logger.warning('indexing failed ', e, s);
               await showGenericErrorDialog(context: context, error: e);
