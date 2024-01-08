@@ -5,6 +5,7 @@ import 'dart:ui';
 
 import 'package:flutter_isolate/flutter_isolate.dart';
 import "package:logging/logging.dart";
+import "package:photos/face/model/box.dart";
 import 'package:photos/models/ml/ml_typedefs.dart';
 import "package:photos/services/face_ml/face_alignment/alignment_result.dart";
 import "package:photos/services/face_ml/face_detection/detection.dart";
@@ -17,6 +18,7 @@ enum ImageOperation {
   preprocessFaceAlign,
   preprocessMobileFaceNet,
   generateFaceThumbnail,
+  generateFaceThumbnailsForImage,
   cropAndPadFace,
 }
 
@@ -177,6 +179,18 @@ class ImageMlIsolate {
           final Uint8List result =
               await generateFaceThumbnailFromData(imageData, faceDetection);
           sendPort.send(<dynamic>[result]);
+        case ImageOperation.generateFaceThumbnailsForImage:
+          final imageData = args['imageData'] as Uint8List;
+          final faceBoxesJson =
+              args['faceBoxesList'] as List<Map<String, dynamic>>;
+          final List<FaceBox> faceBoxes =
+              faceBoxesJson.map((json) => FaceBox.fromJson(json)).toList();
+          final List<Uint8List> results =
+              await generateFaceThumbnailsFromDataAndDetections(
+            imageData,
+            faceBoxes,
+          );
+          sendPort.send(List.from(results));
         case ImageOperation.cropAndPadFace:
           final imageData = args['imageData'] as Uint8List;
           final faceBox = args['faceBox'] as List<double>;
@@ -327,8 +341,13 @@ class ImageMlIsolate {
   /// Returns a list of [Num3DInputMatrix] images, one for each face.
   ///
   /// Uses [preprocessToMobileFaceNetInput] inside the isolate.
-  Future<(List<Num3DInputMatrix>, List<AlignmentResult>, List<bool>, List<double>)>
-      preprocessMobileFaceNet(
+  Future<
+      (
+        List<Num3DInputMatrix>,
+        List<AlignmentResult>,
+        List<bool>,
+        List<double>
+      )> preprocessMobileFaceNet(
     Uint8List imageData,
     List<FaceDetectionRelative> faces,
   ) async {
@@ -370,6 +389,26 @@ class ImageMlIsolate {
         },
       ),
     ).then((value) => value[0] as Uint8List);
+  }
+
+  /// Generates face thumbnails for all [faceBoxes] in [imageData].
+  ///
+  /// Uses [generateFaceThumbnailsFromDataAndDetections] inside the isolate.
+  Future<List<Uint8List>> generateFaceThumbnailsForImage(
+    Uint8List imageData,
+    List<FaceBox> faceBoxes,
+  ) async {
+    final List<Map<String, dynamic>> faceBoxesJson =
+        faceBoxes.map((box) => box.toJson()).toList();
+    return await _runInIsolate(
+      (
+        ImageOperation.generateFaceThumbnailsForImage,
+        {
+          'imageData': imageData,
+          'faceBoxesList': faceBoxesJson,
+        },
+      ),
+    ).then((value) => value.cast<Uint8List>());
   }
 
   /// Generates cropped and padded image data from [imageData] and a [faceBox].
