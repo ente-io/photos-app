@@ -6,6 +6,7 @@ import 'package:logging/logging.dart';
 import 'package:photos/core/configuration.dart';
 import 'package:photos/core/event_bus.dart';
 import 'package:photos/events/subscription_purchased_event.dart';
+import "package:photos/face/db.dart";
 import "package:photos/face/model/person.dart";
 import "package:photos/generated/l10n.dart";
 import 'package:photos/models/gallery_type.dart';
@@ -14,6 +15,7 @@ import 'package:photos/services/collections_service.dart';
 import 'package:photos/ui/actions/collection/collection_sharing_actions.dart';
 import "package:photos/ui/viewer/people/person_cluserts.dart";
 import "package:photos/ui/viewer/people/person_cluster_suggestion.dart";
+import "package:photos/utils/dialog_util.dart";
 
 class PeopleAppBar extends StatefulWidget {
   final GalleryType type;
@@ -90,7 +92,39 @@ class _AppBarWidgetState extends State<PeopleAppBar> {
     );
   }
 
-  Future<dynamic> _renameAlbum(BuildContext context) async {}
+  Future<dynamic> _renameAlbum(BuildContext context) async {
+    final result = await showTextInputDialog(
+      context,
+      title: 'Rename',
+      submitButtonLabel: S.of(context).done,
+      hintText: S.of(context).enterAlbumName,
+      alwaysShowSuccessState: true,
+      initialValue: widget.person.attr.name,
+      textCapitalization: TextCapitalization.words,
+      onSubmit: (String text) async {
+        // indicates user cancelled the rename request
+        if (text == "" || text == _appBarTitle!) {
+          return;
+        }
+
+        try {
+          final updatePerson = widget.person
+              .copyWith(attr: widget.person.attr.copyWith(name: text));
+          await FaceMLDataDB.instance.updatePerson(updatePerson);
+          if (mounted) {
+            _appBarTitle = text;
+            setState(() {});
+          }
+        } catch (e, s) {
+          _logger.severe("Failed to rename album", e, s);
+          rethrow;
+        }
+      },
+    );
+    if (result is Exception) {
+      await showGenericErrorDialog(context: context, error: result);
+    }
+  }
 
   List<Widget> _getDefaultActions(BuildContext context) {
     final List<Widget> actions = <Widget>[];

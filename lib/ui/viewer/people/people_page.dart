@@ -62,6 +62,7 @@ class _PeoplePageState extends State<PeoplePage> {
   Future<List<EnteFile>> loadPersonFiles() async {
     if (widget.searchResult.isNotEmpty) {
       files = widget.searchResult;
+      return files;
     }
     log("loadPersonFiles");
     final result = await SearchService.instance

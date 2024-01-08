@@ -257,6 +257,16 @@ class FaceMLDataDB {
     debugPrint("person inserted");
   }
 
+  Future<void> updatePerson(Person p) async {
+    final db = await instance.database;
+    await db.update(
+      peopleTable,
+      mapPersonToRow(p),
+      where: '$idColumn = ?',
+      whereArgs: [p.remoteID],
+    );
+  }
+
   Future<void> assignClusterToPerson({
     required String personID,
     required int clusterID,

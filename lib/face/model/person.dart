@@ -5,6 +5,17 @@ class Person {
     this.remoteID,
     this.attr,
   );
+
+  // copyWith
+  Person copyWith({
+    String? remoteID,
+    PersonAttr? attr,
+  }) {
+    return Person(
+      remoteID ?? this.remoteID,
+      attr ?? this.attr,
+    );
+  }
 }
 
 class PersonAttr {
@@ -20,6 +31,22 @@ class PersonAttr {
     this.isHidden = false,
     this.birthDatae,
   });
+  // copyWith
+  PersonAttr copyWith({
+    String? name,
+    List<String>? faces,
+    String? avatarFaceId,
+    bool? isHidden,
+    String? birthDatae,
+  }) {
+    return PersonAttr(
+      name: name ?? this.name,
+      faces: faces ?? this.faces,
+      avatarFaceId: avatarFaceId ?? this.avatarFaceId,
+      isHidden: isHidden ?? this.isHidden,
+      birthDatae: birthDatae ?? this.birthDatae,
+    );
+  }
 
   // toJson
   Map<String, dynamic> toJson() => {
