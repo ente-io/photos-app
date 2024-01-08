@@ -1,9 +1,9 @@
 import 'dart:async';
 import "dart:developer";
 import 'dart:isolate';
+import "dart:math" show max;
 import "dart:typed_data";
 
-import "package:computer/computer.dart";
 import "package:logging/logging.dart";
 import "package:photos/generated/protos/ente/common/vector.pb.dart";
 import "package:photos/services/face_ml/face_clustering/cosine_distance.dart";
@@ -86,7 +86,7 @@ class LinearIsolate {
     mainSendPort.send(receivePort.sendPort);
 
     receivePort.listen((message) async {
-      final data = message[0] as Map<String, Uint8List>;
+      final data = message[0] as Map<String, (int?, Uint8List)>;
       final sendPort = message[1] as SendPort;
       final result = await runClusteringSync(data);
       sendPort.send(result);
@@ -97,36 +97,64 @@ class LinearIsolate {
   static const happyDistanceThreshold = 0.1;
 
   static Future<Map<String, int>> runClusteringSync(
-    Map<String, Uint8List> x,
+    Map<String, (int?, Uint8List)> x,
   ) async {
-    final Computer _computer = Computer.shared();
-    await _computer.turnOn(
-      workersCount: 4,
-      verbose: false,
-    );
-    log("[ClusterIsolate] ${DateTime.now()} Copied to isolate");
+    log("[ClusterIsolate] ${DateTime.now()} Copied to isolate ${x.length} faces");
     final List<FaceInfo> faceInfos = [];
     for (final entry in x.entries) {
       faceInfos.add(
         FaceInfo(
           faceID: entry.key,
-          embedding: EVector.fromBuffer(entry.value).values,
+          embedding: EVector.fromBuffer(entry.value.$2).values,
+          clusterId: entry.value.$1,
         ),
       );
     }
+    // Sort the faceInfos such that the ones with null clusterId are at the end
+    faceInfos.sort((a, b) {
+      if (a.clusterId == null && b.clusterId == null) {
+        return 0;
+      } else if (a.clusterId == null) {
+        return 1;
+      } else if (b.clusterId == null) {
+        return -1;
+      } else {
+        return 0;
+      }
+    });
+    // Count the amount of null values at the end
+    int nullCount = 0;
+    for (final faceInfo in faceInfos.reversed) {
+      if (faceInfo.clusterId == null) {
+        nullCount++;
+      } else {
+        break;
+      }
+    }
+    log("[ClusterIsolate] ${DateTime.now()} Clustering $nullCount new faces without clusterId, and ${faceInfos.length - nullCount} faces with clusterId");
+    for (final clusteredFaceInfo
+        in faceInfos.sublist(0, faceInfos.length - nullCount)) {
+      assert(clusteredFaceInfo.clusterId != null);
+    }
+
     final int totalFaces = faceInfos.length;
     int clusterID = 1;
     if (faceInfos.isNotEmpty) {
       faceInfos.first.clusterId = clusterID;
     }
-    log("[ClusterIsolate] ${DateTime.now()} Processing ${totalFaces} faces");
+    log("[ClusterIsolate] ${DateTime.now()} Processing $totalFaces faces");
     final stopwatchClustering = Stopwatch()..start();
     for (int i = 1; i < totalFaces; i++) {
+      // Incremental clustering, so we can skip faces that already have a clusterId
+      if (faceInfos[i].clusterId != null) {
+        clusterID = max(clusterID, faceInfos[i].clusterId!);
+        continue;
+      }
       final currentEmbedding = faceInfos[i].embedding;
       int closestIdx = -1;
       double closestDistance = double.infinity;
       if (i % 250 == 0) {
-        log("[ClusterIsolate] ${DateTime.now()} Processing ${i} faces");
+        log("[ClusterIsolate] ${DateTime.now()} Processing $i faces");
       }
       for (int j = 0; j < i; j++) {
         final double distance = cosineDistForNormVectors(
@@ -141,7 +169,8 @@ class LinearIsolate {
 
       if (closestDistance < recommendedDistanceThreshold) {
         if (faceInfos[closestIdx].clusterId == null) {
-          log(' [ClusterIsolate] ${DateTime.now()} Found new cluster ${clusterID}');
+          // Ideally this should never happen, but just in case log it
+          log(" [ClusterIsolate] ${DateTime.now()} Found new cluster $clusterID");
           clusterID++;
           faceInfos[closestIdx].clusterId = clusterID;
         }
@@ -162,18 +191,20 @@ class LinearIsolate {
     return result;
   }
 
-  /// Runs the clustering algorithm in an isolate, basedn on the given [data] and [dbscan] parameters.
+  /// Runs the linear incremental clustering algorithm in an isolate, based on the given [faceToEmbeddings]
   ///
-  /// Returns the [DBSCAN] object with the clustering result. Access the clustering result with [DBSCAN.cluster].
+  /// Executes [runClusteringSync] in an isolate, and returns the result.
+  ///
+  /// Returns the clustering result, which is a map of faceID to clusterID.
   Future<Map<String, int>> runClustering(
-    Map<String, Uint8List> x,
+    Map<String, (int?, Uint8List)> faceToEmbeddings,
   ) async {
     await ensureSpawned();
     final completer = Completer<Map<String, int>>();
     final answerPort = ReceivePort();
 
-    log("Sending items ${x.length} to ClusterIsolate ${DateTime.now()}");
-    _mainSendPort.send([x, answerPort.sendPort]);
+    log("Sending items ${faceToEmbeddings.length} to ClusterIsolate ${DateTime.now()}");
+    _mainSendPort.send([faceToEmbeddings, answerPort.sendPort]);
     answerPort.listen((message) {
       completer.complete(message as Map<String, int>);
     });

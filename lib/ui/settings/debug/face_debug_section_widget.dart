@@ -140,20 +140,49 @@ class _FaceDebugSectionWidgetState extends State<FaceDebugSectionWidget> {
         ),
         MenuItemWidget(
           captionedTextWidget: const CaptionedTextWidget(
-            title: "Full clustering (min:0.75)",
+            title: "Reset and cluster (min:0.75)",
+          ),
+          pressedColor: getEnteColorScheme(context).fillFaint,
+          trailingIcon: Icons.chevron_right_outlined,
+          trailingIconIsMuted: true,
+          onTap: () async {
+            await FaceMLDataDB.instance.resetClusterIDs();
+            await FaceMLDataDB.instance.dropClustersAndPeople();
+            final EnteWatch watch = EnteWatch("cluster")..start();
+            final faceIdToEmbedding =
+                await FaceMLDataDB.instance.getFaceEmbeddingMap(
+              minScore: 0.75,
+            );
+            watch.logAndReset('read embeddings ${faceIdToEmbedding.length} ');
+            final faceIdToCluster =
+                await FaceLinearClustering.instance.predict(faceIdToEmbedding);
+            watch.logAndReset(
+              'done with clustering ${faceIdToEmbedding.length} ',
+            );
+            await FaceMLDataDB.instance
+                .updatePersonIDForFaceIDIFNotSet(faceIdToCluster!);
+            showShortToast(context, "Done");
+          },
+        ),
+        MenuItemWidget(
+          captionedTextWidget: const CaptionedTextWidget(
+            title: "Incremental clustering (min:0.75)",
           ),
           pressedColor: getEnteColorScheme(context).fillFaint,
           trailingIcon: Icons.chevron_right_outlined,
           trailingIconIsMuted: true,
           onTap: () async {
             final EnteWatch watch = EnteWatch("cluster")..start();
-            final result = await FaceMLDataDB.instance.getFaceEmbeddingMap(
+            final faceIdToEmbedding =
+                await FaceMLDataDB.instance.getFaceEmbeddingMap(
               minScore: 0.75,
             );
-            watch.logAndReset('read embeddings ${result.length} ');
+            watch.logAndReset('read embeddings ${faceIdToEmbedding.length} ');
             final faceIdToCluster =
-                await FaceLinearClustering.instance.predict(result);
-            watch.logAndReset('done with clustering ${result.length} ');
+                await FaceLinearClustering.instance.predict(faceIdToEmbedding);
+            watch.logAndReset(
+              'done with clustering ${faceIdToEmbedding.length} ',
+            );
             await FaceMLDataDB.instance
                 .updatePersonIDForFaceIDIFNotSet(faceIdToCluster!);
             showShortToast(context, "Done");

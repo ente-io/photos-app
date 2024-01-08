@@ -242,10 +242,12 @@ class FaceMLDataDB {
     await batch.commit(noResult: true);
   }
 
-  // Get face_id to embedding map. only select face_id and embedding columns
-  // where score is greater than 0.
-  Future<Map<String, Uint8List>> getFaceEmbeddingMap({
+  /// Returns a map of faceID to record of faceClusterID and faceEmbeddingBlob
+  /// 
+  /// Only selects faces with score greater than [minScore] and blur score greater than [minClarity]
+  Future<Map<String, (int?, Uint8List)>> getFaceEmbeddingMap({
     double minScore = 0.8,
+    int minClarity = kLaplacianThreshold,
     int maxRows = 20000,
   }) async {
     _logger.info('reading as float');
@@ -255,15 +257,16 @@ class FaceMLDataDB {
     const batchSize = 10000;
     int offset = 0;
 
-    final Map<String, Uint8List> result = {};
+    final Map<String, (int?, Uint8List)> result = {};
     while (true) {
       // Query a batch of rows
       final List<Map<String, dynamic>> maps = await db.query(
         facesTable,
-        columns: [faceIDColumn, faceEmbeddingBlob],
-        where: '$faceScore > $minScore and $faceBlur > $kLaplacianThreshold',
+        columns: [faceIDColumn, faceClusterId,faceEmbeddingBlob],
+        where: '$faceScore > $minScore and $faceBlur > $minClarity',
         limit: batchSize,
         offset: offset,
+        // orderBy: '$faceClusterId DESC',
         orderBy: '$faceIDColumn DESC',
       );
       // Break the loop if no more rows
@@ -272,7 +275,7 @@ class FaceMLDataDB {
       }
       for (final map in maps) {
         final faceID = map[faceIDColumn] as String;
-        result[faceID] = map[faceEmbeddingBlob] as Uint8List;
+        result[faceID] = (map[faceClusterId] as int?, map[faceEmbeddingBlob] as Uint8List);
       }
       if (result.length >= 20000) {
         break;

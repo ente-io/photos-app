@@ -24,7 +24,9 @@ class FaceLinearClustering {
   /// Returns the clustering result, which is a list of clusters, where each cluster is a list of indices of the dataset.
   ///
   /// WARNING: Make sure to always input data in the same ordering, otherwise the clustering can less less deterministic.
-  Future<Map<String, int>?> predict(Map<String, Uint8List> input) async {
+  Future<Map<String, int>?> predict(
+    Map<String, (int?, Uint8List)> input,
+  ) async {
     if (input.isEmpty) {
       _logger.warning(
         "Clustering dataset of embeddings is empty, returning empty list.",
@@ -57,7 +59,7 @@ class FaceLinearClustering {
     });
     final Map<String, int> faceIdToClusterFiltered = {};
     for (final entry in faceIdToCluster.entries) {
-      if (clusterIdToSize[entry.value]! > 5) {
+      if (clusterIdToSize[entry.value]! > 0) {
         faceIdToClusterFiltered[entry.key] = entry.value;
       }
     }
@@ -76,18 +78,38 @@ class FaceLinearClustering {
     int moreThan50Count = 0;
     int moreThan100Count = 0;
 
+    // for (int i = 0; i < clusterSizes.length; i++) {
+    //   if (clusterSizes[i] > 100) {
+    //     moreThan100Count++;
+    //   } else if (clusterSizes[i] > 50) {
+    //     moreThan50Count++;
+    //   } else if (clusterSizes[i] > 20) {
+    //     moreThan20Count++;
+    //   } else if (clusterSizes[i] > 10) {
+    //     moreThan10Count++;
+    //   } else if (clusterSizes[i] > 5) {
+    //     moreThan5Count++;
+    //   } else if (clusterSizes[i] == 1) {
+    //     oneClusterCount++;
+    //   }
+    // }
     for (int i = 0; i < clusterSizes.length; i++) {
       if (clusterSizes[i] > 100) {
         moreThan100Count++;
-      } else if (clusterSizes[i] > 50) {
+      }
+      if (clusterSizes[i] > 50) {
         moreThan50Count++;
-      } else if (clusterSizes[i] > 20) {
+      }
+      if (clusterSizes[i] > 20) {
         moreThan20Count++;
-      } else if (clusterSizes[i] > 10) {
+      }
+      if (clusterSizes[i] > 10) {
         moreThan10Count++;
-      } else if (clusterSizes[i] > 5) {
+      }
+      if (clusterSizes[i] > 5) {
         moreThan5Count++;
-      } else if (clusterSizes[i] == 1) {
+      }
+      if (clusterSizes[i] == 1) {
         oneClusterCount++;
       }
     }
