@@ -15,7 +15,6 @@ import "package:photos/models/embedding.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/services/collections_service.dart";
 import "package:photos/services/semantic_search/embedding_store.dart";
-import "package:photos/services/semantic_search/frameworks/ggml.dart";
 import "package:photos/services/semantic_search/frameworks/ml_framework.dart";
 import 'package:photos/services/semantic_search/frameworks/onnx/onnx.dart';
 import "package:photos/utils/debouncer.dart";
@@ -33,12 +32,12 @@ class SemanticSearchService {
   static const kEmbeddingLength = 512;
   static const kScoreThreshold = 0.23;
   static const kShouldPushEmbeddings = true;
-  static const kCurrentModel = Model.onnxClip;
+  static const kCurrentModel = Model.ggmlClip;
   static const kDebounceDuration = Duration(milliseconds: 4000);
 
   final _logger = Logger("SemanticSearchService");
   final _queue = Queue<EnteFile>();
-  final _mlFramework = kCurrentModel == Model.onnxClip ? ONNX() : GGML();
+  final _mlFramework = ONNX();
   final _frameworkInitialization = Completer<bool>();
   final _embeddingLoaderDebouncer =
       Debouncer(kDebounceDuration, executionInterval: kDebounceDuration);
@@ -104,7 +103,7 @@ class SemanticSearchService {
       return;
     }
     _isSyncing = true;
-    await EmbeddingStore.instance.pullEmbeddings(kCurrentModel);
+    // await EmbeddingStore.instance.pullEmbeddings(kCurrentModel);
     await _backFill();
     _isSyncing = false;
   }
