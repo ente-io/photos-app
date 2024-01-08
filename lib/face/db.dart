@@ -127,7 +127,8 @@ class FaceMLDataDB {
     if (personID != null) {
       _logger.info('getting for person $personID');
       final List<Map<String, dynamic>> maps = await db.rawQuery(
-        'SELECT * FROM $peopleTable where $idColumn = $personID',
+        'SELECT * FROM $peopleTable where $idColumn = ?',
+        [personID],
       );
       if (maps.isEmpty) {
         throw Exception("Person with id $personID not found");
