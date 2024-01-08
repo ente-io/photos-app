@@ -1,4 +1,5 @@
 import "dart:developer";
+import "dart:typed_data";
 
 import 'package:flutter/widgets.dart';
 import "package:logging/logging.dart";
@@ -6,6 +7,7 @@ import "package:photos/face/db.dart";
 import "package:photos/face/model/face.dart";
 import 'package:photos/models/file/file.dart';
 import 'package:photos/ui/viewer/file/thumbnail_widget.dart';
+import "package:photos/utils/face/face_box_crop.dart";
 
 class ClusterOrPersonWidget extends StatelessWidget {
   final EnteFile file;
@@ -23,23 +25,13 @@ class ClusterOrPersonWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Face?>(
-      future: FaceMLDataDB.instance.getCoverFaceForPerson(
-        recentFileID: file.uploadedFileID!,
-        personID: personId,
-        clusterID: clusterID,
-      ),
+    return FutureBuilder<Uint8List?>(
+      future: getFaceCrop(),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
-          Logger("ClusterOrPersonWidget")
-              .info("build with face ${snapshot.data!.faceID}");
-          return Text(
-            snapshot.data!.fileID.toString(),
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 12,
-            ),
-          );
+          Logger("ClusterOrPersonWidget").info("Gor crop");
+          final ImageProvider imageProvider = MemoryImage(snapshot.data!);
+          return Image(image: imageProvider);
         } else if (snapshot.hasError) {
           log('Error getting cover face for person: ${snapshot.error}');
           return Text(snapshot.error.toString());
@@ -50,5 +42,23 @@ class ClusterOrPersonWidget extends StatelessWidget {
         }
       },
     );
+  }
+
+  Future<Uint8List?> getFaceCrop() async {
+    final Face? face = await FaceMLDataDB.instance.getCoverFaceForPerson(
+      recentFileID: file.uploadedFileID!,
+      personID: personId,
+      clusterID: clusterID,
+    );
+    if (face == null) {
+      return null;
+    }
+    final result = await getFaceCrops(
+      file,
+      {
+        face.faceID: face.detection.box,
+      },
+    );
+    return result?[face.faceID];
   }
 }
