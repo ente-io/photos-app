@@ -31,7 +31,15 @@ class ClusterOrPersonWidget extends StatelessWidget {
         if (snapshot.hasData) {
           Logger("ClusterOrPersonWidget").info("Gor crop");
           final ImageProvider imageProvider = MemoryImage(snapshot.data!);
-          return Image(image: imageProvider);
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              Image(
+                image: imageProvider,
+                fit: BoxFit.cover,
+              ),
+            ],
+          );
         } else if (snapshot.hasError) {
           log('Error getting cover face for person: ${snapshot.error}');
           return Text(snapshot.error.toString());
