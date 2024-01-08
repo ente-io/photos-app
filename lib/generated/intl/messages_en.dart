@@ -514,7 +514,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "This will delete all empty albums. This is useful when you want to reduce the clutter in your album list."),
         "deleteAll": MessageLookupByLibrary.simpleMessage("Delete All"),
         "deleteConfirmDialogBody": MessageLookupByLibrary.simpleMessage(
-            "This account is linked to other ente apps, if you use any.\\n\\nYour uploaded data, across all ente apps, will be scheduled for deletion, and your account will be permanently deleted."),
+            "This account is linked to other ente apps, if you use any. Your uploaded data, across all ente apps, will be scheduled for deletion, and your account will be permanently deleted."),
         "deleteEmailRequest": MessageLookupByLibrary.simpleMessage(
             "Please send an email to <warning>account-deletion@ente.io</warning> from your registered email address."),
         "deleteEmptyAlbums":
@@ -832,6 +832,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Loading gallery..."),
         "loadingMessage":
             MessageLookupByLibrary.simpleMessage("Loading your photos..."),
+        "loadingModel":
+            MessageLookupByLibrary.simpleMessage("Downloading models..."),
         "localGallery": MessageLookupByLibrary.simpleMessage("Local gallery"),
         "location": MessageLookupByLibrary.simpleMessage("Location"),
         "locationName": MessageLookupByLibrary.simpleMessage("Location name"),
@@ -856,7 +858,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Machine learning"),
         "magicSearch": MessageLookupByLibrary.simpleMessage("Magic search"),
         "magicSearchDescription": MessageLookupByLibrary.simpleMessage(
-            "Please use our Desktop app to index the pending items in your library."),
+            "Please note that this will result in a higher bandwidth and battery usage until all items are indexed."),
         "manage": MessageLookupByLibrary.simpleMessage("Manage"),
         "manageDeviceStorage":
             MessageLookupByLibrary.simpleMessage("Manage device storage"),

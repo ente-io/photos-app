@@ -200,90 +200,91 @@ class SearchWidgetState extends State<SearchWidget> {
     );
   }
 
-  Future<List<SearchResult>> getSearchResultsForQuery(
-    BuildContext context,
-    String query,
-  ) async {
-    final Completer<List<SearchResult>> completer = Completer();
+// <<<<<<< HEAD
+  // Future<List<SearchResult>> getSearchResultsForQuery(
+  //   BuildContext context,
+  //   String query,
+  // ) async {
+  //   final Completer<List<SearchResult>> completer = Completer();
 
-    _debouncer.run(
-      () {
-        return _getSearchResultsFromService(context, query, completer);
-      },
-    );
+  //   _debouncer.run(
+  //     () {
+  //       return _getSearchResultsFromService(context, query, completer);
+  //     },
+  //   );
 
-    return completer.future;
-  }
+  //   return completer.future;
+  // }
 
-  Future<void> _getSearchResultsFromService(
-    BuildContext context,
-    String query,
-    Completer completer,
-  ) async {
-    final List<SearchResult> allResults = [];
-    if (query.isEmpty) {
-      completer.complete(allResults);
-      return;
-    }
-    try {
-      if (_isYearValid(query)) {
-        final yearResults = await _searchService.getYearSearchResults(query);
-        allResults.addAll(yearResults);
-      }
+  // Future<void> _getSearchResultsFromService(
+  //   BuildContext context,
+  //   String query,
+  //   Completer completer,
+  // ) async {
+  //   final List<SearchResult> allResults = [];
+  //   if (query.isEmpty) {
+  //     completer.complete(allResults);
+  //     return;
+  //   }
+  //   try {
+  //     if (_isYearValid(query)) {
+  //       final yearResults = await _searchService.getYearSearchResults(query);
+  //       allResults.addAll(yearResults);
+  //     }
 
-      final holidayResults =
-          await _searchService.getHolidaySearchResults(context, query);
-      allResults.addAll(holidayResults);
+  //     final holidayResults =
+  //         await _searchService.getHolidaySearchResults(context, query);
+  //     allResults.addAll(holidayResults);
 
-      final fileTypeSearchResults =
-          await _searchService.getFileTypeResults(context, query);
-      allResults.addAll(fileTypeSearchResults);
+  //     final fileTypeSearchResults =
+  //         await _searchService.getFileTypeResults(context, query);
+  //     allResults.addAll(fileTypeSearchResults);
 
-      final captionAndDisplayNameResult =
-          await _searchService.getCaptionAndNameResults(query);
-      allResults.addAll(captionAndDisplayNameResult);
+  //     final captionAndDisplayNameResult =
+  //         await _searchService.getCaptionAndNameResults(query);
+  //     allResults.addAll(captionAndDisplayNameResult);
 
-      final fileExtnResult =
-          await _searchService.getFileExtensionResults(query);
-      allResults.addAll(fileExtnResult);
+  //     final fileExtnResult =
+  //         await _searchService.getFileExtensionResults(query);
+  //     allResults.addAll(fileExtnResult);
 
-      final locationResult = await _searchService.getLocationResults(query);
-      allResults.addAll(locationResult);
-      log("Starting face results");
-      _logger.info('starting face results');
-      final faceReuls = await _searchService.getAllFace(null);
-      faceReuls.removeWhere(
-        (element) =>
-            !element.name().toLowerCase().contains(query.toLowerCase()),
-      );
-      log('face results: ${faceReuls.length}');
-      _logger.info('face results: ${faceReuls.length}');
-      allResults.addAll(faceReuls);
+  //     final locationResult = await _searchService.getLocationResults(query);
+  //     allResults.addAll(locationResult);
+  //     log("Starting face results");
+  //     _logger.info('starting face results');
+  //     final faceReuls = await _searchService.getAllFace(null);
+  //     faceReuls.removeWhere(
+  //       (element) =>
+  //           !element.name().toLowerCase().contains(query.toLowerCase()),
+  //     );
+  //     log('face results: ${faceReuls.length}');
+  //     _logger.info('face results: ${faceReuls.length}');
+  //     allResults.addAll(faceReuls);
 
-      final collectionResults =
-          await _searchService.getCollectionSearchResults(query);
-      allResults.addAll(collectionResults);
+  //     final collectionResults =
+  //         await _searchService.getCollectionSearchResults(query);
+  //     allResults.addAll(collectionResults);
 
-      final monthResults =
-          await _searchService.getMonthSearchResults(context, query);
-      allResults.addAll(monthResults);
+  //     final monthResults =
+  //         await _searchService.getMonthSearchResults(context, query);
+  //     allResults.addAll(monthResults);
 
-      final possibleEvents =
-          await _searchService.getDateResults(context, query);
-      allResults.addAll(possibleEvents);
+  //     final possibleEvents =
+  //         await _searchService.getDateResults(context, query);
+  //     allResults.addAll(possibleEvents);
 
-      final magicResults =
-          await _searchService.getMagicSearchResults(context, query);
-      allResults.addAll(magicResults);
+  //     final magicResults =
+  //         await _searchService.getMagicSearchResults(context, query);
+  //     allResults.addAll(magicResults);
 
-      final contactResults =
-          await _searchService.getContactSearchResults(query);
-      allResults.addAll(contactResults);
-    } catch (e, s) {
-      _logger.severe("error during search", e, s);
-    }
-    completer.complete(allResults);
-  }
+  //     final contactResults =
+  //         await _searchService.getContactSearchResults(query);
+  //     allResults.addAll(contactResults);
+  //   } catch (e, s) {
+  //     _logger.severe("error during search", e, s);
+  //   }
+  //   completer.complete(allResults);
+  // }
 
   Stream<List<SearchResult>> _getSearchResultsStream(
     BuildContext context,
