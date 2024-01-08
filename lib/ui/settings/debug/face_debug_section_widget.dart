@@ -2,6 +2,7 @@ import "dart:developer" as dev;
 import "dart:math";
 import "dart:typed_data";
 
+import "package:flutter/foundation.dart";
 import 'package:flutter/material.dart';
 import "package:logging/logging.dart";
 import "package:photos/extensions/stop_watch.dart";
@@ -35,31 +36,32 @@ class FaceDebugSectionWidget extends StatelessWidget {
     final Logger _logger = Logger("FaceDebugSectionWidget");
     return Column(
       children: [
-        sectionOptionSpacing,
-        MenuItemWidget(
-          captionedTextWidget: const CaptionedTextWidget(
-            title: "Pull Embeddings From Local",
-          ),
-          pressedColor: getEnteColorScheme(context).fillFaint,
-          trailingIcon: Icons.chevron_right_outlined,
-          trailingIconIsMuted: true,
-          onTap: () async {
-            try {
-              await FaceMLDataDB.instance.bulkInsertFaces([]);
-              final EnteWatch watch = EnteWatch("face_time")..start();
+        if (kDebugMode) sectionOptionSpacing,
+        if (kDebugMode)
+          MenuItemWidget(
+            captionedTextWidget: const CaptionedTextWidget(
+              title: "Pull Embeddings From Local",
+            ),
+            pressedColor: getEnteColorScheme(context).fillFaint,
+            trailingIcon: Icons.chevron_right_outlined,
+            trailingIconIsMuted: true,
+            onTap: () async {
+              try {
+                await FaceMLDataDB.instance.bulkInsertFaces([]);
+                final EnteWatch watch = EnteWatch("face_time")..start();
 
-              final results = await downloadZip();
-              watch.logAndReset('downloaded and de-serialized');
-              await FaceMLDataDB.instance.bulkInsertFaces(results);
-              watch.logAndReset('inserted in to db');
-              showShortToast(context, "Got ${results.length} results");
-            } catch (e, s) {
-              _logger.warning('download failed ', e, s);
-              await showGenericErrorDialog(context: context, error: e);
-            }
-            // _showKeyAttributesDialog(context);
-          },
-        ),
+                final results = await downloadZip();
+                watch.logAndReset('downloaded and de-serialized');
+                await FaceMLDataDB.instance.bulkInsertFaces(results);
+                watch.logAndReset('inserted in to db');
+                showShortToast(context, "Got ${results.length} results");
+              } catch (e, s) {
+                _logger.warning('download failed ', e, s);
+                await showGenericErrorDialog(context: context, error: e);
+              }
+              // _showKeyAttributesDialog(context);
+            },
+          ),
         sectionOptionSpacing,
         MenuItemWidget(
           captionedTextWidget: FutureBuilder<Set<int>>(
@@ -120,45 +122,6 @@ class FaceDebugSectionWidget extends StatelessWidget {
             await FaceMLDataDB.instance
                 .updatePersonIDForFaceIDIFNotSet(faceIdToCluster!);
             showShortToast(context, "Done");
-          },
-        ),
-        MenuItemWidget(
-          captionedTextWidget: const CaptionedTextWidget(
-            title: "< 2 faces clustering",
-          ),
-          pressedColor: getEnteColorScheme(context).fillFaint,
-          trailingIcon: Icons.chevron_right_outlined,
-          trailingIconIsMuted: true,
-          onTap: () async {
-            final fileToFaceCount =
-                await FaceMLDataDB.instance.getFileIdToCount();
-            // print number of files with faces count
-            final Map<int, int> faceCountToFilesCount = {};
-            final Map<int, List<int>> faceCountToFiles = {};
-            for (final fileID in fileToFaceCount.keys) {
-              final faceCount = fileToFaceCount[fileID]!;
-              faceCountToFilesCount[faceCount] =
-                  (faceCountToFilesCount[faceCount] ?? 0) + 1;
-              faceCountToFiles[faceCount] = (faceCountToFiles[faceCount] ?? [])
-                ..add(fileID);
-            }
-            final List<int> singleFaceFiles = faceCountToFiles[1] ?? [];
-            final List<int> twoFaceFiles = faceCountToFiles[2] ?? [];
-
-            final EnteWatch watch = EnteWatch("cluster")..start();
-            final result =
-                await FaceMLDataDB.instance.getFaceEmbeddingMapForFile(
-              singleFaceFiles..addAll(twoFaceFiles),
-            );
-            // final result = await FaceMLDataDB.instance.getFaceEmbeddingMap();
-            watch.logAndReset('read embeddings ${result.length} ');
-            final faceIdToCluster =
-                await FaceLinearClustering.instance.predict(result);
-            await FaceMLDataDB.instance
-                .updatePersonIDForFaceIDIFNotSet(faceIdToCluster!);
-            watch.logAndReset('done with clustering ${result.length} ');
-
-            showShortToast(context, "done");
           },
         ),
         MenuItemWidget(

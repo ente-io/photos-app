@@ -68,6 +68,7 @@ Map<String, dynamic> mapRemoteToFaceDB(Face face) {
       values: face.embedding,
     ).writeToBuffer(),
     faceScore: face.score,
+    faceBlur: face.blur,
     mlVersionColumn: 1,
   };
 }

@@ -27,7 +27,8 @@ class Face {
       List<double>.from(json['embeddings'] as List),
       json['score'] as double,
       Detection.fromJson(json['detection'] as Map<String, dynamic>),
-      (json['blur'] ?? 0.0) as double,
+      // high value means t
+      (json['blur'] ?? kLapacianDefault) as double,
     );
   }
 

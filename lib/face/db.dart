@@ -10,6 +10,7 @@ import 'package:photos/face/db_fields.dart';
 import "package:photos/face/db_model_mappers.dart";
 import "package:photos/face/model/face.dart";
 import "package:photos/face/model/person.dart";
+import "package:photos/services/face_ml/blur_detection/blur_constants.dart";
 import 'package:sqflite/sqflite.dart';
 
 /// Stores all data for the ML-related features. The database can be accessed by `MlDataDB.instance.database`.
@@ -172,7 +173,7 @@ class FaceMLDataDB {
       final List<Map<String, dynamic>> maps = await db.query(
         facesTable,
         columns: [faceIDColumn, faceEmbeddingBlob],
-        where: '$faceScore > $minScore',
+        where: '$faceScore > $minScore and $faceBlur > $kLaplacianThreshold',
         limit: batchSize,
         offset: offset,
         orderBy: '$faceIDColumn DESC',
@@ -209,7 +210,8 @@ class FaceMLDataDB {
       final List<Map<String, dynamic>> maps = await db.query(
         facesTable,
         columns: [faceIDColumn, faceEmbeddingBlob],
-        where: '$faceScore > 0.8 AND $fileIDColumn IN (${fileIDs.join(",")})',
+        where:
+            '$faceScore > 0.8 AND $faceBlur > $kLaplacianThreshold AND $fileIDColumn IN (${fileIDs.join(",")})',
         limit: batchSize,
         offset: offset,
         orderBy: '$faceIDColumn DESC',
