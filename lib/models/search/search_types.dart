@@ -114,6 +114,8 @@ extension SectionTypeExtensions on SectionType {
     }
   }
 
+  bool get sortByName => this != SectionType.face;
+
   bool get isEmptyCTAVisible {
     switch (this) {
       case SectionType.face:
