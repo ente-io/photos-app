@@ -1066,10 +1066,10 @@ Future<List<Uint8List>> generateFaceThumbnailsFromDataAndDetections(
   for (final faceBox in faceBoxes) {
     final Image faceThumbnail = await cropImage(
       image,
-      x: faceBox.x - faceBox.width / 4,
-      y: faceBox.y - faceBox.height / 4,
-      width: faceBox.width * 1.5,
-      height: faceBox.height * 1.5,
+      x: faceBox.x - faceBox.width / 2,
+      y: faceBox.y - faceBox.height / 2,
+      width: faceBox.width * 2,
+      height: faceBox.height * 2,
     );
     final Uint8List faceThumbnailPng = await encodeImageToUint8List(
       faceThumbnail,
