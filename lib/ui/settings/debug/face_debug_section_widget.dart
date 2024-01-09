@@ -159,6 +159,9 @@ class _FaceDebugSectionWidgetState extends State<FaceDebugSectionWidget> {
             watch.logAndReset(
               'done with clustering ${faceIdToEmbedding.length} ',
             );
+            _logger.info(
+              'Updating ${faceIdToCluster?.length} FaceIDs with clusterIDs in the DB',
+            );
             await FaceMLDataDB.instance
                 .updatePersonIDForFaceIDIFNotSet(faceIdToCluster!);
             showShortToast(context, "Done");
@@ -182,6 +185,9 @@ class _FaceDebugSectionWidgetState extends State<FaceDebugSectionWidget> {
                 await FaceLinearClustering.instance.predict(faceIdToEmbedding);
             watch.logAndReset(
               'done with clustering ${faceIdToEmbedding.length} ',
+            );
+            _logger.info(
+              'Updating ${faceIdToCluster?.length} FaceIDs with clusterIDs in the DB',
             );
             await FaceMLDataDB.instance
                 .updatePersonIDForFaceIDIFNotSet(faceIdToCluster!);

@@ -42,13 +42,20 @@ class FaceLinearClustering {
 
     isRunning = true;
 
+    final Set<String> newFaceIds = <String>{};
+    input.forEach((key, value) {
+      if (value.$1 == null) {
+        newFaceIds.add(key);
+      }
+    });
+
     final stopwatchClustering = Stopwatch()..start();
     final Map<String, int> faceIdToCluster =
         await LinearIsolate.instance.runClustering(input);
     _logger.info(
       'Clustering executed in ${stopwatchClustering.elapsed.inSeconds} seconds',
     );
-    //  Find faceIDs that are part of a cluster which is larger than 5;
+    //  Find faceIDs that are part of a cluster which is larger than 5 and are new faceIDs
     final Map<int, int> clusterIdToSize = {};
     faceIdToCluster.forEach((key, value) {
       if (clusterIdToSize.containsKey(value)) {
@@ -59,7 +66,7 @@ class FaceLinearClustering {
     });
     final Map<String, int> faceIdToClusterFiltered = {};
     for (final entry in faceIdToCluster.entries) {
-      if (clusterIdToSize[entry.value]! > 0) {
+      if (clusterIdToSize[entry.value]! > 0 && newFaceIds.contains(entry.key)) {
         faceIdToClusterFiltered[entry.key] = entry.value;
       }
     }
