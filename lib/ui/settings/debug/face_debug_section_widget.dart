@@ -6,6 +6,8 @@ import "dart:typed_data";
 import "package:flutter/foundation.dart";
 import 'package:flutter/material.dart';
 import "package:logging/logging.dart";
+import "package:photos/core/event_bus.dart";
+import "package:photos/events/people_changed_event.dart";
 import "package:photos/extensions/stop_watch.dart";
 import "package:photos/face/db.dart";
 import "package:photos/face/utils/import_from_zip.dart";
@@ -164,6 +166,7 @@ class _FaceDebugSectionWidgetState extends State<FaceDebugSectionWidget> {
             );
             await FaceMLDataDB.instance
                 .updatePersonIDForFaceIDIFNotSet(faceIdToCluster!);
+            Bus.instance.fire(PeopleChangedEvent());
             showShortToast(context, "Done");
           },
         ),
@@ -191,6 +194,7 @@ class _FaceDebugSectionWidgetState extends State<FaceDebugSectionWidget> {
             );
             await FaceMLDataDB.instance
                 .updatePersonIDForFaceIDIFNotSet(faceIdToCluster!);
+            Bus.instance.fire(PeopleChangedEvent());
             showShortToast(context, "Done");
           },
         ),
