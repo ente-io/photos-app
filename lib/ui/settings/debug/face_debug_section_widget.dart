@@ -1,7 +1,4 @@
 import "dart:async";
-import "dart:developer" as dev;
-import "dart:math";
-import "dart:typed_data";
 
 import "package:flutter/foundation.dart";
 import 'package:flutter/material.dart';
@@ -11,8 +8,6 @@ import "package:photos/events/people_changed_event.dart";
 import "package:photos/extensions/stop_watch.dart";
 import "package:photos/face/db.dart";
 import "package:photos/face/utils/import_from_zip.dart";
-import "package:photos/generated/protos/ente/common/vector.pb.dart";
-import "package:photos/services/face_ml/face_clustering/cosine_distance.dart";
 import 'package:photos/services/face_ml/face_clustering/linear_clustering.dart';
 import "package:photos/services/face_ml/face_ml_service.dart";
 import 'package:photos/theme/ente_theme.dart';
@@ -110,7 +105,7 @@ class _FaceDebugSectionWidgetState extends State<FaceDebugSectionWidget> {
             final EnteWatch watch = EnteWatch("read_embeddings")..start();
             final result = await FaceMLDataDB.instance.getFaceEmbeddingMap();
             watch.logAndReset('read embeddings ${result.length} ');
-            showShortToast(context, "Done");
+            showShortToast(context, "Done in ${watch.elapsed.inSeconds} secs");
           },
         ),
         MenuItemWidget(
@@ -142,7 +137,7 @@ class _FaceDebugSectionWidgetState extends State<FaceDebugSectionWidget> {
         ),
         MenuItemWidget(
           captionedTextWidget: const CaptionedTextWidget(
-            title: "Reset and cluster (min:0.75)",
+            title: "Reset feedback and cluster (slow))",
           ),
           pressedColor: getEnteColorScheme(context).fillFaint,
           trailingIcon: Icons.chevron_right_outlined,
@@ -172,7 +167,7 @@ class _FaceDebugSectionWidgetState extends State<FaceDebugSectionWidget> {
         ),
         MenuItemWidget(
           captionedTextWidget: const CaptionedTextWidget(
-            title: "Incremental clustering (min:0.75)",
+            title: "Incremental clustering",
           ),
           pressedColor: getEnteColorScheme(context).fillFaint,
           trailingIcon: Icons.chevron_right_outlined,
@@ -206,71 +201,6 @@ class _FaceDebugSectionWidgetState extends State<FaceDebugSectionWidget> {
           trailingIcon: Icons.chevron_right_outlined,
           trailingIconIsMuted: true,
           onTap: () async {
-            final clusterIdToFileCount =
-                await FaceMLDataDB.instance.clusterIdToFaceCount();
-            final Map<int, List<double>> clusterAvg = {};
-            final EnteWatch watch = EnteWatch("cluster")..start();
-            int count = 1;
-            int fileCound = 0;
-            for (final clusterID in clusterIdToFileCount.keys) {
-              final Iterable<Uint8List> embedings = await FaceMLDataDB.instance
-                  .getFaceEmbeddingsForCluster(clusterID);
-              if (embedings.length < 2) {
-                continue;
-              }
-              final List<double> sum = List.filled(192, 0);
-              for (final embedding in embedings) {
-                final data = EVector.fromBuffer(embedding).values;
-                for (int i = 0; i < sum.length; i++) {
-                  sum[i] += data[i];
-                }
-              }
-              final avg = sum.map((e) => e / embedings.length).toList();
-              // watch.log(
-              //   'done with clustering avg ${count++} for $clusterID with ${embedings.length} ',
-              // );
-              fileCound += embedings.length;
-              clusterAvg[clusterID] = avg;
-            }
-            watch.log(
-              'done with clustering ${clusterAvg.length} with files $fileCound',
-            );
-
-            // for each clusterID, find top 5 closest clusters
-            final Map<int, List<Map<String, dynamic>>>
-                clusterIdToClosestClusters = {};
-            for (final clusterID in clusterAvg.keys) {
-              final avg = clusterAvg[clusterID]!;
-              final List<Map<String, dynamic>> distances = [];
-              for (final otherClusterID in clusterAvg.keys) {
-                if (otherClusterID == clusterID) {
-                  continue;
-                }
-                final otherAvg = clusterAvg[otherClusterID]!;
-                final distance = cosineDistForNormVectors(avg, otherAvg);
-                if (distance < 0.4) {
-                  distances
-                      .add({'clusterID': otherClusterID, 'distance': distance});
-                }
-              }
-              distances.sort((a, b) => a['distance'].compareTo(b['distance']));
-
-              final closestClusters =
-                  distances.sublist(0, min(3, distances.length));
-              clusterIdToClosestClusters[clusterID] = closestClusters;
-            }
-            // print the closest clusters
-            for (final entry in clusterIdToClosestClusters.entries) {
-              if (entry.value.isEmpty) {
-                continue;
-              }
-              dev.log(
-                "Closest cluster (cosine): ${entry.key} -> ${entry.value}",
-              );
-              // dev.log(
-              //     "Closest cluster: ${entry.key} -> ${entry.value.map((e) => 'ClusterID: ${e['clusterID']}, Distance: ${e['distance']}').join(', ')}");
-            }
-
             showShortToast(context, "done avg");
           },
         ),
@@ -285,13 +215,14 @@ class _FaceDebugSectionWidgetState extends State<FaceDebugSectionWidget> {
           onTap: () async {
             await FaceMLDataDB.instance.resetClusterIDs();
             await FaceMLDataDB.instance.dropClustersAndPeople();
+            Bus.instance.fire(PeopleChangedEvent());
             showShortToast(context, "Done");
           },
         ),
         sectionOptionSpacing,
         MenuItemWidget(
           captionedTextWidget: const CaptionedTextWidget(
-            title: "Drop everything",
+            title: "Drop both embeddings & clusters DB",
           ),
           pressedColor: getEnteColorScheme(context).fillFaint,
           trailingIcon: Icons.chevron_right_outlined,

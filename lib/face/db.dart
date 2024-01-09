@@ -50,6 +50,7 @@ class FaceMLDataDB {
     await db.execute(createFacesTable);
     await db.execute(createPeopleTable);
     await db.execute(clusterTable);
+    await db.execute(createNotPersonFeedbackTable);
   }
 
   // bulkInsertFaces inserts the faces in the database in batches of 1000.
@@ -95,10 +96,40 @@ class FaceMLDataDB {
     return result;
   }
 
-  Future<Iterable<Uint8List>> getFaceEmbeddingsForCluster(int clusterID) async {
+  Future<Set<int>> getPersonIgnoredClusters(String personID) async {
+    final db = await instance.database;
+    // find out clusterIds that are assigned to other persons using the clusters table
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      'SELECT $cluserIDColumn FROM $clustersTable WHERE $personIdColumn != ? AND $personIdColumn IS NOT NULL',
+      [personID],
+    );
+    final Set<int> ignoredClusterIDs =
+        maps.map((e) => e[cluserIDColumn] as int).toSet();
+    final List<Map<String, dynamic>> rejectMaps = await db.rawQuery(
+      'SELECT $cluserIDColumn FROM $notPersonFeedback WHERE $personIdColumn = ?',
+      [personID],
+    );
+    final Set<int> rejectClusterIDs =
+        rejectMaps.map((e) => e[cluserIDColumn] as int).toSet();
+    return ignoredClusterIDs.union(rejectClusterIDs);
+  }
+
+  Future<Set<int>> getPersonClusterIDs(String personID) async {
     final db = await instance.database;
     final List<Map<String, dynamic>> maps = await db.rawQuery(
-      'SELECT $faceEmbeddingBlob FROM $facesTable where $cluserIDColumn = ?',
+      'SELECT $cluserIDColumn FROM $clustersTable WHERE $personIdColumn = ?',
+      [personID],
+    );
+    return maps.map((e) => e[cluserIDColumn] as int).toSet();
+  }
+
+  Future<Iterable<Uint8List>> getFaceEmbeddingsForCluster(
+    int clusterID, {
+    int? limit,
+  }) async {
+    final db = await instance.database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      'SELECT $faceEmbeddingBlob FROM $facesTable WHERE $cluserIDColumn = ? ${limit != null ? 'LIMIT $limit' : ''}',
       [clusterID],
     );
     return maps.map((e) => e[faceEmbeddingBlob] as Uint8List);
@@ -348,7 +379,6 @@ class FaceMLDataDB {
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    debugPrint("person inserted");
   }
 
   Future<void> updatePerson(Person p) async {
@@ -484,9 +514,11 @@ class FaceMLDataDB {
     }
     await db.execute(deletePeopleTable);
     await db.execute(dropClustersTable);
+    await db.execute(dropNotPersonFeedbackTable);
 
     // await db.execute(createFacesTable);
     await db.execute(createPeopleTable);
     await db.execute(clusterTable);
+    await db.execute(createNotPersonFeedbackTable);
   }
 }

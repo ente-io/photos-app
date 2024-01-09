@@ -67,4 +67,16 @@ CREATE TABLE IF NOT EXISTS $clustersTable (
 );
 ''';
 const dropClustersTable = 'DROP TABLE IF EXISTS $clustersTable';
-// End Clusters Table Fields & Schema Queries 
+// End Clusters Table Fields & Schema Queries
+
+// notPersonFeedback Table Fields & Schema Queries
+const notPersonFeedback = 'not_person_feedback';
+
+const createNotPersonFeedbackTable = '''
+CREATE TABLE IF NOT EXISTS $notPersonFeedback (
+  $personIdColumn	TEXT NOT NULL,
+  $cluserIDColumn	INTEGER NOT NULL
+);
+''';
+const dropNotPersonFeedbackTable = 'DROP TABLE IF EXISTS $notPersonFeedback';
+// End Clusters Table Fields & Schema Queries
