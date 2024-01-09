@@ -228,6 +228,7 @@ class FaceMlService {
               );
             }
           }
+          _logger.info("inserting ${faces.length} faces for ${result.fileId}");
           await FaceMLDataDB.instance.bulkInsertFaces(faces);
           fileAnalyzedCount++;
         } catch (e, s) {
@@ -397,7 +398,7 @@ class FaceMlService {
       return resultBuilder.build();
     } catch (e, s) {
       _logger.severe(
-        "Could not analyze image with ID ${enteFile.uploadedFileID}. Returning empty result \n",
+        "Could not analyze image with ID ${enteFile.uploadedFileID} \n",
         e,
         s,
       );

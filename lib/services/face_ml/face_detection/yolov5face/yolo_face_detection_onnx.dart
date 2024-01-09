@@ -94,7 +94,6 @@ class YoloOnnxFaceDetection {
     );
     _logger.info('original size: $originalSize \n new size: $newSize');
 
-    _logger.info('interpreter.run is called');
     // Run inference
     final stopwatchInterpreter = Stopwatch()..start();
     List<OrtValue?>? outputs;
@@ -111,8 +110,6 @@ class YoloOnnxFaceDetection {
     _logger.info(
       'interpreter.run is finished, in ${stopwatchInterpreter.elapsedMilliseconds} ms',
     );
-
-    _logger.info('outputs: $outputs');
 
     // // Get output tensors
     final nestedResults =
