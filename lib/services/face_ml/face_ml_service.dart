@@ -6,6 +6,7 @@ import "package:flutter/foundation.dart";
 import "package:flutter_image_compress/flutter_image_compress.dart";
 import "package:logging/logging.dart";
 import "package:photos/core/configuration.dart";
+import "package:photos/core/constants.dart";
 import "package:photos/core/event_bus.dart";
 import "package:photos/db/ml_data_db.dart";
 import "package:photos/events/diff_sync_complete_event.dart";
@@ -14,6 +15,7 @@ import "package:photos/face/model/box.dart";
 import "package:photos/face/model/detection.dart" as face_detection;
 import "package:photos/face/model/face.dart";
 import "package:photos/face/model/landmark.dart";
+import "package:photos/models/file/extensions/file_props.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/models/file/file_type.dart";
 import 'package:photos/models/ml/ml_typedefs.dart';
@@ -208,7 +210,6 @@ class FaceMlService {
                     )
                     .toList(),
               );
-
               faces.add(
                 Face(
                   faceRes.faceId,
@@ -217,13 +218,11 @@ class FaceMlService {
                   faceRes.detection.score,
                   detection,
                   faceRes.blurValue,
-                  // face_detection.Detection.empty(),
                 ),
               );
             }
           }
           await FaceMLDataDB.instance.bulkInsertFaces(faces);
-          // await MlDataDB.instance.createFaceMlResult(result);
           fileAnalyzedCount++;
         } catch (e, s) {
           _logger.severe(
@@ -336,7 +335,7 @@ class FaceMlService {
     final resultBuilder = FaceMlResultBuilder.fromEnteFile(enteFile);
 
     _logger.info(
-      "Analyzing image with uploadedFileID: ${enteFile.uploadedFileID}",
+      "Analyzing image with uploadedFileID: ${enteFile.uploadedFileID} ${isInternalUser ? enteFile.displayName : ''}",
     );
     final stopwatch = Stopwatch()..start();
 
@@ -568,11 +567,16 @@ class FaceMlService {
   }
 
   bool _skipAnalysisEnteFile(EnteFile enteFile, Set<int> indexedFileIds) {
-    // Skip if the file is not uploaded
-    if (!enteFile.isUploaded) {
+    // Skip if the file is not uploaded or not owned by the user
+    if (!enteFile.isUploaded || enteFile.isOwner == false) {
       return true;
     }
     if ((enteFile.localID ?? '') == '') {
+      return true;
+    }
+
+    if (enteFile.displayName.endsWith('avif') ||
+        enteFile.displayName.endsWith('cr3')) {
       return true;
     }
 

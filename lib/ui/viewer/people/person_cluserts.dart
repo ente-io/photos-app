@@ -91,17 +91,24 @@ class _PersonClustersState extends State<PersonClusters> {
                                 ),
                                 GestureDetector(
                                   onTap: () async {
-                                    await FaceMLDataDB.instance
-                                        .removeClusterToPerson(
-                                      personID: widget.person.remoteID,
-                                      clusterID: clusterID,
-                                    );
-                                    Bus.instance.fire(
-                                      PeopleChangedEvent(
-                                          // widget.person.remoteID,
-                                          ),
-                                    );
-                                    setState(() {});
+                                    try {
+                                      final int result = await FaceMLDataDB
+                                          .instance
+                                          .removeClusterToPerson(
+                                        personID: widget.person.remoteID,
+                                        clusterID: clusterID,
+                                      );
+                                      _logger.info(
+                                        "Removed cluster $clusterID from person ${widget.person.remoteID}, result: $result",
+                                      );
+                                      Bus.instance.fire(PeopleChangedEvent());
+                                      setState(() {});
+                                    } catch (e) {
+                                      _logger.severe(
+                                        "removing cluster from person,",
+                                        e,
+                                      );
+                                    }
                                   },
                                   child: const Icon(
                                     CupertinoIcons.minus_circled,

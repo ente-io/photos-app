@@ -375,12 +375,12 @@ class FaceMLDataDB {
     );
   }
 
-  Future<void> removeClusterToPerson({
+  Future<int> removeClusterToPerson({
     required String personID,
     required int clusterID,
   }) async {
     final db = await instance.database;
-    await db.delete(
+    return db.delete(
       clustersTable,
       where: '$personIdColumn = ? AND $cluserIDColumn = ?',
       whereArgs: [personID, clusterID],
