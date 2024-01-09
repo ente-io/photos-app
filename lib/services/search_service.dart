@@ -774,13 +774,15 @@ class SearchService {
       );
     }
     final sortedClusterIds = clusterIdToFiles.keys.toList()
-      ..sort((a, b) =>
-          clusterIdToFiles[b]!.length.compareTo(clusterIdToFiles[a]!.length));
+      ..sort(
+        (a, b) =>
+            clusterIdToFiles[b]!.length.compareTo(clusterIdToFiles[a]!.length),
+      );
 
     for (final clusterId in sortedClusterIds) {
-      // format length as 000d
       final files = clusterIdToFiles[clusterId]!;
-      final String clusterName = "ID:$clusterId,  ${files.length}";
+      // final String clusterName = "ID:$clusterId,  ${files.length}";
+      final String clusterName = "${files.length}";
       final Person? p = clusterIDToPerson[clusterId];
       if (p != null) {
         throw Exception("Person should  be null");
