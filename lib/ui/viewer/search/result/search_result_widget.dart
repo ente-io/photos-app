@@ -44,6 +44,7 @@ class SearchResultWidget extends StatelessWidget {
             SearchThumbnailWidget(
               searchResult.previewThumbnail(),
               heroTagPrefix,
+              searchResult: searchResult,
             ),
             const SizedBox(width: 12),
             Padding(
