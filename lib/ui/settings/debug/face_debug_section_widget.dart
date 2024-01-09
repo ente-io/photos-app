@@ -215,7 +215,7 @@ class _FaceDebugSectionWidgetState extends State<FaceDebugSectionWidget> {
             for (final clusterID in clusterIdToFileCount.keys) {
               final Iterable<Uint8List> embedings = await FaceMLDataDB.instance
                   .getFaceEmbeddingsForCluster(clusterID);
-              if (embedings.length < 5) {
+              if (embedings.length < 2) {
                 continue;
               }
               final List<double> sum = List.filled(192, 0);
