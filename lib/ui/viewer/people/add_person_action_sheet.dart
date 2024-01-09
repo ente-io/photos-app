@@ -5,6 +5,8 @@ import "dart:math" as math;
 import 'package:flutter/material.dart';
 import "package:logging/logging.dart";
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
+import "package:photos/core/event_bus.dart";
+import "package:photos/events/people_changed_event.dart";
 import "package:photos/face/db.dart";
 import "package:photos/face/model/person.dart";
 import "package:photos/generated/l10n.dart";
@@ -220,12 +222,14 @@ class _PersonActionSheetState extends State<PersonActionSheet> {
                           index - (shouldShowCreateAlbum ? 1 : 0)];
                       return PersonRowItem(
                         person: person,
-                        onTap: () async => {
+                        onTap: () async {
                           await FaceMLDataDB.instance.assignClusterToPerson(
                             personID: person.remoteID,
                             clusterID: widget.cluserID,
-                          ),
-                          Navigator.pop(context, person),
+                          );
+                          Bus.instance.fire(PeopleChangedEvent());
+
+                          Navigator.pop(context, person);
                         },
                       );
                     },
@@ -269,6 +273,7 @@ class _PersonActionSheetState extends State<PersonActionSheet> {
             PersonAttr(name: text, faces: <String>[]),
           );
           await FaceMLDataDB.instance.insert(p, clusterID);
+          Bus.instance.fire(PeopleChangedEvent());
           Navigator.pop(context, p);
           log("inserted person");
         } catch (e, s) {
