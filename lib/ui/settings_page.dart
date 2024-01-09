@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import "package:flutter_animate/flutter_animate.dart";
 import 'package:photos/core/configuration.dart';
+import "package:photos/core/constants.dart";
 import 'package:photos/core/event_bus.dart';
 import 'package:photos/events/opened_settings_event.dart';
 import "package:photos/generated/l10n.dart";
@@ -147,6 +148,7 @@ class SettingsPage extends StatelessWidget {
     if (hasLoggedIn &&
         FeatureFlagService.instance.isInternalUserOrDebugBuild()) {
       contents.addAll([sectionSpacing, const DebugSectionWidget()]);
+      contents.addAll([sectionSpacing, const FaceDebugSectionWidget()]);
     }
     contents.add(const AppVersionWidget());
     contents.add(

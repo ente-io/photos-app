@@ -10,6 +10,7 @@ import "package:photos/core/constants.dart";
 import "package:photos/core/event_bus.dart";
 import "package:photos/db/ml_data_db.dart";
 import "package:photos/events/diff_sync_complete_event.dart";
+import "package:photos/extensions/list.dart";
 import "package:photos/face/db.dart";
 import "package:photos/face/model/box.dart";
 import "package:photos/face/model/detection.dart" as face_detection;
@@ -151,7 +152,12 @@ class FaceMlService {
       int fileAnalyzedCount = 0;
       int fileSkippedCount = 0;
       final stopwatch = Stopwatch()..start();
-      for (final enteFile in enteFiles) {
+      final split = enteFiles.splitMatch((e) => (e.localID ?? '') == '');
+      // list of files where files with localID are first
+      final sortedBylocalID = [];
+      sortedBylocalID.addAll(split.unmatched);
+      sortedBylocalID.addAll(split.matched);
+      for (final enteFile in sortedBylocalID) {
         if (isImageIndexRunning == false) {
           _logger.info("indexAllImages() was paused, stopping");
           break;
@@ -574,14 +580,6 @@ class FaceMlService {
   bool _skipAnalysisEnteFile(EnteFile enteFile, Set<int> indexedFileIds) {
     // Skip if the file is not uploaded or not owned by the user
     if (!enteFile.isUploaded || enteFile.isOwner == false) {
-      return true;
-    }
-    if ((enteFile.localID ?? '') == '') {
-      return true;
-    }
-
-    if (enteFile.displayName.endsWith('avif') ||
-        enteFile.displayName.endsWith('cr3')) {
       return true;
     }
 
