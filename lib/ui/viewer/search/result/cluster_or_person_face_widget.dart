@@ -59,6 +59,7 @@ class ClusterOrPersonWidget extends StatelessWidget {
       clusterID: clusterID,
     );
     if (face == null) {
+      debugPrint("No cover face for person: $personId and cluster $clusterID");
       return null;
     }
     final result = await getFaceCrops(

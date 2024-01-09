@@ -125,7 +125,7 @@ class FaceMLDataDB {
     // read person from db
     final db = await instance.database;
     if (personID != null) {
-      _logger.info('getting for person $personID');
+      _logger.info('getCoverFaceForPerson check for person $personID');
       final List<Map<String, dynamic>> maps = await db.rawQuery(
         'SELECT * FROM $peopleTable where $idColumn = ?',
         [personID],
@@ -149,14 +149,13 @@ class FaceMLDataDB {
       final clusterIDs =
           cluterRows.map((e) => e[cluserIDColumn] as int).toList();
       final List<Map<String, dynamic>> faceMaps = await db.rawQuery(
-        'SELECT * FROM $facesTable where $faceClusterId IN (${clusterIDs.join(",")}) AND $faceIDColumn = $recentFileID ',
+        'SELECT * FROM $facesTable where $faceClusterId IN (${clusterIDs.join(",")}) AND $fileIDColumn = $recentFileID ',
       );
       if (faceMaps.isNotEmpty) {
         return mapRowToFace(faceMaps.first);
       }
     }
     if (clusterID != null) {
-      _logger.info('getting for cluster $clusterID');
       final clusterIDs = [clusterID];
       final List<Map<String, dynamic>> faceMaps = await db.rawQuery(
         'SELECT * FROM $facesTable where $faceClusterId IN (${clusterIDs.join(",")}) AND $fileIDColumn = $recentFileID ',
