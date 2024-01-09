@@ -787,6 +787,9 @@ class SearchService {
       if (p != null) {
         throw Exception("Person should  be null");
       }
+      if (files.length < 3) {
+        continue;
+      }
       facesResult.add(
         GenericSearchResult(
           ResultType.faces,
