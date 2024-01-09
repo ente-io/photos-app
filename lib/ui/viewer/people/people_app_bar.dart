@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:photos/core/configuration.dart';
 import 'package:photos/core/event_bus.dart';
+import "package:photos/events/people_changed_event.dart";
 import 'package:photos/events/subscription_purchased_event.dart';
 import "package:photos/face/db.dart";
 import "package:photos/face/model/person.dart";
@@ -115,6 +116,7 @@ class _AppBarWidgetState extends State<PeopleAppBar> {
             _appBarTitle = text;
             setState(() {});
           }
+          Bus.instance.fire(PeopleChangedEvent());
         } catch (e, s) {
           _logger.severe("Failed to rename album", e, s);
           rethrow;

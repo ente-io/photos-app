@@ -45,6 +45,9 @@ class _PeoplePageState extends State<PeoplePage> {
   @override
   void initState() {
     super.initState();
+    _peopleChangedEvent = Bus.instance.on<PeopleChangedEvent>().listen((event) {
+      setState(() {});
+    });
 
     _filesUpdatedEvent =
         Bus.instance.on<LocalPhotosUpdatedEvent>().listen((event) {
