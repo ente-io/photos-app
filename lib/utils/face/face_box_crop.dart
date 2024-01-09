@@ -1,12 +1,15 @@
 import "dart:io";
 
 import "package:flutter/foundation.dart";
+import "package:photos/core/cache/lru_map.dart";
 import "package:photos/face/model/box.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/models/file/file_type.dart";
 import "package:photos/utils/file_util.dart";
 import "package:photos/utils/image_ml_isolate.dart";
 import "package:photos/utils/thumbnail_util.dart";
+
+final LRUMap<String, Uint8List?> faceCropCache = LRUMap(1000);
 
 Future<Map<String, Uint8List>?> getFaceCrops(
   EnteFile file,

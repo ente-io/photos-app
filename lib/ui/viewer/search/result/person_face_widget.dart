@@ -2,7 +2,6 @@ import "dart:developer";
 import "dart:typed_data";
 
 import 'package:flutter/widgets.dart';
-import "package:logging/logging.dart";
 import "package:photos/face/db.dart";
 import "package:photos/face/model/face.dart";
 import 'package:photos/models/file/file.dart';
@@ -59,12 +58,20 @@ class PersonFaceWidget extends StatelessWidget {
       debugPrint("No cover face for person: $personId and cluster $clusterID");
       return null;
     }
+    final Uint8List? cachedFace = faceCropCache.get(face.faceID);
+    if (cachedFace != null) {
+      return cachedFace;
+    }
     final result = await getFaceCrops(
       file,
       {
         face.faceID: face.detection.box,
       },
     );
-    return result?[face.faceID];
+    final Uint8List? computedCrop = result?[face.faceID];
+    if (computedCrop != null) {
+      faceCropCache.put(face.faceID, computedCrop);
+    }
+    return computedCrop;
   }
 }
