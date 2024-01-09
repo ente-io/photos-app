@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import "package:modal_bottom_sheet/modal_bottom_sheet.dart";
 import 'package:photos/core/configuration.dart';
+import "package:photos/face/model/person.dart";
 import "package:photos/generated/l10n.dart";
 import 'package:photos/models/collection/collection.dart';
 import 'package:photos/models/device_collection.dart';
@@ -40,12 +41,16 @@ class FileSelectionActionsWidget extends StatefulWidget {
   final Collection? collection;
   final DeviceCollection? deviceCollection;
   final SelectedFiles selectedFiles;
+  final Person? person;
+  final int? clusterID;
 
   const FileSelectionActionsWidget(
     this.type,
     this.selectedFiles, {
     Key? key,
     this.collection,
+    this.person,
+    this.clusterID,
     this.deviceCollection,
   }) : super(key: key);
 
