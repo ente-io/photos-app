@@ -95,107 +95,114 @@ class ImageMlIsolate {
       final args = message[1] as Map<String, dynamic>;
       final sendPort = message[2] as SendPort;
 
-      switch (function) {
-        case ImageOperation.preprocessBlazeFace:
-          final imageData = args['imageData'] as Uint8List;
-          final normalize = args['normalize'] as bool;
-          final int normalization = normalize ? 2 : -1;
-          final requiredWidth = args['requiredWidth'] as int;
-          final requiredHeight = args['requiredHeight'] as int;
-          final qualityIndex = args['quality'] as int;
-          final maintainAspectRatio = args['maintainAspectRatio'] as bool;
-          final quality = FilterQuality.values[qualityIndex];
-          final (result, originalSize, newSize) = await preprocessImageToMatrix(
-            imageData,
-            normalization: normalization,
-            requiredWidth: requiredWidth,
-            requiredHeight: requiredHeight,
-            quality: quality,
-            maintainAspectRatio: maintainAspectRatio,
-          );
-          sendPort.send({
-            'inputs': result,
-            'originalWidth': originalSize.width,
-            'originalHeight': originalSize.height,
-            'newWidth': newSize.width,
-            'newHeight': newSize.height,
-          });
-        case ImageOperation.preprocessYoloOnnx:
-          final imageData = args['imageData'] as Uint8List;
-          final normalize = args['normalize'] as bool;
-          final int normalization = normalize ? 1 : -1;
-          final requiredWidth = args['requiredWidth'] as int;
-          final requiredHeight = args['requiredHeight'] as int;
-          final qualityIndex = args['quality'] as int;
-          final maintainAspectRatio = args['maintainAspectRatio'] as bool;
-          final quality = FilterQuality.values[qualityIndex];
-          final (result, originalSize, newSize) =
-              await preprocessImageToFloat32ChannelsFirst(
-            imageData,
-            normalization: normalization,
-            requiredWidth: requiredWidth,
-            requiredHeight: requiredHeight,
-            quality: quality,
-            maintainAspectRatio: maintainAspectRatio,
-          );
-          sendPort.send({
-            'inputs': result,
-            'originalWidth': originalSize.width,
-            'originalHeight': originalSize.height,
-            'newWidth': newSize.width,
-            'newHeight': newSize.height,
-          });
-        case ImageOperation.preprocessFaceAlign:
-          final imageData = args['imageData'] as Uint8List;
-          final faceLandmarks =
-              args['faceLandmarks'] as List<List<List<double>>>;
-          final List<Uint8List> result = await preprocessFaceAlignToUint8List(
-            imageData,
-            faceLandmarks,
-          );
-          sendPort.send(List.from(result));
-        case ImageOperation.preprocessMobileFaceNet:
-          final imageData = args['imageData'] as Uint8List;
-          final facesJson = args['facesJson'] as List<Map<String, dynamic>>;
-          final (inputs, alignmentResults, isBlurs, blurValues) =
-              await preprocessToMobileFaceNetInput(
-            imageData,
-            facesJson,
-          );
-          final List<Map<String, dynamic>> alignmentResultsJson =
-              alignmentResults.map((result) => result.toJson()).toList();
-          sendPort.send({
-            'inputs': inputs,
-            'alignmentResultsJson': alignmentResultsJson,
-            'isBlurs': isBlurs,
-            'blurValues': blurValues,
-          });
-        case ImageOperation.generateFaceThumbnail:
-          final imageData = args['imageData'] as Uint8List;
-          final faceDetectionJson =
-              args['faceDetection'] as Map<String, dynamic>;
-          final faceDetection =
-              FaceDetectionRelative.fromJson(faceDetectionJson);
-          final Uint8List result =
-              await generateFaceThumbnailFromData(imageData, faceDetection);
-          sendPort.send(<dynamic>[result]);
-        case ImageOperation.generateFaceThumbnailsForImage:
-          final imageData = args['imageData'] as Uint8List;
-          final faceBoxesJson =
-              args['faceBoxesList'] as List<Map<String, dynamic>>;
-          final List<FaceBox> faceBoxes =
-              faceBoxesJson.map((json) => FaceBox.fromJson(json)).toList();
-          final List<Uint8List> results =
-              await generateFaceThumbnailsFromDataAndDetections(
-            imageData,
-            faceBoxes,
-          );
-          sendPort.send(List.from(results));
-        case ImageOperation.cropAndPadFace:
-          final imageData = args['imageData'] as Uint8List;
-          final faceBox = args['faceBox'] as List<double>;
-          final Uint8List result = await cropAndPadFaceData(imageData, faceBox);
-          sendPort.send(<dynamic>[result]);
+      try {
+        switch (function) {
+          case ImageOperation.preprocessBlazeFace:
+            final imageData = args['imageData'] as Uint8List;
+            final normalize = args['normalize'] as bool;
+            final int normalization = normalize ? 2 : -1;
+            final requiredWidth = args['requiredWidth'] as int;
+            final requiredHeight = args['requiredHeight'] as int;
+            final qualityIndex = args['quality'] as int;
+            final maintainAspectRatio = args['maintainAspectRatio'] as bool;
+            final quality = FilterQuality.values[qualityIndex];
+            final (result, originalSize, newSize) =
+                await preprocessImageToMatrix(
+              imageData,
+              normalization: normalization,
+              requiredWidth: requiredWidth,
+              requiredHeight: requiredHeight,
+              quality: quality,
+              maintainAspectRatio: maintainAspectRatio,
+            );
+            sendPort.send({
+              'inputs': result,
+              'originalWidth': originalSize.width,
+              'originalHeight': originalSize.height,
+              'newWidth': newSize.width,
+              'newHeight': newSize.height,
+            });
+          case ImageOperation.preprocessYoloOnnx:
+            final imageData = args['imageData'] as Uint8List;
+            final normalize = args['normalize'] as bool;
+            final int normalization = normalize ? 1 : -1;
+            final requiredWidth = args['requiredWidth'] as int;
+            final requiredHeight = args['requiredHeight'] as int;
+            final qualityIndex = args['quality'] as int;
+            final maintainAspectRatio = args['maintainAspectRatio'] as bool;
+            final quality = FilterQuality.values[qualityIndex];
+            final (result, originalSize, newSize) =
+                await preprocessImageToFloat32ChannelsFirst(
+              imageData,
+              normalization: normalization,
+              requiredWidth: requiredWidth,
+              requiredHeight: requiredHeight,
+              quality: quality,
+              maintainAspectRatio: maintainAspectRatio,
+            );
+            sendPort.send({
+              'inputs': result,
+              'originalWidth': originalSize.width,
+              'originalHeight': originalSize.height,
+              'newWidth': newSize.width,
+              'newHeight': newSize.height,
+            });
+          case ImageOperation.preprocessFaceAlign:
+            final imageData = args['imageData'] as Uint8List;
+            final faceLandmarks =
+                args['faceLandmarks'] as List<List<List<double>>>;
+            final List<Uint8List> result = await preprocessFaceAlignToUint8List(
+              imageData,
+              faceLandmarks,
+            );
+            sendPort.send(List.from(result));
+          case ImageOperation.preprocessMobileFaceNet:
+            final imageData = args['imageData'] as Uint8List;
+            final facesJson = args['facesJson'] as List<Map<String, dynamic>>;
+            final (inputs, alignmentResults, isBlurs, blurValues) =
+                await preprocessToMobileFaceNetInput(
+              imageData,
+              facesJson,
+            );
+            final List<Map<String, dynamic>> alignmentResultsJson =
+                alignmentResults.map((result) => result.toJson()).toList();
+            sendPort.send({
+              'inputs': inputs,
+              'alignmentResultsJson': alignmentResultsJson,
+              'isBlurs': isBlurs,
+              'blurValues': blurValues,
+            });
+          case ImageOperation.generateFaceThumbnail:
+            final imageData = args['imageData'] as Uint8List;
+            final faceDetectionJson =
+                args['faceDetection'] as Map<String, dynamic>;
+            final faceDetection =
+                FaceDetectionRelative.fromJson(faceDetectionJson);
+            final Uint8List result =
+                await generateFaceThumbnailFromData(imageData, faceDetection);
+            sendPort.send(<dynamic>[result]);
+          case ImageOperation.generateFaceThumbnailsForImage:
+            final imageData = args['imageData'] as Uint8List;
+            final faceBoxesJson =
+                args['faceBoxesList'] as List<Map<String, dynamic>>;
+            final List<FaceBox> faceBoxes =
+                faceBoxesJson.map((json) => FaceBox.fromJson(json)).toList();
+            final List<Uint8List> results =
+                await generateFaceThumbnailsFromDataAndDetections(
+              imageData,
+              faceBoxes,
+            );
+            sendPort.send(List.from(results));
+          case ImageOperation.cropAndPadFace:
+            final imageData = args['imageData'] as Uint8List;
+            final faceBox = args['faceBox'] as List<double>;
+            final Uint8List result =
+                await cropAndPadFaceData(imageData, faceBox);
+            sendPort.send(<dynamic>[result]);
+        }
+      } catch (e, stackTrace) {
+        sendPort
+            .send({'error': e.toString(), 'stackTrace': stackTrace.toString()});
       }
     });
   }
@@ -212,7 +219,16 @@ class ImageMlIsolate {
     _mainSendPort.send([message.$1.index, message.$2, answerPort.sendPort]);
 
     answerPort.listen((receivedMessage) {
-      completer.complete(receivedMessage);
+      if (receivedMessage is Map && receivedMessage.containsKey('error')) {
+        // Handle the error
+        final errorMessage = receivedMessage['error'];
+        final errorStackTrace = receivedMessage['stackTrace'];
+        final exception = Exception(errorMessage);
+        final stackTrace = StackTrace.fromString(errorStackTrace);
+        completer.completeError(exception, stackTrace);
+      } else {
+        completer.complete(receivedMessage);
+      }
     });
 
     return completer.future;
