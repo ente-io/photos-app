@@ -181,7 +181,7 @@ class FaceMlService {
                 '${result.fileId}-0',
                 result.fileId,
                 <double>[],
-                0.0,
+                result.errorOccured ? -1.0 : 0.0,
                 face_detection.Detection.empty(),
                 0.0,
               ),
@@ -226,7 +226,7 @@ class FaceMlService {
           fileAnalyzedCount++;
         } catch (e, s) {
           _logger.severe(
-            "failed to analyze for faceEmbedding ${enteFile.uploadedFileID}",
+            "Failed to analyze using FaceML for image with ID: ${enteFile.uploadedFileID}",
             e,
             s,
           );
@@ -390,8 +390,13 @@ class FaceMlService {
 
       return resultBuilder.build();
     } catch (e, s) {
-      _logger.severe("Could not analyze image", e, s);
-      throw GeneralFaceMlException("Could not analyze image");
+      _logger.severe(
+        "Could not analyze image with ID ${enteFile.uploadedFileID} \n",
+        e,
+        s,
+      );
+      // throw GeneralFaceMlException("Could not analyze image");
+      return resultBuilder.buildErrorOccurred();
     }
   }
 

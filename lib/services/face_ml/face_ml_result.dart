@@ -616,6 +616,12 @@ class FaceMlResultBuilder {
     faces = <FaceResultBuilder>[];
     return build();
   }
+
+  FaceMlResult buildErrorOccurred() {
+    faces = <FaceResultBuilder>[];
+    errorOccured = true;
+    return build();
+  }
 }
 
 @immutable
