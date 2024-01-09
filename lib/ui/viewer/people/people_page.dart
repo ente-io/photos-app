@@ -2,6 +2,7 @@ import "dart:async";
 import "dart:developer";
 
 import 'package:flutter/material.dart';
+import "package:logging/logging.dart";
 import 'package:photos/core/event_bus.dart';
 import 'package:photos/events/files_updated_event.dart';
 import 'package:photos/events/local_photos_updated_event.dart';
@@ -17,15 +18,13 @@ import 'package:photos/ui/viewer/gallery/gallery.dart';
 import "package:photos/ui/viewer/people/people_app_bar.dart";
 
 class PeoplePage extends StatefulWidget {
-  final List<EnteFile> searchResult;
   final String tagPrefix;
   final Person person;
 
   static const GalleryType appBarType = GalleryType.peopleTag;
   static const GalleryType overlayType = GalleryType.peopleTag;
 
-  const PeoplePage(
-    this.searchResult, {
+  const PeoplePage({
     this.tagPrefix = "",
     required this.person,
     Key? key,
@@ -36,10 +35,12 @@ class PeoplePage extends StatefulWidget {
 }
 
 class _PeoplePageState extends State<PeoplePage> {
+  final Logger _logger = Logger("_PeoplePageState");
   final _selectedFiles = SelectedFiles();
-  late final List<EnteFile> files;
+  List<EnteFile>? files;
 
   late final StreamSubscription<LocalPhotosUpdatedEvent> _filesUpdatedEvent;
+  late final StreamSubscription<PeopleChangedEvent> _peopleChangedEvent;
 
   @override
   void initState() {
@@ -52,7 +53,7 @@ class _PeoplePageState extends State<PeoplePage> {
           event.type == EventType.deletedFromRemote ||
           event.type == EventType.hide) {
         for (var updatedFile in event.updatedFiles) {
-          files.remove(updatedFile);
+          files?.remove(updatedFile);
         }
         setState(() {});
       }
@@ -60,10 +61,6 @@ class _PeoplePageState extends State<PeoplePage> {
   }
 
   Future<List<EnteFile>> loadPersonFiles() async {
-    if (widget.searchResult.isNotEmpty) {
-      files = widget.searchResult;
-      return files;
-    }
     log("loadPersonFiles");
     final result = await SearchService.instance
         .getClusterFilesForPersonID(widget.person.remoteID);
@@ -78,11 +75,13 @@ class _PeoplePageState extends State<PeoplePage> {
   @override
   void dispose() {
     _filesUpdatedEvent.cancel();
+    _peopleChangedEvent.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    _logger.info("Building for ${widget.person.attr.name}");
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(50.0),
@@ -107,18 +106,12 @@ class _PeoplePageState extends State<PeoplePage> {
                     creationEndTime, {
                     limit,
                     asc,
-                  }) {
-                    final result = personFiles
-                        .where(
-                          (file) =>
-                              file.creationTime! >= creationStartTime &&
-                              file.creationTime! <= creationEndTime,
-                        )
-                        .toList();
+                  }) async {
+                    final result = await loadPersonFiles();
                     return Future.value(
                       FileLoadResult(
                         result,
-                        result.length < personFiles.length,
+                        false,
                       ),
                     );
                   },

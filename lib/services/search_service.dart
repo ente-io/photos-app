@@ -767,7 +767,6 @@ class SearchService {
             routeToPage(
               ctx,
               PeoplePage(
-                files,
                 tagPrefix: "${ResultType.faces.toString()}_${p.attr.name}",
                 person: p,
               ),

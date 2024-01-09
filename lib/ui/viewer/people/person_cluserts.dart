@@ -1,6 +1,9 @@
 import "package:flutter/cupertino.dart";
 import "package:flutter/material.dart";
 import "package:logging/logging.dart";
+import "package:photos/core/event_bus.dart";
+import "package:photos/events/people_changed_event.dart";
+import "package:photos/face/db.dart";
 import "package:photos/face/model/person.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/services/search_service.dart";
@@ -38,6 +41,7 @@ class _PersonClustersState extends State<PersonClusters> {
             return ListView.builder(
               itemCount: keys.length,
               itemBuilder: (context, index) {
+                final int clusterID = keys[index];
                 final List<EnteFile> files = snapshot.data![keys[index]]!;
                 return InkWell(
                   onTap: () {
@@ -85,11 +89,24 @@ class _PersonClustersState extends State<PersonClusters> {
                                   "${snapshot.data![keys[index]]!.length} photos",
                                   style: getEnteTextTheme(context).body,
                                 ),
-                                // Red - icon
-
-                                const Icon(
-                                  CupertinoIcons.minus_circled,
-                                  color: Colors.red,
+                                GestureDetector(
+                                  onTap: () async {
+                                    await FaceMLDataDB.instance
+                                        .removeClusterToPerson(
+                                      personID: widget.person.remoteID,
+                                      clusterID: clusterID,
+                                    );
+                                    Bus.instance.fire(
+                                      PeopleChangedEvent(
+                                          // widget.person.remoteID,
+                                          ),
+                                    );
+                                    setState(() {});
+                                  },
+                                  child: const Icon(
+                                    CupertinoIcons.minus_circled,
+                                    color: Colors.red,
+                                  ),
                                 ),
                               ],
                             ),

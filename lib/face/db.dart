@@ -376,6 +376,18 @@ class FaceMLDataDB {
     );
   }
 
+  Future<void> removeClusterToPerson({
+    required String personID,
+    required int clusterID,
+  }) async {
+    final db = await instance.database;
+    await db.delete(
+      clustersTable,
+      where: '$personIdColumn = ? AND $cluserIDColumn = ?',
+      whereArgs: [personID, clusterID],
+    );
+  }
+
   // for a given personID, return a map of clusterID to fileIDs using join query
   Future<Map<int, Set<int>>> getFileIdToClusterIDSet(String personID) {
     final db = instance.database;

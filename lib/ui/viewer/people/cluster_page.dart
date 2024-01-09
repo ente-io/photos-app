@@ -113,7 +113,7 @@ class _ClusterPageState extends State<ClusterPage> {
               if (result != null && result is Person) {
                 Navigator.pop(context);
                 // ignore: unawaited_futures
-                routeToPage(context, PeoplePage(const [], person: result));
+                routeToPage(context, PeoplePage(person: result));
               }
             } else {
               showShortToast(context, "11No personID or clusterID");
