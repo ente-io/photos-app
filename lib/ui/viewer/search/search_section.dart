@@ -14,7 +14,7 @@ import "package:photos/theme/ente_theme.dart";
 import "package:photos/ui/viewer/file/no_thumbnail_widget.dart";
 import "package:photos/ui/viewer/file/thumbnail_widget.dart";
 import "package:photos/ui/viewer/gallery/collection_page.dart";
-import "package:photos/ui/viewer/search/result/cluster_or_person_face_widget.dart";
+import 'package:photos/ui/viewer/search/result/person_face_widget.dart';
 import "package:photos/ui/viewer/search/result/go_to_map_widget.dart";
 import "package:photos/ui/viewer/search/result/search_result_page.dart";
 import 'package:photos/ui/viewer/search/result/search_section_all_page.dart';
@@ -288,9 +288,8 @@ class FaceSearchResult extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClusterOrPersonWidget(
+    return PersonFaceWidget(
       searchResult.previewThumbnail()!,
-      heroTagPrefix,
       personId: (searchResult as GenericSearchResult).params[kPersonParamID],
       clusterID: (searchResult as GenericSearchResult).params[kClusterParamId],
     );

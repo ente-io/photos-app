@@ -9,15 +9,13 @@ import 'package:photos/models/file/file.dart';
 import 'package:photos/ui/viewer/file/thumbnail_widget.dart';
 import "package:photos/utils/face/face_box_crop.dart";
 
-class ClusterOrPersonWidget extends StatelessWidget {
+class PersonFaceWidget extends StatelessWidget {
   final EnteFile file;
-  final String tagPrefix;
   final String? personId;
   final int? clusterID;
 
-  const ClusterOrPersonWidget(
-    this.file,
-    this.tagPrefix, {
+  const PersonFaceWidget(
+    this.file, {
     this.personId,
     this.clusterID,
     Key? key,
@@ -29,7 +27,6 @@ class ClusterOrPersonWidget extends StatelessWidget {
       future: getFaceCrop(),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
-          Logger("ClusterOrPersonWidget").info("Gor crop");
           final ImageProvider imageProvider = MemoryImage(snapshot.data!);
           return Stack(
             fit: StackFit.expand,
@@ -40,10 +37,10 @@ class ClusterOrPersonWidget extends StatelessWidget {
               ),
             ],
           );
-        } else if (snapshot.hasError) {
-          log('Error getting cover face for person: ${snapshot.error}');
-          return Text(snapshot.error.toString());
         } else {
+          if (snapshot.hasError) {
+            log('Error getting cover face for person: ${snapshot.error}');
+          }
           return ThumbnailWidget(
             file,
           );

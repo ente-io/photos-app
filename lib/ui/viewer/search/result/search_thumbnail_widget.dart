@@ -6,7 +6,7 @@ import "package:photos/models/search/search_result.dart";
 import "package:photos/models/search/search_types.dart";
 import 'package:photos/ui/viewer/file/no_thumbnail_widget.dart';
 import 'package:photos/ui/viewer/file/thumbnail_widget.dart';
-import "package:photos/ui/viewer/search/result/cluster_or_person_face_widget.dart";
+import 'package:photos/ui/viewer/search/result/person_face_widget.dart';
 
 class SearchThumbnailWidget extends StatelessWidget {
   final EnteFile? file;
@@ -32,9 +32,8 @@ class SearchThumbnailWidget extends StatelessWidget {
           child: file != null
               ? (searchResult != null &&
                       searchResult!.type() == ResultType.faces)
-                  ? ClusterOrPersonWidget(
+                  ? PersonFaceWidget(
                       file!,
-                      tagPrefix + "_cluster_or_person",
                       personId: (searchResult as GenericSearchResult)
                           .params[kPersonParamID],
                       clusterID: (searchResult as GenericSearchResult)
