@@ -21,6 +21,7 @@ import "package:photos/models/file/file.dart";
 import "package:photos/models/file/file_type.dart";
 import 'package:photos/models/ml/ml_typedefs.dart';
 import "package:photos/models/ml/ml_versions.dart";
+import "package:photos/services/face_ml/face_clustering/linear_clustering_service.dart";
 import "package:photos/services/face_ml/face_detection/detection.dart";
 import "package:photos/services/face_ml/face_detection/yolov5face/yolo_face_detection_exceptions.dart";
 import "package:photos/services/face_ml/face_detection/yolov5face/yolo_face_detection_onnx.dart";
@@ -91,34 +92,33 @@ class FaceMlService {
     await clusterAllImages();
   }
 
-  Future<void> clusterAllImages() async {
+  Future<void> clusterAllImages({double minFaceScore= 0.75}) async {
     _logger.info("`clusterAllImages()` called");
 
     try {
-      final allFaceMlResults = await MlDataDB.instance.getAllFaceMlResults();
-
-      // Initialize all the lists that we will use
-      final allFaceEmbeddings = <Embedding>[];
-      final allFileIDs = <int>[];
-      final allFaceIDs = <String>[];
-
-      // Populate the lists for the clustering
-      for (final FaceMlResult faceMlResult in allFaceMlResults) {
-        allFaceEmbeddings.addAll(faceMlResult.allFaceEmbeddings);
-        allFileIDs.addAll(faceMlResult.fileIdForEveryFace);
-        allFaceIDs.addAll(faceMlResult.allFaceIds);
-      }
-
-      _logger.info(
-        "`clusterAllImages`: Starting clustering, on ${allFaceEmbeddings.length} face embeddings",
+      // Read all the embeddings from the database, in a map from faceID to embedding
+      final clusterStartTime = DateTime.now();
+      final faceIdToEmbedding = await FaceMLDataDB.instance.getFaceEmbeddingMap(
+        minScore: minFaceScore,
       );
-      if (allFaceEmbeddings.isEmpty) {
-        _logger.warning("No face embeddings found, skipping clustering");
-        return;
-      }
+      _logger.info('read embeddings ${faceIdToEmbedding.length} ');
 
-      // Store the clusters in the database
-      // await MlDataDB.instance.createAllClusterResults(clusterResults);
+      // Cluster the embeddings using the linear clustering algorithm, returning a map from faceID to clusterID
+      final faceIdToCluster =
+          await FaceLinearClustering.instance.predict(faceIdToEmbedding);
+      final clusterDoneTime = DateTime.now();
+      _logger.info(
+        'done with clustering ${faceIdToEmbedding.length} in ${clusterDoneTime.difference(clusterStartTime).inSeconds} seconds ',
+      );
+
+      // Store the updated clusterIDs in the database
+      _logger.info(
+        'Updating ${faceIdToCluster?.length} FaceIDs with clusterIDs in the DB',
+      );
+      await FaceMLDataDB.instance
+          .updatePersonIDForFaceIDIFNotSet(faceIdToCluster!);
+      _logger.info('Done updating FaceIDs with clusterIDs in the DB, in '
+          '${DateTime.now().difference(clusterDoneTime).inSeconds} seconds');
     } catch (e, s) {
       _logger.severe("`clusterAllImages` failed", e, s);
     }
