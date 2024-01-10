@@ -7,6 +7,7 @@ import "package:photos/face/model/face.dart";
 import 'package:photos/models/file/file.dart';
 import 'package:photos/ui/viewer/file/thumbnail_widget.dart';
 import "package:photos/utils/face/face_box_crop.dart";
+import "package:photos/utils/thumbnail_util.dart";
 
 class PersonFaceWidget extends StatelessWidget {
   final EnteFile file;
@@ -62,15 +63,24 @@ class PersonFaceWidget extends StatelessWidget {
     if (cachedFace != null) {
       return cachedFace;
     }
-    final result = await getFaceCrops(
-      file,
-      {
-        face.faceID: face.detection.box,
-      },
+    final faceCropCacheFile = cachedFaceCropPath(face.faceID);
+    if ((await faceCropCacheFile.exists())) {
+      final data = await faceCropCacheFile.readAsBytes();
+      faceCropCache.put(face.faceID, data);
+      return data;
+    }
+    final result = await pool.withResource(
+      () async => await getFaceCrops(
+        file,
+        {
+          face.faceID: face.detection.box,
+        },
+      ),
     );
     final Uint8List? computedCrop = result?[face.faceID];
     if (computedCrop != null) {
       faceCropCache.put(face.faceID, computedCrop);
+      faceCropCacheFile.writeAsBytes(computedCrop).ignore();
     }
     return computedCrop;
   }

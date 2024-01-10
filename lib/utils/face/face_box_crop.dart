@@ -8,9 +8,10 @@ import "package:photos/models/file/file_type.dart";
 import "package:photos/utils/file_util.dart";
 import "package:photos/utils/image_ml_isolate.dart";
 import "package:photos/utils/thumbnail_util.dart";
+import "package:pool/pool.dart";
 
 final LRUMap<String, Uint8List?> faceCropCache = LRUMap(1000);
-
+final pool = Pool(5, timeout: const Duration(seconds: 15));
 Future<Map<String, Uint8List>?> getFaceCrops(
   EnteFile file,
   Map<String, FaceBox> faceBoxeMap,

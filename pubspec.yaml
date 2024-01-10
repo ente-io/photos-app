@@ -168,6 +168,7 @@ dependencies:
   widgets_to_image: ^0.0.2
   flutter_isolate: ^2.0.4
   protobuf: ^3.1.0
+  pool: ^1.5.1
   
 
 dependency_overrides:
