@@ -59,7 +59,7 @@ const clustersTable = 'clusters';
 const personIdColumn = 'person_id';
 const cluserIDColumn = 'cluster_id';
 
-const clusterTable = '''
+const createClusterTable = '''
 CREATE TABLE IF NOT EXISTS $clustersTable (
   $personIdColumn	TEXT NOT NULL,
   $cluserIDColumn	INTEGER NOT NULL,

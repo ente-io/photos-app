@@ -49,7 +49,7 @@ class FaceMLDataDB {
   Future _onCreate(Database db, int version) async {
     await db.execute(createFacesTable);
     await db.execute(createPeopleTable);
-    await db.execute(clusterTable);
+    await db.execute(createClusterTable);
     await db.execute(createNotPersonFeedbackTable);
   }
 
@@ -126,7 +126,7 @@ class FaceMLDataDB {
   Future<void> clearTable() async {
     final db = await instance.database;
     await db.delete(facesTable);
-    await db.delete(clusterTable);
+    await db.delete(createClusterTable);
     await db.delete(clusterSummaryTable);
     await db.delete(peopleTable);
     await db.delete(notPersonFeedback);
@@ -528,8 +528,8 @@ class FaceMLDataDB {
 
     // await db.execute(createFacesTable);
     await db.execute(createPeopleTable);
-    await db.execute(clusterTable);
+    await db.execute(createClusterTable);
     await db.execute(createNotPersonFeedbackTable);
-    await db.execute(clusterSummaryTable);
+    await db.execute(createClusterSummaryTable);
   }
 }
