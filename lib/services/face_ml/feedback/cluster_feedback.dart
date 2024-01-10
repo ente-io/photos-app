@@ -17,38 +17,46 @@ class ClusterFeedbackService {
     final faceMlDb = FaceMLDataDB.instance;
     // suggestions contains map of person's clusterID to map of closest clusterID to with disstance
     final Map<int, List<(int, double)>> suggestions = {};
-    final allClusterIds = (await faceMlDb.clusterIdToFaceCount()).keys;
+    final allClusterIdsToCountMap = (await faceMlDb.clusterIdToFaceCount());
     final ignoredClusters = await faceMlDb.getPersonIgnoredClusters(p.remoteID);
     final personClusters = await faceMlDb.getPersonClusterIDs(p.remoteID);
+    final Map<int, (Uint8List, int)> clusterToSummary =
+        await faceMlDb.clusterSummaryAll();
+    final Map<int, (Uint8List, int)> updatesForClusterSummary = {};
 
     final Map<int, List<double>> clusterAvg = {};
-    final EnteWatch watch = EnteWatch("cluster")..start();
-    int fileCound = 0;
+    final EnteWatch watch = EnteWatch("ClusterFeedbackService")..start();
+
+    final allClusterIds = allClusterIdsToCountMap.keys;
     for (final clusterID in allClusterIds) {
       if (ignoredClusters.contains(clusterID)) {
-        dev.log(
-          'ignore cluster $clusterID for ${p.attr.name}',
-          name: "ClusterFeedbackService",
-        );
         continue;
       }
-      final Iterable<Uint8List> embedings =
-          await FaceMLDataDB.instance.getFaceEmbeddingsForCluster(clusterID);
-
-      final List<double> sum = List.filled(192, 0);
-      for (final embedding in embedings) {
-        final data = EVector.fromBuffer(embedding).values;
-        for (int i = 0; i < sum.length; i++) {
-          sum[i] += data[i];
+      late List<double> avg;
+      if (clusterToSummary[clusterID]?.$2 ==
+          allClusterIdsToCountMap[clusterID]) {
+        avg = EVector.fromBuffer(clusterToSummary[clusterID]!.$1).values;
+      } else {
+        final Iterable<Uint8List> embedings =
+            await FaceMLDataDB.instance.getFaceEmbeddingsForCluster(clusterID);
+        final List<double> sum = List.filled(192, 0);
+        for (final embedding in embedings) {
+          final data = EVector.fromBuffer(embedding).values;
+          for (int i = 0; i < sum.length; i++) {
+            sum[i] += data[i];
+          }
         }
+        avg = sum.map((e) => e / embedings.length).toList();
+        final avgEmbeedingBuffer = EVector(values: avg).writeToBuffer();
+        updatesForClusterSummary[clusterID] =
+            (avgEmbeedingBuffer, embedings.length);
       }
-      final avg = sum.map((e) => e / embedings.length).toList();
-      fileCound += embedings.length;
       clusterAvg[clusterID] = avg;
     }
-    watch.log(
-      'done with clustering ${clusterAvg.length} with files $fileCound',
-    );
+    if (updatesForClusterSummary.isNotEmpty) {
+      await faceMlDb.clusterSummaryUpdate(updatesForClusterSummary);
+    }
+    watch.log('computed avg for ${clusterAvg.length} clusters');
 
     for (final otherClusterID in clusterAvg.keys) {
       // ignore the cluster that belong to the person or is ignored

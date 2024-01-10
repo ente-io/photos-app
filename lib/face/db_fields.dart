@@ -71,11 +71,13 @@ const dropClustersTable = 'DROP TABLE IF EXISTS $clustersTable';
 
 /// Cluster Summary Table Fields & Schema Queries
 const clusterSummaryTable = 'cluster_summary';
-const clusterAvgColumn = 'avg';
+const avgColumn = 'avg';
+const countColumn = 'count';
 const createClusterSummaryTable = '''
 CREATE TABLE IF NOT EXISTS $clusterSummaryTable (
   $cluserIDColumn	INTEGER NOT NULL,
-  $clusterAvgColumn REAL NOT NULL,
+  $avgColumn BLOB NOT NULL,
+  $countColumn INTEGER NOT NULL,
   PRIMARY KEY($cluserIDColumn)
 );
 ''';

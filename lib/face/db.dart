@@ -447,6 +447,46 @@ class FaceMLDataDB {
     });
   }
 
+  Future<void> clusterSummaryUpdate(Map<int, (Uint8List, int)> summary) async {
+    final db = await instance.database;
+    var batch = db.batch();
+    int batchCounter = 0;
+    for (final entry in summary.entries) {
+      if (batchCounter == 400) {
+        await batch.commit(noResult: true);
+        batch = db.batch();
+        batchCounter = 0;
+      }
+      final int cluserID = entry.key;
+      final int count = entry.value.$2;
+      final Uint8List avg = entry.value.$1;
+      batch.insert(
+        clusterSummaryTable,
+        {
+          cluserIDColumn: cluserID,
+          avgColumn: avg,
+          countColumn: count,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      batchCounter++;
+    }
+    await batch.commit(noResult: true);
+  }
+
+  Future<Map<int, (Uint8List, int)>> clusterSummaryAll() async {
+    final db = await instance.database;
+    final Map<int, (Uint8List, int)> result = {};
+    final rows = await db.rawQuery('SELECT * from $clusterSummaryTable');
+    for (final r in rows) {
+      final id = r[cluserIDColumn] as int;
+      final avg = r[avgColumn] as Uint8List;
+      final count = r[countColumn] as int;
+      result[id] = (avg, count);
+    }
+    return result;
+  }
+
   Future<Map<int, String>> getCluserIDToPersonMap() async {
     final db = await instance.database;
     final List<Map<String, dynamic>> maps = await db.rawQuery(

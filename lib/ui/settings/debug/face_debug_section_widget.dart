@@ -7,9 +7,11 @@ import "package:photos/core/event_bus.dart";
 import "package:photos/events/people_changed_event.dart";
 import "package:photos/extensions/stop_watch.dart";
 import "package:photos/face/db.dart";
+import "package:photos/face/model/person.dart";
 import "package:photos/face/utils/import_from_zip.dart";
 import 'package:photos/services/face_ml/face_clustering/linear_clustering.dart';
 import "package:photos/services/face_ml/face_ml_service.dart";
+import "package:photos/services/face_ml/feedback/cluster_feedback.dart";
 import 'package:photos/theme/ente_theme.dart';
 import 'package:photos/ui/components/captioned_text_widget.dart';
 import 'package:photos/ui/components/expandable_menu_item_widget.dart';
@@ -201,6 +203,14 @@ class _FaceDebugSectionWidgetState extends State<FaceDebugSectionWidget> {
           trailingIcon: Icons.chevron_right_outlined,
           trailingIconIsMuted: true,
           onTap: () async {
+            final List<Person> persons =
+                await FaceMLDataDB.instance.getPeople();
+            final EnteWatch w = EnteWatch('feedback')..start();
+            for (final Person p in persons) {
+              await ClusterFeedbackService.instance.getSuggestions(p);
+              w.logAndReset('suggestion calculated for ${p.attr.name}');
+            }
+            w.log("done with feedback");
             showShortToast(context, "done avg");
           },
         ),
