@@ -75,7 +75,7 @@ const clusterAvgColumn = 'avg';
 const createClusterSummaryTable = '''
 CREATE TABLE IF NOT EXISTS $clusterSummaryTable (
   $cluserIDColumn	INTEGER NOT NULL,
-  $clusterAvgColumn  REAL,
+  $clusterAvgColumn REAL NOT NULL,
   PRIMARY KEY($cluserIDColumn)
 );
 ''';

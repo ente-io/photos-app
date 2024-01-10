@@ -125,8 +125,9 @@ class FaceMLDataDB {
 
   Future<void> clearTable() async {
     final db = await instance.database;
-    await db.delete(clusterTable);
     await db.delete(facesTable);
+    await db.delete(clusterTable);
+    await db.delete(clusterSummaryTable);
     await db.delete(peopleTable);
     await db.delete(notPersonFeedback);
   }
