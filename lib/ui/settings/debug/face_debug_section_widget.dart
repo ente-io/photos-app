@@ -8,7 +8,6 @@ import "package:photos/events/people_changed_event.dart";
 import "package:photos/extensions/stop_watch.dart";
 import "package:photos/face/db.dart";
 import "package:photos/face/utils/import_from_zip.dart";
-import 'package:photos/services/face_ml/face_clustering/linear_clustering.dart';
 import "package:photos/services/face_ml/face_ml_service.dart";
 import 'package:photos/theme/ente_theme.dart';
 import 'package:photos/ui/components/captioned_text_widget.dart';
@@ -143,24 +142,14 @@ class _FaceDebugSectionWidgetState extends State<FaceDebugSectionWidget> {
           trailingIcon: Icons.chevron_right_outlined,
           trailingIconIsMuted: true,
           onTap: () async {
+            // Reset the clusters and feedback in the DB
             await FaceMLDataDB.instance.resetClusterIDs();
             await FaceMLDataDB.instance.dropClustersAndPeople();
-            final EnteWatch watch = EnteWatch("cluster")..start();
-            final faceIdToEmbedding =
-                await FaceMLDataDB.instance.getFaceEmbeddingMap(
-              minScore: 0.75,
-            );
-            watch.logAndReset('read embeddings ${faceIdToEmbedding.length} ');
-            final faceIdToCluster =
-                await FaceLinearClustering.instance.predict(faceIdToEmbedding);
-            watch.logAndReset(
-              'done with clustering ${faceIdToEmbedding.length} ',
-            );
-            _logger.info(
-              'Updating ${faceIdToCluster?.length} FaceIDs with clusterIDs in the DB',
-            );
-            await FaceMLDataDB.instance
-                .updatePersonIDForFaceIDIFNotSet(faceIdToCluster!);
+
+            // Cluster all the faces
+            await FaceMlService.instance.clusterAllImages(minFaceScore: 0.75);
+
+            // Fire event to update UI
             Bus.instance.fire(PeopleChangedEvent());
             showShortToast(context, "Done");
           },
@@ -173,22 +162,8 @@ class _FaceDebugSectionWidgetState extends State<FaceDebugSectionWidget> {
           trailingIcon: Icons.chevron_right_outlined,
           trailingIconIsMuted: true,
           onTap: () async {
-            final EnteWatch watch = EnteWatch("cluster")..start();
-            final faceIdToEmbedding =
-                await FaceMLDataDB.instance.getFaceEmbeddingMap(
-              minScore: 0.75,
-            );
-            watch.logAndReset('read embeddings ${faceIdToEmbedding.length} ');
-            final faceIdToCluster =
-                await FaceLinearClustering.instance.predict(faceIdToEmbedding);
-            watch.logAndReset(
-              'done with clustering ${faceIdToEmbedding.length} ',
-            );
-            _logger.info(
-              'Updating ${faceIdToCluster?.length} FaceIDs with clusterIDs in the DB',
-            );
-            await FaceMLDataDB.instance
-                .updatePersonIDForFaceIDIFNotSet(faceIdToCluster!);
+            await FaceMlService.instance.clusterAllImages(minFaceScore: 0.75);
+
             Bus.instance.fire(PeopleChangedEvent());
             showShortToast(context, "Done");
           },
