@@ -123,6 +123,14 @@ class FaceMLDataDB {
     return maps.map((e) => e[cluserIDColumn] as int).toSet();
   }
 
+  Future<void> clearTable() async {
+    final db = await instance.database;
+    await db.delete(clusterTable);
+    await db.delete(facesTable);
+    await db.delete(peopleTable);
+    await db.delete(notPersonFeedback);
+  }
+
   Future<Iterable<Uint8List>> getFaceEmbeddingsForCluster(
     int clusterID, {
     int? limit,
@@ -514,11 +522,13 @@ class FaceMLDataDB {
     }
     await db.execute(deletePeopleTable);
     await db.execute(dropClustersTable);
+    await db.execute(dropClusterSummaryTable);
     await db.execute(dropNotPersonFeedbackTable);
 
     // await db.execute(createFacesTable);
     await db.execute(createPeopleTable);
     await db.execute(clusterTable);
     await db.execute(createNotPersonFeedbackTable);
+    await db.execute(clusterSummaryTable);
   }
 }

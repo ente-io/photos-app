@@ -69,7 +69,22 @@ CREATE TABLE IF NOT EXISTS $clustersTable (
 const dropClustersTable = 'DROP TABLE IF EXISTS $clustersTable';
 // End Clusters Table Fields & Schema Queries
 
-// notPersonFeedback Table Fields & Schema Queries
+/// Cluster Summary Table Fields & Schema Queries
+const clusterSummaryTable = 'cluster_summary';
+const clusterAvgColumn = 'avg';
+const createClusterSummaryTable = '''
+CREATE TABLE IF NOT EXISTS $clusterSummaryTable (
+  $cluserIDColumn	INTEGER NOT NULL,
+  $clusterAvgColumn  REAL,
+  PRIMARY KEY($cluserIDColumn)
+);
+''';
+
+const dropClusterSummaryTable = 'DROP TABLE IF EXISTS $clusterSummaryTable';
+
+/// End Cluster Summary Table Fields & Schema Queries
+
+/// notPersonFeedback Table Fields & Schema Queries
 const notPersonFeedback = 'not_person_feedback';
 
 const createNotPersonFeedbackTable = '''
