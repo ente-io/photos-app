@@ -1,4 +1,5 @@
 import "dart:async";
+import "dart:developer" show log;
 import "dart:math" show min, max;
 import "dart:typed_data" show Float32List, Uint8List, ByteData;
 import "dart:ui";
@@ -13,7 +14,6 @@ import "dart:ui";
 //         ImageConfiguration;
 // import 'package:flutter/material.dart' as material show Image;
 import 'package:flutter/painting.dart' as paint show decodeImageFromList;
-import "package:logging/logging.dart";
 import 'package:ml_linalg/linalg.dart';
 import "package:photos/face/model/box.dart";
 import 'package:photos/models/ml/ml_typedefs.dart';
@@ -24,8 +24,6 @@ import "package:photos/services/face_ml/face_detection/detection.dart";
 
 /// All of the functions in this file are helper functions for the [ImageMlIsolate] isolate.
 /// Don't use them outside of the isolate, unless you are okay with UI jank!!!!
-
-final _logger = Logger('ImageMlUtil');
 
 /// Reads the pixel color at the specified coordinates.
 Color readPixelColor(
@@ -290,7 +288,7 @@ Future<ByteData> getByteDataFromImage(
 }) async {
   final ByteData? byteDataRgba = await image.toByteData(format: format);
   if (byteDataRgba == null) {
-    _logger.severe('Could not convert image to ByteData');
+    log('[ImageMlUtils] Could not convert image to ByteData');
     throw Exception('Could not convert image to ByteData');
   }
   return byteDataRgba;
@@ -1085,8 +1083,8 @@ Future<List<Uint8List>> generateFaceThumbnailsFromDataAndDetections(
     }
     return faceThumbnails;
   } catch (e) {
-    _logger.severe('Error generating face thumbnails: $e');
-    _logger.severe('cropImage problematic input argument: ${faceBoxes[i]}');
+    log('[ImageMlUtils] Error generating face thumbnails: $e');
+    log('[ImageMlUtils] cropImage problematic input argument: ${faceBoxes[i]}');
     return [];
   }
 }
