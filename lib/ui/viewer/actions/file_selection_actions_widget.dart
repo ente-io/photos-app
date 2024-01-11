@@ -669,7 +669,7 @@ class _FileSelectionActionsWidgetState
       context: context,
       buttons: [
         ButtonWidget(
-          labelText: S.of(context).confirm,
+          labelText: S.of(context).yesRemove,
           buttonType: ButtonType.neutral,
           buttonSize: ButtonSize.large,
           shouldStickToDarkTheme: true,
@@ -685,8 +685,7 @@ class _FileSelectionActionsWidgetState
           isInAlert: true,
         ),
       ],
-      title: S.of(context).publicLinkCreated,
-      body: S.of(context).youCanManageYourLinksInTheShareTab,
+      title: "Remove these photos for ${widget.person!.attr.name}?",
       actionSheetType: ActionSheetType.defaultActionSheet,
     );
     if (actionResult?.action != null) {
