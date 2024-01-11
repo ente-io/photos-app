@@ -140,7 +140,10 @@ class ClusterFeedbackService {
         }
       }
     }
-
     return clusterIDToFiles;
+  }
+
+  Future<void> removePersonFromFiles(List<EnteFile> files, Person p) {
+    return FaceMLDataDB.instance.removePersonFromFiles(files, p);
   }
 }

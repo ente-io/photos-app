@@ -11,6 +11,7 @@ import 'package:photos/face/db_fields.dart';
 import "package:photos/face/db_model_mappers.dart";
 import "package:photos/face/model/face.dart";
 import "package:photos/face/model/person.dart";
+import "package:photos/models/file/file.dart";
 import "package:photos/services/face_ml/blur_detection/blur_constants.dart";
 import 'package:sqflite/sqflite.dart';
 
@@ -286,6 +287,28 @@ class FaceMLDataDB {
         facesTable,
         {faceClusterId: personID},
         where: '$faceIDColumn = ? AND $faceClusterId IS NULL',
+        whereArgs: [faceID],
+      );
+    }
+    // Commit the batch
+    await batch.commit(noResult: true);
+  }
+
+  Future<void> forceUpdateClusterIds(
+    Map<String, int> faceIDToPersonID,
+  ) async {
+    final db = await instance.database;
+
+    // Start a batch
+    final batch = db.batch();
+
+    for (final map in faceIDToPersonID.entries) {
+      final faceID = map.key;
+      final personID = map.value;
+      batch.update(
+        facesTable,
+        {faceClusterId: personID},
+        where: '$faceIDColumn = ?',
         whereArgs: [faceID],
       );
     }
@@ -615,5 +638,26 @@ class FaceMLDataDB {
     await db.execute(createClusterTable);
     await db.execute(createNotPersonFeedbackTable);
     await db.execute(createClusterSummaryTable);
+  }
+
+  Future<void> removePersonFromFiles(List<EnteFile> files, Person p) async {
+    final db = await instance.database;
+    final result = await db.rawQuery(
+      'SELECT $faceIDColumn FROM $facesTable LEFT JOIN $clustersTable '
+      'ON $facesTable.$faceClusterId = $clustersTable.$cluserIDColumn '
+      'WHERE $clustersTable.$personIdColumn = ? AND $facesTable.$fileIDColumn IN (${files.map((e) => e.uploadedFileID).join(",")})',
+      [p.remoteID],
+    );
+    // get max clusterID
+    final maxRows =
+        await db.rawQuery('SELECT max($faceClusterId) from $facesTable');
+    int maxClusterID = maxRows.first.values.first as int;
+    final Map<String, int> faceIDToClusterID = {};
+    for (final faceRow in result) {
+      final faceID = faceRow[faceIDColumn] as String;
+      faceIDToClusterID[faceID] = maxClusterID + 1;
+      maxClusterID = maxClusterID + 1;
+    }
+    await forceUpdateClusterIds(faceIDToClusterID);
   }
 }

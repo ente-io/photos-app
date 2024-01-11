@@ -20,6 +20,7 @@ import 'package:photos/models/gallery_type.dart';
 import "package:photos/models/metadata/common_keys.dart";
 import 'package:photos/models/selected_files.dart';
 import 'package:photos/services/collections_service.dart';
+import "package:photos/services/face_ml/feedback/cluster_feedback.dart";
 import 'package:photos/services/hidden_service.dart';
 import "package:photos/theme/colors.dart";
 import "package:photos/theme/ente_theme.dart";
@@ -689,15 +690,13 @@ class _FileSelectionActionsWidgetState
       actionSheetType: ActionSheetType.defaultActionSheet,
     );
     if (actionResult?.action != null) {
-      // if (actionResult!.action == ButtonAction.first) {
-      //   await _copyLink();
-      // }
-      // if (actionResult.action == ButtonAction.second) {
-      //   await routeToPage(
-      //     context,
-      //     ManageSharedLinkWidget(collection: _cachedCollectionForSharedLink),
-      //   );
-      // }
+      if (actionResult!.action == ButtonAction.first) {
+        await ClusterFeedbackService.instance.removePersonFromFiles(
+          widget.selectedFiles.files.toList(),
+          widget.person!,
+        );
+      }
+      Bus.instance.fire(PeopleChangedEvent());
     }
     widget.selectedFiles.clearAll();
     if (mounted) {
