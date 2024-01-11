@@ -146,6 +146,7 @@ class _PeoplePageState extends State<PeoplePage> {
           FileSelectionOverlayBar(
             PeoplePage.overlayType,
             _selectedFiles,
+            person: widget.person,
           ),
         ],
       ),

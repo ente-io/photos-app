@@ -6,6 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import "package:modal_bottom_sheet/modal_bottom_sheet.dart";
 import 'package:photos/core/configuration.dart';
+import "package:photos/core/event_bus.dart";
+import "package:photos/events/people_changed_event.dart";
+import "package:photos/face/db.dart";
 import "package:photos/face/model/person.dart";
 import "package:photos/generated/l10n.dart";
 import 'package:photos/models/collection/collection.dart';
@@ -122,7 +125,24 @@ class _FileSelectionActionsWidgetState
     //and set [shouldShow] to false for items that should not be shown and true
     //for items that should be shown.
     final List<SelectionActionButton> items = [];
-
+    if (widget.type == GalleryType.peopleTag && widget.person != null) {
+      items.add(
+        SelectionActionButton(
+          icon: Icons.remove_circle_outline,
+          labelText: 'Not ${widget.person!.attr.name}?',
+          onTap: anyUploadedFiles ? _onNotpersonClicked : null,
+        ),
+      );
+      if (ownedFilesCount == 1) {
+        items.add(
+          SelectionActionButton(
+            icon: Icons.image_outlined,
+            labelText: 'Use as cover',
+            onTap: anyUploadedFiles ? _setPersonCover : null,
+          ),
+        );
+      }
+    }
     if (widget.type.showCreateLink()) {
       if (_cachedCollectionForSharedLink != null && anyUploadedFiles) {
         items.add(
@@ -622,6 +642,62 @@ class _FileSelectionActionsWidgetState
           ManageSharedLinkWidget(collection: _cachedCollectionForSharedLink),
         );
       }
+    }
+    widget.selectedFiles.clearAll();
+    if (mounted) {
+      setState(() => {});
+    }
+  }
+
+  Future<void> _setPersonCover() async {
+    final EnteFile file = widget.selectedFiles.files.first;
+    final Person newPerson = widget.person!.copyWith(
+      attr: widget.person!.attr
+          .copyWith(avatarFaceId: file.uploadedFileID.toString()),
+    );
+    await FaceMLDataDB.instance.updatePerson(newPerson);
+    widget.selectedFiles.clearAll();
+    if (mounted) {
+      setState(() => {});
+    }
+    Bus.instance.fire(PeopleChangedEvent());
+  }
+
+  Future<void> _onNotpersonClicked() async {
+    final actionResult = await showActionSheet(
+      context: context,
+      buttons: [
+        ButtonWidget(
+          labelText: S.of(context).confirm,
+          buttonType: ButtonType.neutral,
+          buttonSize: ButtonSize.large,
+          shouldStickToDarkTheme: true,
+          buttonAction: ButtonAction.first,
+          isInAlert: true,
+        ),
+        ButtonWidget(
+          labelText: S.of(context).cancel,
+          buttonType: ButtonType.secondary,
+          buttonSize: ButtonSize.large,
+          buttonAction: ButtonAction.second,
+          shouldStickToDarkTheme: true,
+          isInAlert: true,
+        ),
+      ],
+      title: S.of(context).publicLinkCreated,
+      body: S.of(context).youCanManageYourLinksInTheShareTab,
+      actionSheetType: ActionSheetType.defaultActionSheet,
+    );
+    if (actionResult?.action != null) {
+      // if (actionResult!.action == ButtonAction.first) {
+      //   await _copyLink();
+      // }
+      // if (actionResult.action == ButtonAction.second) {
+      //   await routeToPage(
+      //     context,
+      //     ManageSharedLinkWidget(collection: _cachedCollectionForSharedLink),
+      //   );
+      // }
     }
     widget.selectedFiles.clearAll();
     if (mounted) {

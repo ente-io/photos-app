@@ -2,6 +2,7 @@ import 'dart:async';
 import "dart:math";
 import "dart:typed_data";
 
+import "package:collection/collection.dart";
 import "package:flutter/foundation.dart";
 import 'package:logging/logging.dart';
 import 'package:path/path.dart' show join;
@@ -165,7 +166,6 @@ class FaceMLDataDB {
     // read person from db
     final db = await instance.database;
     if (personID != null) {
-      _logger.info('getCoverFaceForPerson check for person $personID');
       final List<Map<String, dynamic>> maps = await db.rawQuery(
         'SELECT * FROM $peopleTable where $idColumn = ?',
         [personID],
@@ -173,11 +173,14 @@ class FaceMLDataDB {
       if (maps.isEmpty) {
         throw Exception("Person with id $personID not found");
       }
+
       final person = mapRowToPerson(maps.first);
+      final List<int> fileId = [recentFileID];
+      int? avatarFileId;
       if (person.attr.avatarFaceId != null) {
-        final face = await getFaceForFaceID(person.attr.avatarFaceId!);
-        if (face != null) {
-          return face;
+        avatarFileId = int.tryParse(person.attr.avatarFaceId!.split('-')[0]);
+        if (avatarFileId != null) {
+          fileId.add(avatarFileId);
         }
       }
       final cluterRows = await db.query(
@@ -189,9 +192,17 @@ class FaceMLDataDB {
       final clusterIDs =
           cluterRows.map((e) => e[cluserIDColumn] as int).toList();
       final List<Map<String, dynamic>> faceMaps = await db.rawQuery(
-        'SELECT * FROM $facesTable where $faceClusterId IN (${clusterIDs.join(",")}) AND $fileIDColumn = $recentFileID ',
+        'SELECT * FROM $facesTable where $faceClusterId IN (${clusterIDs.join(",")}) AND $fileIDColumn in (${fileId.join(",")}) AND $faceScore > 0.8 ORDER BY $faceScore DESC',
       );
       if (faceMaps.isNotEmpty) {
+        if (avatarFileId != null) {
+          final row = faceMaps.firstWhereOrNull(
+            (element) => (element[fileIDColumn] as int) == avatarFileId,
+          );
+          if (row != null) {
+            return mapRowToFace(row);
+          }
+        }
         return mapRowToFace(faceMaps.first);
       }
     }

@@ -2,6 +2,7 @@ import "dart:developer";
 import "dart:typed_data";
 
 import 'package:flutter/widgets.dart';
+import "package:photos/db/files_db.dart";
 import "package:photos/face/db.dart";
 import "package:photos/face/model/face.dart";
 import 'package:photos/models/file/file.dart';
@@ -71,9 +72,18 @@ class PersonFaceWidget extends StatelessWidget {
         faceCropCache.put(face.faceID, data);
         return data;
       }
+      EnteFile? fileForFaceCrop = file;
+      if (face.fileID != file.uploadedFileID!) {
+        fileForFaceCrop =
+            await FilesDB.instance.getAnyUploadedFile(face.fileID!);
+      }
+      if (fileForFaceCrop == null) {
+        return null;
+      }
+
       final result = await pool.withResource(
         () async => await getFaceCrops(
-          file,
+          fileForFaceCrop!,
           {
             face.faceID: face.detection.box,
           },
