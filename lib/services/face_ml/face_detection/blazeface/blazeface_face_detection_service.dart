@@ -256,8 +256,8 @@ class BlazeFaceFaceDetection {
         config.modelPath,
         options: interpreterOptions,
       );
-      _isolateInterpreter ??=
-          IsolateInterpreter(address: _interpreter!.address);
+      _isolateInterpreter ??= await
+          IsolateInterpreter.create(address: _interpreter!.address);
 
       _logger.info('Interpreter created from asset: ${config.modelPath}');
 

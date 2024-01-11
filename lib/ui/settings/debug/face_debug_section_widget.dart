@@ -202,7 +202,9 @@ class _FaceDebugSectionWidgetState extends State<FaceDebugSectionWidget> {
               final result = await FaceMLDataDB.instance.getFaceEmbeddingMap();
               watch.logAndReset('read embeddings ${result.length} ');
               showShortToast(
-                  context, "Done in ${watch.elapsed.inSeconds} secs");
+                context,
+                "Done in ${watch.elapsed.inSeconds} secs",
+              );
             },
           ),
       ],
