@@ -1,11 +1,13 @@
+import "dart:async";
 import "dart:developer";
+import "dart:isolate";
 import "dart:math" show max;
 import "dart:typed_data";
 
-import "package:computer/computer.dart";
 import "package:logging/logging.dart";
 import "package:photos/generated/protos/ente/common/vector.pb.dart";
 import "package:photos/services/face_ml/face_clustering/cosine_distance.dart";
+import "package:synchronized/synchronized.dart";
 
 class FaceInfo {
   final String faceID;
@@ -20,11 +22,21 @@ class FaceInfo {
   });
 }
 
+enum ClusterOperation { linearIncrementalClustering }
+
 class FaceLinearClustering {
   final _logger = Logger("FaceLinearClustering");
 
-  final _computer = Computer.shared();
+  Timer? _inactivityTimer;
+  final Duration _inactivityDuration = const Duration(seconds: 30);
 
+  final _initLock = Lock();
+
+  late Isolate _isolate;
+  late ReceivePort _receivePort = ReceivePort();
+  late SendPort _mainSendPort;
+
+  bool isSpawned = false;
   bool isRunning = false;
 
   static const recommendedDistanceThreshold = 0.3;
@@ -37,7 +49,111 @@ class FaceLinearClustering {
   static final instance = FaceLinearClustering._privateConstructor();
   factory FaceLinearClustering() => instance;
 
-  /// Runs the clustering algorithm on the given [dataset], in an isolate.
+  Future<void> init() async {
+    return _initLock.synchronized(() async {
+      if (isSpawned) return;
+
+      _receivePort = ReceivePort();
+
+      try {
+        _isolate = await Isolate.spawn(
+          _isolateMain,
+          _receivePort.sendPort,
+        );
+        _mainSendPort = await _receivePort.first as SendPort;
+        isSpawned = true;
+
+        _resetInactivityTimer();
+      } catch (e) {
+        _logger.severe('Could not spawn isolate', e);
+        isSpawned = false;
+      }
+    });
+  }
+
+  Future<void> ensureSpawned() async {
+    if (!isSpawned) {
+      await init();
+    }
+  }
+
+  /// The main execution function of the isolate.
+  static void _isolateMain(SendPort mainSendPort) async {
+    final receivePort = ReceivePort();
+    mainSendPort.send(receivePort.sendPort);
+
+    receivePort.listen((message) async {
+      final functionIndex = message[0] as int;
+      final function = ClusterOperation.values[functionIndex];
+      final args = message[1] as Map<String, dynamic>;
+      final sendPort = message[2] as SendPort;
+
+      try {
+        switch (function) {
+          case ClusterOperation.linearIncrementalClustering:
+            final input = args['input'] as Map<String, (int?, Uint8List)>;
+            final result = FaceLinearClustering._runLinearClustering(input);
+            sendPort.send(result);
+            break;
+        }
+      } catch (e, stackTrace) {
+        sendPort
+            .send({'error': e.toString(), 'stackTrace': stackTrace.toString()});
+      }
+    });
+  }
+
+  /// The common method to run any operation in the isolate. It sends the [message] to [_isolateMain] and waits for the result.
+  Future<dynamic> _runInIsolate(
+    (ClusterOperation, Map<String, dynamic>) message,
+  ) async {
+    await ensureSpawned();
+    _resetInactivityTimer();
+    final completer = Completer<dynamic>();
+    final answerPort = ReceivePort();
+
+    _mainSendPort.send([message.$1.index, message.$2, answerPort.sendPort]);
+
+    answerPort.listen((receivedMessage) {
+      if (receivedMessage is Map && receivedMessage.containsKey('error')) {
+        // Handle the error
+        final errorMessage = receivedMessage['error'];
+        final errorStackTrace = receivedMessage['stackTrace'];
+        final exception = Exception(errorMessage);
+        final stackTrace = StackTrace.fromString(errorStackTrace);
+        completer.completeError(exception, stackTrace);
+      } else {
+        completer.complete(receivedMessage);
+      }
+    });
+
+    return completer.future;
+  }
+
+  /// Resets a timer that kills the isolate after a certain amount of inactivity.
+  ///
+  /// Should be called after initialization (e.g. inside `init()`) and after every call to isolate (e.g. inside `_runInIsolate()`)
+  void _resetInactivityTimer() {
+    _inactivityTimer?.cancel();
+    _inactivityTimer = Timer(_inactivityDuration, () {
+      _logger.info(
+        'Flutter Isolate has been inactive for ${_inactivityDuration.inSeconds} seconds. Killing isolate.',
+      );
+      dispose();
+    });
+  }
+
+  /// Disposes the isolate worker.
+  void dispose() {
+    if (!isSpawned) return;
+
+    isSpawned = false;
+    _isolate.kill();
+    _receivePort.close();
+    _inactivityTimer?.cancel();
+  }
+
+  /// Runs the clustering algorithm on the given [input], in an isolate.
   ///
   /// Returns the clustering result, which is a list of clusters, where each cluster is a list of indices of the dataset.
   ///
@@ -58,13 +174,17 @@ class FaceLinearClustering {
 
     isRunning = true;
 
-    // Clustering in computer isolate
+    // Clustering inside the isolate
     _logger.info(
       "Start clustering on ${input.length} embeddings inside computer isolate",
     );
     final stopwatchClustering = Stopwatch()..start();
-    final Map<String, int> faceIdToCluster =
-        await _runLinearClusteringInComputer(input);
+    // final Map<String, int> faceIdToCluster =
+    //     await _runLinearClusteringInComputer(input);
+    final Map<String, int> faceIdToCluster = await _runInIsolate(
+      (ClusterOperation.linearIncrementalClustering, {'input': input}),
+    );
+    // return _runLinearClusteringInComputer(input);
     _logger.info(
       'Clustering executed in ${stopwatchClustering.elapsed.inSeconds} seconds',
     );
@@ -72,29 +192,6 @@ class FaceLinearClustering {
     isRunning = false;
 
     return faceIdToCluster;
-  }
-
-  Future<Map<String, int>> _runLinearClusteringInComputer(
-    Map<String, (int?, Uint8List)> input,
-  ) async {
-    try {
-      // final isolateInput =
-      //     input.map((key, value) => MapEntry(key, [value.$1, value.$2]));
-      final startTime = DateTime.now();
-      final clusterResult = await _computer.compute(
-        _runLinearClustering,
-        param: input,
-        taskName: "linearClustering",
-      ) as Map<String, int>;
-      final endTime = DateTime.now();
-      _logger.info(
-        "Clustering in computer took: ${(endTime.millisecondsSinceEpoch - startTime.millisecondsSinceEpoch)}ms",
-      );
-      return clusterResult;
-    } catch (e, s) {
-      _logger.severe("Clustering inside computer failed:", e, s);
-      rethrow;
-    }
   }
 
   static Map<String, int> _runLinearClustering(
