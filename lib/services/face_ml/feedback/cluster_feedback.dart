@@ -65,22 +65,22 @@ class ClusterFeedbackService {
         continue;
       }
       final otherAvg = clusterAvg[otherClusterID]!;
-      int? closestClusterID;
-      double? closestDistance;
+      int? nearestPersonCluster;
+      double? minDistance;
       for (final personCluster in personClusters) {
         final avg = clusterAvg[personCluster]!;
         final distance = cosineDistForNormVectors(avg, otherAvg);
         if (distance < 0.4) {
-          if (closestDistance == null || distance < closestDistance) {
-            closestDistance = distance;
-            closestClusterID = personCluster;
+          if (minDistance == null || distance < minDistance) {
+            minDistance = distance;
+            nearestPersonCluster = personCluster;
           }
         }
       }
-      if (closestClusterID != null && closestDistance != null) {
+      if (nearestPersonCluster != null && minDistance != null) {
         suggestions
-            .putIfAbsent(closestClusterID, () => [])
-            .add((otherClusterID, closestDistance));
+            .putIfAbsent(nearestPersonCluster, () => [])
+            .add((otherClusterID, minDistance));
       }
     }
     dev.log(
