@@ -9,8 +9,9 @@ import "package:photos/models/file/file.dart";
 import "package:photos/services/search_service.dart";
 import "package:photos/theme/ente_theme.dart";
 import "package:photos/ui/viewer/file/no_thumbnail_widget.dart";
-import "package:photos/ui/viewer/file/thumbnail_widget.dart";
+// import "package:photos/ui/viewer/file/thumbnail_widget.dart";
 import "package:photos/ui/viewer/people/cluster_page.dart";
+import "package:photos/ui/viewer/search/result/person_face_widget.dart";
 
 class PersonClusters extends StatefulWidget {
   final Person person;
@@ -64,9 +65,9 @@ class _PersonClustersState extends State<PersonClusters> {
                           height: 64,
                           child: files.isNotEmpty
                               ? ClipOval(
-                                  child: ThumbnailWidget(
+                                  child: PersonFaceWidget(
                                     files.first,
-                                    shouldShowSyncStatus: false,
+                                    clusterID: clusterID,
                                   ),
                                 )
                               : const ClipOval(
