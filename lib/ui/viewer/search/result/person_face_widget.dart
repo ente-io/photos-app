@@ -50,38 +50,48 @@ class PersonFaceWidget extends StatelessWidget {
   }
 
   Future<Uint8List?> getFaceCrop() async {
-    final Face? face = await FaceMLDataDB.instance.getCoverFaceForPerson(
-      recentFileID: file.uploadedFileID!,
-      personID: personId,
-      clusterID: clusterID,
-    );
-    if (face == null) {
-      debugPrint("No cover face for person: $personId and cluster $clusterID");
+    try {
+      final Face? face = await FaceMLDataDB.instance.getCoverFaceForPerson(
+        recentFileID: file.uploadedFileID!,
+        personID: personId,
+        clusterID: clusterID,
+      );
+      if (face == null) {
+        debugPrint(
+            "No cover face for person: $personId and cluster $clusterID");
+        return null;
+      }
+      final Uint8List? cachedFace = faceCropCache.get(face.faceID);
+      if (cachedFace != null) {
+        return cachedFace;
+      }
+      final faceCropCacheFile = cachedFaceCropPath(face.faceID);
+      if ((await faceCropCacheFile.exists())) {
+        final data = await faceCropCacheFile.readAsBytes();
+        faceCropCache.put(face.faceID, data);
+        return data;
+      }
+      final result = await pool.withResource(
+        () async => await getFaceCrops(
+          file,
+          {
+            face.faceID: face.detection.box,
+          },
+        ),
+      );
+      final Uint8List? computedCrop = result?[face.faceID];
+      if (computedCrop != null) {
+        faceCropCache.put(face.faceID, computedCrop);
+        faceCropCacheFile.writeAsBytes(computedCrop).ignore();
+      }
+      return computedCrop;
+    } catch (e, s) {
+      log(
+        "Error getting cover face for person: $personId and cluster $clusterID",
+        error: e,
+        stackTrace: s,
+      );
       return null;
     }
-    final Uint8List? cachedFace = faceCropCache.get(face.faceID);
-    if (cachedFace != null) {
-      return cachedFace;
-    }
-    final faceCropCacheFile = cachedFaceCropPath(face.faceID);
-    if ((await faceCropCacheFile.exists())) {
-      final data = await faceCropCacheFile.readAsBytes();
-      faceCropCache.put(face.faceID, data);
-      return data;
-    }
-    final result = await pool.withResource(
-      () async => await getFaceCrops(
-        file,
-        {
-          face.faceID: face.detection.box,
-        },
-      ),
-    );
-    final Uint8List? computedCrop = result?[face.faceID];
-    if (computedCrop != null) {
-      faceCropCache.put(face.faceID, computedCrop);
-      faceCropCacheFile.writeAsBytes(computedCrop).ignore();
-    }
-    return computedCrop;
   }
 }
