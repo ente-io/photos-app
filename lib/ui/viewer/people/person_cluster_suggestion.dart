@@ -1,15 +1,17 @@
 import "dart:math";
 
 import "package:flutter/material.dart";
+import "package:photos/face/db.dart";
 import "package:photos/face/model/person.dart";
 import "package:photos/models/file/file.dart";
-import "package:photos/services/search_service.dart";
+import "package:photos/services/face_ml/feedback/cluster_feedback.dart";
 import "package:photos/theme/ente_theme.dart";
 import "package:photos/ui/components/buttons/button_widget.dart";
 import "package:photos/ui/components/models/button_type.dart";
 import "package:photos/ui/viewer/file/no_thumbnail_widget.dart";
 import "package:photos/ui/viewer/file/thumbnail_widget.dart";
 import "package:photos/ui/viewer/people/cluster_page.dart";
+import "package:photos/ui/viewer/search/result/person_face_widget.dart";
 
 class PersonReviewClusterSuggestion extends StatefulWidget {
   final Person person;
@@ -31,8 +33,8 @@ class _PersonClustersState extends State<PersonReviewClusterSuggestion> {
         title: const Text('Review suggestions'),
       ),
       body: FutureBuilder<Map<int, List<EnteFile>>>(
-        future: SearchService.instance
-            .getClusterFilesForPersonID(widget.person.remoteID),
+        future: ClusterFeedbackService.instance
+            .getClusterFilesForPersonID(widget.person),
         builder: (context, snapshot) {
           if (snapshot.hasData) {
             final List<int> keys = snapshot.data!.keys.toList();
@@ -47,6 +49,7 @@ class _PersonClustersState extends State<PersonReviewClusterSuggestion> {
             return ListView.builder(
               itemCount: min(keys.length, 1),
               itemBuilder: (context, index) {
+                final int clusterID = keys[index];
                 final List<EnteFile> files = snapshot.data![keys[index]]!;
                 return InkWell(
                   onTap: () {
@@ -74,108 +77,17 @@ class _PersonClustersState extends State<PersonReviewClusterSuggestion> {
                         const SizedBox(height: 24),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              width: 64,
-                              height: 64,
-                              child: files.isNotEmpty
-                                  ? ClipOval(
-                                      child: ThumbnailWidget(
-                                        files.first,
-                                        shouldShowSyncStatus: false,
-                                      ),
-                                    )
-                                  : const ClipOval(
-                                      child: NoThumbnailWidget(
-                                        addBorder: false,
-                                      ),
-                                    ),
-                            ),
-                            if (files.length > 1)
-                              SizedBox(
-                                width: 64,
-                                height: 64,
-                                child: ClipOval(
-                                  child: ThumbnailWidget(
-                                    files[1],
-                                    shouldShowSyncStatus: false,
-                                  ),
-                                ),
-                              ),
-                            if (files.length > 2)
-                              SizedBox(
-                                width: 64,
-                                height: 64,
-                                child: ClipOval(
-                                  child: ThumbnailWidget(
-                                    files[2],
-                                    shouldShowSyncStatus: false,
-                                  ),
-                                ),
-                              ),
-                            if (files.length > 3)
-                              SizedBox(
-                                width: 64,
-                                height: 64,
-                                child: ClipOval(
-                                  child: ThumbnailWidget(
-                                    files[3],
-                                    shouldShowSyncStatus: false,
-                                  ),
-                                ),
-                              ),
-                          ],
+                          children: _buildThumbnailWidgets(
+                            files,
+                            clusterID,
+                          ),
                         ),
                         if (files.length > 4) const SizedBox(height: 24),
                         if (files.length > 4)
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              if (files.length > 4)
-                                SizedBox(
-                                  width: 64,
-                                  height: 64,
-                                  child: ClipOval(
-                                    child: ThumbnailWidget(
-                                      files[4],
-                                      shouldShowSyncStatus: false,
-                                    ),
-                                  ),
-                                ),
-                              if (files.length > 5)
-                                SizedBox(
-                                  width: 64,
-                                  height: 64,
-                                  child: ClipOval(
-                                    child: ThumbnailWidget(
-                                      files[5],
-                                      shouldShowSyncStatus: false,
-                                    ),
-                                  ),
-                                ),
-                              if (files.length > 6)
-                                SizedBox(
-                                  width: 64,
-                                  height: 64,
-                                  child: ClipOval(
-                                    child: ThumbnailWidget(
-                                      files[6],
-                                      shouldShowSyncStatus: false,
-                                    ),
-                                  ),
-                                ),
-                              if (files.length > 7)
-                                SizedBox(
-                                  width: 64,
-                                  height: 64,
-                                  child: ClipOval(
-                                    child: ThumbnailWidget(
-                                      files[7],
-                                      shouldShowSyncStatus: false,
-                                    ),
-                                  ),
-                                ),
-                            ],
+                            children: _buildThumbnailWidgets(files, clusterID,
+                                start: 4),
                           ),
                         const SizedBox(
                           height: 24.0,
@@ -188,7 +100,7 @@ class _PersonClustersState extends State<PersonReviewClusterSuggestion> {
                           height: 24.0,
                         ), // Add some spacing between the thumbnail and the text
                         Container(
-                          child: const Padding(
+                          child: Padding(
                             padding: EdgeInsets.symmetric(horizontal: 24.0),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -197,14 +109,28 @@ class _PersonClustersState extends State<PersonReviewClusterSuggestion> {
                                   buttonType: ButtonType.primary,
                                   labelText: 'Yes, confirm',
                                   buttonSize: ButtonSize.large,
+                                  onTap: () async => {
+                                    await FaceMLDataDB.instance
+                                        .assignClusterToPerson(
+                                      personID: widget.person.remoteID,
+                                      clusterID: clusterID,
+                                    ),
+                                    if (mounted) setState(() => {}),
+                                  },
                                 ),
-                                SizedBox(
-                                  height: 12.0,
-                                ), // Add some
+                                const SizedBox(height: 12.0), // Add some
                                 ButtonWidget(
                                   buttonType: ButtonType.critical,
                                   labelText: 'No',
                                   buttonSize: ButtonSize.large,
+                                  onTap: () async => {
+                                    await FaceMLDataDB.instance
+                                        .captureNotPersonFeedback(
+                                      personID: widget.person.remoteID,
+                                      clusterID: clusterID,
+                                    ),
+                                    if (mounted) setState(() => {}),
+                                  },
                                 ),
                               ],
                             ),
@@ -222,6 +148,23 @@ class _PersonClustersState extends State<PersonReviewClusterSuggestion> {
             return const Center(child: CircularProgressIndicator());
           }
         },
+      ),
+    );
+  }
+
+  List<Widget> _buildThumbnailWidgets(List<EnteFile> files, int cluserId,
+      {int start = 0}) {
+    return List<Widget>.generate(
+      min(4, max(0, files.length - start)),
+      (index) => SizedBox(
+        width: 64,
+        height: 64,
+        child: ClipOval(
+          child: PersonFaceWidget(
+            files[start + index],
+            clusterID: cluserId,
+          ),
+        ),
       ),
     );
   }

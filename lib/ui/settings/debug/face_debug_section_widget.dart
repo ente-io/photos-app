@@ -8,7 +8,6 @@ import "package:photos/events/people_changed_event.dart";
 import "package:photos/extensions/stop_watch.dart";
 import "package:photos/face/db.dart";
 import "package:photos/face/model/person.dart";
-import "package:photos/face/utils/import_from_zip.dart";
 import "package:photos/services/face_ml/face_ml_service.dart";
 import "package:photos/services/face_ml/feedback/cluster_feedback.dart";
 import 'package:photos/theme/ente_theme.dart';
@@ -48,7 +47,7 @@ class _FaceDebugSectionWidgetState extends State<FaceDebugSectionWidget> {
   @override
   Widget build(BuildContext context) {
     return ExpandableMenuItemWidget(
-      title: "FaceDebug",
+      title: "Face Beta",
       selectionOptionsWidget: _getSectionOptions(context),
       leadingIcon: Icons.bug_report_outlined,
     );
@@ -58,62 +57,19 @@ class _FaceDebugSectionWidgetState extends State<FaceDebugSectionWidget> {
     final Logger _logger = Logger("FaceDebugSectionWidget");
     return Column(
       children: [
-        if (kDebugMode) sectionOptionSpacing,
-        if (kDebugMode)
-          MenuItemWidget(
-            captionedTextWidget: const CaptionedTextWidget(
-              title: "Pull Embeddings From Local",
-            ),
-            pressedColor: getEnteColorScheme(context).fillFaint,
-            trailingIcon: Icons.chevron_right_outlined,
-            trailingIconIsMuted: true,
-            onTap: () async {
-              try {
-                await FaceMLDataDB.instance.bulkInsertFaces([]);
-                final EnteWatch watch = EnteWatch("face_time")..start();
-
-                final results = await downloadZip();
-                watch.logAndReset('downloaded and de-serialized');
-                await FaceMLDataDB.instance.bulkInsertFaces(results);
-                watch.logAndReset('inserted in to db');
-                showShortToast(context, "Got ${results.length} results");
-              } catch (e, s) {
-                _logger.warning('download failed ', e, s);
-                await showGenericErrorDialog(context: context, error: e);
-              }
-              // _showKeyAttributesDialog(context);
-            },
-          ),
-        sectionOptionSpacing,
         MenuItemWidget(
           captionedTextWidget: FutureBuilder<Set<int>>(
             future: FaceMLDataDB.instance.getIndexedFileIds(),
             builder: (context, snapshot) {
               if (snapshot.hasData) {
                 return CaptionedTextWidget(
-                  title: "Read embeddings for ${snapshot.data!.length} files",
+                  title: LocalSettings.instance.isFaceIndexingEnabled
+                      ? "Disable Indexing (${snapshot.data!.length})"
+                      : "Enable indexing (${snapshot.data!.length})",
                 );
               }
-              return const CaptionedTextWidget(
-                title: "Loading...",
-              );
+              return const SizedBox.shrink();
             },
-          ),
-          pressedColor: getEnteColorScheme(context).fillFaint,
-          trailingIcon: Icons.chevron_right_outlined,
-          trailingIconIsMuted: true,
-          onTap: () async {
-            final EnteWatch watch = EnteWatch("read_embeddings")..start();
-            final result = await FaceMLDataDB.instance.getFaceEmbeddingMap();
-            watch.logAndReset('read embeddings ${result.length} ');
-            showShortToast(context, "Done in ${watch.elapsed.inSeconds} secs");
-          },
-        ),
-        MenuItemWidget(
-          captionedTextWidget: CaptionedTextWidget(
-            title: LocalSettings.instance.isFaceIndexingEnabled
-                ? "Disable Indexing"
-                : "Enable indexing",
           ),
           pressedColor: getEnteColorScheme(context).fillFaint,
           trailingIcon: Icons.chevron_right_outlined,
@@ -138,61 +94,21 @@ class _FaceDebugSectionWidgetState extends State<FaceDebugSectionWidget> {
         ),
         MenuItemWidget(
           captionedTextWidget: const CaptionedTextWidget(
-            title: "Reset feedback and cluster (slow))",
-          ),
-          pressedColor: getEnteColorScheme(context).fillFaint,
-          trailingIcon: Icons.chevron_right_outlined,
-          trailingIconIsMuted: true,
-          onTap: () async {
-            // Reset the clusters and feedback in the DB
-            await FaceMLDataDB.instance.resetClusterIDs();
-            await FaceMLDataDB.instance.dropClustersAndPeople();
-
-            // Cluster all the faces
-            await FaceMlService.instance.clusterAllImages(minFaceScore: 0.75);
-
-            // Fire event to update UI
-            Bus.instance.fire(PeopleChangedEvent());
-            showShortToast(context, "Done");
-          },
-        ),
-        MenuItemWidget(
-          captionedTextWidget: const CaptionedTextWidget(
-            title: "Incremental clustering",
+            title: "Run Clustering",
           ),
           pressedColor: getEnteColorScheme(context).fillFaint,
           trailingIcon: Icons.chevron_right_outlined,
           trailingIconIsMuted: true,
           onTap: () async {
             await FaceMlService.instance.clusterAllImages(minFaceScore: 0.75);
-
             Bus.instance.fire(PeopleChangedEvent());
             showShortToast(context, "Done");
-          },
-        ),
-        MenuItemWidget(
-          captionedTextWidget: const CaptionedTextWidget(
-            title: "Find clustter suggestions",
-          ),
-          pressedColor: getEnteColorScheme(context).fillFaint,
-          trailingIcon: Icons.chevron_right_outlined,
-          trailingIconIsMuted: true,
-          onTap: () async {
-            final List<Person> persons =
-                await FaceMLDataDB.instance.getPeople();
-            final EnteWatch w = EnteWatch('feedback')..start();
-            for (final Person p in persons) {
-              await ClusterFeedbackService.instance.getSuggestions(p);
-              w.logAndReset('suggestion calculated for ${p.attr.name}');
-            }
-            w.log("done with feedback");
-            showShortToast(context, "done avg");
           },
         ),
         sectionOptionSpacing,
         MenuItemWidget(
           captionedTextWidget: const CaptionedTextWidget(
-            title: "Drop Persons DB",
+            title: "Reset feedback & labels",
           ),
           pressedColor: getEnteColorScheme(context).fillFaint,
           trailingIcon: Icons.chevron_right_outlined,
@@ -207,16 +123,88 @@ class _FaceDebugSectionWidgetState extends State<FaceDebugSectionWidget> {
         sectionOptionSpacing,
         MenuItemWidget(
           captionedTextWidget: const CaptionedTextWidget(
-            title: "Drop both embeddings & clusters DB",
+            title: "Drop embeddings & feedback",
           ),
           pressedColor: getEnteColorScheme(context).fillFaint,
           trailingIcon: Icons.chevron_right_outlined,
           trailingIconIsMuted: true,
           onTap: () async {
-            await FaceMLDataDB.instance.dropClustersAndPeople(faces: true);
-            showShortToast(context, "Done");
+            await showChoiceDialog(
+              context,
+              title: "Are you sure?",
+              body:
+                  "You will need to again re-index all the faces. You can drop feedback if you want to label again",
+              firstButtonLabel: "Yes, confirm",
+              firstButtonOnTap: () async {
+                await FaceMLDataDB.instance.dropClustersAndPeople(faces: true);
+                Bus.instance.fire(PeopleChangedEvent());
+                showShortToast(context, "Done");
+              },
+            );
           },
         ),
+        if (kDebugMode) sectionOptionSpacing,
+        if (kDebugMode)
+          MenuItemWidget(
+            captionedTextWidget: const CaptionedTextWidget(
+              title: "Pull Embeddings From Local",
+            ),
+            pressedColor: getEnteColorScheme(context).fillFaint,
+            trailingIcon: Icons.chevron_right_outlined,
+            trailingIconIsMuted: true,
+            onTap: () async {
+              try {
+                final List<Person> persons =
+                    await FaceMLDataDB.instance.getPeople();
+                final EnteWatch w = EnteWatch('feedback')..start();
+                for (final Person p in persons) {
+                  await ClusterFeedbackService.instance.getSuggestions(p);
+                  w.logAndReset('suggestion calculated for ${p.attr.name}');
+                }
+                w.log("done with feedback");
+                showShortToast(context, "done avg");
+                // await FaceMLDataDB.instance.bulkInsertFaces([]);
+                // final EnteWatch watch = EnteWatch("face_time")..start();
+
+                // final results = await downloadZip();
+                // watch.logAndReset('downloaded and de-serialized');
+                // await FaceMLDataDB.instance.bulkInsertFaces(results);
+                // watch.logAndReset('inserted in to db');
+                // showShortToast(context, "Got ${results.length} results");
+              } catch (e, s) {
+                _logger.warning('download failed ', e, s);
+                await showGenericErrorDialog(context: context, error: e);
+              }
+              // _showKeyAttributesDialog(context);
+            },
+          ),
+        if (kDebugMode) sectionOptionSpacing,
+        if (kDebugMode)
+          MenuItemWidget(
+            captionedTextWidget: FutureBuilder<Set<int>>(
+              future: FaceMLDataDB.instance.getIndexedFileIds(),
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  return CaptionedTextWidget(
+                    title: "Read embeddings for ${snapshot.data!.length} files",
+                  );
+                }
+                return const CaptionedTextWidget(
+                  title: "Loading...",
+                );
+              },
+            ),
+            pressedColor: getEnteColorScheme(context).fillFaint,
+            trailingIcon: Icons.chevron_right_outlined,
+            trailingIconIsMuted: true,
+            onTap: () async {
+              final EnteWatch watch = EnteWatch("read_embeddings")..start();
+              final result = await FaceMLDataDB.instance.getFaceEmbeddingMap();
+              watch.logAndReset('read embeddings ${result.length} ');
+              showShortToast(
+                  context, "Done in ${watch.elapsed.inSeconds} secs");
+            },
+          ),
       ],
     );
   }

@@ -2,6 +2,7 @@ import 'dart:async';
 import "dart:math";
 import "dart:typed_data";
 
+import "package:collection/collection.dart";
 import "package:flutter/foundation.dart";
 import 'package:logging/logging.dart';
 import 'package:path/path.dart' show join;
@@ -10,6 +11,7 @@ import 'package:photos/face/db_fields.dart';
 import "package:photos/face/db_model_mappers.dart";
 import "package:photos/face/model/face.dart";
 import "package:photos/face/model/person.dart";
+import "package:photos/models/file/file.dart";
 import "package:photos/services/face_ml/blur_detection/blur_constants.dart";
 import 'package:sqflite/sqflite.dart';
 
@@ -165,7 +167,6 @@ class FaceMLDataDB {
     // read person from db
     final db = await instance.database;
     if (personID != null) {
-      _logger.info('getCoverFaceForPerson check for person $personID');
       final List<Map<String, dynamic>> maps = await db.rawQuery(
         'SELECT * FROM $peopleTable where $idColumn = ?',
         [personID],
@@ -173,11 +174,14 @@ class FaceMLDataDB {
       if (maps.isEmpty) {
         throw Exception("Person with id $personID not found");
       }
+
       final person = mapRowToPerson(maps.first);
+      final List<int> fileId = [recentFileID];
+      int? avatarFileId;
       if (person.attr.avatarFaceId != null) {
-        final face = await getFaceForFaceID(person.attr.avatarFaceId!);
-        if (face != null) {
-          return face;
+        avatarFileId = int.tryParse(person.attr.avatarFaceId!.split('-')[0]);
+        if (avatarFileId != null) {
+          fileId.add(avatarFileId);
         }
       }
       final cluterRows = await db.query(
@@ -189,9 +193,17 @@ class FaceMLDataDB {
       final clusterIDs =
           cluterRows.map((e) => e[cluserIDColumn] as int).toList();
       final List<Map<String, dynamic>> faceMaps = await db.rawQuery(
-        'SELECT * FROM $facesTable where $faceClusterId IN (${clusterIDs.join(",")}) AND $fileIDColumn = $recentFileID ',
+        'SELECT * FROM $facesTable where $faceClusterId IN (${clusterIDs.join(",")}) AND $fileIDColumn in (${fileId.join(",")}) AND $faceScore > 0.8 ORDER BY $faceScore DESC',
       );
       if (faceMaps.isNotEmpty) {
+        if (avatarFileId != null) {
+          final row = faceMaps.firstWhereOrNull(
+            (element) => (element[fileIDColumn] as int) == avatarFileId,
+          );
+          if (row != null) {
+            return mapRowToFace(row);
+          }
+        }
         return mapRowToFace(faceMaps.first);
       }
     }
@@ -275,6 +287,28 @@ class FaceMLDataDB {
         facesTable,
         {faceClusterId: personID},
         where: '$faceIDColumn = ? AND $faceClusterId IS NULL',
+        whereArgs: [faceID],
+      );
+    }
+    // Commit the batch
+    await batch.commit(noResult: true);
+  }
+
+  Future<void> forceUpdateClusterIds(
+    Map<String, int> faceIDToPersonID,
+  ) async {
+    final db = await instance.database;
+
+    // Start a batch
+    final batch = db.batch();
+
+    for (final map in faceIDToPersonID.entries) {
+      final faceID = map.key;
+      final personID = map.value;
+      batch.update(
+        facesTable,
+        {faceClusterId: personID},
+        where: '$faceIDColumn = ?',
         whereArgs: [faceID],
       );
     }
@@ -414,6 +448,20 @@ class FaceMLDataDB {
     );
   }
 
+  Future<void> captureNotPersonFeedback({
+    required String personID,
+    required int clusterID,
+  }) async {
+    final db = await instance.database;
+    await db.insert(
+      notPersonFeedback,
+      {
+        personIdColumn: personID,
+        cluserIDColumn: clusterID,
+      },
+    );
+  }
+
   Future<int> removeClusterToPerson({
     required String personID,
     required int clusterID,
@@ -436,6 +484,25 @@ class FaceMLDataDB {
         'ON $facesTable.$faceClusterId = $clustersTable.$cluserIDColumn '
         'WHERE $clustersTable.$personIdColumn = ?',
         [personID],
+      );
+      final Map<int, Set<int>> result = {};
+      for (final map in maps) {
+        final clusterID = map[cluserIDColumn] as int;
+        final fileID = map[fileIDColumn] as int;
+        result[fileID] = (result[fileID] ?? {})..add(clusterID);
+      }
+      return result;
+    });
+  }
+
+  Future<Map<int, Set<int>>> getFileIdToClusterIDSetForCluster(
+    Set<int> clusterIDs,
+  ) {
+    final db = instance.database;
+    return db.then((db) async {
+      final List<Map<String, dynamic>> maps = await db.rawQuery(
+        'SELECT $cluserIDColumn, $fileIDColumn FROM $facesTable '
+        'WHERE $cluserIDColumn IN (${clusterIDs.join(",")})',
       );
       final Map<int, Set<int>> result = {};
       for (final map in maps) {
@@ -571,5 +638,26 @@ class FaceMLDataDB {
     await db.execute(createClusterTable);
     await db.execute(createNotPersonFeedbackTable);
     await db.execute(createClusterSummaryTable);
+  }
+
+  Future<void> removePersonFromFiles(List<EnteFile> files, Person p) async {
+    final db = await instance.database;
+    final result = await db.rawQuery(
+      'SELECT $faceIDColumn FROM $facesTable LEFT JOIN $clustersTable '
+      'ON $facesTable.$faceClusterId = $clustersTable.$cluserIDColumn '
+      'WHERE $clustersTable.$personIdColumn = ? AND $facesTable.$fileIDColumn IN (${files.map((e) => e.uploadedFileID).join(",")})',
+      [p.remoteID],
+    );
+    // get max clusterID
+    final maxRows =
+        await db.rawQuery('SELECT max($faceClusterId) from $facesTable');
+    int maxClusterID = maxRows.first.values.first as int;
+    final Map<String, int> faceIDToClusterID = {};
+    for (final faceRow in result) {
+      final faceID = faceRow[faceIDColumn] as String;
+      faceIDToClusterID[faceID] = maxClusterID + 1;
+      maxClusterID = maxClusterID + 1;
+    }
+    await forceUpdateClusterIds(faceIDToClusterID);
   }
 }
