@@ -447,6 +447,25 @@ class FaceMLDataDB {
     });
   }
 
+  Future<Map<int, Set<int>>> getFileIdToClusterIDSetForCluster(
+    Set<int> clusterIDs,
+  ) {
+    final db = instance.database;
+    return db.then((db) async {
+      final List<Map<String, dynamic>> maps = await db.rawQuery(
+        'SELECT $cluserIDColumn, $fileIDColumn FROM $facesTable '
+        'WHERE $cluserIDColumn IN (${clusterIDs.join(",")})',
+      );
+      final Map<int, Set<int>> result = {};
+      for (final map in maps) {
+        final clusterID = map[cluserIDColumn] as int;
+        final fileID = map[fileIDColumn] as int;
+        result[fileID] = (result[fileID] ?? {})..add(clusterID);
+      }
+      return result;
+    });
+  }
+
   Future<void> clusterSummaryUpdate(Map<int, (Uint8List, int)> summary) async {
     final db = await instance.database;
     var batch = db.batch();

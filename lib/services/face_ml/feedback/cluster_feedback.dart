@@ -1,25 +1,37 @@
 import 'dart:developer' as dev;
 import "dart:typed_data";
 
+import "package:flutter/foundation.dart";
+import "package:logging/logging.dart";
 import "package:photos/extensions/stop_watch.dart";
 import "package:photos/face/db.dart";
 import "package:photos/face/model/person.dart";
 import "package:photos/generated/protos/ente/common/vector.pb.dart";
+import "package:photos/models/file/file.dart";
 import "package:photos/services/face_ml/face_clustering/cosine_distance.dart";
+import "package:photos/services/search_service.dart";
 
 class ClusterFeedbackService {
+  final Logger _logger = Logger("ClusterFeedbackService");
   ClusterFeedbackService._privateConstructor();
 
   static final ClusterFeedbackService instance =
       ClusterFeedbackService._privateConstructor();
 
-  Future<Map<int, List<(int, double)>>> getSuggestions(Person p) async {
+  Future<Map<int, List<(int, double)>>> getSuggestions(
+    Person p, {
+    double maxClusterDistance = 0.4,
+  }) async {
     final faceMlDb = FaceMLDataDB.instance;
     // suggestions contains map of person's clusterID to map of closest clusterID to with disstance
     final Map<int, List<(int, double)>> suggestions = {};
     final allClusterIdsToCountMap = (await faceMlDb.clusterIdToFaceCount());
     final ignoredClusters = await faceMlDb.getPersonIgnoredClusters(p.remoteID);
     final personClusters = await faceMlDb.getPersonClusterIDs(p.remoteID);
+    dev.log(
+      'existing clusters for ${p.attr.name} are $personClusters',
+      name: "ClusterFeedbackService",
+    );
     final Map<int, (Uint8List, int)> clusterToSummary =
         await faceMlDb.clusterSummaryAll();
     final Map<int, (Uint8List, int)> updatesForClusterSummary = {};
@@ -70,7 +82,7 @@ class ClusterFeedbackService {
       for (final personCluster in personClusters) {
         final avg = clusterAvg[personCluster]!;
         final distance = cosineDistForNormVectors(avg, otherAvg);
-        if (distance < 0.4) {
+        if (distance < maxClusterDistance) {
           if (minDistance == null || distance < minDistance) {
             minDistance = distance;
             nearestPersonCluster = personCluster;
@@ -83,20 +95,52 @@ class ClusterFeedbackService {
             .add((otherClusterID, minDistance));
       }
     }
-    dev.log(
-      'suggestions for ${p.attr.name} are ${suggestions.length}',
-      name: "ClusterFeedbackService",
-    );
+
     for (final entry in suggestions.entries) {
       entry.value.sort((a, b) => a.$1.compareTo(b.$1));
     }
     // log suggestions
     for (final entry in suggestions.entries) {
       dev.log(
-        'suggestion for ${p.attr.name} is ${entry.key} with ${entry.value.length} suggestions ${entry.value}}',
+        ' ${entry.value.length} suggestion for ${p.attr.name} for cluster ID ${entry.key} are  suggestions ${entry.value}}',
         name: "ClusterFeedbackService",
       );
     }
     return suggestions;
+  }
+
+  Future<Map<int, List<EnteFile>>> getClusterFilesForPersonID(
+    Person person,
+  ) async {
+    _logger.info(
+      'getClusterFilesForPersonID ${kDebugMode ? person.attr.name : person.remoteID}',
+    );
+    final Map<int, List<(int, double)>> suggestions =
+        await getSuggestions(person);
+    final Set<int> suggestClusterIds = {};
+    for (final List<(int, double)> suggestion in suggestions.values) {
+      for (final clusterNeighbors in suggestion) {
+        suggestClusterIds.add(clusterNeighbors.$1);
+      }
+    }
+    final Map<int, Set<int>> fileIdToClusterID = await FaceMLDataDB.instance
+        .getFileIdToClusterIDSetForCluster(suggestClusterIds);
+    final Map<int, List<EnteFile>> clusterIDToFiles = {};
+    final allFiles = await SearchService.instance.getAllFiles();
+    for (final f in allFiles) {
+      if (!fileIdToClusterID.containsKey(f.uploadedFileID ?? -1)) {
+        continue;
+      }
+      final cluserIds = fileIdToClusterID[f.uploadedFileID ?? -1]!;
+      for (final cluster in cluserIds) {
+        if (clusterIDToFiles.containsKey(cluster)) {
+          clusterIDToFiles[cluster]!.add(f);
+        } else {
+          clusterIDToFiles[cluster] = [f];
+        }
+      }
+    }
+
+    return clusterIDToFiles;
   }
 }
