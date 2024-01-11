@@ -726,7 +726,8 @@ Future<
   int height = 112,
 }) async {
   final Image image = await decodeImageFromData(imageData);
-  final Size originalSize = Size(image.width.toDouble(), image.height.toDouble());
+  final Size originalSize =
+      Size(image.width.toDouble(), image.height.toDouble());
 
   final List<FaceDetectionRelative> relativeFaces =
       facesJson.map((face) => FaceDetectionRelative.fromJson(face)).toList();
@@ -1062,25 +1063,32 @@ Future<List<Uint8List>> generateFaceThumbnailsFromDataAndDetections(
   List<FaceBox> faceBoxes,
 ) async {
   final Image image = await decodeImageFromData(imageData);
+  int i = 0;
 
-  final List<Uint8List> faceThumbnails = [];
+  try {
+    final List<Uint8List> faceThumbnails = [];
 
-  for (final faceBox in faceBoxes) {
-    final Image faceThumbnail = await cropImage(
-      image,
-      x: faceBox.x - faceBox.width / 2,
-      y: faceBox.y - faceBox.height / 2,
-      width: faceBox.width * 2,
-      height: faceBox.height * 2,
-    );
-    final Uint8List faceThumbnailPng = await encodeImageToUint8List(
-      faceThumbnail,
-      format: ImageByteFormat.png,
-    );
-    faceThumbnails.add(faceThumbnailPng);
+    for (final faceBox in faceBoxes) {
+      final Image faceThumbnail = await cropImage(
+        image,
+        x: faceBox.x - faceBox.width / 2,
+        y: faceBox.y - faceBox.height / 2,
+        width: faceBox.width * 2,
+        height: faceBox.height * 2,
+      );
+      final Uint8List faceThumbnailPng = await encodeImageToUint8List(
+        faceThumbnail,
+        format: ImageByteFormat.png,
+      );
+      faceThumbnails.add(faceThumbnailPng);
+      i++;
+    }
+    return faceThumbnails;
+  } catch (e) {
+    _logger.severe('Error generating face thumbnails: $e');
+    _logger.severe('cropImage problematic input argument: ${faceBoxes[i]}');
+    return [];
   }
-
-  return faceThumbnails;
 }
 
 /// Generates cropped and padded image data from [imageData] and a [faceBox].
