@@ -1,6 +1,7 @@
 import "dart:math";
 
 import "package:flutter/material.dart";
+import "package:photos/face/db.dart";
 import "package:photos/face/model/person.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/services/face_ml/feedback/cluster_feedback.dart";
@@ -99,7 +100,7 @@ class _PersonClustersState extends State<PersonReviewClusterSuggestion> {
                           height: 24.0,
                         ), // Add some spacing between the thumbnail and the text
                         Container(
-                          child: const Padding(
+                          child: Padding(
                             padding: EdgeInsets.symmetric(horizontal: 24.0),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -108,14 +109,28 @@ class _PersonClustersState extends State<PersonReviewClusterSuggestion> {
                                   buttonType: ButtonType.primary,
                                   labelText: 'Yes, confirm',
                                   buttonSize: ButtonSize.large,
+                                  onTap: () async => {
+                                    await FaceMLDataDB.instance
+                                        .assignClusterToPerson(
+                                      personID: widget.person.remoteID,
+                                      clusterID: clusterID,
+                                    ),
+                                    if (mounted) setState(() => {}),
+                                  },
                                 ),
-                                SizedBox(
-                                  height: 12.0,
-                                ), // Add some
+                                const SizedBox(height: 12.0), // Add some
                                 ButtonWidget(
                                   buttonType: ButtonType.critical,
                                   labelText: 'No',
                                   buttonSize: ButtonSize.large,
+                                  onTap: () async => {
+                                    await FaceMLDataDB.instance
+                                        .captureNotPersonFeedback(
+                                      personID: widget.person.remoteID,
+                                      clusterID: clusterID,
+                                    ),
+                                    if (mounted) setState(() => {}),
+                                  },
                                 ),
                               ],
                             ),

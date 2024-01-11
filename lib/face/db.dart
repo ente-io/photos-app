@@ -414,6 +414,20 @@ class FaceMLDataDB {
     );
   }
 
+  Future<void> captureNotPersonFeedback({
+    required String personID,
+    required int clusterID,
+  }) async {
+    final db = await instance.database;
+    await db.insert(
+      notPersonFeedback,
+      {
+        personIdColumn: personID,
+        cluserIDColumn: clusterID,
+      },
+    );
+  }
+
   Future<int> removeClusterToPerson({
     required String personID,
     required int clusterID,
