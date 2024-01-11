@@ -1,6 +1,6 @@
 import "dart:convert" show jsonEncode, jsonDecode;
 
-import "package:flutter/material.dart" show debugPrint, immutable;
+import "package:flutter/material.dart" show Size, debugPrint, immutable;
 import "package:logging/logging.dart";
 import "package:photos/db/ml_data_db.dart";
 import "package:photos/models/file/file.dart";
@@ -450,6 +450,9 @@ class FaceMlResult {
 
   final List<FaceResult> faces;
 
+  final Size? faceDetectionImageSize;
+  final Size? faceAlignmentImageSize;
+
   final int mlVersion;
   final bool errorOccured;
   final bool onlyThumbnailUsed;
@@ -482,6 +485,8 @@ class FaceMlResult {
     required this.mlVersion,
     required this.errorOccured,
     required this.onlyThumbnailUsed,
+    required this.faceDetectionImageSize,
+    this.faceAlignmentImageSize,
   });
 
   Map<String, dynamic> _toJson() => {
@@ -490,6 +495,16 @@ class FaceMlResult {
         'mlVersion': mlVersion,
         'errorOccured': errorOccured,
         'onlyThumbnailUsed': onlyThumbnailUsed,
+        if (faceDetectionImageSize != null)
+          'faceDetectionImageSize': {
+            'width': faceDetectionImageSize!.width,
+            'height': faceDetectionImageSize!.height,
+          },
+        if (faceAlignmentImageSize != null)
+          'faceAlignmentImageSize': {
+            'width': faceAlignmentImageSize!.width,
+            'height': faceAlignmentImageSize!.height,
+          },
       };
 
   String toJsonString() => jsonEncode(_toJson());
@@ -503,6 +518,18 @@ class FaceMlResult {
       mlVersion: json['mlVersion'],
       errorOccured: json['errorOccured'] ?? false,
       onlyThumbnailUsed: json['onlyThumbnailUsed'] ?? false,
+      faceDetectionImageSize: json['faceDetectionImageSize'] == null
+          ? null
+          : Size(
+              json['faceDetectionImageSize']['width'],
+              json['faceDetectionImageSize']['height'],
+            ),
+      faceAlignmentImageSize: json['faceAlignmentImageSize'] == null
+          ? null
+          : Size(
+              json['faceAlignmentImageSize']['width'],
+              json['faceAlignmentImageSize']['height'],
+            ),
     );
   }
 
@@ -539,6 +566,9 @@ class FaceMlResultBuilder {
 
   List<FaceResultBuilder> faces = <FaceResultBuilder>[];
 
+  Size? faceDetectionImageSize;
+  Size? faceAlignmentImageSize;
+
   int mlVersion;
   bool errorOccured;
   bool onlyThumbnailUsed;
@@ -557,7 +587,11 @@ class FaceMlResultBuilder {
     this.onlyThumbnailUsed = false,
   }) : fileId = file.uploadedFileID ?? -1;
 
-  void addNewlyDetectedFaces(List<FaceDetectionRelative> faceDetections) {
+  void addNewlyDetectedFaces(
+    List<FaceDetectionRelative> faceDetections,
+    Size originalSize,
+  ) {
+    faceDetectionImageSize = originalSize;
     for (var i = 0; i < faceDetections.length; i++) {
       faces.add(
         FaceResultBuilder.fromFaceDetection(
@@ -568,21 +602,22 @@ class FaceMlResultBuilder {
     }
   }
 
-  void addAlignmentToExistingFace(
-    AlignmentResult alignmentResult,
-    int faceIndex,
+  void addAlignmentResults(
+    List<AlignmentResult> alignmentResults,
+    List<double> blurValues,
+    Size imageSizeUsedForAlignment,
   ) {
-    if (faceIndex >= faces.length) {
+    if (alignmentResults.length != faces.length) {
       throw Exception(
-        "Face index $faceIndex is out of bounds. There are only ${faces.length} faces",
+        "The amount of alignment results (${alignmentResults.length}) does not match the number of faces (${faces.length})",
       );
     }
-    faces[faceIndex].alignment = AlignmentResult(
-      affineMatrix: alignmentResult.affineMatrix,
-      center: alignmentResult.center,
-      size: alignmentResult.size,
-      rotation: alignmentResult.rotation,
-    );
+
+    for (var i = 0; i < alignmentResults.length; i++) {
+      faces[i].alignment = alignmentResults[i];
+      faces[i].blurValue = blurValues[i];
+    }
+    faceAlignmentImageSize = imageSizeUsedForAlignment;
   }
 
   void addEmbeddingsToExistingFaces(
@@ -609,6 +644,8 @@ class FaceMlResultBuilder {
       mlVersion: mlVersion,
       errorOccured: errorOccured,
       onlyThumbnailUsed: onlyThumbnailUsed,
+      faceDetectionImageSize: faceDetectionImageSize,
+      faceAlignmentImageSize: faceAlignmentImageSize,
     );
   }
 

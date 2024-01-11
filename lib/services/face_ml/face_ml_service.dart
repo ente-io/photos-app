@@ -92,7 +92,7 @@ class FaceMlService {
     await clusterAllImages();
   }
 
-  Future<void> clusterAllImages({double minFaceScore= 0.75}) async {
+  Future<void> clusterAllImages({double minFaceScore = 0.75}) async {
     _logger.info("`clusterAllImages()` called");
 
     try {
@@ -154,7 +154,7 @@ class FaceMlService {
       final stopwatch = Stopwatch()..start();
       final split = enteFiles.splitMatch((e) => (e.localID ?? '') == '');
       // list of files where files with localID are first
-      final sortedBylocalID = [];
+      final sortedBylocalID = <EnteFile>[];
       sortedBylocalID.addAll(split.unmatched);
       sortedBylocalID.addAll(split.matched);
       for (final enteFile in sortedBylocalID) {
@@ -193,12 +193,31 @@ class FaceMlService {
               ),
             );
           } else {
+            if (result.faceDetectionImageSize == null ||
+                result.faceAlignmentImageSize == null) {
+              _logger.severe(
+                  "faceDetectionImageSize or faceDetectionImageSize is null for image with "
+                  "ID: ${enteFile.uploadedFileID}");
+            }
+            final bool useAlign = result.faceAlignmentImageSize != null &&
+                result.faceAlignmentImageSize!.width > 0 &&
+                result.faceAlignmentImageSize!.height > 0 &&
+                result.onlyThumbnailUsed == false;
+            if (useAlign) {
+              _logger.info(
+                "Using aligned image size for image with ID: ${enteFile.uploadedFileID}. This size is ${result.faceAlignmentImageSize!.width}x${result.faceAlignmentImageSize!.height} compared to size of ${enteFile.width}x${enteFile.height} in the metadata",
+              );
+            }
             for (int i = 0; i < result.faces.length; ++i) {
               final FaceResult faceRes = result.faces[i];
               final FaceDetectionAbsolute absoluteDetection =
                   faceRes.detection.toAbsolute(
-                imageWidth: enteFile.width,
-                imageHeight: enteFile.height,
+                imageWidth: useAlign
+                    ? result.faceAlignmentImageSize!.width.toInt()
+                    : enteFile.width,
+                imageHeight: useAlign
+                    ? result.faceAlignmentImageSize!.height.toInt()
+                    : enteFile.height,
               );
               final detection = face_detection.Detection(
                 box: FaceBox(
@@ -475,12 +494,12 @@ class FaceMlService {
   }) async {
     try {
       // Get the bounding boxes of the faces
-      final List<FaceDetectionRelative> faces =
+      final (List<FaceDetectionRelative> faces, dataSize) =
           await YoloOnnxFaceDetection.instance.predict(thumbnailData);
 
       // Add detected faces to the resultBuilder
       if (resultBuilder != null) {
-        resultBuilder.addNewlyDetectedFaces(faces);
+        resultBuilder.addNewlyDetectedFaces(faces, dataSize);
       }
 
       return faces;
@@ -508,18 +527,21 @@ class FaceMlService {
     FaceMlResultBuilder? resultBuilder,
   }) async {
     try {
-      final (alignedFaces, alignmentResults, isBlurs, blurValues) =
-          await ImageMlIsolate.instance
-              .preprocessMobileFaceNet(imageData, faces);
+      final (
+        alignedFaces,
+        alignmentResults,
+        isBlurs,
+        blurValues,
+        originalImageSize
+      ) = await ImageMlIsolate.instance
+          .preprocessMobileFaceNet(imageData, faces);
 
       if (resultBuilder != null) {
-        for (int faceIndex = 0; faceIndex < faces.length; ++faceIndex) {
-          resultBuilder.addAlignmentToExistingFace(
-            alignmentResults[faceIndex],
-            faceIndex,
-          );
-          resultBuilder.faces[faceIndex].blurValue = blurValues[faceIndex];
-        }
+        resultBuilder.addAlignmentResults(
+          alignmentResults,
+          blurValues,
+          originalImageSize,
+        );
       }
 
       return alignedFaces;

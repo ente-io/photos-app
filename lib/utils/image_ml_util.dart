@@ -717,7 +717,8 @@ Future<
       List<Num3DInputMatrix>,
       List<AlignmentResult>,
       List<bool>,
-      List<double>
+      List<double>,
+      Size,
     )> preprocessToMobileFaceNetInput(
   Uint8List imageData,
   List<Map<String, dynamic>> facesJson, {
@@ -725,6 +726,7 @@ Future<
   int height = 112,
 }) async {
   final Image image = await decodeImageFromData(imageData);
+  final Size originalSize = Size(image.width.toDouble(), image.height.toDouble());
 
   final List<FaceDetectionRelative> relativeFaces =
       facesJson.map((face) => FaceDetectionRelative.fromJson(face)).toList();
@@ -792,7 +794,7 @@ Future<
     // alignedImages.add(alignedImage);
     // transformationMatrices.add(transformationMatrix);
   }
-  return (alignedImages, alignmentResults, isBlurs, blurValues);
+  return (alignedImages, alignmentResults, isBlurs, blurValues, originalSize);
 }
 
 /// Function to warp an image [imageData] with an affine transformation using the estimated [transformationMatrix].

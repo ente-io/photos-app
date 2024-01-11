@@ -159,7 +159,7 @@ class ImageMlIsolate {
           case ImageOperation.preprocessMobileFaceNet:
             final imageData = args['imageData'] as Uint8List;
             final facesJson = args['facesJson'] as List<Map<String, dynamic>>;
-            final (inputs, alignmentResults, isBlurs, blurValues) =
+            final (inputs, alignmentResults, isBlurs, blurValues, originalSize) =
                 await preprocessToMobileFaceNetInput(
               imageData,
               facesJson,
@@ -171,6 +171,8 @@ class ImageMlIsolate {
               'alignmentResultsJson': alignmentResultsJson,
               'isBlurs': isBlurs,
               'blurValues': blurValues,
+              'originalWidth': originalSize.width,
+              'originalHeight': originalSize.height,
             });
           case ImageOperation.generateFaceThumbnail:
             final imageData = args['imageData'] as Uint8List;
@@ -362,7 +364,8 @@ class ImageMlIsolate {
         List<Num3DInputMatrix>,
         List<AlignmentResult>,
         List<bool>,
-        List<double>
+        List<double>,
+        Size,
       )> preprocessMobileFaceNet(
     Uint8List imageData,
     List<FaceDetectionRelative> faces,
@@ -386,7 +389,11 @@ class ImageMlIsolate {
     }).toList();
     final isBlurs = results['isBlurs'] as List<bool>;
     final blurValues = results['blurValues'] as List<double>;
-    return (inputs, alignmentResults, isBlurs, blurValues);
+    final originalSize = Size(
+      results['originalWidth'] as double,
+      results['originalHeight'] as double,
+    );
+    return (inputs, alignmentResults, isBlurs, blurValues, originalSize);
   }
 
   /// Generates a face thumbnail from [imageData] and a [faceDetection].

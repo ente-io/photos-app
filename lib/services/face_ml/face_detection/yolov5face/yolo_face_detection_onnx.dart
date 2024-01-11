@@ -60,7 +60,7 @@ class YoloOnnxFaceDetection {
   }
 
   /// Detects faces in the given image data.
-  Future<List<FaceDetectionRelative>> predict(Uint8List imageData) async {
+  Future<(List<FaceDetectionRelative>, Size)> predict(Uint8List imageData) async {
     assert(_isInitialized && _session != null && _sessionOptions != null);
 
     final stopwatch = Stopwatch()..start();
@@ -154,7 +154,7 @@ class YoloOnnxFaceDetection {
 
     if (relativeDetections.isEmpty) {
       _logger.info('No face detected');
-      return <FaceDetectionRelative>[];
+      return (<FaceDetectionRelative>[], originalSize);
     }
 
     stopwatch.stop();
@@ -162,7 +162,7 @@ class YoloOnnxFaceDetection {
       'predict() face detection executed in ${stopwatch.elapsedMilliseconds}ms',
     );
 
-    return relativeDetections;
+    return (relativeDetections, originalSize);
   }
 
   /// Detects faces in the given image data.
