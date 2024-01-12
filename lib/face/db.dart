@@ -52,6 +52,7 @@ class FaceMLDataDB {
     await db.execute(createFacesTable);
     await db.execute(createPeopleTable);
     await db.execute(createClusterTable);
+    await db.execute(createClusterSummaryTable);
     await db.execute(createNotPersonFeedbackTable);
   }
 
