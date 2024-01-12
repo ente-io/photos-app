@@ -86,8 +86,11 @@ class _PersonClustersState extends State<PersonReviewClusterSuggestion> {
                         if (files.length > 4)
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: _buildThumbnailWidgets(files, clusterID,
-                                start: 4),
+                            children: _buildThumbnailWidgets(
+                              files,
+                              clusterID,
+                              start: 4,
+                            ),
                           ),
                         const SizedBox(
                           height: 24.0,
@@ -153,8 +156,11 @@ class _PersonClustersState extends State<PersonReviewClusterSuggestion> {
     );
   }
 
-  List<Widget> _buildThumbnailWidgets(List<EnteFile> files, int cluserId,
-      {int start = 0}) {
+  List<Widget> _buildThumbnailWidgets(
+    List<EnteFile> files,
+    int cluserId, {
+    int start = 0,
+  }) {
     return List<Widget>.generate(
       min(4, max(0, files.length - start)),
       (index) => Padding(
