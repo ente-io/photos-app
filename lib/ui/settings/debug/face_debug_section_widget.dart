@@ -158,7 +158,8 @@ class _FaceDebugSectionWidgetState extends State<FaceDebugSectionWidget> {
                     await FaceMLDataDB.instance.getPeople();
                 final EnteWatch w = EnteWatch('feedback')..start();
                 for (final Person p in persons) {
-                  await ClusterFeedbackService.instance.getSuggestions(p);
+                  await ClusterFeedbackService.instance
+                      .getSuggestionsUsingMean(p);
                   w.logAndReset('suggestion calculated for ${p.attr.name}');
                 }
                 w.log("done with feedback");
