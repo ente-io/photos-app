@@ -1,6 +1,8 @@
 import "dart:math";
 
 import "package:flutter/material.dart";
+import "package:photos/core/event_bus.dart";
+import "package:photos/events/people_changed_event.dart";
 import "package:photos/face/db.dart";
 import "package:photos/face/model/person.dart";
 import "package:photos/models/file/file.dart";
@@ -8,8 +10,8 @@ import "package:photos/services/face_ml/feedback/cluster_feedback.dart";
 import "package:photos/theme/ente_theme.dart";
 import "package:photos/ui/components/buttons/button_widget.dart";
 import "package:photos/ui/components/models/button_type.dart";
-import "package:photos/ui/viewer/file/no_thumbnail_widget.dart";
-import "package:photos/ui/viewer/file/thumbnail_widget.dart";
+// import "package:photos/ui/viewer/file/no_thumbnail_widget.dart";
+// import "package:photos/ui/viewer/file/thumbnail_widget.dart";
 import "package:photos/ui/viewer/people/cluster_page.dart";
 import "package:photos/ui/viewer/search/result/person_face_widget.dart";
 
@@ -86,8 +88,11 @@ class _PersonClustersState extends State<PersonReviewClusterSuggestion> {
                         if (files.length > 4)
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: _buildThumbnailWidgets(files, clusterID,
-                                start: 4),
+                            children: _buildThumbnailWidgets(
+                              files,
+                              clusterID,
+                              start: 4,
+                            ),
                           ),
                         const SizedBox(
                           height: 24.0,
@@ -115,6 +120,7 @@ class _PersonClustersState extends State<PersonReviewClusterSuggestion> {
                                       personID: widget.person.remoteID,
                                       clusterID: clusterID,
                                     ),
+                                    Bus.instance.fire(PeopleChangedEvent()),
                                     if (mounted) setState(() => {}),
                                   },
                                 ),
@@ -152,8 +158,11 @@ class _PersonClustersState extends State<PersonReviewClusterSuggestion> {
     );
   }
 
-  List<Widget> _buildThumbnailWidgets(List<EnteFile> files, int cluserId,
-      {int start = 0}) {
+  List<Widget> _buildThumbnailWidgets(
+    List<EnteFile> files,
+    int cluserId, {
+    int start = 0,
+  }) {
     return List<Widget>.generate(
       min(4, max(0, files.length - start)),
       (index) => SizedBox(
