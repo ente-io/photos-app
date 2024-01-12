@@ -1,6 +1,8 @@
 import "dart:math";
 
 import "package:flutter/material.dart";
+import "package:photos/core/event_bus.dart";
+import "package:photos/events/people_changed_event.dart";
 import "package:photos/face/db.dart";
 import "package:photos/face/model/person.dart";
 import "package:photos/models/file/file.dart";
@@ -115,6 +117,7 @@ class _PersonClustersState extends State<PersonReviewClusterSuggestion> {
                                       personID: widget.person.remoteID,
                                       clusterID: clusterID,
                                     ),
+                                    Bus.instance.fire(PeopleChangedEvent()),
                                     if (mounted) setState(() => {}),
                                   },
                                 ),
