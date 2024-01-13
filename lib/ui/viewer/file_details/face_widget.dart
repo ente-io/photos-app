@@ -85,6 +85,15 @@ class FaceWidget extends StatelessWidget {
             ),
           );
         } else {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const ClipOval(
+              child: SizedBox(
+                width: 60, // Ensure consistent sizing
+                height: 60,
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
           if (snapshot.hasError) {
             log('Error getting face: ${snapshot.error}');
           }
