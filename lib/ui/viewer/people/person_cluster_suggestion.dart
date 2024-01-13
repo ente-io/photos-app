@@ -72,7 +72,9 @@ class _PersonClustersState extends State<PersonReviewClusterSuggestion> {
                       key: ValueKey("cluster_id-$clusterID"),
                       children: <Widget>[
                         Text(
-                          "These photos belong to ${widget.person.attr.name}?",
+                          files.length > 1
+                              ? "These photos belong to ${widget.person.attr.name}?"
+                              : "This photo belongs to ${widget.person.attr.name}?",
                           style: getEnteTextTheme(context).largeMuted,
                         ),
                         const SizedBox(height: 24),
