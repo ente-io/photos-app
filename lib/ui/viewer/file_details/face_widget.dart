@@ -1,26 +1,28 @@
-import "dart:developer";
+import "dart:developer" show log;
 import "dart:typed_data";
 
-import 'package:flutter/widgets.dart';
-// import "package:photos/db/files_db.dart";
-// import "package:photos/face/db.dart";
+import "package:flutter/material.dart";
+import "package:photos/face/db.dart";
 import "package:photos/face/model/face.dart";
+import "package:photos/face/model/person.dart";
 import 'package:photos/models/file/file.dart';
+import "package:photos/services/search_service.dart";
 import "package:photos/ui/viewer/file/no_thumbnail_widget.dart";
-// import 'package:photos/ui/viewer/file/thumbnail_widget.dart';
+import "package:photos/ui/viewer/people/cluster_page.dart";
+import "package:photos/ui/viewer/people/people_page.dart";
 import "package:photos/utils/face/face_box_crop.dart";
 import "package:photos/utils/thumbnail_util.dart";
 
 class FaceWidget extends StatelessWidget {
   final EnteFile file;
   final Face face;
-  final String? personId;
+  final Person? person;
   final int? clusterID;
 
   const FaceWidget(
     this.file,
     this.face, {
-    this.personId,
+    this.person,
     this.clusterID,
     Key? key,
   }) : super(key: key);
@@ -32,13 +34,53 @@ class FaceWidget extends StatelessWidget {
       builder: (context, snapshot) {
         if (snapshot.hasData) {
           final ImageProvider imageProvider = MemoryImage(snapshot.data!);
-          return ClipOval(
-            child: SizedBox(
-              width: 60,
-              height: 60,
-              child: Image(
-                image: imageProvider,
-                fit: BoxFit.cover,
+          return GestureDetector(
+            onTap: () async {
+              log(
+                "FaceWidget is tapped, with person $person and clusterID $clusterID",
+                name: "FaceWidget",
+              );
+              if (person == null && clusterID == null) {
+                return;
+              }
+              if (person != null) {
+                await Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => PeoplePage(
+                      person: person!,
+                    ),
+                  ),
+                );
+              } else if (clusterID != null) {
+                final fileIdsToClusterIds =
+                    await FaceMLDataDB.instance.getFileIdToClusterIds();
+                final files = await SearchService.instance.getAllFiles();
+                final clusterFiles = files
+                    .where(
+                      (file) =>
+                          fileIdsToClusterIds[file.uploadedFileID]
+                              ?.contains(clusterID) ??
+                          false,
+                    )
+                    .toList();
+                await Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => ClusterPage(
+                      clusterFiles,
+                      cluserID: clusterID!,
+                    ),
+                  ),
+                );
+              }
+            },
+            child: ClipOval(
+              child: SizedBox(
+                width: 60,
+                height: 60,
+                child: Image(
+                  image: imageProvider,
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
           );

@@ -1,7 +1,6 @@
 import "dart:async";
 
 import 'package:flutter/material.dart';
-import "package:logging/logging.dart";
 import 'package:photos/core/event_bus.dart';
 import 'package:photos/events/files_updated_event.dart';
 import 'package:photos/events/local_photos_updated_event.dart';
@@ -108,7 +107,7 @@ class _ClusterPageState extends State<ClusterPage> {
             if (widget.personID == null) {
               final result = await showAssignPersonAction(
                 context,
-                clusterID: widget.cluserID!,
+                clusterID: widget.cluserID,
               );
               if (result != null && result is Person) {
                 Navigator.pop(context);

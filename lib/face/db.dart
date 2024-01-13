@@ -257,6 +257,20 @@ class FaceMLDataDB {
     return mapRowToFace(result.first);
   }
 
+  Future<Map<String, int?>> getFaceIdsToClusterIds(
+    Iterable<String> faceIds,
+  ) async {
+    final db = await instance.database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      'SELECT $faceIDColumn, $faceClusterId FROM $facesTable where $faceIDColumn IN (${faceIds.map((id) => "'$id'").join(",")})',
+    );
+    final Map<String, int?> result = {};
+    for (final map in maps) {
+      result[map[faceIDColumn] as String] = map[faceClusterId] as int?;
+    }
+    return result;
+  }
+
   Future<Map<int, Set<int>>> getFileIdToClusterIds() async {
     final Map<int, Set<int>> result = {};
     final db = await instance.database;
@@ -541,6 +555,7 @@ class FaceMLDataDB {
     await batch.commit(noResult: true);
   }
 
+  /// Returns a map of clusterID to (avg embedding, count)
   Future<Map<int, (Uint8List, int)>> clusterSummaryAll() async {
     final db = await instance.database;
     final Map<int, (Uint8List, int)> result = {};
