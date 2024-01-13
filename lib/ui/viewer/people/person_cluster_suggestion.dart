@@ -69,6 +69,7 @@ class _PersonClustersState extends State<PersonReviewClusterSuggestion> {
                       vertical: 20,
                     ),
                     child: Column(
+                      key: ValueKey("cluster_id-$clusterID"),
                       children: <Widget>[
                         Text(
                           "These photos belong to ${widget.person.attr.name}?",

@@ -59,7 +59,8 @@ class PersonFaceWidget extends StatelessWidget {
       );
       if (face == null) {
         debugPrint(
-            "No cover face for person: $personId and cluster $clusterID",);
+          "No cover face for person: $personId and cluster $clusterID",
+        );
         return null;
       }
       final Uint8List? cachedFace = faceCropCache.get(face.faceID);
