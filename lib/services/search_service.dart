@@ -746,7 +746,14 @@ class SearchService {
         }
       }
     }
-    for (final personID in personIdToFiles.keys) {
+    // get sorted personId by files count
+    final sortedPersonIds = personIdToFiles.keys.toList()
+      ..sort(
+        (a, b) => personIdToFiles[b]!.length.compareTo(
+              personIdToFiles[a]!.length,
+            ),
+      );
+    for (final personID in sortedPersonIds) {
       final files = personIdToFiles[personID]!;
       if (files.isEmpty) {
         continue;

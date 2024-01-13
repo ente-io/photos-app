@@ -10,8 +10,6 @@ import "package:photos/services/face_ml/feedback/cluster_feedback.dart";
 import "package:photos/theme/ente_theme.dart";
 import "package:photos/ui/components/buttons/button_widget.dart";
 import "package:photos/ui/components/models/button_type.dart";
-// import "package:photos/ui/viewer/file/no_thumbnail_widget.dart";
-// import "package:photos/ui/viewer/file/thumbnail_widget.dart";
 import "package:photos/ui/viewer/people/cluster_page.dart";
 import "package:photos/ui/viewer/search/result/person_face_widget.dart";
 
@@ -71,6 +69,7 @@ class _PersonClustersState extends State<PersonReviewClusterSuggestion> {
                       vertical: 20,
                     ),
                     child: Column(
+                      key: ValueKey("cluster_id-$clusterID"),
                       children: <Widget>[
                         Text(
                           "These photos belong to ${widget.person.attr.name}?",
@@ -165,13 +164,16 @@ class _PersonClustersState extends State<PersonReviewClusterSuggestion> {
   }) {
     return List<Widget>.generate(
       min(4, max(0, files.length - start)),
-      (index) => SizedBox(
-        width: 64,
-        height: 64,
-        child: ClipOval(
-          child: PersonFaceWidget(
-            files[start + index],
-            clusterID: cluserId,
+      (index) => Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: SizedBox(
+          width: 72,
+          height: 72,
+          child: ClipOval(
+            child: PersonFaceWidget(
+              files[start + index],
+              clusterID: cluserId,
+            ),
           ),
         ),
       ),
