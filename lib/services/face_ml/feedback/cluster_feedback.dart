@@ -64,9 +64,9 @@ class ClusterFeedbackService {
   Future<Set<int>> getSuggestionsUsingMedian(
     Person p, {
     int sampleSize = 50,
-    double maxMedianDistance = 0.75,
-    // double goodMedianDistance = 0.5,
-    double maxMeanDistance = 0.70,
+    double maxMedianDistance = 0.65,
+    double goodMedianDistance = 0.55,
+    double maxMeanDistance = 0.65,
     double goodMeanDistance = 0.4,
   }) async {
     // Get all the cluster data
@@ -122,12 +122,16 @@ class ClusterFeedbackService {
       return <int>{};
     }
 
-    final Set<int> otherClusterIdsCandidates = {};
+    final List<(int, double)> temp = [];
     for (final List<(int, double)> suggestion in moreSuggestionsMean.values) {
-      for (final clusterNeighbors in suggestion) {
-        otherClusterIdsCandidates.add(clusterNeighbors.$1);
-      }
+      temp.addAll(suggestion);
     }
+    temp.sort((a, b) => a.$2.compareTo(b.$2));
+    final otherClusterIdsCandidates = temp
+        .map(
+          (e) => e.$1,
+        )
+        .toList(growable: false);
     _logger.info(
       "Found potential suggestions from loose mean for median test: $otherClusterIdsCandidates",
     );
@@ -150,7 +154,9 @@ class ClusterFeedbackService {
         .toList(growable: false);
 
     // Find the actual closest clusters for the person using median
-    final Set<int> suggestionsMedian = {};
+    final List<(int, double)> suggestionsMedian = [];
+    final List<(int, double)> greatSuggestionsMedian = [];
+    double minMedianDistance = maxMedianDistance;
     for (final otherClusterId in otherClusterIdsCandidates) {
       final Iterable<Uint8List> otherEmbeddingsProto =
           await FaceMLDataDB.instance.getFaceEmbeddingsForCluster(
@@ -174,18 +180,38 @@ class ClusterFeedbackService {
       }
       distances.sort();
       final double medianDistance = distances[distances.length ~/ 2];
-      if (medianDistance < maxMedianDistance) {
-        suggestionsMedian.add(otherClusterId);
+      if (medianDistance < minMedianDistance) {
+        suggestionsMedian.add((otherClusterId, medianDistance));
+        minMedianDistance = medianDistance;
+        if (medianDistance < goodMedianDistance) {
+          greatSuggestionsMedian.add((otherClusterId, medianDistance));
+          break;
+        }
       }
     }
     watch.log("Finished median test");
     if (suggestionsMedian.isEmpty) {
       _logger.info("No suggestions found using median");
+      return <int>{};
     } else {
       _logger.info("Found suggestions using median: $suggestionsMedian");
     }
 
-    return suggestionsMedian;
+    if (greatSuggestionsMedian.isNotEmpty) {
+      _logger.info(
+        "Found great suggestion using median: $greatSuggestionsMedian",
+      );
+      // // Return the largest size cluster by using allClusterIdsToCountMap
+      // final List<int> greatSuggestionsMedianClusterIds =
+      //     greatSuggestionsMedian.map((e) => e.$1).toList(growable: false);
+      // greatSuggestionsMedianClusterIds.sort(
+      //   (a, b) =>
+      //       allClusterIdsToCountMap[b]!.compareTo(allClusterIdsToCountMap[a]!),
+      // );
+      return {greatSuggestionsMedian.last.$1};
+    }
+
+    return {suggestionsMedian.last.$1};
   }
 
   Future<Map<int, List<EnteFile>>> getClusterFilesForPersonID(
