@@ -88,10 +88,12 @@ class FaceWidget extends StatelessWidget {
           if (snapshot.hasError) {
             log('Error getting face: ${snapshot.error}');
           }
-          return const SizedBox(
-            width: 60, // Ensure consistent sizing
-            height: 60,
-            child: NoThumbnailWidget(),
+          return const ClipOval(
+            child: SizedBox(
+              width: 60, // Ensure consistent sizing
+              height: 60,
+              child: NoThumbnailWidget(),
+            ),
           );
         }
       },
