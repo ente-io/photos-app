@@ -54,6 +54,7 @@ class FaceMlService {
 
   bool initialized = false;
   bool isImageIndexRunning = false;
+  int kParallelism = 5;
 
   Future<void> init() async {
     if (initialized) {
@@ -157,111 +158,30 @@ class FaceMlService {
       final sortedBylocalID = <EnteFile>[];
       sortedBylocalID.addAll(split.unmatched);
       sortedBylocalID.addAll(split.matched);
-      for (final enteFile in sortedBylocalID) {
-        if (isImageIndexRunning == false) {
-          _logger.info("indexAllImages() was paused, stopping");
-          break;
-        }
-        if (_skipAnalysisEnteFile(
-          enteFile,
-          alreadyIndexedFiles,
-        )) {
-          fileSkippedCount++;
-          continue;
-        }
-
-        _logger.info(
-          "`indexAllImages()` on file number $fileAnalyzedCount: start processing image with uploadedFileID: ${enteFile.uploadedFileID}",
-        );
-
-        try {
-          final FaceMlResult result = await analyzeImage(
-            enteFile,
-            preferUsingThumbnailForEverything: false,
-            disposeImageIsolateAfterUse: false,
-          );
-          final List<Face> faces = [];
-          if (!result.hasFaces) {
-            faces.add(
-              Face(
-                '${result.fileId}-0',
-                result.fileId,
-                <double>[],
-                result.errorOccured ? -1.0 : 0.0,
-                face_detection.Detection.empty(),
-                0.0,
-              ),
-            );
-          } else {
-            if (result.faceDetectionImageSize == null ||
-                result.faceAlignmentImageSize == null) {
-              _logger.severe(
-                  "faceDetectionImageSize or faceDetectionImageSize is null for image with "
-                  "ID: ${enteFile.uploadedFileID}");
-            }
-            final bool useAlign = result.faceAlignmentImageSize != null &&
-                result.faceAlignmentImageSize!.width > 0 &&
-                result.faceAlignmentImageSize!.height > 0 &&
-                result.onlyThumbnailUsed == false;
-            if (useAlign) {
-              _logger.info(
-                "Using aligned image size for image with ID: ${enteFile.uploadedFileID}. This size is ${result.faceAlignmentImageSize!.width}x${result.faceAlignmentImageSize!.height} compared to size of ${enteFile.width}x${enteFile.height} in the metadata",
-              );
-            }
-            for (int i = 0; i < result.faces.length; ++i) {
-              final FaceResult faceRes = result.faces[i];
-              final FaceDetectionAbsolute absoluteDetection =
-                  faceRes.detection.toAbsolute(
-                imageWidth: useAlign
-                    ? result.faceAlignmentImageSize!.width.toInt()
-                    : enteFile.width,
-                imageHeight: useAlign
-                    ? result.faceAlignmentImageSize!.height.toInt()
-                    : enteFile.height,
-              );
-              final detection = face_detection.Detection(
-                box: FaceBox(
-                  x: absoluteDetection.xMinBox,
-                  y: absoluteDetection.yMinBox,
-                  width: absoluteDetection.width,
-                  height: absoluteDetection.height,
-                ),
-                landmarks: absoluteDetection.allKeypoints
-                    .map(
-                      (keypoint) => Landmark(
-                        x: keypoint[0],
-                        y: keypoint[0],
-                      ),
-                    )
-                    .toList(),
-              );
-              faces.add(
-                Face(
-                  faceRes.faceId,
-                  result.fileId,
-                  faceRes.embedding,
-                  faceRes.detection.score,
-                  detection,
-                  faceRes.blurValue,
-                ),
-              );
-            }
+      final List<List<EnteFile>> chunks = sortedBylocalID.chunks(kParallelism);
+      for (final chunk in chunks) {
+        final futures = <Future>[];
+        for (final enteFile in chunk) {
+          if (isImageIndexRunning == false) {
+            _logger.info("indexAllImages() was paused, stopping");
+            break;
           }
-          _logger.info("inserting ${faces.length} faces for ${result.fileId}");
-          await FaceMLDataDB.instance.bulkInsertFaces(faces);
+          if (_skipAnalysisEnteFile(
+            enteFile,
+            alreadyIndexedFiles,
+          )) {
+            fileSkippedCount++;
+            continue;
+          }
           fileAnalyzedCount++;
-        } catch (e, s) {
-          _logger.severe(
-            "Failed to analyze using FaceML for image with ID: ${enteFile.uploadedFileID}",
-            e,
-            s,
-          );
+          futures.add(processImage(enteFile, alreadyIndexedFiles));
         }
+        await Future.wait(futures);
       }
 
       stopwatch.stop();
       _logger.info(
-        "`indexAllImages()` finished. Analyzed $fileAnalyzedCount images, skipped $fileSkippedCount images, in ${stopwatch.elapsedMilliseconds} ms",
+        "`indexAllImages()` finished. Analyzed d images, in ${stopwatch.elapsedMilliseconds} ms",
       );
 
       // Close the image conversion isolate
@@ -270,6 +190,98 @@ class FaceMlService {
       _logger.severe("indexAllImages failed", e, s);
     } finally {
       isImageIndexRunning = false;
+    }
+  }
+
+  Future<void> processImage(
+    EnteFile enteFile,
+    Set<int> alreadyIndexedFiles,
+  ) async {
+    _logger.info(
+      "`indexAllImages()` on file number  start processing image with uploadedFileID: ${enteFile.uploadedFileID}",
+    );
+
+    try {
+      final FaceMlResult result = await analyzeImage(
+        enteFile,
+        preferUsingThumbnailForEverything: false,
+        disposeImageIsolateAfterUse: false,
+      );
+      final List<Face> faces = [];
+      if (!result.hasFaces) {
+        faces.add(
+          Face(
+            '${result.fileId}-0',
+            result.fileId,
+            <double>[],
+            result.errorOccured ? -1.0 : 0.0,
+            face_detection.Detection.empty(),
+            0.0,
+          ),
+        );
+      } else {
+        if (result.faceDetectionImageSize == null ||
+            result.faceAlignmentImageSize == null) {
+          _logger.severe(
+              "faceDetectionImageSize or faceDetectionImageSize is null for image with "
+              "ID: ${enteFile.uploadedFileID}");
+        }
+        final bool useAlign = result.faceAlignmentImageSize != null &&
+            result.faceAlignmentImageSize!.width > 0 &&
+            result.faceAlignmentImageSize!.height > 0 &&
+            result.onlyThumbnailUsed == false;
+        if (useAlign) {
+          _logger.info(
+            "Using aligned image size for image with ID: ${enteFile.uploadedFileID}. This size is ${result.faceAlignmentImageSize!.width}x${result.faceAlignmentImageSize!.height} compared to size of ${enteFile.width}x${enteFile.height} in the metadata",
+          );
+        }
+        for (int i = 0; i < result.faces.length; ++i) {
+          final FaceResult faceRes = result.faces[i];
+          final FaceDetectionAbsolute absoluteDetection =
+              faceRes.detection.toAbsolute(
+            imageWidth: useAlign
+                ? result.faceAlignmentImageSize!.width.toInt()
+                : enteFile.width,
+            imageHeight: useAlign
+                ? result.faceAlignmentImageSize!.height.toInt()
+                : enteFile.height,
+          );
+          final detection = face_detection.Detection(
+            box: FaceBox(
+              x: absoluteDetection.xMinBox,
+              y: absoluteDetection.yMinBox,
+              width: absoluteDetection.width,
+              height: absoluteDetection.height,
+            ),
+            landmarks: absoluteDetection.allKeypoints
+                .map(
+                  (keypoint) => Landmark(
+                    x: keypoint[0],
+                    y: keypoint[0],
+                  ),
+                )
+                .toList(),
+          );
+          faces.add(
+            Face(
+              faceRes.faceId,
+              result.fileId,
+              faceRes.embedding,
+              faceRes.detection.score,
+              detection,
+              faceRes.blurValue,
+            ),
+          );
+        }
+      }
+      _logger.info("inserting ${faces.length} faces for ${result.fileId}");
+      await FaceMLDataDB.instance.bulkInsertFaces(faces);
+    } catch (e, s) {
+      _logger.severe(
+        "Failed to analyze using FaceML for image with ID: ${enteFile.uploadedFileID}",
+        e,
+        s,
+      );
     }
   }
 
