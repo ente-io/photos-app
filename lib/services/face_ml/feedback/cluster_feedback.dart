@@ -259,6 +259,63 @@ class ClusterFeedbackService {
     return FaceMLDataDB.instance.removePersonFromFiles(files, p);
   }
 
+  Future<bool> checkAndDoAutomaticMerges(Person p) async {
+    final faceMlDb = FaceMLDataDB.instance;
+    final allClusterIdsToCountMap = (await faceMlDb.clusterIdToFaceCount());
+    final ignoredClusters = await faceMlDb.getPersonIgnoredClusters(p.remoteID);
+    final personClusters = await faceMlDb.getPersonClusterIDs(p.remoteID);
+    dev.log(
+      'existing clusters for ${p.attr.name} are $personClusters',
+      name: "ClusterFeedbackService",
+    );
+
+    // Get and update the cluster summary to get the avg (centroid) and count
+    final EnteWatch watch = EnteWatch("ClusterFeedbackService")..start();
+    final Map<int, List<double>> clusterAvg = await _getUpdateClusterAvg(
+      allClusterIdsToCountMap,
+      ignoredClusters,
+    );
+    watch.log('computed avg for ${clusterAvg.length} clusters');
+
+    // Find the actual closest clusters for the person
+    final Map<int, List<(int, double)>> suggestions = _calcSuggestionsMean(
+      clusterAvg,
+      personClusters,
+      ignoredClusters,
+      0.3,
+    );
+
+    if (suggestions.isEmpty) {
+      dev.log(
+        'No automatic merge suggestions for ${p.attr.name}',
+        name: "ClusterFeedbackService",
+      );
+      return false;
+    }
+
+    // log suggestions
+    for (final entry in suggestions.entries) {
+      dev.log(
+        ' ${entry.value.length} suggestion for ${p.attr.name} for cluster ID ${entry.key} are  suggestions ${entry.value}}',
+        name: "ClusterFeedbackService",
+      );
+    }
+
+    for (final suggestionsPerCluster in suggestions.values) {
+      for (final suggestion in suggestionsPerCluster) {
+        final clusterID = suggestion.$1;
+        await faceMlDb.assignClusterToPerson(
+          personID: p.remoteID,
+          clusterID: clusterID,
+        );
+      }
+    }
+
+    Bus.instance.fire(PeopleChangedEvent());
+
+    return true;
+  }
+
   Future<Map<int, List<double>>> _getUpdateClusterAvg(
     Map<int, int> allClusterIdsToCountMap,
     Set<int> ignoredClusters,

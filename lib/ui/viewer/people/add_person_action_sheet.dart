@@ -273,6 +273,11 @@ class _PersonActionSheetState extends State<PersonActionSheet> {
             PersonAttr(name: text, faces: <String>[]),
           );
           await FaceMLDataDB.instance.insert(p, clusterID);
+          final bool extraPhotosFound =
+              await ClusterFeedbackService.instance.checkAutomaticMerges(p);
+          if (extraPhotosFound) {
+            showShortToast(context, "Extra photos found for $text");
+          }
           Bus.instance.fire(PeopleChangedEvent());
           Navigator.pop(context, p);
           log("inserted person");
