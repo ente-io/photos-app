@@ -73,15 +73,27 @@ class FaceWidget extends StatelessWidget {
                 );
               }
             },
-            child: ClipOval(
-              child: SizedBox(
-                width: 60,
-                height: 60,
-                child: Image(
-                  image: imageProvider,
-                  fit: BoxFit.cover,
+            child: Column(
+              children: [
+                ClipOval(
+                  child: SizedBox(
+                    width: 60,
+                    height: 60,
+                    child: Image(
+                      image: imageProvider,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 8),
+                if (person != null)
+                  Text(
+                    person!.attr.name.trim(),
+                    style: Theme.of(context).textTheme.bodySmall,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+              ],
             ),
           );
         } else {
