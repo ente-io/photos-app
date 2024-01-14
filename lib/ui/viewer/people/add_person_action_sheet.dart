@@ -10,6 +10,7 @@ import "package:photos/events/people_changed_event.dart";
 import "package:photos/face/db.dart";
 import "package:photos/face/model/person.dart";
 import "package:photos/generated/l10n.dart";
+import "package:photos/services/face_ml/feedback/cluster_feedback.dart";
 import 'package:photos/theme/colors.dart';
 import 'package:photos/theme/ente_theme.dart';
 import 'package:photos/ui/common/loading_widget.dart';
@@ -21,6 +22,7 @@ import 'package:photos/ui/components/title_bar_title_widget.dart';
 import "package:photos/ui/viewer/people/new_person_item_widget.dart";
 import "package:photos/ui/viewer/people/person_row_item.dart";
 import "package:photos/utils/dialog_util.dart";
+import "package:photos/utils/toast_util.dart";
 import "package:uuid/uuid.dart";
 
 enum PersonActionType {
@@ -274,7 +276,7 @@ class _PersonActionSheetState extends State<PersonActionSheet> {
           );
           await FaceMLDataDB.instance.insert(p, clusterID);
           final bool extraPhotosFound =
-              await ClusterFeedbackService.instance.checkAutomaticMerges(p);
+              await ClusterFeedbackService.instance.checkAndDoAutomaticMerges(p);
           if (extraPhotosFound) {
             showShortToast(context, "Extra photos found for $text");
           }
