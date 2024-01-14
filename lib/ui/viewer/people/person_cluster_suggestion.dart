@@ -32,12 +32,12 @@ class _PersonClustersState extends State<PersonReviewClusterSuggestion> {
       appBar: AppBar(
         title: const Text('Review suggestions'),
       ),
-      body: FutureBuilder<Map<int, List<EnteFile>>>(
+      body: FutureBuilder<List<(int, List<EnteFile>)>>(
         future: ClusterFeedbackService.instance
             .getClusterFilesForPersonID(widget.person),
         builder: (context, snapshot) {
           if (snapshot.hasData) {
-            final List<int> keys = snapshot.data!.keys.toList();
+            final List<int> keys = snapshot.data!.map((e) => e.$1).toList();
             if (keys.isEmpty) {
               return Center(
                 child: Text(
@@ -50,7 +50,7 @@ class _PersonClustersState extends State<PersonReviewClusterSuggestion> {
               itemCount: min(keys.length, 1),
               itemBuilder: (context, index) {
                 final int clusterID = keys[index];
-                final List<EnteFile> files = snapshot.data![keys[index]]!;
+                final List<EnteFile> files = snapshot.data![index].$2;
                 return InkWell(
                   onTap: () {
                     Navigator.of(context).push(
@@ -99,48 +99,46 @@ class _PersonClustersState extends State<PersonReviewClusterSuggestion> {
                           height: 24.0,
                         ),
                         Text(
-                          "${snapshot.data![keys[index]]!.length} photos",
+                          "${snapshot.data![index].$2.length} photos",
                           style: getEnteTextTheme(context).body,
                         ),
                         const SizedBox(
                           height: 24.0,
                         ), // Add some spacing between the thumbnail and the text
-                        Container(
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 24.0),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: <Widget>[
-                                ButtonWidget(
-                                  buttonType: ButtonType.primary,
-                                  labelText: 'Yes, confirm',
-                                  buttonSize: ButtonSize.large,
-                                  onTap: () async => {
-                                    await FaceMLDataDB.instance
-                                        .assignClusterToPerson(
-                                      personID: widget.person.remoteID,
-                                      clusterID: clusterID,
-                                    ),
-                                    Bus.instance.fire(PeopleChangedEvent()),
-                                    if (mounted) setState(() => {}),
-                                  },
-                                ),
-                                const SizedBox(height: 12.0), // Add some
-                                ButtonWidget(
-                                  buttonType: ButtonType.critical,
-                                  labelText: 'No',
-                                  buttonSize: ButtonSize.large,
-                                  onTap: () async => {
-                                    await FaceMLDataDB.instance
-                                        .captureNotPersonFeedback(
-                                      personID: widget.person.remoteID,
-                                      clusterID: clusterID,
-                                    ),
-                                    if (mounted) setState(() => {}),
-                                  },
-                                ),
-                              ],
-                            ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: <Widget>[
+                              ButtonWidget(
+                                buttonType: ButtonType.primary,
+                                labelText: 'Yes, confirm',
+                                buttonSize: ButtonSize.large,
+                                onTap: () async => {
+                                  await FaceMLDataDB.instance
+                                      .assignClusterToPerson(
+                                    personID: widget.person.remoteID,
+                                    clusterID: clusterID,
+                                  ),
+                                  Bus.instance.fire(PeopleChangedEvent()),
+                                  if (mounted) setState(() => {}),
+                                },
+                              ),
+                              const SizedBox(height: 12.0), // Add some
+                              ButtonWidget(
+                                buttonType: ButtonType.critical,
+                                labelText: 'No',
+                                buttonSize: ButtonSize.large,
+                                onTap: () async => {
+                                  await FaceMLDataDB.instance
+                                      .captureNotPersonFeedback(
+                                    personID: widget.person.remoteID,
+                                    clusterID: clusterID,
+                                  ),
+                                  if (mounted) setState(() => {}),
+                                },
+                              ),
+                            ],
                           ),
                         ),
                       ],

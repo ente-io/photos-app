@@ -4,6 +4,8 @@ import "dart:typed_data";
 
 import "package:flutter/foundation.dart";
 import "package:logging/logging.dart";
+import "package:photos/core/event_bus.dart";
+import "package:photos/events/people_changed_event.dart";
 import "package:photos/extensions/stop_watch.dart";
 import "package:photos/face/db.dart";
 import "package:photos/face/model/person.dart";
@@ -61,7 +63,7 @@ class ClusterFeedbackService {
     return suggestions;
   }
 
-  Future<Set<int>> getSuggestionsUsingMedian(
+  Future<List<int>> getSuggestionsUsingMedian(
     Person p, {
     int sampleSize = 50,
     double maxMedianDistance = 0.65,
@@ -96,16 +98,23 @@ class ClusterFeedbackService {
       goodMeanDistance,
     );
     if (suggestionsMean.isNotEmpty) {
-      final Set<int> suggestClusterIds = {};
+      final List<(int, double)> suggestClusterIds = [];
       for (final List<(int, double)> suggestion in suggestionsMean.values) {
-        for (final clusterNeighbors in suggestion) {
-          suggestClusterIds.add(clusterNeighbors.$1);
-        }
+        suggestClusterIds.addAll(suggestion);
       }
-      _logger.info(
-        "Already found good suggestions using mean: $suggestClusterIds",
+      suggestClusterIds.sort(
+        (a, b) => allClusterIdsToCountMap[b.$1]!
+            .compareTo(allClusterIdsToCountMap[a.$1]!),
       );
-      return suggestClusterIds;
+      final suggestClusterIdsSizes = suggestClusterIds
+          .map((e) => allClusterIdsToCountMap[e.$1]!)
+          .toList(growable: false);
+      final suggestClusterIdsDistances =
+          suggestClusterIds.map((e) => e.$2).toList(growable: false);
+      _logger.info(
+        "Already found good suggestions using mean: $suggestClusterIds, with sizes $suggestClusterIdsSizes and distances $suggestClusterIdsDistances",
+      );
+      return suggestClusterIds.map((e) => e.$1).toList(growable: false);
     }
 
     // Find the other cluster candidates based on the median
@@ -119,7 +128,7 @@ class ClusterFeedbackService {
     if (moreSuggestionsMean.isEmpty) {
       _logger
           .info("No suggestions found using mean, even with higher threshold");
-      return <int>{};
+      return <int>[];
     }
 
     final List<(int, double)> temp = [];
@@ -192,10 +201,16 @@ class ClusterFeedbackService {
     watch.log("Finished median test");
     if (suggestionsMedian.isEmpty) {
       _logger.info("No suggestions found using median");
-      return <int>{};
+      return <int>[];
     } else {
       _logger.info("Found suggestions using median: $suggestionsMedian");
     }
+
+    final List<int> finalSuggestionsMedian = suggestionsMedian
+        .map(((e) => e.$1))
+        .toList(growable: false)
+        .reversed
+        .toList(growable: false);
 
     if (greatSuggestionsMedian.isNotEmpty) {
       _logger.info(
@@ -208,13 +223,14 @@ class ClusterFeedbackService {
       //   (a, b) =>
       //       allClusterIdsToCountMap[b]!.compareTo(allClusterIdsToCountMap[a]!),
       // );
-      return {greatSuggestionsMedian.last.$1};
+
+      // return [greatSuggestionsMedian.last.$1, ...finalSuggestionsMedian];
     }
 
-    return {suggestionsMedian.last.$1};
+    return finalSuggestionsMedian;
   }
 
-  Future<Map<int, List<EnteFile>>> getClusterFilesForPersonID(
+  Future<List<(int, List<EnteFile>)>> getClusterFilesForPersonID(
     Person person,
   ) async {
     _logger.info(
@@ -232,11 +248,11 @@ class ClusterFeedbackService {
     // }
 
     // Get the suggestions for the person using centroids and median
-    final Set<int> suggestClusterIds = await getSuggestionsUsingMedian(person);
+    final List<int> suggestClusterIds = await getSuggestionsUsingMedian(person);
 
     // Get the files for the suggestions
     final Map<int, Set<int>> fileIdToClusterID = await FaceMLDataDB.instance
-        .getFileIdToClusterIDSetForCluster(suggestClusterIds);
+        .getFileIdToClusterIDSetForCluster(suggestClusterIds.toSet());
     final Map<int, List<EnteFile>> clusterIDToFiles = {};
     final allFiles = await SearchService.instance.getAllFiles();
     for (final f in allFiles) {
@@ -252,7 +268,17 @@ class ClusterFeedbackService {
         }
       }
     }
-    return clusterIDToFiles;
+
+    final List<(int, List<EnteFile>)> clusterIdAndFiles = [];
+    for (final clusterId in suggestClusterIds) {
+      if (clusterIDToFiles.containsKey(clusterId)) {
+        clusterIdAndFiles.add(
+          (clusterId, clusterIDToFiles[clusterId]!),
+        );
+      }
+    }
+
+    return clusterIdAndFiles;
   }
 
   Future<void> removePersonFromFiles(List<EnteFile> files, Person p) {
