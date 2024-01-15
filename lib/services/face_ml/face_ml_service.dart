@@ -54,7 +54,7 @@ class FaceMlService {
 
   bool initialized = false;
   bool isImageIndexRunning = false;
-  int kParallelism = 5;
+  int kParallelism = 1;
 
   Future<void> init() async {
     if (initialized) {
