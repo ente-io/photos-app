@@ -137,7 +137,7 @@ class FaceLinearClustering {
     _inactivityTimer?.cancel();
     _inactivityTimer = Timer(_inactivityDuration, () {
       _logger.info(
-        'Flutter Isolate has been inactive for ${_inactivityDuration.inSeconds} seconds. Killing isolate.',
+        'Clustering Isolate has been inactive for ${_inactivityDuration.inSeconds} seconds. Killing isolate.',
       );
       dispose();
     });
