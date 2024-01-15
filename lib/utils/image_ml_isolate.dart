@@ -35,7 +35,7 @@ class ImageMlIsolate {
   final _logger = Logger('ImageMlIsolate');
 
   Timer? _inactivityTimer;
-  final Duration _inactivityDuration = const Duration(minutes: 20);
+  final Duration _inactivityDuration = const Duration(seconds: 60);
 
   final _initLock = Lock();
 
