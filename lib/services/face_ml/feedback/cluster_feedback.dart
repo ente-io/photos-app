@@ -247,38 +247,44 @@ class ClusterFeedbackService {
     //   }
     // }
 
-    // Get the suggestions for the person using centroids and median
-    final List<int> suggestClusterIds = await getSuggestionsUsingMedian(person);
+    try {
+      // Get the suggestions for the person using centroids and median
+      final List<int> suggestClusterIds =
+          await getSuggestionsUsingMedian(person);
 
-    // Get the files for the suggestions
-    final Map<int, Set<int>> fileIdToClusterID = await FaceMLDataDB.instance
-        .getFileIdToClusterIDSetForCluster(suggestClusterIds.toSet());
-    final Map<int, List<EnteFile>> clusterIDToFiles = {};
-    final allFiles = await SearchService.instance.getAllFiles();
-    for (final f in allFiles) {
-      if (!fileIdToClusterID.containsKey(f.uploadedFileID ?? -1)) {
-        continue;
-      }
-      final cluserIds = fileIdToClusterID[f.uploadedFileID ?? -1]!;
-      for (final cluster in cluserIds) {
-        if (clusterIDToFiles.containsKey(cluster)) {
-          clusterIDToFiles[cluster]!.add(f);
-        } else {
-          clusterIDToFiles[cluster] = [f];
+      // Get the files for the suggestions
+      final Map<int, Set<int>> fileIdToClusterID = await FaceMLDataDB.instance
+          .getFileIdToClusterIDSetForCluster(suggestClusterIds.toSet());
+      final Map<int, List<EnteFile>> clusterIDToFiles = {};
+      final allFiles = await SearchService.instance.getAllFiles();
+      for (final f in allFiles) {
+        if (!fileIdToClusterID.containsKey(f.uploadedFileID ?? -1)) {
+          continue;
+        }
+        final cluserIds = fileIdToClusterID[f.uploadedFileID ?? -1]!;
+        for (final cluster in cluserIds) {
+          if (clusterIDToFiles.containsKey(cluster)) {
+            clusterIDToFiles[cluster]!.add(f);
+          } else {
+            clusterIDToFiles[cluster] = [f];
+          }
         }
       }
-    }
 
-    final List<(int, List<EnteFile>)> clusterIdAndFiles = [];
-    for (final clusterId in suggestClusterIds) {
-      if (clusterIDToFiles.containsKey(clusterId)) {
-        clusterIdAndFiles.add(
-          (clusterId, clusterIDToFiles[clusterId]!),
-        );
+      final List<(int, List<EnteFile>)> clusterIdAndFiles = [];
+      for (final clusterId in suggestClusterIds) {
+        if (clusterIDToFiles.containsKey(clusterId)) {
+          clusterIdAndFiles.add(
+            (clusterId, clusterIDToFiles[clusterId]!),
+          );
+        }
       }
-    }
 
-    return clusterIdAndFiles;
+      return clusterIdAndFiles;
+    } catch (e, s) {
+      _logger.severe("Error in getClusterFilesForPersonID", e, s);
+      rethrow;
+    }
   }
 
   Future<void> removePersonFromFiles(List<EnteFile> files, Person p) {
