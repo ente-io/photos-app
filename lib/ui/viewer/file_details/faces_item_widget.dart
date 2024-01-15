@@ -50,9 +50,7 @@ class FacesItemWidget extends StatelessWidget {
       // Sort the faces by score in descending order, so that the highest scoring face is first.
       faces.sort((Face a, Face b) => b.score.compareTo(a.score));
 
-      // final Map<int, Set<int>> fileIdToClusterID =
-      //     await FaceMLDataDB.instance.getFileIdToClusterIds();
-      // if (fileIdToClusterID[file.uploadedFileID] == null) {}
+      // TODO: add deduplication of faces of same person
       final faceIdsToClusterIds = await FaceMLDataDB.instance
           .getFaceIdsToClusterIds(faces.map((face) => face.faceID));
       final (clusterIDToPerson, personIdToPerson) =
