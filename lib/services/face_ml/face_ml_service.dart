@@ -34,6 +34,7 @@ import "package:photos/utils/file_util.dart";
 import 'package:photos/utils/image_ml_isolate.dart';
 import "package:photos/utils/local_settings.dart";
 import "package:photos/utils/thumbnail_util.dart";
+import "package:synchronized/synchronized.dart";
 
 enum FileDataForML { thumbnailData, fileData, compressedFileData }
 
@@ -52,37 +53,76 @@ class FaceMlService {
   static final instance = FaceMlService._privateConstructor();
   factory FaceMlService() => instance;
 
+  final _initLock = Lock();
+
   bool initialized = false;
   bool isImageIndexRunning = false;
   int kParallelism = 1;
 
   Future<void> init() async {
-    if (initialized) {
-      return;
-    }
-    _logger.info("init called");
-    try {
-      await YoloOnnxFaceDetection.instance.init();
-    } catch (e, s) {
-      _logger.severe("Could not initialize blazeface", e, s);
-    }
-    try {
-      await ImageMlIsolate.instance.init();
-    } catch (e, s) {
-      _logger.severe("Could not initialize image ml isolate", e, s);
-    }
-    try {
-      await FaceEmbedding.instance.init();
-    } catch (e, s) {
-      _logger.severe("Could not initialize mobilefacenet", e, s);
-    }
+    return _initLock.synchronized(() async {
+      if (initialized) {
+        return;
+      }
+      _logger.info("init called");
+      try {
+        await YoloOnnxFaceDetection.instance.init();
+      } catch (e, s) {
+        _logger.severe("Could not initialize yolo onnx", e, s);
+      }
+      try {
+        await ImageMlIsolate.instance.init();
+      } catch (e, s) {
+        _logger.severe("Could not initialize image ml isolate", e, s);
+      }
+      try {
+        await FaceEmbedding.instance.init();
+      } catch (e, s) {
+        _logger.severe("Could not initialize mobilefacenet", e, s);
+      }
+
+      initialized = true;
+    });
+  }
+
+  void listenIndexOnDiffSync() {
     Bus.instance.on<DiffSyncCompleteEvent>().listen((event) async {
       if (LocalSettings.instance.isFaceIndexingEnabled == false) {
         return;
       }
       unawaited(indexAllImages());
     });
-    initialized = true;
+  }
+
+  Future<void> ensureSpawned() async {
+    if (!initialized) {
+      await init();
+    }
+  }
+
+  Future<void> dispose() async {
+    return _initLock.synchronized(() async {
+      _logger.info("dispose called");
+      if (!initialized) {
+        return;
+      }
+      try {
+        await YoloOnnxFaceDetection.instance.dispose();
+      } catch (e, s) {
+        _logger.severe("Could not dispose yolo onnx", e, s);
+      }
+      try {
+        ImageMlIsolate.instance.dispose();
+      } catch (e, s) {
+        _logger.severe("Could not dispose image ml isolate", e, s);
+      }
+      try {
+        await FaceEmbedding.instance.dispose();
+      } catch (e, s) {
+        _logger.severe("Could not dispose mobilefacenet", e, s);
+      }
+      initialized = false;
+    });
   }
 
   Future<void> indexAndClusterAllImages() async {
@@ -148,7 +188,8 @@ class FaceMlService {
           await FaceMLDataDB.instance.getIndexedFileIds();
 
       // Make sure the image conversion isolate is spawned
-      await ImageMlIsolate.instance.ensureSpawned();
+      // await ImageMlIsolate.instance.ensureSpawned();
+      await ensureSpawned();
 
       int fileAnalyzedCount = 0;
       int fileSkippedCount = 0;
@@ -159,12 +200,14 @@ class FaceMlService {
       sortedBylocalID.addAll(split.unmatched);
       sortedBylocalID.addAll(split.matched);
       final List<List<EnteFile>> chunks = sortedBylocalID.chunks(kParallelism);
+      outerLoop:
       for (final chunk in chunks) {
         final futures = <Future>[];
         for (final enteFile in chunk) {
           if (isImageIndexRunning == false) {
             _logger.info("indexAllImages() was paused, stopping");
-            break;
+            await dispose();
+            break outerLoop;
           }
           if (_skipAnalysisEnteFile(
             enteFile,
@@ -173,19 +216,20 @@ class FaceMlService {
             fileSkippedCount++;
             continue;
           }
-          fileAnalyzedCount++;
           futures.add(processImage(enteFile, alreadyIndexedFiles));
         }
         await Future.wait(futures);
+        fileAnalyzedCount += futures.length;
       }
 
       stopwatch.stop();
       _logger.info(
-        "`indexAllImages()` finished. Analyzed d images, in ${stopwatch.elapsedMilliseconds} ms",
+        "`indexAllImages()` finished. Analyzed $fileAnalyzedCount images, in ${stopwatch.elapsed.inSeconds} seconds (skipped $fileSkippedCount images)",
       );
 
-      // Close the image conversion isolate
-      ImageMlIsolate.instance.dispose();
+      // Dispose of all the isolates
+      // ImageMlIsolate.instance.dispose();
+      unawaited(dispose());
     } catch (e, s) {
       _logger.severe("indexAllImages failed", e, s);
     } finally {

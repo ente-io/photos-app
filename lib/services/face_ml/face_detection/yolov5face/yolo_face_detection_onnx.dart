@@ -18,13 +18,14 @@ class YoloOnnxFaceDetection {
   OrtSessionOptions? _sessionOptions;
   OrtSession? _session;
 
-  late final FaceDetectionOptionsYOLO _faceOptions;
+  final FaceDetectionOptionsYOLO _faceOptions;
 
   bool _isInitialized = false;
 
   final YOLOModelConfig config;
   // singleton pattern
-  YoloOnnxFaceDetection._privateConstructor({required this.config});
+  YoloOnnxFaceDetection._privateConstructor({required this.config})
+      : _faceOptions = config.faceOptions;
 
   /// Use this instance to access the FaceDetection service. Make sure to call `init()` before using it.
   /// e.g. `await FaceDetection.instance.init();`
@@ -43,24 +44,33 @@ class YoloOnnxFaceDetection {
   /// Check if the interpreter is initialized, if not initialize it with `loadModel()`
   Future<void> init() async {
     if (!_isInitialized) {
+      _logger.info('init is called');
       await _loadModel();
     }
   }
 
   Future<void> dispose() async {
+    _logger.info('dispose is called');
     if (_isInitialized) {
-      _sessionOptions?.release();
-      _sessionOptions = null;
-      _session?.release();
-      _session = null;
-      OrtEnv.instance.release();
+      try {
+        _sessionOptions?.release();
+        _sessionOptions = null;
+        _session?.release();
+        _session = null;
+        OrtEnv.instance.release();
 
-      _isInitialized = false;
+        _isInitialized = false;
+      } catch (e, s) {
+        _logger.severe('Error while disposing YOLO onnx: $e \n $s');
+        rethrow;
+      }
     }
   }
 
   /// Detects faces in the given image data.
-  Future<(List<FaceDetectionRelative>, Size)> predict(Uint8List imageData) async {
+  Future<(List<FaceDetectionRelative>, Size)> predict(
+    Uint8List imageData,
+  ) async {
     assert(_isInitialized && _session != null && _sessionOptions != null);
 
     final stopwatch = Stopwatch()..start();
@@ -308,8 +318,6 @@ class YoloOnnxFaceDetection {
   /// Initialize the interpreter by loading the model file.
   Future<void> _loadModel() async {
     _logger.info('loadModel is called');
-
-    _faceOptions = config.faceOptions;
 
     try {
       OrtEnv.instance.init();

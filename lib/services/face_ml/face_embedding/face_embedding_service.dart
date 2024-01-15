@@ -26,9 +26,10 @@ class FaceEmbedding {
   final _logger = Logger("FaceEmbeddingService");
 
   final MobileFaceNetModelConfig config;
-  late final FaceEmbeddingOptions embeddingOptions;
+  final FaceEmbeddingOptions embeddingOptions;
   // singleton pattern
-  FaceEmbedding._privateConstructor({required this.config});
+  FaceEmbedding._privateConstructor({required this.config})
+      : embeddingOptions = config.faceEmbeddingOptions;
 
   /// Use this instance to access the FaceEmbedding service. Make sure to call `init()` before using it.
   /// e.g. `await FaceEmbedding.instance.init();`
@@ -44,6 +45,20 @@ class FaceEmbedding {
   Future<void> init() async {
     if (_interpreter == null || _isolateInterpreter == null) {
       await _loadModel();
+    }
+  }
+
+  Future<void> dispose() async {
+    _logger.info('dispose() is called');
+
+    try {
+      _interpreter?.close();
+      _interpreter = null;
+      await _isolateInterpreter?.close();
+      _isolateInterpreter = null;
+    } catch (e) {
+      _logger.severe('Error while closing interpreter: $e');
+      rethrow;
     }
   }
 
@@ -185,8 +200,6 @@ class FaceEmbedding {
 
   Future<void> _loadModel() async {
     _logger.info('loadModel is called');
-
-    embeddingOptions = config.faceEmbeddingOptions;
 
     try {
       final interpreterOptions = InterpreterOptions();
