@@ -46,9 +46,10 @@ class LocalSettings {
   }
 
   bool hasEnabledMagicSearch() {
-    if (_prefs.containsKey(kEnableMagicSearch)) {
-      return _prefs.getBool(kEnableMagicSearch)!;
-    }
+    // TODO: change this back by uncommenting the line below
+    // if (_prefs.containsKey(kEnableMagicSearch)) {
+    //   return _prefs.getBool(kEnableMagicSearch)!;
+    // }
     return false;
   }
 
