@@ -15,7 +15,7 @@ description: ente photos application
 version: 0.8.38+558
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
+  sdk: ">=3.2.0 <4.0.0"
 
 dependencies:
   adaptive_theme: ^3.1.0
@@ -24,7 +24,7 @@ dependencies:
   archive: ^3.1.2
   background_fetch: ^1.2.1
   bip39: ^1.0.6
-  cached_network_image: ^3.0.0
+  cached_network_image: ^3.3.0
   chewie:
     git:
       url: https://github.com/ente-io/chewie.git
@@ -126,7 +126,7 @@ dependencies:
   path: #dart
   path_provider: ^2.1.1
   pedantic: ^1.9.2
-  photo_manager: ^2.5.0
+  photo_manager: ^3.0.0-dev.2
   photo_view: ^0.14.0
   pinput: ^1.2.2
   pointycastle: ^3.7.3
@@ -138,7 +138,8 @@ dependencies:
   sentry_flutter: ^7.9.0
   share_plus: ^4.0.10
   shared_preferences: ^2.0.5
-  sqflite: ^2.3.0
+  sqlite3: ^2.3.0
+  sqflite_common_ffi: ^2.3.2
   sqflite_migration: ^0.3.0
   step_progress_indicator: ^1.0.2
   styled_text: ^7.0.0

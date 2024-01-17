@@ -72,6 +72,7 @@ class MemoriesService extends ChangeNotifier {
   }
 
   Future<List<Memory>> getMemories() async {
+    final stopWatch = Stopwatch()..start();
     if (!showMemories) {
       return [];
     }
@@ -80,17 +81,44 @@ class MemoriesService extends ChangeNotifier {
     }
 
     //if localDBCachedMemoires is not null return list of memories from it.
-    if (await CachedMemoriesDB.instance.isNotEmpty()) {
-      final localDBCachedMemoires = await CachedMemoriesDB.instance.getAll();
+    // if (await CachedMemoriesDB.instance.isNotEmpty()) {
+    //   stopWatch.stop();
+    //   _logger.info("isNotEmpty: ${stopWatch.elapsed}");
+    //   stopWatch.reset();
+    //   stopWatch.start();
+    //   final localDBCachedMemoires = await CachedMemoriesDB.instance.getAll();
+    //   stopWatch.stop();
+    //   _logger.info("getAll: ${stopWatch.elapsed}");
+    //   stopWatch.reset();
+    //   stopWatch.start();
+    //   final uploadedIdToEnteFile = await FilesDB.instance.getFilesFromIDs(
+    //     localDBCachedMemoires.map((e) => e.uploadedID).toList(),
+    //   );
+    //   stopWatch.stop();
+    //   _logger.info(
+    //     "getFilesFromIDs (${localDBCachedMemoires.length}): ${stopWatch.elapsed}",
+    //   );
 
-      final uploadedIdToEnteFile = await FilesDB.instance.getFilesFromIDs(
-        localDBCachedMemoires.map((e) => e.uploadedID).toList(),
-      );
+    //   stopWatch.reset();
+    //   stopWatch.start();
+    //   await FilesDB.instance.getFilesFromIDs2(
+    //     localDBCachedMemoires.map((e) => e.uploadedID).toList(),
+    //   );
+    //   stopWatch.stop();
+    //   _logger.info(
+    //     "getFilesFromIDs2 (${localDBCachedMemoires.length}): ${stopWatch.elapsed}",
+    //   );
 
-      return _cachedMemories = localDBCachedMemoires
-          .map((e) => Memory(uploadedIdToEnteFile[e.uploadedID]!, e.seenTime))
-          .toList();
-    }
+    //   stopWatch.reset();
+    //   stopWatch.start();
+    //   _cachedMemories = localDBCachedMemoires
+    //       .map((e) => Memory(uploadedIdToEnteFile[e.uploadedID]!, e.seenTime))
+    //       .toList();
+
+    //   stopWatch.stop();
+    //   _logger.info("Fetched memories, duration: ${stopWatch.elapsed}");
+    //   return _cachedMemories!;
+    // }
 
     if (_future != null) {
       return _future!;
@@ -122,7 +150,7 @@ class MemoriesService extends ChangeNotifier {
     }
     final ignoredCollections =
         CollectionsService.instance.archivedOrHiddenCollectionIds();
-    final files = await _filesDB.getFilesCreatedWithinDurations(
+    final files = await _filesDB.getFilesCreatedWithinDurations2(
       durations,
       ignoredCollections,
       visibility: visibleVisibility,
@@ -135,9 +163,9 @@ class MemoriesService extends ChangeNotifier {
         memories.add(Memory(file, seenTime));
       }
     }
-    await CachedMemoriesDB.instance.clearAndPut(
-      memories.map((memory) => memory.toCachedMemory).toList(),
-    );
+    // await CachedMemoriesDB.instance.clearAndPut(
+    //   memories.map((memory) => memory.toCachedMemory).toList(),
+    // );
 
     _cachedMemories = memories;
 

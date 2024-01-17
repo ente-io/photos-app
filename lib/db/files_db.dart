@@ -13,8 +13,10 @@ import 'package:photos/models/location/location.dart';
 import "package:photos/models/metadata/common_keys.dart";
 import "package:photos/services/filter/db_filters.dart";
 import 'package:photos/utils/file_uploader_util.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite/sqflite.dart' as sqflite;
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:sqflite_migration/sqflite_migration.dart';
+import "package:sqlite3/sqlite3.dart" as sqlite3;
 
 class FilesDB {
   /*
@@ -100,11 +102,17 @@ class FilesDB {
 
   // only have a single app-wide reference to the database
   static Future<Database>? _dbFuture;
+  static Future<sqlite3.Database>? _memDBFuture;
 
   Future<Database> get database async {
     // lazily instantiate the db the first time it is accessed
     _dbFuture ??= _initDatabase();
     return _dbFuture!;
+  }
+
+  Future<sqlite3.Database> get memoryDB async {
+    _memDBFuture ??= _initMemoryDatabase();
+    return _memDBFuture!;
   }
 
   // this opens the database (and creates it if it doesn't exist)
@@ -114,6 +122,15 @@ class FilesDB {
     final String path = join(documentsDirectory.path, _databaseName);
     _logger.info("DB path " + path);
     return await openDatabaseWithMigration(path, dbConfig);
+  }
+
+  // this opens the database (and creates it if it doesn't exist)
+  Future<sqlite3.Database> _initMemoryDatabase() async {
+    final Directory documentsDirectory =
+        await getApplicationDocumentsDirectory();
+    final String path = join(documentsDirectory.path, _databaseName);
+    _logger.info("DB path " + path);
+    return sqlite3.sqlite3.open(path);
   }
 
   // SQL code to create the database table
@@ -531,6 +548,52 @@ class FilesDB {
     return BackedUpFileIDs(localIDs.toList(), uploadedIDs.toList(), localSize);
   }
 
+  Future<FileLoadResult> getAllPendingOrUploadedFiles2(
+    int startTime,
+    int endTime,
+    int ownerID, {
+    int? limit,
+    bool? asc,
+    int visibility = visibleVisibility,
+    DBFilterOptions? filterOptions,
+    bool applyOwnerCheck = false,
+  }) async {
+    final stopWatch = EnteWatch('getAllPendingOrUploadedFiles')..start();
+    late String whereQuery;
+    late List<Object?>? whereArgs;
+    if (applyOwnerCheck) {
+      whereQuery = '$columnCreationTime >= ? AND $columnCreationTime <= ? '
+          'AND ($columnOwnerID IS NULL OR $columnOwnerID = ?) '
+          'AND ($columnCollectionID IS NOT NULL AND $columnCollectionID IS NOT -1)'
+          ' AND $columnMMdVisibility = ?';
+      whereArgs = [startTime, endTime, ownerID, visibility];
+    } else {
+      whereQuery =
+          '$columnCreationTime >= ? AND $columnCreationTime <= ? AND ($columnCollectionID IS NOT NULL AND $columnCollectionID IS NOT -1)'
+          ' AND $columnMMdVisibility = ?';
+      whereArgs = [startTime, endTime, visibility];
+    }
+
+    final db = await instance.memoryDB;
+    final order = (asc ?? false ? 'ASC' : 'DESC');
+    final results = db.select(
+      'select * from $filesTable where $whereQuery '
+              'ORDER BY $columnCreationTime ' +
+          order +
+          ', $columnModificationTime ' +
+          order +
+          (limit != null ? ' LIMIT $limit' : ''),
+      whereArgs,
+    );
+    stopWatch.log('queryDone');
+    final files = convertToFiles(results);
+    stopWatch.log('convertDone');
+    final filteredFiles = await applyDBFilters(files, filterOptions);
+    stopWatch.log('filteringDone');
+    stopWatch.stop();
+    return FileLoadResult(filteredFiles, files.length == limit);
+  }
+
   Future<FileLoadResult> getAllPendingOrUploadedFiles(
     int startTime,
     int endTime,
@@ -576,6 +639,33 @@ class FilesDB {
     return FileLoadResult(filteredFiles, files.length == limit);
   }
 
+    Future<FileLoadResult> getAllLocalAndUploadedFiles2(
+    int startTime,
+    int endTime,
+    int ownerID, {
+    int? limit,
+    bool? asc,
+    required DBFilterOptions filterOptions,
+  }) async {
+    final db = await instance.memoryDB;
+    final order = (asc ?? false ? 'ASC' : 'DESC');
+    final results = db.select(
+      'select * from $filesTable where $columnCreationTime >= ? AND $columnCreationTime <= ? '
+              '$columnCreationTime >= ? AND $columnCreationTime <= ?  AND ($columnMMdVisibility IS NULL OR $columnMMdVisibility = ?)'
+              ' AND ($columnLocalID IS NOT NULL OR ($columnCollectionID IS NOT NULL AND $columnCollectionID IS NOT -1))'
+              ' ORDER BY $columnCreationTime ' +
+          order +
+          ', $columnModificationTime ' +
+          order +
+          ' LIMIT $limit',
+      [startTime, endTime, visibleVisibility],
+    );
+    final files = convertToFiles(results);
+    final List<EnteFile> filteredFiles =
+        await applyDBFilters(files, filterOptions);
+    return FileLoadResult(filteredFiles, files.length == limit);
+  }
+
   Future<FileLoadResult> getAllLocalAndUploadedFiles(
     int startTime,
     int endTime,
@@ -617,6 +707,34 @@ class FilesDB {
       deduplicatedFiles.add(file);
     }
     return deduplicatedFiles;
+  }
+
+    Future<FileLoadResult> getFilesInCollection2(
+    int collectionID,
+    int startTime,
+    int endTime, {
+    int? limit,
+    bool? asc,
+    int visibility = visibleVisibility,
+  }) async {
+    final db = await instance.memoryDB;
+    final order = (asc ?? false ? 'ASC' : 'DESC');
+    const String whereClause =
+        '$columnCollectionID = ? AND $columnCreationTime >= ? AND $columnCreationTime <= ?';
+    final List<Object> whereArgs = [collectionID, startTime, endTime, visibility];
+
+    final results = db.select(
+      'select * from $filesTable where $whereClause '
+              'AND $columnMMdVisibility = ?'
+              ' ORDER BY $columnCreationTime ' +
+          order +
+          ', $columnModificationTime ' +
+          order +
+          (limit != null ? ' LIMIT $limit' : ''),
+      whereArgs,
+    );
+    final files = convertToFiles(results);
+    return FileLoadResult(files, files.length == limit);
   }
 
   Future<FileLoadResult> getFilesInCollection(
@@ -711,6 +829,40 @@ class FilesDB {
         await applyDBFilters(files, DBFilterOptions.dedupeOption);
     _logger.info("Fetched " + dedupeResult.length.toString() + " files");
     return FileLoadResult(files, files.length == limit);
+  }
+
+  Future<List<EnteFile>> getFilesCreatedWithinDurations2(
+    List<List<int>> durations,
+    Set<int> ignoredCollectionIDs, {
+    int? visibility,
+    String order = 'ASC',
+  }) async {
+    if (durations.isEmpty) {
+      return <EnteFile>[];
+    }
+    final db = await instance.memoryDB;
+    String whereClause = "( ";
+    for (int index = 0; index < durations.length; index++) {
+      whereClause += "($columnCreationTime >= " +
+          durations[index][0].toString() +
+          " AND $columnCreationTime < " +
+          durations[index][1].toString() +
+          ")";
+      if (index != durations.length - 1) {
+        whereClause += " OR ";
+      } else if (visibility != null) {
+        whereClause += ' AND $columnMMdVisibility = $visibility';
+      }
+    }
+    whereClause += ")";
+    final results = db.select(
+      'select * from $filesTable where $whereClause order by $columnCreationTime $order',
+    );
+    final files = convertToFiles(results);
+    return applyDBFilters(
+      files,
+      DBFilterOptions(ignoredCollectionIDs: ignoredCollectionIDs),
+    );
   }
 
   Future<List<EnteFile>> getFilesCreatedWithinDurations(
@@ -1149,7 +1301,7 @@ class FilesDB {
 
   Future<int> collectionFileCount(int collectionID) async {
     final db = await instance.database;
-    final count = Sqflite.firstIntValue(
+    final count = sqflite.Sqflite.firstIntValue(
       await db.rawQuery(
         'SELECT COUNT(*) FROM $filesTable where $columnCollectionID = '
         '$collectionID AND $columnUploadedFileID IS NOT -1',
@@ -1164,7 +1316,7 @@ class FilesDB {
     Set<int> hiddenCollections,
   ) async {
     final db = await instance.database;
-    final count = Sqflite.firstIntValue(
+    final count = sqflite.Sqflite.firstIntValue(
       await db.rawQuery(
         'SELECT COUNT(distinct($columnUploadedFileID)) FROM $filesTable where '
         '$columnMMdVisibility'
@@ -1327,6 +1479,30 @@ class FilesDB {
     final results = await db.query(
       filesTable,
       where: '$columnUploadedFileID IN ($inParam)',
+    );
+    final files = convertToFiles(results);
+
+    for (final file in files) {
+      result[file.uploadedFileID!] = file;
+    }
+
+    return result;
+  }
+
+  Future<Map<int, EnteFile>> getFilesFromIDs2(List<int> ids) async {
+    final result = <int, EnteFile>{};
+
+    if (ids.isEmpty) {
+      return result;
+    }
+    String inParam = "";
+    for (final id in ids) {
+      inParam += "'" + id.toString() + "',";
+    }
+    inParam = inParam.substring(0, inParam.length - 1);
+    final db = await instance.memoryDB;
+    final results = db.select(
+      'select * from $filesTable where $columnUploadedFileID IN ($inParam)',
     );
     final files = convertToFiles(results);
 
