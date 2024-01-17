@@ -179,7 +179,8 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
   TrashSyncService.instance.init(preferences);
   RemoteSyncService.instance.init(preferences);
   await SyncService.instance.init(preferences);
-  MemoriesService.instance.init(preferences);
+  //Look for solutions to unawait on this
+  await MemoriesService.instance.init(preferences);
   LocalSettings.instance.init(preferences);
   LocalFileUpdateService.instance.init(preferences);
   SearchService.instance.init();

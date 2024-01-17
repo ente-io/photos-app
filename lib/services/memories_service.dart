@@ -2,11 +2,11 @@ import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 import 'package:photos/core/constants.dart';
 import "package:photos/core/event_bus.dart";
+import "package:photos/db/cached_memories_db.dart";
 import 'package:photos/db/files_db.dart';
 import 'package:photos/db/memories_db.dart';
 import "package:photos/events/files_updated_event.dart";
 import "package:photos/events/memories_setting_changed.dart";
-import 'package:photos/models/filters/important_items_filter.dart';
 import 'package:photos/models/memory.dart';
 import "package:photos/models/metadata/common_keys.dart";
 import 'package:photos/services/collections_service.dart';
@@ -20,7 +20,7 @@ class MemoriesService extends ChangeNotifier {
 
   static const daysInAYear = 365;
   static const yearsBefore = 30;
-  static const daysBefore = 7;
+  static const daysBefore = 10;
   static const daysAfter = 1;
   static const _showMemoryKey = "memories.enabled";
 
@@ -31,7 +31,7 @@ class MemoriesService extends ChangeNotifier {
 
   static final MemoriesService instance = MemoriesService._privateConstructor();
 
-  void init(SharedPreferences prefs) {
+  Future<void> init(SharedPreferences prefs) async {
     addListener(() {
       _cachedMemories = null;
     });
@@ -54,6 +54,7 @@ class MemoriesService extends ChangeNotifier {
         return generatedIDs.contains(element.file.generatedID);
       });
     });
+    await CachedMemoriesDB.instance.init();
   }
 
   void clearCache() {
@@ -77,6 +78,20 @@ class MemoriesService extends ChangeNotifier {
     if (_cachedMemories != null) {
       return _cachedMemories!;
     }
+
+    //if localDBCachedMemoires is not null return list of memories from it.
+    if (await CachedMemoriesDB.instance.isNotEmpty()) {
+      final localDBCachedMemoires = await CachedMemoriesDB.instance.getAll();
+
+      final uploadedIdToEnteFile = await FilesDB.instance.getFilesFromIDs(
+        localDBCachedMemoires.map((e) => e.uploadedID).toList(),
+      );
+
+      return _cachedMemories = localDBCachedMemoires
+          .map((e) => Memory(uploadedIdToEnteFile[e.uploadedID]!, e.seenTime))
+          .toList();
+    }
+
     if (_future != null) {
       return _future!;
     }
@@ -114,14 +129,18 @@ class MemoriesService extends ChangeNotifier {
     );
     final seenTimes = await _memoriesDB.getSeenTimes();
     final List<Memory> memories = [];
-    final filter = ImportantItemsFilter();
     for (final file in files) {
-      if (filter.shouldInclude(file)) {
+      if (file.uploadedFileID != null) {
         final seenTime = seenTimes[file.generatedID] ?? -1;
         memories.add(Memory(file, seenTime));
       }
     }
+    await CachedMemoriesDB.instance.clearAndPut(
+      memories.map((memory) => memory.toCachedMemory).toList(),
+    );
+
     _cachedMemories = memories;
+
     stopWatch.stop();
     _logger.info("Fetched memories, duration: ${stopWatch.elapsed}");
     return _cachedMemories!;

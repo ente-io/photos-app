@@ -1314,6 +1314,7 @@ class FilesDB {
 
   Future<Map<int, EnteFile>> getFilesFromIDs(List<int> ids) async {
     final result = <int, EnteFile>{};
+
     if (ids.isEmpty) {
       return result;
     }
@@ -1328,9 +1329,11 @@ class FilesDB {
       where: '$columnUploadedFileID IN ($inParam)',
     );
     final files = convertToFiles(results);
+
     for (final file in files) {
       result[file.uploadedFileID!] = file;
     }
+
     return result;
   }
 

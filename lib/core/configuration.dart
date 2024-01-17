@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:photos/core/constants.dart';
 import 'package:photos/core/error-reporting/super_logging.dart';
 import 'package:photos/core/event_bus.dart';
+import "package:photos/db/cached_memories_db.dart";
 import 'package:photos/db/collections_db.dart';
 import "package:photos/db/embeddings_db.dart";
 import 'package:photos/db/files_db.dart';
@@ -167,6 +168,7 @@ class Configuration {
     await UploadLocksDB.instance.clearTable();
     await IgnoredFilesService.instance.reset();
     await TrashDB.instance.clearTable();
+    await CachedMemoriesDB.instance.clearTable();
     FileUploader.instance.clearCachedUploadURLs();
     if (!autoLogout) {
       CollectionsService.instance.clearCache();

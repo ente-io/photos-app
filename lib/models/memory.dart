@@ -1,3 +1,4 @@
+import "package:photos/models/cached_memory.dart";
 import 'package:photos/models/file/file.dart';
 
 class Memory {
@@ -17,4 +18,9 @@ class Memory {
   void markSeen() {
     _seenTime = DateTime.now().microsecondsSinceEpoch;
   }
+}
+
+extension MemoryExtension on Memory {
+  CachedMemory get toCachedMemory =>
+      CachedMemory(file.uploadedFileID!, _seenTime);
 }

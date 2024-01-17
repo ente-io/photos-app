@@ -29,4 +29,8 @@ class CachedMemoriesDB {
     await _isar.writeTxn(() => _isar.clear());
     return _isar.writeTxn(() => _isar.cachedMemorys.putAll(cachedMemories));
   }
+
+  Future<bool> isNotEmpty() {
+    return _isar.cachedMemorys.where().isNotEmpty();
+  }
 }

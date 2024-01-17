@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photos/core/configuration.dart';
+import "package:photos/db/cached_memories_db.dart";
 import 'package:photos/services/ignored_files_service.dart';
 import 'package:photos/services/local_sync_service.dart';
 import 'package:photos/services/sync_service.dart';
@@ -50,6 +51,19 @@ class DebugSectionWidget extends StatelessWidget {
           trailingIconIsMuted: true,
           onTap: () async {
             await LocalSyncService.instance.resetLocalSync();
+            showShortToast(context, "Done");
+          },
+        ),
+        sectionOptionSpacing,
+        MenuItemWidget(
+          captionedTextWidget: const CaptionedTextWidget(
+            title: "Clear Cached Memories DB",
+          ),
+          pressedColor: getEnteColorScheme(context).fillFaint,
+          trailingIcon: Icons.chevron_right_outlined,
+          trailingIconIsMuted: true,
+          onTap: () async {
+            await CachedMemoriesDB.instance.clearTable();
             showShortToast(context, "Done");
           },
         ),
