@@ -10,9 +10,9 @@ import 'package:photos/core/constants.dart';
 import 'package:photos/core/error-reporting/super_logging.dart';
 import 'package:photos/core/event_bus.dart';
 import 'package:photos/db/collections_db.dart';
+import "package:photos/db/embeddings_db.dart";
 import 'package:photos/db/files_db.dart';
 import 'package:photos/db/memories_db.dart';
-import "package:photos/db/object_box.dart";
 import 'package:photos/db/public_keys_db.dart';
 import 'package:photos/db/trash_db.dart';
 import 'package:photos/db/upload_locks_db.dart';
@@ -27,6 +27,7 @@ import 'package:photos/services/favorites_service.dart';
 import 'package:photos/services/ignored_files_service.dart';
 import 'package:photos/services/memories_service.dart';
 import 'package:photos/services/search_service.dart';
+import "package:photos/services/semantic_search/semantic_search_service.dart";
 import 'package:photos/services/sync_service.dart';
 import 'package:photos/utils/crypto_util.dart';
 import 'package:photos/utils/file_uploader.dart';
@@ -157,7 +158,9 @@ class Configuration {
     _cachedToken = null;
     _secretKey = null;
     await FilesDB.instance.clearTable();
-    await ObjectBox.instance.clearTable();
+    SemanticSearchService.instance.hasInitialized
+        ? await EmbeddingsDB.instance.clearTable()
+        : null;
     await CollectionsDB.instance.clearTable();
     await MemoriesDB.instance.clearTable();
     await PublicKeysDB.instance.clearTable();

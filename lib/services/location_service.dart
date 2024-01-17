@@ -1,28 +1,41 @@
 import "dart:convert";
+import "dart:io";
 import "dart:math";
 
+import "package:computer/computer.dart";
 import "package:flutter/foundation.dart";
 import "package:logging/logging.dart";
 import "package:photos/core/constants.dart";
 import "package:photos/core/event_bus.dart";
 import "package:photos/events/location_tag_updated_event.dart";
 import "package:photos/models/api/entity/type.dart";
+import "package:photos/models/file/file.dart";
 import "package:photos/models/local_entity_data.dart";
 import "package:photos/models/location/location.dart";
 import 'package:photos/models/location_tag/location_tag.dart';
 import "package:photos/services/entity_service.dart";
+import "package:photos/services/feature_flag_service.dart";
+import "package:photos/services/remote_assets_service.dart";
 import "package:shared_preferences/shared_preferences.dart";
 
 class LocationService {
   late SharedPreferences prefs;
   final Logger _logger = Logger((LocationService).toString());
+  final Computer _computer = Computer.shared();
 
   LocationService._privateConstructor();
 
   static final LocationService instance = LocationService._privateConstructor();
 
+  static const kCitiesRemotePath = "https://assets.ente.io/world_cities.json";
+
+  List<City> _cities = [];
+
   void init(SharedPreferences preferences) {
     prefs = preferences;
+    if (FeatureFlagService.instance.isInternalUserOrDebugBuild()) {
+      _loadCities();
+    }
   }
 
   Future<Iterable<LocalEntity<LocationTag>>> _getStoredLocationTags() async {
@@ -30,6 +43,21 @@ class LocationService {
     return data.map(
       (e) => LocalEntity(LocationTag.fromJson(json.decode(e.data)), e.id),
     );
+  }
+
+  Future<Map<City, List<EnteFile>>> getFilesInCity(
+    List<EnteFile> allFiles,
+    String query,
+  ) async {
+    final result = await _computer.compute(
+      getCityResults,
+      param: {
+        "query": query,
+        "cities": _cities,
+        "files": allFiles,
+      },
+    );
+    return result;
   }
 
   Future<Iterable<LocalEntity<LocationTag>>> getLocationTags() {
@@ -66,14 +94,6 @@ class LocationService {
     }
   }
 
-  ///The area bounded by the location tag becomes more elliptical with increase
-  ///in the magnitude of the latitude on the caritesian plane. When latitude is
-  ///0 degrees, the ellipse is a circle with a = b = r. When latitude incrases,
-  ///the major axis (a) has to be scaled by the secant of the latitude.
-  double _scaleFactor(double lat) {
-    return 1 / cos(lat * (pi / 180));
-  }
-
   Future<List<LocalEntity<LocationTag>>> enclosingLocationTags(
     Location fileCoordinates,
   ) async {
@@ -97,22 +117,6 @@ class LocationService {
       _logger.severe("Failed to get enclosing location tags", e, s);
       rethrow;
     }
-  }
-
-  bool isFileInsideLocationTag(
-    Location centerPoint,
-    Location fileCoordinates,
-    double radius,
-  ) {
-    final a =
-        (radius * _scaleFactor(centerPoint.latitude!)) / kilometersPerDegree;
-    final b = radius / kilometersPerDegree;
-    final x = centerPoint.latitude! - fileCoordinates.latitude!;
-    final y = centerPoint.longitude! - fileCoordinates.longitude!;
-    if ((x * x) / (a * a) + (y * y) / (b * b) <= 1) {
-      return true;
-    }
-    return false;
   }
 
   /// returns [lat, lng]
@@ -203,6 +207,118 @@ class LocationService {
       _logger.severe("Failed to delete location tag", e, s);
       rethrow;
     }
+  }
+
+  Future<void> _loadCities() async {
+    try {
+      final file =
+          await RemoteAssetsService.instance.getAsset(kCitiesRemotePath);
+      final startTime = DateTime.now();
+      _cities =
+          await _computer.compute(parseCities, param: {"filePath": file.path});
+      final endTime = DateTime.now();
+      _logger.info(
+        "Loaded cities in ${(endTime.millisecondsSinceEpoch - startTime.millisecondsSinceEpoch)}ms",
+      );
+      _logger.info("Loaded cities");
+    } catch (e, s) {
+      _logger.severe("Failed to load cities", e, s);
+    }
+  }
+}
+
+Future<List<City>> parseCities(Map args) async {
+  final file = File(args["filePath"]);
+  final citiesJson = json.decode(await file.readAsString());
+
+  final List<dynamic> jsonData = citiesJson['data'];
+  final cities =
+      jsonData.map<City>((jsonItem) => City.fromMap(jsonItem)).toList();
+  return cities;
+}
+
+Map<City, List<EnteFile>> getCityResults(Map args) {
+  final query = (args["query"] as String).toLowerCase();
+  final cities = args["cities"] as List<City>;
+  final files = args["files"] as List<EnteFile>;
+
+  final matchingCities = cities.where(
+    (city) => city.city.toLowerCase().contains(query),
+  );
+
+  final Map<City, List<EnteFile>> results = {};
+  for (final city in matchingCities) {
+    final List<EnteFile> matchingFiles = [];
+    final cityLocation = Location(latitude: city.lat, longitude: city.lng);
+    for (final file in files) {
+      if (file.hasLocation) {
+        if (isFileInsideLocationTag(
+          cityLocation,
+          file.location!,
+          defaultCityRadius,
+        )) {
+          matchingFiles.add(file);
+        }
+      }
+    }
+    if (matchingFiles.isNotEmpty) {
+      results[city] = matchingFiles;
+    }
+  }
+  return results;
+}
+
+bool isFileInsideLocationTag(
+  Location centerPoint,
+  Location fileCoordinates,
+  double radius,
+) {
+  final a =
+      (radius * _scaleFactor(centerPoint.latitude!)) / kilometersPerDegree;
+  final b = radius / kilometersPerDegree;
+  final x = centerPoint.latitude! - fileCoordinates.latitude!;
+  final y = centerPoint.longitude! - fileCoordinates.longitude!;
+  if ((x * x) / (a * a) + (y * y) / (b * b) <= 1) {
+    return true;
+  }
+  return false;
+}
+
+///The area bounded by the location tag becomes more elliptical with increase
+///in the magnitude of the latitude on the caritesian plane. When latitude is
+///0 degrees, the ellipse is a circle with a = b = r. When latitude incrases,
+///the major axis (a) has to be scaled by the secant of the latitude.
+double _scaleFactor(double lat) {
+  return 1 / cos(lat * (pi / 180));
+}
+
+class City {
+  final String city;
+  final String country;
+  final double lat;
+  final double lng;
+
+  City({
+    required this.city,
+    required this.country,
+    required this.lat,
+    required this.lng,
+  });
+
+  factory City.fromMap(Map<String, dynamic> map) {
+    return City(
+      city: map['city'] ?? '',
+      country: map['country'] ?? '',
+      lat: map['lat']?.toDouble() ?? 0.0,
+      lng: map['lng']?.toDouble() ?? 0.0,
+    );
+  }
+
+  factory City.fromJson(String source) => City.fromMap(json.decode(source));
+
+  @override
+  String toString() {
+    return 'City(city: $city, country: $country, lat: $lat, lng: $lng)';
   }
 }
 

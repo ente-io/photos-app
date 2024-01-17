@@ -77,6 +77,7 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
             ),
             onPressed: () async {
               Navigator.pop(context);
+              // ignore: unawaited_futures
               showDialog(
                 context: context,
                 builder: (BuildContext context) {
@@ -249,6 +250,7 @@ class _ApkDownloaderDialogState extends State<ApkDownloaderDialog> {
         ],
       );
 
+      // ignore: unawaited_futures
       showDialog(
         context: context,
         builder: (BuildContext context) {

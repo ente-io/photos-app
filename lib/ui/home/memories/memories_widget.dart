@@ -1,11 +1,13 @@
 import "dart:async";
 
 import 'package:flutter/material.dart';
+import "package:flutter_animate/flutter_animate.dart";
 import "package:photos/core/event_bus.dart";
 import "package:photos/events/memories_setting_changed.dart";
 import 'package:photos/models/memory.dart';
 import 'package:photos/services/memories_service.dart';
-import "package:photos/ui/home/memories/memory_cover_widget.dart";
+import "package:photos/ui/common/loading_widget.dart";
+import 'package:photos/ui/home/memories/memory_cover_widget.dart';
 
 class MemoriesWidget extends StatefulWidget {
   const MemoriesWidget({Key? key}) : super(key: key);
@@ -15,7 +17,10 @@ class MemoriesWidget extends StatefulWidget {
 }
 
 class _MemoriesWidgetState extends State<MemoriesWidget> {
+  late ScrollController _controller;
   late StreamSubscription<MemoriesSettingChanged> _subscription;
+  late double _maxHeight;
+  late double _maxWidth;
 
   @override
   void initState() {
@@ -25,11 +30,23 @@ class _MemoriesWidgetState extends State<MemoriesWidget> {
         setState(() {});
       }
     });
+    _controller = ScrollController();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    //factor will be 2 for most phones in portrait mode
+    final factor = (screenWidth / 220).ceil();
+    _maxWidth = screenWidth / (factor * 2);
+    _maxHeight = _maxWidth / MemoryCoverWidget.aspectRatio;
   }
 
   @override
   void dispose() {
     _subscription.cancel();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -42,13 +59,19 @@ class _MemoriesWidgetState extends State<MemoriesWidget> {
       future: MemoriesService.instance.getMemories(),
       builder: (context, snapshot) {
         if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-          return const SizedBox.shrink();
+          return SizedBox(
+            height: _maxHeight + 12 + 10,
+            child: const EnteLoadingWidget(),
+          );
         } else {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const SizedBox(
+                height: 12,
+              ),
               _buildMemories(snapshot.data!),
-              const Divider(),
+              const SizedBox(height: 10),
             ],
           );
         }
@@ -58,15 +81,30 @@ class _MemoriesWidgetState extends State<MemoriesWidget> {
 
   Widget _buildMemories(List<Memory> memories) {
     final collatedMemories = _collateMemories(memories);
-    final List<Widget> memoryWidgets = [];
-    for (final memories in collatedMemories) {
-      memoryWidgets.add(MemoryCovertWidget(memories: memories));
-    }
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: memoryWidgets,
+
+    return SizedBox(
+      height: _maxHeight,
+      child: ListView.builder(
+        physics: const BouncingScrollPhysics(),
+        scrollDirection: Axis.horizontal,
+        controller: _controller,
+        itemCount: collatedMemories.length,
+        itemBuilder: (context, itemIndex) {
+          final offsetOfItem = _maxWidth * itemIndex;
+          return MemoryCoverWidget(
+            memories: collatedMemories[itemIndex],
+            controller: _controller,
+            offsetOfItem: offsetOfItem,
+            maxHeight: _maxHeight,
+            maxWidth: _maxWidth,
+          )
+              .animate(delay: Duration(milliseconds: 75 * itemIndex))
+              .fadeIn(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOutCubic,
+              )
+              .slideX(begin: 0.04, end: 0);
+        },
       ),
     );
   }
@@ -80,6 +118,7 @@ class _MemoriesWidgetState extends State<MemoriesWidget> {
         final List<Memory> collatedYearlyMemories = [];
         collatedYearlyMemories.addAll(yearlyMemories);
         collatedMemories.add(collatedYearlyMemories);
+
         yearlyMemories.clear();
       }
       yearlyMemories.add(memories[index]);

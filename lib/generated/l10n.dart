@@ -2866,11 +2866,31 @@ class S {
     );
   }
 
-  /// `Please use our Desktop app to index the pending items in your library.`
+  /// `Please note that this will result in a higher bandwidth and battery usage until all items are indexed.`
   String get magicSearchDescription {
     return Intl.message(
-      'Please use our Desktop app to index the pending items in your library.',
+      'Please note that this will result in a higher bandwidth and battery usage until all items are indexed.',
       name: 'magicSearchDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Downloading models...`
+  String get loadingModel {
+    return Intl.message(
+      'Downloading models...',
+      name: 'loadingModel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Waiting for WiFi...`
+  String get waitingForWifi {
+    return Intl.message(
+      'Waiting for WiFi...',
+      name: 'waitingForWifi',
       desc: '',
       args: [],
     );
@@ -3513,10 +3533,10 @@ class S {
     );
   }
 
-  /// `Your have cleaned up {count, plural, one{{count} duplicate file} other{{count} duplicate files}}, saving ({storageSaved}!)`
+  /// `You have cleaned up {count, plural, one{{count} duplicate file} other{{count} duplicate files}}, saving ({storageSaved}!)`
   String duplicateFileCountWithStorageSaved(int count, String storageSaved) {
     return Intl.message(
-      'Your have cleaned up ${Intl.plural(count, one: '$count duplicate file', other: '$count duplicate files')}, saving ($storageSaved!)',
+      'You have cleaned up ${Intl.plural(count, one: '$count duplicate file', other: '$count duplicate files')}, saving ($storageSaved!)',
       name: 'duplicateFileCountWithStorageSaved',
       desc:
           'The text to display when the user has successfully cleaned up duplicate files',
@@ -7925,10 +7945,10 @@ class S {
     );
   }
 
-  /// `This account is linked to other ente apps, if you use any.\n\nYour uploaded data, across all ente apps, will be scheduled for deletion, and your account will be permanently deleted.`
+  /// `This account is linked to other ente apps, if you use any. Your uploaded data, across all ente apps, will be scheduled for deletion, and your account will be permanently deleted.`
   String get deleteConfirmDialogBody {
     return Intl.message(
-      'This account is linked to other ente apps, if you use any.\\n\\nYour uploaded data, across all ente apps, will be scheduled for deletion, and your account will be permanently deleted.',
+      'This account is linked to other ente apps, if you use any. Your uploaded data, across all ente apps, will be scheduled for deletion, and your account will be permanently deleted.',
       name: 'deleteConfirmDialogBody',
       desc: '',
       args: [],

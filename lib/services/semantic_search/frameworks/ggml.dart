@@ -10,11 +10,8 @@ class GGML extends MLFramework {
 
   final _computer = Computer.shared();
   final _logger = Logger("GGML");
-  
-  @override
-  String getFrameworkName() {
-    return "ggml";
-  }
+
+  GGML(super.shouldDownloadOverMobileData);
 
   @override
   String getImageModelRemotePath() {

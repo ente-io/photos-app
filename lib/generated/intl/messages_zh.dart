@@ -704,6 +704,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("正在加载 EXIF 数据..."),
         "loadingGallery": MessageLookupByLibrary.simpleMessage("正在加载图库..."),
         "loadingMessage": MessageLookupByLibrary.simpleMessage("正在加载您的照片..."),
+        "loadingModel": MessageLookupByLibrary.simpleMessage("正在下载模型..."),
         "localGallery": MessageLookupByLibrary.simpleMessage("本地相册"),
         "location": MessageLookupByLibrary.simpleMessage("地理位置"),
         "locationName": MessageLookupByLibrary.simpleMessage("地点名称"),
@@ -1215,6 +1216,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "viewer": MessageLookupByLibrary.simpleMessage("查看者"),
         "visitWebToManage":
             MessageLookupByLibrary.simpleMessage("请访问 web.ente.io 来管理您的订阅"),
+        "waitingForWifi": MessageLookupByLibrary.simpleMessage("正在等待 WiFi..."),
         "weAreOpenSource": MessageLookupByLibrary.simpleMessage("我们是开源的 ！"),
         "weDontSupportEditingPhotosAndAlbumsThatYouDont":
             MessageLookupByLibrary.simpleMessage("我们不支持编辑您尚未拥有的照片和相册"),

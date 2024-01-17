@@ -618,7 +618,7 @@ class SearchService {
     for (EnteFile file in allFiles) {
       if (file.hasLocation) {
         for (LocalEntity<LocationTag> tag in result.keys) {
-          if (LocationService.instance.isFileInsideLocationTag(
+          if (isFileInsideLocationTag(
             tag.item.centerPoint,
             file.location!,
             tag.item.radius,
@@ -637,7 +637,7 @@ class SearchService {
           return false;
         }
         for (LocalEntity<LocationTag> tag in locationTagEntities) {
-          if (LocationService.instance.isFileInsideLocationTag(
+          if (isFileInsideLocationTag(
             tag.item.centerPoint,
             file.location!,
             tag.item.radius,
@@ -681,6 +681,22 @@ class SearchService {
     return searchResults;
   }
 
+  Future<List<GenericSearchResult>> getCityResults(String query) async {
+    final files = await getAllFiles();
+    final results = await LocationService.instance.getFilesInCity(files, query);
+    final List<GenericSearchResult> searchResults = [];
+    for (final entry in results.entries) {
+      searchResults.add(
+        GenericSearchResult(
+          ResultType.location,
+          entry.key.city,
+          entry.value,
+        ),
+      );
+    }
+    return searchResults;
+  }
+
   Future<List<GenericSearchResult>> getAllLocationTags(int? limit) async {
     try {
       final Map<LocalEntity<LocationTag>, List<EnteFile>> tagToItemsMap = {};
@@ -697,7 +713,7 @@ class SearchService {
       for (EnteFile file in allFiles) {
         if (file.hasLocation) {
           for (LocalEntity<LocationTag> tag in tagToItemsMap.keys) {
-            if (LocationService.instance.isFileInsideLocationTag(
+            if (isFileInsideLocationTag(
               tag.item.centerPoint,
               file.location!,
               tag.item.radius,
