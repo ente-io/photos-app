@@ -12,10 +12,6 @@ class OnnxTextEncoder {
   final _logger = Logger("OnnxTextEncoder");
   final OnnxTextTokenizer _tokenizer = OnnxTextTokenizer();
 
-  Future<void> init() async {
-    OrtEnv.instance.init();
-  }
-
   // Do not run in an isolate since rootBundle can only be accessed in the main isolate
   Future<void> initTokenizer() async {
     final vocab = await rootBundle.loadString(kVocabFilePath);
@@ -54,9 +50,10 @@ class OnnxTextEncoder {
     for (int i = 0; i < 512; i++) {
       textNormalization += embedding[i] * embedding[i];
     }
-
+    
+    final double sqrtTextNormalization = sqrt(textNormalization);
     for (int i = 0; i < 512; i++) {
-      embedding[i] = embedding[i] / sqrt(textNormalization);
+      embedding[i] = embedding[i] / sqrtTextNormalization;
     }
 
     return (embedding);

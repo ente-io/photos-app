@@ -9,10 +9,6 @@ import "package:onnxruntime/onnxruntime.dart";
 class OnnxImageEncoder {
   final _logger = Logger("OnnxImageEncoder");
 
-  Future<void> init() async {
-    OrtEnv.instance.init();
-  }
-
   Future<int> loadModel(Map args) async {
     final sessionOptions = OrtSessionOptions()
       ..setInterOpNumThreads(1)
@@ -47,9 +43,10 @@ class OnnxImageEncoder {
     for (int y = 0; y < ny; y++) {
       for (int x = 0; x < nx; x++) {
         final int i = 3 * (y * nx + x);
-        inputImage[i] = rgb.getPixel(x, y).r.toDouble();
-        inputImage[i + 1] = rgb.getPixel(x, y).g.toDouble();
-        inputImage[i + 2] = rgb.getPixel(x, y).b.toDouble();
+        final pixel = rgb.getPixel(x, y);
+        inputImage[i] = pixel.r.toDouble();
+        inputImage[i + 1] = pixel.g.toDouble();
+        inputImage[i + 2] = pixel.b.toDouble();
       }
     }
 
@@ -115,33 +112,10 @@ class OnnxImageEncoder {
     for (int i = 0; i < 512; i++) {
       imageNormalization += embedding[i] * embedding[i];
     }
+    final double sqrtImageNormalization = sqrt(imageNormalization);
     for (int i = 0; i < 512; i++) {
-      embedding[i] = embedding[i] / sqrt(imageNormalization);
+      embedding[i] = embedding[i] / sqrtImageNormalization;
     }
     return embedding;
-  }
-
-  Float32List imageToByteListFloat32(
-    img.Image image,
-    int inputSize,
-    List<double> mean,
-    List<double> std,
-  ) {
-    final convertedBytes = Float32List(1 * inputSize * inputSize * 3);
-    final buffer = Float32List.view(convertedBytes.buffer);
-    int pixelIndex = 0;
-    assert(mean.length == 3);
-    assert(std.length == 3);
-
-    //TODO: rewrite this part
-    for (var i = 0; i < inputSize; i++) {
-      for (var j = 0; j < inputSize; j++) {
-        final pixel = image.getPixel(i, j);
-        buffer[pixelIndex++] = ((pixel.r / 255) - mean[0]) / std[0];
-        buffer[pixelIndex++] = ((pixel.g / 255) - mean[1]) / std[1];
-        buffer[pixelIndex++] = ((pixel.b / 255) - mean[2]) / std[2];
-      }
-    }
-    return convertedBytes.buffer.asFloat32List();
   }
 }
