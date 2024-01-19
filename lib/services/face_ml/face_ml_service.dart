@@ -433,6 +433,9 @@ class FaceMlService {
 
       // If no faces were detected, return a result with no faces. Otherwise, continue.
       if (faceDetectionResult.isEmpty) {
+        _logger.info(
+          "Completed analyzing image with uploadedFileID ${enteFile.uploadedFileID}, in "
+          "${stopwatch.elapsedMilliseconds} ms");
         return resultBuilder.buildNoFaceDetected();
       }
 
