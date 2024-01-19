@@ -58,7 +58,10 @@ class _MemoriesWidgetState extends State<MemoriesWidget> {
     return FutureBuilder<List<Memory>>(
       future: MemoriesService.instance.getMemories(),
       builder: (context, snapshot) {
-        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+        if (snapshot.hasData && snapshot.data!.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        if (snapshot.hasError || !snapshot.hasData) {
           return SizedBox(
             height: _maxHeight + 12 + 10,
             child: const EnteLoadingWidget(),
@@ -73,7 +76,10 @@ class _MemoriesWidgetState extends State<MemoriesWidget> {
               _buildMemories(snapshot.data!),
               const SizedBox(height: 10),
             ],
-          );
+          ).animate().fadeIn(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOutCirc,
+              );
         }
       },
     );
@@ -97,13 +103,7 @@ class _MemoriesWidgetState extends State<MemoriesWidget> {
             offsetOfItem: offsetOfItem,
             maxHeight: _maxHeight,
             maxWidth: _maxWidth,
-          )
-              .animate(delay: Duration(milliseconds: 75 * itemIndex))
-              .fadeIn(
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.easeInOutCubic,
-              )
-              .slideX(begin: 0.04, end: 0);
+          );
         },
       ),
     );
