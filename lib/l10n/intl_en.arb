@@ -1187,5 +1187,9 @@
   "selectALocationFirst": "Select a location first",
   "changeLocationOfSelectedItems": "Change location of selected items?",
   "editsToLocationWillOnlyBeSeenWithinEnte": "Edits to location will only be seen within Ente",
-  "cleanUncategorized": "Clean Uncategorized"
+  "cleanUncategorized": "Clean Uncategorized",
+  "waitingForBrowserRequest": "Waiting for browser request...",
+  "launchPasskeyUrlAgain": "Launch passkey URL again",
+  "passkey": "Passkey",
+  "passkeyAuthTitle": "Passkey authentication"
 }

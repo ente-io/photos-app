@@ -23,6 +23,7 @@ import "package:photos/utils/crypto_util.dart";
 import "package:photos/utils/dialog_util.dart";
 import "package:photos/utils/navigation_util.dart";
 import "package:photos/utils/toast_util.dart";
+import "package:url_launcher/url_launcher_string.dart";
 
 class SecuritySectionWidget extends StatefulWidget {
   const SecuritySectionWidget({Key? key}) : super(key: key);
@@ -133,6 +134,19 @@ class _SecuritySectionWidgetState extends State<SecuritySectionWidget> {
                   return completer.future;
                 }
               },
+            ),
+          ),
+          sectionOptionSpacing,
+          MenuItemWidget(
+            captionedTextWidget: CaptionedTextWidget(
+              title: S.of(context).passkey,
+            ),
+            pressedColor: getEnteColorScheme(context).fillFaint,
+            trailingIcon: Icons.chevron_right_outlined,
+            trailingIconIsMuted: true,
+            onTap: () => launchUrlString(
+              "https://accounts.ente.io",
+              mode: LaunchMode.externalApplication,
             ),
           ),
           sectionOptionSpacing,
