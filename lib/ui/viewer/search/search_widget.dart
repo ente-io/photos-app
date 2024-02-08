@@ -34,7 +34,6 @@ class SearchWidgetState extends State<SearchWidget> {
   static final isLoading = ValueNotifier(false);
   final _searchService = SearchService.instance;
   final _debouncer = Debouncer(const Duration(milliseconds: 200));
-  final Logger _logger = Logger((SearchWidgetState).toString());
   late FocusNode focusNode;
   StreamSubscription<TabDoubleTapEvent>? _tabDoubleTapEvent;
   double _bottomPadding = 0.0;
@@ -43,6 +42,7 @@ class SearchWidgetState extends State<SearchWidget> {
   TextEditingController textController = TextEditingController();
   late final StreamSubscription<ClearAndUnfocusSearchBar>
       _clearAndUnfocusSearchBar;
+  late final Logger _logger = Logger("SearchWidgetState");
 
   @override
   void initState() {
@@ -270,12 +270,6 @@ class SearchWidgetState extends State<SearchWidget> {
           }
         }
         onResultsReceived(filteredResults);
-      },
-    );
-
-    _searchService.getCityResults(query).then(
-      (results) {
-        onResultsReceived(results);
       },
     );
 

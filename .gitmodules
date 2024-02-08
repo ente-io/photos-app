@@ -8,3 +8,6 @@
 [submodule "protos"]
 	path = protos
 	url = https://github.com/ente-io/protos.git
+[submodule "thirdparty/isar"]
+	path = thirdparty/isar
+	url = https://github.com/isar/isar

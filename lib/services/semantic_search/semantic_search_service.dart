@@ -38,19 +38,32 @@ class SemanticSearchService {
 
   final _logger = Logger("SemanticSearchService");
   final _queue = Queue<EnteFile>();
-  final _mlFramework = kCurrentModel == Model.onnxClip ? ONNX() : GGML();
   final _frameworkInitialization = Completer<bool>();
   final _embeddingLoaderDebouncer =
       Debouncer(kDebounceDuration, executionInterval: kDebounceDuration);
 
+  late MLFramework _mlFramework;
   bool _hasInitialized = false;
   bool _isComputingEmbeddings = false;
   bool _isSyncing = false;
   Future<List<EnteFile>>? _ongoingRequest;
   List<Embedding> _cachedEmbeddings = <Embedding>[];
   PendingQuery? _nextQuery;
+  Completer<void> _userInteraction = Completer<void>();
 
   get hasInitialized => _hasInitialized;
+
+  void resumeIndexing() {
+    _logger.info("Resuming indexing");
+    _userInteraction.complete();
+  }
+
+  void pauseIndexing() {
+    if (_userInteraction.isCompleted) {
+      _logger.info("Pausing indexing");
+      _userInteraction = Completer<void>();
+    }
+  }
 
   Future<void> init({bool shouldSyncImmediately = false}) async {
     if (!LocalSettings.instance.hasEnabledMagicSearch()) {
@@ -61,6 +74,11 @@ class SemanticSearchService {
       return;
     }
     _hasInitialized = true;
+    final shouldDownloadOverMobileData =
+        Configuration.instance.shouldBackupOverMobileData();
+    _mlFramework = kCurrentModel == Model.onnxClip
+        ? ONNX(shouldDownloadOverMobileData)
+        : GGML(shouldDownloadOverMobileData);
     await EmbeddingsDB.instance.init();
     await EmbeddingStore.instance.init();
     await _loadEmbeddings();
@@ -145,8 +163,11 @@ class SemanticSearchService {
     );
   }
 
-  Future<bool> getFrameworkInitializationStatus() {
-    return _frameworkInitialization.future;
+  InitializationState getFrameworkInitializationState() {
+    if (!_hasInitialized) {
+      return InitializationState.notInitialized;
+    }
+    return _mlFramework.initializationState;
   }
 
   Future<void> clearIndexes() async {
@@ -270,6 +291,10 @@ class SemanticSearchService {
     }
     if (!_frameworkInitialization.isCompleted) {
       return;
+    }
+    if (!_userInteraction.isCompleted) {
+      _logger.info("Waiting for user interactions to stop...");
+      await _userInteraction.future;
     }
     try {
       final thumbnail = await getThumbnailForUploadedFile(file);

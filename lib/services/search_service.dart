@@ -600,9 +600,7 @@ class SearchService {
     return searchResults;
   }
 
-  Future<List<GenericSearchResult>> getLocationResults(
-    String query,
-  ) async {
+  Future<List<GenericSearchResult>> getLocationResults(String query) async {
     final locationTagEntities =
         (await LocationService.instance.getLocationTags());
     final Map<LocalEntity<LocationTag>, List<EnteFile>> result = {};
@@ -662,13 +660,16 @@ class SearchService {
         );
       }
     }
+    final locationTagNames = <String>{};
     for (MapEntry<LocalEntity<LocationTag>, List<EnteFile>> entry
         in result.entries) {
       if (entry.value.isNotEmpty) {
+        final name = entry.key.item.name;
+        locationTagNames.add(name);
         searchResults.add(
           GenericSearchResult(
             ResultType.location,
-            entry.key.item.name,
+            name,
             entry.value,
             onResultTap: (ctx) {
               routeToPage(
@@ -824,22 +825,6 @@ class SearchService {
     } else {
       return facesResult;
     }
-  }
-
-  Future<List<GenericSearchResult>> getCityResults(String query) async {
-    final files = await getAllFiles();
-    final results = await LocationService.instance.getFilesInCity(files, query);
-    final List<GenericSearchResult> searchResults = [];
-    for (final entry in results.entries) {
-      searchResults.add(
-        GenericSearchResult(
-          ResultType.location,
-          entry.key.city,
-          entry.value,
-        ),
-      );
-    }
-    return searchResults;
   }
 
   Future<List<GenericSearchResult>> getAllLocationTags(int? limit) async {
