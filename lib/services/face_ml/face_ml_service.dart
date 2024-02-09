@@ -1,6 +1,5 @@
 import "dart:async";
 import "dart:io" as io;
-import "dart:typed_data" show Uint8List;
 
 import "package:flutter/foundation.dart";
 import "package:flutter_image_compress/flutter_image_compress.dart";
@@ -147,6 +146,10 @@ class FaceMlService {
       // Cluster the embeddings using the linear clustering algorithm, returning a map from faceID to clusterID
       final faceIdToCluster =
           await FaceLinearClustering.instance.predict(faceIdToEmbedding);
+      if (faceIdToCluster == null) {
+        _logger.warning("faceIdToCluster is null");
+        return;
+      }
       final clusterDoneTime = DateTime.now();
       _logger.info(
         'done with clustering ${faceIdToEmbedding.length} in ${clusterDoneTime.difference(clusterStartTime).inSeconds} seconds ',
@@ -434,8 +437,8 @@ class FaceMlService {
       // If no faces were detected, return a result with no faces. Otherwise, continue.
       if (faceDetectionResult.isEmpty) {
         _logger.info(
-          "Completed analyzing image with uploadedFileID ${enteFile.uploadedFileID}, in "
-          "${stopwatch.elapsedMilliseconds} ms");
+            "Completed analyzing image with uploadedFileID ${enteFile.uploadedFileID}, in "
+            "${stopwatch.elapsedMilliseconds} ms");
         return resultBuilder.buildNoFaceDetected();
       }
 
