@@ -20,7 +20,7 @@ const createFacesTable = '''CREATE TABLE IF NOT EXISTS $facesTable (
 	$faceDetectionColumn	TEXT NOT NULL,
   $faceEmbeddingBlob BLOB NOT NULL,
   $faceScore  REAL NOT NULL,
-  $faceBlur READ NOT NULL DEFAULT $kLapacianDefault,
+  $faceBlur REAL NOT NULL DEFAULT $kLapacianDefault,
 	$faceClusterId	INTEGER,
 	$faceClosestDistColumn	REAL,
   $faceClosestFaceID  TEXT,
