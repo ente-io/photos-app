@@ -434,8 +434,8 @@ class FaceMlService {
       // If no faces were detected, return a result with no faces. Otherwise, continue.
       if (faceDetectionResult.isEmpty) {
         _logger.info(
-          "Completed analyzing image with uploadedFileID ${enteFile.uploadedFileID}, in "
-          "${stopwatch.elapsedMilliseconds} ms");
+            "Completed analyzing image with uploadedFileID ${enteFile.uploadedFileID}, in "
+            "${stopwatch.elapsedMilliseconds} ms");
         return resultBuilder.buildNoFaceDetected();
       }
 
@@ -554,7 +554,7 @@ class FaceMlService {
     try {
       // Get the bounding boxes of the faces
       final (List<FaceDetectionRelative> faces, dataSize) =
-          await YoloOnnxFaceDetection.instance.predict(thumbnailData);
+          await YoloOnnxFaceDetection.instance.predictInComputer(thumbnailData);
 
       // Add detected faces to the resultBuilder
       if (resultBuilder != null) {
