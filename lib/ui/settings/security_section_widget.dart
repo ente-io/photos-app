@@ -9,6 +9,7 @@ import 'package:photos/events/two_factor_status_change_event.dart';
 import "package:photos/generated/l10n.dart";
 import "package:photos/models/user_details.dart";
 import 'package:photos/services/local_authentication_service.dart';
+import "package:photos/services/passkey_service.dart";
 import 'package:photos/services/user_service.dart';
 import 'package:photos/theme/ente_theme.dart';
 import "package:photos/ui/account/recovery_key_page.dart";
@@ -23,7 +24,6 @@ import "package:photos/utils/crypto_util.dart";
 import "package:photos/utils/dialog_util.dart";
 import "package:photos/utils/navigation_util.dart";
 import "package:photos/utils/toast_util.dart";
-import "package:url_launcher/url_launcher_string.dart";
 
 class SecuritySectionWidget extends StatefulWidget {
   const SecuritySectionWidget({Key? key}) : super(key: key);
@@ -144,10 +144,7 @@ class _SecuritySectionWidgetState extends State<SecuritySectionWidget> {
             pressedColor: getEnteColorScheme(context).fillFaint,
             trailingIcon: Icons.chevron_right_outlined,
             trailingIconIsMuted: true,
-            onTap: () => launchUrlString(
-              "https://accounts.ente.io",
-              mode: LaunchMode.externalApplication,
-            ),
+            onTap: () => PasskeyService.instance.openPasskeyPage(),
           ),
           sectionOptionSpacing,
           MenuItemWidget(
