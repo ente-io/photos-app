@@ -127,6 +127,26 @@ Num3DInputMatrix createInputMatrixFromImage(
   );
 }
 
+void addInputImageToFloat32List(
+  Image image,
+  ByteData byteDataRgba,
+  Float32List float32List,
+  int startIndex, {
+  double Function(num) normFunction = normalizePixelRange2,
+}) {
+  int pixelIndex = startIndex;
+  for (var h = 0; h < image.height; h++) {
+    for (var w = 0; w < image.width; w++) {
+      final pixel = readPixelColor(image, byteDataRgba, w, h);
+      float32List[pixelIndex] = normFunction(pixel.red);
+      float32List[pixelIndex + 1] = normFunction(pixel.green);
+      float32List[pixelIndex + 2] = normFunction(pixel.blue);
+      pixelIndex += 3;
+    }
+  }
+  return;
+}
+
 List<List<int>> createGrayscaleIntMatrixFromImage(
   Image image,
   ByteData byteDataRgba,
@@ -794,6 +814,89 @@ Future<
     // transformationMatrices.add(transformationMatrix);
   }
   return (alignedImages, alignmentResults, isBlurs, blurValues, originalSize);
+}
+
+Future<(Float32List, List<AlignmentResult>, List<bool>, List<double>, Size)>
+    preprocessToMobileFaceNetFloat32List(
+  Uint8List imageData,
+  List<Map<String, dynamic>> facesJson, {
+  int width = 112,
+  int height = 112,
+}) async {
+  final Image image = await decodeImageFromData(imageData);
+  final Size originalSize =
+      Size(image.width.toDouble(), image.height.toDouble());
+
+  final List<FaceDetectionRelative> relativeFaces =
+      facesJson.map((face) => FaceDetectionRelative.fromJson(face)).toList();
+
+  final List<FaceDetectionAbsolute> absoluteFaces =
+      relativeToAbsoluteDetections(
+    relativeDetections: relativeFaces,
+    imageWidth: image.width,
+    imageHeight: image.height,
+  );
+
+  final List<List<List<double>>> faceLandmarks =
+      absoluteFaces.map((face) => face.allKeypoints).toList();
+
+  final alignedImagesFloat32List =
+      Float32List(3 * width * height * faceLandmarks.length);
+  final alignmentResults = <AlignmentResult>[];
+  final isBlurs = <bool>[];
+  final blurValues = <double>[];
+
+  int alignedImageIndex = 0;
+  for (final faceLandmark in faceLandmarks) {
+    final (alignmentResult, correctlyEstimated) =
+        SimilarityTransform.instance.estimate(faceLandmark);
+    if (!correctlyEstimated) {
+      alignedImageIndex += 3 * width * height;
+      alignmentResults.add(AlignmentResult.empty());
+      continue;
+    }
+    final alignmentBox = getAlignedFaceBox(alignmentResult);
+    final Image alignedFace = await cropImage(
+      image,
+      x: alignmentBox[0],
+      y: alignmentBox[1],
+      width: alignmentBox[2] - alignmentBox[0],
+      height: alignmentBox[3] - alignmentBox[1],
+      maxSize: Size(width.toDouble(), height.toDouble()),
+      minSize: Size(width.toDouble(), height.toDouble()),
+      rotation: alignmentResult.rotation,
+      quality: FilterQuality.medium,
+    );
+    final alignedFaceByteData = await getByteDataFromImage(alignedFace);
+    addInputImageToFloat32List(
+      alignedFace,
+      alignedFaceByteData,
+      alignedImagesFloat32List,
+      alignedImageIndex,
+      normFunction: normalizePixelRange2,
+    );
+    alignedImageIndex += 3 * width * height;
+    alignmentResults.add(alignmentResult);
+    final blurDetectionStopwatch = Stopwatch()..start();
+    final faceGrayMatrix = createGrayscaleIntMatrixFromImage(
+      alignedFace,
+      alignedFaceByteData,
+    );
+    final grascalems = blurDetectionStopwatch.elapsedMilliseconds;
+    log('creating grayscale matrix took $grascalems ms');
+    final (isBlur, blurValue) = await BlurDetectionService.instance
+        .predictIsBlurGrayLaplacian(faceGrayMatrix);
+    final blurms = blurDetectionStopwatch.elapsedMilliseconds - grascalems;
+    log('blur detection took $blurms ms');
+    log(
+      'total blur detection took ${blurDetectionStopwatch.elapsedMilliseconds} ms',
+    );
+    blurDetectionStopwatch.stop();
+    isBlurs.add(isBlur);
+    blurValues.add(blurValue);
+
+  }
+  return (alignedImagesFloat32List, alignmentResults, isBlurs, blurValues, originalSize);
 }
 
 /// Function to warp an image [imageData] with an affine transformation using the estimated [transformationMatrix].
