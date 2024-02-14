@@ -9,7 +9,7 @@ import "package:photos/services/face_ml/face_detection/detection.dart";
 import "package:photos/utils/image_ml_isolate.dart";
 
 class FaceEmbeddingOnnx {
-  static const String kModelPath = 'assets/models/mobilefacenet_opset15.onnx';
+  static const String kModelPath = 'assets/models/mobilefacenet/mobilefacenet_opset15.onnx';
 
   static const int kInputSize = 112;
   static const int kEmbeddingSize = 192;
