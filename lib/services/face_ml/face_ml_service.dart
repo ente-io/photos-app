@@ -1,8 +1,7 @@
 import "dart:async";
 import "dart:io" as io;
-import "dart:typed_data" show Uint8List;
+import "dart:typed_data" show Uint8List, Float32List;
 
-import "package:flutter/foundation.dart";
 import "package:flutter_image_compress/flutter_image_compress.dart";
 import "package:logging/logging.dart";
 import "package:photos/core/configuration.dart";
@@ -19,14 +18,13 @@ import "package:photos/face/model/landmark.dart";
 import "package:photos/models/file/extensions/file_props.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/models/file/file_type.dart";
-import 'package:photos/models/ml/ml_typedefs.dart';
 import "package:photos/models/ml/ml_versions.dart";
 import "package:photos/services/face_ml/face_clustering/linear_clustering_service.dart";
 import "package:photos/services/face_ml/face_detection/detection.dart";
 import "package:photos/services/face_ml/face_detection/yolov5face/yolo_face_detection_exceptions.dart";
 import "package:photos/services/face_ml/face_detection/yolov5face/yolo_face_detection_onnx.dart";
 import "package:photos/services/face_ml/face_embedding/face_embedding_exceptions.dart";
-import "package:photos/services/face_ml/face_embedding/face_embedding_service.dart";
+import "package:photos/services/face_ml/face_embedding/face_embedding_onnx.dart";
 import "package:photos/services/face_ml/face_ml_exceptions.dart";
 import "package:photos/services/face_ml/face_ml_result.dart";
 import "package:photos/services/search_service.dart";
@@ -76,7 +74,7 @@ class FaceMlService {
         _logger.severe("Could not initialize image ml isolate", e, s);
       }
       try {
-        await FaceEmbedding.instance.init();
+        await FaceEmbeddingOnnx.instance.init();
       } catch (e, s) {
         _logger.severe("Could not initialize mobilefacenet", e, s);
       }
@@ -117,7 +115,7 @@ class FaceMlService {
         _logger.severe("Could not dispose image ml isolate", e, s);
       }
       try {
-        await FaceEmbedding.instance.dispose();
+        await FaceEmbeddingOnnx.instance.dispose();
       } catch (e, s) {
         _logger.severe("Could not dispose mobilefacenet", e, s);
       }
@@ -175,7 +173,7 @@ class FaceMlService {
     }
     // verify indexing is enabled
     if (LocalSettings.instance.isFaceIndexingEnabled == false) {
-      debugPrint("indexAllImages is disabled");
+      _logger.warning("indexAllImages is disabled");
       return;
     }
     try {
@@ -447,7 +445,7 @@ class FaceMlService {
       final Uint8List largeData = fileData ?? thumbnailData!;
 
       // Align the faces
-      final List<List<List<List<num>>>> faceAlignmentResult = await _alignFaces(
+      final Float32List faceAlignmentResult = await _alignFaces(
         largeData,
         faceDetectionResult,
         resultBuilder: resultBuilder,
@@ -580,7 +578,7 @@ class FaceMlService {
   /// Returns a list of the aligned faces as image data.
   ///
   /// Throws [CouldNotWarpAffine] or [GeneralFaceMlException] if the face alignment fails.
-  Future<List<Num3DInputMatrix>> _alignFaces(
+  Future<Float32List> _alignFaces(
     Uint8List imageData,
     List<FaceDetectionRelative> faces, {
     FaceMlResultBuilder? resultBuilder,
@@ -593,7 +591,7 @@ class FaceMlService {
         blurValues,
         originalImageSize
       ) = await ImageMlIsolate.instance
-          .preprocessMobileFaceNet(imageData, faces);
+          .preprocessMobileFaceNetOnnx(imageData, faces);
 
       if (resultBuilder != null) {
         resultBuilder.addAlignmentResults(
@@ -618,13 +616,13 @@ class FaceMlService {
   ///
   /// Throws [CouldNotInitializeFaceEmbeddor], [CouldNotRunFaceEmbeddor], [InputProblemFaceEmbeddor] or [GeneralFaceMlException] if the face embedding fails.
   Future<List<List<double>>> _embedFaces(
-    List<Num3DInputMatrix> facesMatrices, {
+    Float32List facesList, {
     FaceMlResultBuilder? resultBuilder,
   }) async {
     try {
       // Get the embedding of the faces
       final List<List<double>> embeddings =
-          await FaceEmbedding.instance.predict(facesMatrices);
+          await FaceEmbeddingOnnx.instance.predict(facesList);
 
       // Add the embeddings to the resultBuilder
       if (resultBuilder != null) {

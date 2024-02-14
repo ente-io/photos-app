@@ -17,6 +17,7 @@ enum ImageOperation {
   preprocessYoloOnnx,
   preprocessFaceAlign,
   preprocessMobileFaceNet,
+  preprocessMobileFaceNetOnnx,
   generateFaceThumbnail,
   generateFaceThumbnailsForImage,
   cropAndPadFace,
@@ -174,6 +175,24 @@ class ImageMlIsolate {
               'originalWidth': originalSize.width,
               'originalHeight': originalSize.height,
             });
+            case ImageOperation.preprocessMobileFaceNetOnnx:
+          final imageData = args['imageData'] as Uint8List;
+          final facesJson = args['facesJson'] as List<Map<String, dynamic>>;
+          final (inputs, alignmentResults, isBlurs, blurValues, originalSize) =
+              await preprocessToMobileFaceNetFloat32List(
+            imageData,
+            facesJson,
+          );
+          final List<Map<String, dynamic>> alignmentResultsJson =
+              alignmentResults.map((result) => result.toJson()).toList();
+          sendPort.send({
+            'inputs': inputs,
+            'alignmentResultsJson': alignmentResultsJson,
+            'isBlurs': isBlurs,
+            'blurValues': blurValues,
+            'originalWidth': originalSize.width,
+            'originalHeight': originalSize.height,
+          });
           case ImageOperation.generateFaceThumbnail:
             final imageData = args['imageData'] as Uint8List;
             final faceDetectionJson =
@@ -393,6 +412,39 @@ class ImageMlIsolate {
       results['originalWidth'] as double,
       results['originalHeight'] as double,
     );
+    return (inputs, alignmentResults, isBlurs, blurValues, originalSize);
+  }
+
+  /// Uses [preprocessToMobileFaceNetFloat32List] inside the isolate.
+  Future<(Float32List, List<AlignmentResult>, List<bool>, List<double>, Size)>
+      preprocessMobileFaceNetOnnx(
+    Uint8List imageData,
+    List<FaceDetectionRelative> faces,
+  ) async {
+    final List<Map<String, dynamic>> facesJson =
+        faces.map((face) => face.toJson()).toList();
+    final Map<String, dynamic> results = await _runInIsolate(
+      (
+        ImageOperation.preprocessMobileFaceNetOnnx,
+        {
+          'imageData': imageData,
+          'facesJson': facesJson,
+        },
+      ),
+    );
+    final inputs = results['inputs'] as Float32List;
+    final alignmentResultsJson =
+        results['alignmentResultsJson'] as List<Map<String, dynamic>>;
+    final alignmentResults = alignmentResultsJson.map((json) {
+      return AlignmentResult.fromJson(json);
+    }).toList();
+    final isBlurs = results['isBlurs'] as List<bool>;
+    final blurValues = results['blurValues'] as List<double>;
+    final originalSize = Size(
+      results['originalWidth'] as double,
+      results['originalHeight'] as double,
+    );
+    
     return (inputs, alignmentResults, isBlurs, blurValues, originalSize);
   }
 
