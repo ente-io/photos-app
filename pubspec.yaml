@@ -233,7 +233,6 @@ flutter_native_splash:
 flutter:
   assets:
     - assets/
-    - assets/models/blazeface/
     - assets/models/cocossd/
     - assets/models/mobilefacenet/
     - assets/models/mobilenet/
