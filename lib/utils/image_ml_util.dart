@@ -553,6 +553,7 @@ Future<Image> addPaddingToImage(
 /// The [requiredWidth] and [requiredHeight] arguments determine the size of the output image.
 /// The [quality] argument determines the quality of the resizing interpolation.
 /// The [maintainAspectRatio] argument determines whether the aspect ratio of the image is maintained.
+@Deprecated("Old method used in blazeface")
 Future<(Num3DInputMatrix, Size, Size)> preprocessImageToMatrix(
   Uint8List imageData, {
   required int normalization,
@@ -615,28 +616,21 @@ Future<(Float32List, Size, Size)> preprocessImageToFloat32ChannelsFirst(
           : normalizePixelNoRange;
   final Image image = await decodeImageFromData(imageData);
   final originalSize = Size(image.width.toDouble(), image.height.toDouble());
+  late final Image resizedImage;
+  late final Size newSize;
 
   if (image.width == requiredWidth && image.height == requiredHeight) {
-    final ByteData imgByteData = await getByteDataFromImage(image);
-    return (
-      createFloat32ListFromImageChannelsFirst(
-        image,
-        imgByteData,
-        normFunction: normFunction,
-      ),
-      originalSize,
-      originalSize
+    resizedImage = image;
+    newSize = originalSize;
+  } else {
+    (resizedImage, newSize) = await resizeImage(
+      image,
+      requiredWidth,
+      requiredHeight,
+      quality: quality,
+      maintainAspectRatio: maintainAspectRatio,
     );
   }
-
-  final (resizedImage, newSize) = await resizeImage(
-    image,
-    requiredWidth,
-    requiredHeight,
-    quality: quality,
-    maintainAspectRatio: maintainAspectRatio,
-  );
-
   final ByteData imgByteData = await getByteDataFromImage(resizedImage);
   final Float32List imageFloat32List = createFloat32ListFromImageChannelsFirst(
     resizedImage,
@@ -650,6 +644,7 @@ Future<(Float32List, Size, Size)> preprocessImageToFloat32ChannelsFirst(
 /// Preprocesses [imageData] based on [faceLandmarks] to align the faces in the images.
 ///
 /// Returns a list of [Uint8List] images, one for each face, in png format.
+@Deprecated("Old method used in blazeface")
 Future<List<Uint8List>> preprocessFaceAlignToUint8List(
   Uint8List imageData,
   List<List<List<double>>> faceLandmarks, {
