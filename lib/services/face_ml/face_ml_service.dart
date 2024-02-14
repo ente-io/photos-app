@@ -437,7 +437,7 @@ class FaceMlService {
       // If no faces were detected, return a result with no faces. Otherwise, continue.
       if (faceDetectionResult.isEmpty) {
         _logger.info(
-            "Completed analyzing image with uploadedFileID ${enteFile.uploadedFileID}, in "
+            "No faceDetectionResult, Completed analyzing image with uploadedFileID ${enteFile.uploadedFileID}, in "
             "${stopwatch.elapsedMilliseconds} ms");
         return resultBuilder.buildNoFaceDetected();
       }
@@ -459,7 +459,7 @@ class FaceMlService {
       _logger.info("Completed `alignFaces` function");
 
       // Get the embeddings of the faces
-      await _embedFaces(
+      final embeddings = await _embedFaces(
         faceAlignmentResult,
         resultBuilder: resultBuilder,
       );
@@ -467,8 +467,8 @@ class FaceMlService {
       _logger.info("Completed `embedBatchFaces` function");
 
       stopwatch.stop();
-      _logger.info(
-          "Completed analyzing image with uploadedFileID ${enteFile.uploadedFileID}, in "
+      _logger.info("Finished Analyze image (${embeddings.length} faces) with "
+          "uploadedFileID ${enteFile.uploadedFileID}, in "
           "${stopwatch.elapsedMilliseconds} ms");
 
       if (disposeImageIsolateAfterUse) {
