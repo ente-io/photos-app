@@ -1,5 +1,5 @@
 import "dart:async";
-import "dart:io" as io;
+import "dart:io" show File;
 import "dart:typed_data" show Uint8List, Float32List;
 
 import "package:flutter_image_compress/flutter_image_compress.dart";
@@ -395,18 +395,18 @@ class FaceMlService {
   }) async {
     _checkEnteFileForID(enteFile);
 
-    final Uint8List? thumbnailData =
-        await _getDataForML(enteFile, typeOfData: FileDataForML.fileData);
-    Uint8List? fileData;
+    final String? thumbnailPath =
+        await _getImagePathForML(enteFile, typeOfData: FileDataForML.fileData);
+    String? filePath;
 
     // // TODO: remove/optimize this later. Not now though: premature optimization
     // fileData =
     //     await _getDataForML(enteFile, typeOfData: FileDataForML.fileData);
 
-    if (thumbnailData == null) {
-      fileData =
-          await _getDataForML(enteFile, typeOfData: FileDataForML.fileData);
-      if (thumbnailData == null && fileData == null) {
+    if (thumbnailPath == null) {
+      filePath =
+          await _getImagePathForML(enteFile, typeOfData: FileDataForML.fileData);
+      if (thumbnailPath == null && filePath == null) {
         _logger.severe(
           "Failed to get any data for enteFile with uploadedFileID ${enteFile.uploadedFileID}",
         );
@@ -414,7 +414,7 @@ class FaceMlService {
       }
     }
     // TODO: use smallData and largeData instead of thumbnailData and fileData again!
-    final Uint8List smallData = thumbnailData ?? fileData!;
+    final String smallDataPath = thumbnailPath ?? filePath!;
 
     final resultBuilder = FaceMlResultBuilder.fromEnteFile(enteFile);
 
@@ -427,7 +427,7 @@ class FaceMlService {
       // Get the faces
       final List<FaceDetectionRelative> faceDetectionResult =
           await _detectFaces(
-        smallData,
+        smallDataPath,
         resultBuilder: resultBuilder,
       );
 
@@ -442,15 +442,15 @@ class FaceMlService {
       }
 
       if (!preferUsingThumbnailForEverything) {
-        fileData ??=
-            await _getDataForML(enteFile, typeOfData: FileDataForML.fileData);
+        filePath ??=
+            await _getImagePathForML(enteFile, typeOfData: FileDataForML.fileData);
       }
-      resultBuilder.onlyThumbnailUsed = fileData == null;
-      final Uint8List largeData = fileData ?? thumbnailData!;
+      resultBuilder.onlyThumbnailUsed = filePath == null;
+      final String largeDataPath = filePath ?? thumbnailPath!;
 
       // Align the faces
       final Float32List faceAlignmentResult = await _alignFaces(
-        largeData,
+        largeDataPath,
         faceDetectionResult,
         resultBuilder: resultBuilder,
       );
@@ -487,6 +487,54 @@ class FaceMlService {
     }
   }
 
+  Future<String?> _getImagePathForML(
+    EnteFile enteFile, {
+    FileDataForML typeOfData = FileDataForML.fileData,
+  }) async {
+    String? imagePath;
+
+    switch (typeOfData) {
+      case FileDataForML.fileData:
+        final stopwatch = Stopwatch()..start();
+        final File? file = await getFile(enteFile, isOrigin: true);
+        if (file == null) {
+          _logger.warning("Could not get file for $enteFile");
+          imagePath = null;
+          break;
+        }
+        imagePath = file.path;
+        stopwatch.stop();
+        _logger.info(
+          "Getting file data for uploadedFileID ${enteFile.uploadedFileID} took ${stopwatch.elapsedMilliseconds} ms",
+        );
+        break;
+
+      case FileDataForML.thumbnailData:
+        final stopwatch = Stopwatch()..start();
+        final File? thumbnail = await getThumbnailForUploadedFile(enteFile);
+        if (thumbnail == null) {
+          _logger.warning("Could not get thumbnail for $enteFile");
+          imagePath = null;
+          break;
+        }
+        imagePath = thumbnail.path;
+        stopwatch.stop();
+        _logger.info(
+          "Getting thumbnail data for uploadedFileID ${enteFile.uploadedFileID} took ${stopwatch.elapsedMilliseconds} ms",
+        );
+        break;
+
+      case FileDataForML.compressedFileData:
+        _logger.warning(
+          "Getting compressed file data for uploadedFileID ${enteFile.uploadedFileID} is not implemented yet",
+        );
+        imagePath = null;
+        break;
+    }
+
+    return imagePath;
+  }
+
   Future<Uint8List?> _getDataForML(
     EnteFile enteFile, {
     FileDataForML typeOfData = FileDataForML.fileData,
@@ -496,7 +544,7 @@ class FaceMlService {
     switch (typeOfData) {
       case FileDataForML.fileData:
         final stopwatch = Stopwatch()..start();
-        final io.File? actualIoFile = await getFile(enteFile, isOrigin: true);
+        final File? actualIoFile = await getFile(enteFile, isOrigin: true);
         if (actualIoFile != null) {
           data = await actualIoFile.readAsBytes();
         }
@@ -520,7 +568,7 @@ class FaceMlService {
         final stopwatch = Stopwatch()..start();
         final String tempPath = Configuration.instance.getTempDirectory() +
             "${enteFile.uploadedFileID!}";
-        final io.File? actualIoFile = await getFile(enteFile);
+        final File? actualIoFile = await getFile(enteFile);
         if (actualIoFile != null) {
           final compressResult = await FlutterImageCompress.compressAndGetFile(
             actualIoFile.path,
@@ -548,7 +596,7 @@ class FaceMlService {
   ///
   /// Throws [CouldNotInitializeFaceDetector], [CouldNotRunFaceDetector] or [GeneralFaceMlException] if something goes wrong.
   Future<List<FaceDetectionRelative>> _detectFaces(
-    Uint8List thumbnailData,
+    String imagePath,
     // Uint8List fileData,
     {
     FaceMlResultBuilder? resultBuilder,
@@ -556,7 +604,7 @@ class FaceMlService {
     try {
       // Get the bounding boxes of the faces
       final (List<FaceDetectionRelative> faces, dataSize) =
-          await YoloOnnxFaceDetection.instance.predictInComputer(thumbnailData);
+          await YoloOnnxFaceDetection.instance.predictInComputer(imagePath);
 
       // Add detected faces to the resultBuilder
       if (resultBuilder != null) {
@@ -583,7 +631,7 @@ class FaceMlService {
   ///
   /// Throws [CouldNotWarpAffine] or [GeneralFaceMlException] if the face alignment fails.
   Future<Float32List> _alignFaces(
-    Uint8List imageData,
+    String imagePath,
     List<FaceDetectionRelative> faces, {
     FaceMlResultBuilder? resultBuilder,
   }) async {
@@ -595,7 +643,7 @@ class FaceMlService {
         blurValues,
         originalImageSize
       ) = await ImageMlIsolate.instance
-          .preprocessMobileFaceNetOnnx(imageData, faces);
+          .preprocessMobileFaceNetOnnx(imagePath, faces);
 
       if (resultBuilder != null) {
         resultBuilder.addAlignmentResults(

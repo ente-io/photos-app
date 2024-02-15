@@ -1,5 +1,6 @@
 import "dart:async";
 import "dart:developer" show log;
+import "dart:io" show File;
 import "dart:math" show min, max;
 import "dart:typed_data" show Float32List, Uint8List, ByteData;
 import "dart:ui";
@@ -818,11 +819,12 @@ Future<
 
 Future<(Float32List, List<AlignmentResult>, List<bool>, List<double>, Size)>
     preprocessToMobileFaceNetFloat32List(
-  Uint8List imageData,
+  String imagePath,
   List<Map<String, dynamic>> facesJson, {
   int width = 112,
   int height = 112,
 }) async {
+  final Uint8List imageData = await File(imagePath).readAsBytes();
   final Image image = await decodeImageFromData(imageData);
   final Size originalSize =
       Size(image.width.toDouble(), image.height.toDouble());
@@ -894,9 +896,14 @@ Future<(Float32List, List<AlignmentResult>, List<bool>, List<double>, Size)>
     blurDetectionStopwatch.stop();
     isBlurs.add(isBlur);
     blurValues.add(blurValue);
-
   }
-  return (alignedImagesFloat32List, alignmentResults, isBlurs, blurValues, originalSize);
+  return (
+    alignedImagesFloat32List,
+    alignmentResults,
+    isBlurs,
+    blurValues,
+    originalSize
+  );
 }
 
 /// Function to warp an image [imageData] with an affine transformation using the estimated [transformationMatrix].

@@ -176,11 +176,11 @@ class ImageMlIsolate {
               'originalHeight': originalSize.height,
             });
             case ImageOperation.preprocessMobileFaceNetOnnx:
-          final imageData = args['imageData'] as Uint8List;
+          final imagePath = args['imagePath'] as String;
           final facesJson = args['facesJson'] as List<Map<String, dynamic>>;
           final (inputs, alignmentResults, isBlurs, blurValues, originalSize) =
               await preprocessToMobileFaceNetFloat32List(
-            imageData,
+            imagePath,
             facesJson,
           );
           final List<Map<String, dynamic>> alignmentResultsJson =
@@ -418,7 +418,7 @@ class ImageMlIsolate {
   /// Uses [preprocessToMobileFaceNetFloat32List] inside the isolate.
   Future<(Float32List, List<AlignmentResult>, List<bool>, List<double>, Size)>
       preprocessMobileFaceNetOnnx(
-    Uint8List imageData,
+    String imagePath,
     List<FaceDetectionRelative> faces,
   ) async {
     final List<Map<String, dynamic>> facesJson =
@@ -427,7 +427,7 @@ class ImageMlIsolate {
       (
         ImageOperation.preprocessMobileFaceNetOnnx,
         {
-          'imageData': imageData,
+          'imagePath': imagePath,
           'facesJson': facesJson,
         },
       ),

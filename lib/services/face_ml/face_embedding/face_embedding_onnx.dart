@@ -83,7 +83,7 @@ class FaceEmbeddingOnnx {
   }
 
   Future<(List<double>, bool, double)> predictFromImageData(
-    Uint8List imageData,
+    String imagePath,
     FaceDetectionRelative face,
   ) async {
     assert(_sessionAddress != 0 && _sessionAddress != -1 && _isInitialized);
@@ -92,7 +92,7 @@ class FaceEmbeddingOnnx {
       final stopwatchDecoding = Stopwatch()..start();
       final (inputImageList, alignmentResults, isBlur, blurValue, _) =
           await ImageMlIsolate.instance.preprocessMobileFaceNetOnnx(
-        imageData,
+        imagePath,
         [face],
       );
       stopwatchDecoding.stop();

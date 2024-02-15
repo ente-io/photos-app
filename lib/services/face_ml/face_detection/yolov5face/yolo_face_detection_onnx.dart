@@ -1,5 +1,6 @@
 import "dart:async";
 import "dart:developer" as dev show log;
+import "dart:io" show File;
 import "dart:isolate";
 import 'dart:typed_data' show Float32List, Uint8List;
 
@@ -370,7 +371,7 @@ class YoloOnnxFaceDetection {
   }
 
   Future<(List<FaceDetectionRelative>, Size)> predictInComputer(
-    Uint8List imageData,
+    String imagePath,
   ) async {
     assert(_isInitialized && _sessionOptions != null);
 
@@ -379,6 +380,7 @@ class YoloOnnxFaceDetection {
     final stopwatch = Stopwatch()..start();
 
     final stopwatchDecoding = Stopwatch()..start();
+    final imageData = await File(imagePath).readAsBytes();
     final (inputImageList, originalSize, newSize) =
         await ImageMlIsolate.instance.preprocessImageYoloOnnx(
       imageData,
