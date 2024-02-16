@@ -55,7 +55,7 @@ class FaceMlService {
 
   bool initialized = false;
   bool isImageIndexRunning = false;
-  int kParallelism = 1;
+  int kParallelism = 15;
 
   Future<void> init() async {
     return _initLock.synchronized(() async {
