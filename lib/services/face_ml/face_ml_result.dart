@@ -587,6 +587,13 @@ class FaceMlResultBuilder {
     this.onlyThumbnailUsed = false,
   }) : fileId = file.uploadedFileID ?? -1;
 
+  FaceMlResultBuilder.fromEnteFileID(
+    int fileID, {
+    this.mlVersion = faceMlVersion,
+    this.errorOccured = false,
+    this.onlyThumbnailUsed = false,
+  }) : fileId = fileID;
+
   void addNewlyDetectedFaces(
     List<FaceDetectionRelative> faceDetections,
     Size originalSize,

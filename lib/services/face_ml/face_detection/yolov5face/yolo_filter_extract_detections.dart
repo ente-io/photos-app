@@ -1,10 +1,9 @@
 import "package:photos/services/face_ml/face_detection/detection.dart";
-import "package:photos/services/face_ml/face_detection/yolov5face/yolo_face_detection_options.dart";
 
-
-
-List<FaceDetectionRelative> yoloOnnxFilterExtractDetections({
-  required FaceDetectionOptionsYOLO options,
+List<FaceDetectionRelative> yoloOnnxFilterExtractDetections(
+  double minScoreSigmoidThreshold,
+  int inputWidth,
+  int inputHeight, {
   required List<List<double>> results, // // [25200, 16]
 }) {
   final outputDetections = <FaceDetectionRelative>[];
@@ -13,7 +12,7 @@ List<FaceDetectionRelative> yoloOnnxFilterExtractDetections({
   // Go through the raw output and check the scores
   for (final result in results) {
     // Filter out raw detections with low scores
-    if (result[4] < options.minScoreSigmoidThreshold) {
+    if (result[4] < minScoreSigmoidThreshold) {
       continue;
     }
 
@@ -33,33 +32,33 @@ List<FaceDetectionRelative> yoloOnnxFilterExtractDetections({
 
     // Get the relative bounding box coordinates in format [xMin, yMin, xMax, yMax]
     final box = [
-      xMinAbs / options.inputWidth,
-      yMinAbs / options.inputHeight,
-      xMaxAbs / options.inputWidth,
-      yMaxAbs / options.inputHeight,
+      xMinAbs / inputWidth,
+      yMinAbs / inputHeight,
+      xMaxAbs / inputWidth,
+      yMaxAbs / inputHeight,
     ];
 
     // Get the keypoints coordinates in format [x, y]
     final allKeypoints = <List<double>>[
       [
-        rawDetection[5] / options.inputWidth,
-        rawDetection[6] / options.inputHeight,
+        rawDetection[5] / inputWidth,
+        rawDetection[6] / inputHeight,
       ],
       [
-        rawDetection[7] / options.inputWidth,
-        rawDetection[8] / options.inputHeight,
+        rawDetection[7] / inputWidth,
+        rawDetection[8] / inputHeight,
       ],
       [
-        rawDetection[9] / options.inputWidth,
-        rawDetection[10] / options.inputHeight,
+        rawDetection[9] / inputWidth,
+        rawDetection[10] / inputHeight,
       ],
       [
-        rawDetection[11] / options.inputWidth,
-        rawDetection[12] / options.inputHeight,
+        rawDetection[11] / inputWidth,
+        rawDetection[12] / inputHeight,
       ],
       [
-        rawDetection[13] / options.inputWidth,
-        rawDetection[14] / options.inputHeight,
+        rawDetection[13] / inputWidth,
+        rawDetection[14] / inputHeight,
       ],
     ];
 

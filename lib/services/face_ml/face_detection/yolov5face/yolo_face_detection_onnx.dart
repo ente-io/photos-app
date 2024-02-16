@@ -12,24 +12,30 @@ import 'package:onnxruntime/onnxruntime.dart';
 import "package:photos/services/face_ml/face_detection/detection.dart";
 import "package:photos/services/face_ml/face_detection/naive_non_max_suppression.dart";
 import "package:photos/services/face_ml/face_detection/yolov5face/yolo_face_detection_exceptions.dart";
-import "package:photos/services/face_ml/face_detection/yolov5face/yolo_face_detection_options.dart";
 import "package:photos/services/face_ml/face_detection/yolov5face/yolo_filter_extract_detections.dart";
-import "package:photos/services/face_ml/face_detection/yolov5face/yolo_model_config.dart";
 import "package:photos/utils/image_ml_isolate.dart";
+import "package:photos/utils/image_ml_util.dart";
 import "package:synchronized/synchronized.dart";
 
 enum FaceDetectionOperation { yoloInferenceAndPostProcessing }
 
 class YoloOnnxFaceDetection {
-  final _logger = Logger('YOLOFaceDetectionService');
+  static final _logger = Logger('YOLOFaceDetectionService');
 
   final _computer = Computer.shared();
 
+  OrtSessionOptions? get sessionOptions => _sessionOptions;
   OrtSessionOptions? _sessionOptions;
-  int _sessionAddress = 0;
+  int sessionAddress = 0;
 
-  final FaceDetectionOptionsYOLO _faceOptions;
+  static const String kModelPath =
+      'assets/models/yolov5face/yolov5s_face_640_640_dynamic.onnx';
+  static const kInputWidth = 640;
+  static const kInputHeight = 640;
+  static const kIouThreshold = 0.4;
+  static const kMinScoreSigmoidThreshold = 0.8;
 
+  bool get isInitialized => _isInitialized;
   bool _isInitialized = false;
 
   // Isolate things
@@ -37,6 +43,7 @@ class YoloOnnxFaceDetection {
   final Duration _inactivityDuration = const Duration(seconds: 30);
 
   final _initLock = Lock();
+  final _computerLock = Lock();
 
   late Isolate _isolate;
   late ReceivePort _receivePort = ReceivePort();
@@ -45,10 +52,8 @@ class YoloOnnxFaceDetection {
   bool isSpawned = false;
   bool isRunning = false;
 
-  final YOLOModelConfig config;
   // singleton pattern
-  YoloOnnxFaceDetection._privateConstructor({required this.config})
-      : _faceOptions = config.faceOptions;
+  YoloOnnxFaceDetection._privateConstructor();
 
   /// Use this instance to access the FaceDetection service. Make sure to call `init()` before using it.
   /// e.g. `await FaceDetection.instance.init();`
@@ -56,9 +61,8 @@ class YoloOnnxFaceDetection {
   /// Then you can use `predict()` to get the bounding boxes of the faces, so `FaceDetection.instance.predict(imageData)`
   ///
   /// config options: yoloV5FaceN //
-  static final instance = YoloOnnxFaceDetection._privateConstructor(
-    config: yoloV5FaceS640x640DynamicBatchonnx,
-  );
+  static final instance = YoloOnnxFaceDetection._privateConstructor();
+
   factory YoloOnnxFaceDetection() {
     OrtEnv.instance.init();
     return instance;
@@ -134,7 +138,6 @@ class YoloOnnxFaceDetection {
           case FaceDetectionOperation.yoloInferenceAndPostProcessing:
             final inputImageList = args['inputImageList'] as Float32List;
             final inputShape = args['inputShape'] as List<int>;
-            final faceOptions = args['faceOptions'] as FaceDetectionOptionsYOLO;
             final newSize = args['newSize'] as Size;
             final sessionAddress = args['sessionAddress'] as int;
             final timeSentToIsolate = args['timeNow'] as DateTime;
@@ -177,7 +180,7 @@ class YoloOnnxFaceDetection {
             );
 
             final relativeDetections =
-                _yoloPostProcessOutputs(outputs, faceOptions, newSize);
+                _yoloPostProcessOutputs(outputs, newSize);
 
             sendPort
                 .send((relativeDetections, delaySentToIsolate, DateTime.now()));
@@ -253,8 +256,8 @@ class YoloOnnxFaceDetection {
         await ImageMlIsolate.instance.preprocessImageYoloOnnx(
       imageData,
       normalize: true,
-      requiredWidth: _faceOptions.inputWidth,
-      requiredHeight: _faceOptions.inputHeight,
+      requiredWidth: kInputWidth,
+      requiredHeight: kInputHeight,
       maintainAspectRatio: true,
       quality: FilterQuality.medium,
     );
@@ -263,8 +266,8 @@ class YoloOnnxFaceDetection {
     final inputShape = [
       1,
       3,
-      _faceOptions.inputHeight,
-      _faceOptions.inputWidth,
+      kInputHeight,
+      kInputWidth,
     ];
     final inputOrt = OrtValueTensor.createTensorWithDataList(
       inputImageList,
@@ -282,7 +285,7 @@ class YoloOnnxFaceDetection {
     List<OrtValue?>? outputs;
     try {
       final runOptions = OrtRunOptions();
-      final session = OrtSession.fromAddress(_sessionAddress);
+      final session = OrtSession.fromAddress(sessionAddress);
       outputs = session.run(runOptions, inputs);
       // inputOrt.release();
       // runOptions.release();
@@ -295,8 +298,74 @@ class YoloOnnxFaceDetection {
       'interpreter.run is finished, in ${stopwatchInterpreter.elapsedMilliseconds} ms',
     );
 
-    final relativeDetections =
-        _yoloPostProcessOutputs(outputs, _faceOptions, newSize);
+    final relativeDetections = _yoloPostProcessOutputs(outputs, newSize);
+
+    stopwatch.stop();
+    _logger.info(
+      'predict() face detection executed in ${stopwatch.elapsedMilliseconds}ms',
+    );
+
+    return (relativeDetections, originalSize);
+  }
+
+  /// Detects faces in the given image data.
+  static Future<(List<FaceDetectionRelative>, Size)> predictSync(
+    String imagePath,
+    int sessionAddress,
+  ) async {
+    assert(sessionAddress != 0 && sessionAddress != -1);
+
+    final stopwatch = Stopwatch()..start();
+
+    final stopwatchDecoding = Stopwatch()..start();
+    final imageData = await File(imagePath).readAsBytes();
+    final (inputImageList, originalSize, newSize) =
+        await preprocessImageToFloat32ChannelsFirst(
+      imageData,
+      normalization: 1,
+      requiredWidth: kInputWidth,
+      requiredHeight: kInputHeight,
+      maintainAspectRatio: true,
+      quality: FilterQuality.medium,
+    );
+
+    // final input = [inputImageList];
+    final inputShape = [
+      1,
+      3,
+      kInputHeight,
+      kInputWidth,
+    ];
+    final inputOrt = OrtValueTensor.createTensorWithDataList(
+      inputImageList,
+      inputShape,
+    );
+    final inputs = {'input': inputOrt};
+    stopwatchDecoding.stop();
+    _logger.info(
+      'Image decoding and preprocessing is finished, in ${stopwatchDecoding.elapsedMilliseconds}ms',
+    );
+    _logger.info('original size: $originalSize \n new size: $newSize');
+
+    // Run inference
+    final stopwatchInterpreter = Stopwatch()..start();
+    List<OrtValue?>? outputs;
+    try {
+      final runOptions = OrtRunOptions();
+      final session = OrtSession.fromAddress(sessionAddress);
+      outputs = session.run(runOptions, inputs);
+      // inputOrt.release();
+      // runOptions.release();
+    } catch (e, s) {
+      _logger.severe('Error while running inference: $e \n $s');
+      throw YOLOInterpreterRunException();
+    }
+    stopwatchInterpreter.stop();
+    _logger.info(
+      'interpreter.run is finished, in ${stopwatchInterpreter.elapsedMilliseconds} ms',
+    );
+
+    final relativeDetections = _yoloPostProcessOutputs(outputs, newSize);
 
     stopwatch.stop();
     _logger.info(
@@ -322,8 +391,8 @@ class YoloOnnxFaceDetection {
         await ImageMlIsolate.instance.preprocessImageYoloOnnx(
       imageData,
       normalize: true,
-      requiredWidth: _faceOptions.inputWidth,
-      requiredHeight: _faceOptions.inputHeight,
+      requiredWidth: kInputWidth,
+      requiredHeight: kInputHeight,
       maintainAspectRatio: true,
       quality: FilterQuality.medium,
     );
@@ -331,8 +400,8 @@ class YoloOnnxFaceDetection {
     final inputShape = [
       1,
       3,
-      _faceOptions.inputHeight,
-      _faceOptions.inputWidth,
+      kInputHeight,
+      kInputWidth,
     ];
 
     stopwatchDecoding.stop();
@@ -351,9 +420,8 @@ class YoloOnnxFaceDetection {
         {
           'inputImageList': inputImageList,
           'inputShape': inputShape,
-          'faceOptions': _faceOptions,
           'newSize': newSize,
-          'sessionAddress': _sessionAddress,
+          'sessionAddress': sessionAddress,
           'timeNow': DateTime.now(),
         }
       ),
@@ -385,50 +453,51 @@ class YoloOnnxFaceDetection {
         await ImageMlIsolate.instance.preprocessImageYoloOnnx(
       imageData,
       normalize: true,
-      requiredWidth: _faceOptions.inputWidth,
-      requiredHeight: _faceOptions.inputHeight,
+      requiredWidth: kInputWidth,
+      requiredHeight: kInputHeight,
       maintainAspectRatio: true,
       quality: FilterQuality.medium,
     );
     // final input = [inputImageList];
-    final inputShape = [
-      1,
-      3,
-      _faceOptions.inputHeight,
-      _faceOptions.inputWidth,
-    ];
+    return await _computerLock.synchronized(() async {
+      final inputShape = [
+        1,
+        3,
+        kInputHeight,
+        kInputWidth,
+      ];
 
-    stopwatchDecoding.stop();
-    _logger.info(
-      'Image decoding and preprocessing is finished, in ${stopwatchDecoding.elapsedMilliseconds}ms',
-    );
-    _logger.info('original size: $originalSize \n new size: $newSize');
+      stopwatchDecoding.stop();
+      _logger.info(
+        'Image decoding and preprocessing is finished, in ${stopwatchDecoding.elapsedMilliseconds}ms',
+      );
+      _logger.info('original size: $originalSize \n new size: $newSize');
 
-    final (
-      List<FaceDetectionRelative> relativeDetections,
-      delaySentToIsolate,
-      timeSentToMain
-    ) = await _computer.compute(
-      inferenceAndPostProcess,
-      param: {
-        'inputImageList': inputImageList,
-        'inputShape': inputShape,
-        'faceOptions': _faceOptions,
-        'newSize': newSize,
-        'sessionAddress': _sessionAddress,
-        'timeNow': DateTime.now(),
-      },
-    ) as (List<FaceDetectionRelative>, int, DateTime);
+      final (
+        List<FaceDetectionRelative> relativeDetections,
+        delaySentToIsolate,
+        timeSentToMain
+      ) = await _computer.compute(
+        inferenceAndPostProcess,
+        param: {
+          'inputImageList': inputImageList,
+          'inputShape': inputShape,
+          'newSize': newSize,
+          'sessionAddress': sessionAddress,
+          'timeNow': DateTime.now(),
+        },
+      ) as (List<FaceDetectionRelative>, int, DateTime);
 
-    final delaySentToMain =
-        DateTime.now().difference(timeSentToMain).inMilliseconds;
+      final delaySentToMain =
+          DateTime.now().difference(timeSentToMain).inMilliseconds;
 
-    stopwatch.stop();
-    _logger.info(
-      'predictInIsolate() face detection executed in ${stopwatch.elapsedMilliseconds}ms, with ${delaySentToIsolate}ms delay sent to isolate, and ${delaySentToMain}ms delay sent to main, for a total of ${delaySentToIsolate + delaySentToMain}ms delay due to isolate',
-    );
+      stopwatch.stop();
+      _logger.info(
+        'predictInIsolate() face detection executed in ${stopwatch.elapsedMilliseconds}ms, with ${delaySentToIsolate}ms delay sent to isolate, and ${delaySentToMain}ms delay sent to main, for a total of ${delaySentToIsolate + delaySentToMain}ms delay due to isolate',
+      );
 
-    return (relativeDetections, originalSize);
+      return (relativeDetections, originalSize);
+    });
   }
 
   /// Detects faces in the given image data.
@@ -454,8 +523,8 @@ class YoloOnnxFaceDetection {
           await ImageMlIsolate.instance.preprocessImageYoloOnnx(
         imageData,
         normalize: true,
-        requiredWidth: _faceOptions.inputWidth,
-        requiredHeight: _faceOptions.inputHeight,
+        requiredWidth: kInputWidth,
+        requiredHeight: kInputHeight,
         maintainAspectRatio: true,
         quality: FilterQuality.medium,
       );
@@ -481,8 +550,8 @@ class YoloOnnxFaceDetection {
     final inputShape = [
       inputImageDataLists.length,
       3,
-      _faceOptions.inputHeight,
-      _faceOptions.inputWidth,
+      kInputHeight,
+      kInputWidth,
     ];
     final inputOrt = OrtValueTensor.createTensorWithDataList(
       inputImageList,
@@ -501,7 +570,7 @@ class YoloOnnxFaceDetection {
     List<OrtValue?>? outputs;
     try {
       final runOptions = OrtRunOptions();
-      final session = OrtSession.fromAddress(_sessionAddress);
+      final session = OrtSession.fromAddress(sessionAddress);
       outputs = session.run(runOptions, inputs);
       inputOrt.release();
       runOptions.release();
@@ -533,7 +602,9 @@ class YoloOnnxFaceDetection {
     // _logger.info('rawScores maximum: ${rawScoresCopy.last}');
 
     var relativeDetections = yoloOnnxFilterExtractDetections(
-      options: _faceOptions,
+      kMinScoreSigmoidThreshold,
+      kInputWidth,
+      kInputHeight,
       results: selectedResults,
     );
 
@@ -546,8 +617,8 @@ class YoloOnnxFaceDetection {
     for (final faceDetection in relativeDetections) {
       faceDetection.correctForMaintainedAspectRatio(
         Size(
-          _faceOptions.inputWidth.toDouble(),
-          _faceOptions.inputHeight.toDouble(),
+          kInputWidth.toDouble(),
+          kInputHeight.toDouble(),
         ),
         originalAndNewSizeList[imageOutputToUse].$2,
       );
@@ -556,7 +627,7 @@ class YoloOnnxFaceDetection {
     // Non-maximum suppression to remove duplicate detections
     relativeDetections = naiveNonMaxSuppression(
       detections: relativeDetections,
-      iouThreshold: _faceOptions.iouThreshold,
+      iouThreshold: kIouThreshold,
     );
 
     if (relativeDetections.isEmpty) {
@@ -574,7 +645,6 @@ class YoloOnnxFaceDetection {
 
   static List<FaceDetectionRelative> _yoloPostProcessOutputs(
     List<OrtValue?>? outputs,
-    FaceDetectionOptionsYOLO faceOptions,
     Size newSize,
   ) {
     // // Get output tensors
@@ -592,7 +662,9 @@ class YoloOnnxFaceDetection {
     // _logger.info('rawScores maximum: ${rawScoresCopy.last}');
 
     var relativeDetections = yoloOnnxFilterExtractDetections(
-      options: faceOptions,
+      kMinScoreSigmoidThreshold,
+      kInputWidth,
+      kInputHeight,
       results: firstResults,
     );
 
@@ -605,8 +677,8 @@ class YoloOnnxFaceDetection {
     for (final faceDetection in relativeDetections) {
       faceDetection.correctForMaintainedAspectRatio(
         Size(
-          faceOptions.inputWidth.toDouble(),
-          faceOptions.inputHeight.toDouble(),
+          kInputWidth.toDouble(),
+          kInputHeight.toDouble(),
         ),
         newSize,
       );
@@ -615,7 +687,7 @@ class YoloOnnxFaceDetection {
     // Non-maximum suppression to remove duplicate detections
     relativeDetections = naiveNonMaxSuppression(
       detections: relativeDetections,
-      iouThreshold: faceOptions.iouThreshold,
+      iouThreshold: kIouThreshold,
     );
 
     dev.log(
@@ -640,10 +712,10 @@ class YoloOnnxFaceDetection {
         ..setInterOpNumThreads(1)
         ..setIntraOpNumThreads(1)
         ..setSessionGraphOptimizationLevel(GraphOptimizationLevel.ortEnableAll);
-      final rawAssetFile = await rootBundle.load(config.modelPath);
+      final rawAssetFile = await rootBundle.load(kModelPath);
       final bytes = rawAssetFile.buffer.asUint8List();
       final session = OrtSession.fromBuffer(bytes, _sessionOptions!);
-      _sessionAddress = session.address;
+      sessionAddress = session.address;
 
       _isInitialized = true;
     } catch (e, s) {
@@ -658,7 +730,6 @@ class YoloOnnxFaceDetection {
   ) async {
     final inputImageList = args['inputImageList'] as Float32List;
     final inputShape = args['inputShape'] as List<int>;
-    final faceOptions = args['faceOptions'] as FaceDetectionOptionsYOLO;
     final newSize = args['newSize'] as Size;
     final sessionAddress = args['sessionAddress'] as int;
     final timeSentToIsolate = args['timeNow'] as DateTime;
@@ -700,8 +771,7 @@ class YoloOnnxFaceDetection {
       '[YOLOFaceDetectionService] interpreter.run is finished, in ${stopwatchInterpreter.elapsedMilliseconds} ms',
     );
 
-    final relativeDetections =
-        _yoloPostProcessOutputs(outputs, faceOptions, newSize);
+    final relativeDetections = _yoloPostProcessOutputs(outputs, newSize);
 
     return (relativeDetections, delaySentToIsolate, DateTime.now());
   }

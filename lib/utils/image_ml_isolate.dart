@@ -40,6 +40,7 @@ class ImageMlIsolate {
   int _activeTasks = 0;
 
   final _initLock = Lock();
+  final _functionLock = Lock();
 
   late FlutterIsolate _isolate;
   late ReceivePort _receivePort = ReceivePort();
@@ -161,8 +162,13 @@ class ImageMlIsolate {
           case ImageOperation.preprocessMobileFaceNet:
             final imageData = args['imageData'] as Uint8List;
             final facesJson = args['facesJson'] as List<Map<String, dynamic>>;
-            final (inputs, alignmentResults, isBlurs, blurValues, originalSize) =
-                await preprocessToMobileFaceNetInput(
+            final (
+              inputs,
+              alignmentResults,
+              isBlurs,
+              blurValues,
+              originalSize
+            ) = await preprocessToMobileFaceNetInput(
               imageData,
               facesJson,
             );
@@ -176,24 +182,32 @@ class ImageMlIsolate {
               'originalWidth': originalSize.width,
               'originalHeight': originalSize.height,
             });
-            case ImageOperation.preprocessMobileFaceNetOnnx:
-          final imagePath = args['imagePath'] as String;
-          final facesJson = args['facesJson'] as List<Map<String, dynamic>>;
-          final (inputs, alignmentResults, isBlurs, blurValues, originalSize) =
-              await preprocessToMobileFaceNetFloat32List(
-            imagePath,
-            facesJson,
-          );
-          final List<Map<String, dynamic>> alignmentResultsJson =
-              alignmentResults.map((result) => result.toJson()).toList();
-          sendPort.send({
-            'inputs': inputs,
-            'alignmentResultsJson': alignmentResultsJson,
-            'isBlurs': isBlurs,
-            'blurValues': blurValues,
-            'originalWidth': originalSize.width,
-            'originalHeight': originalSize.height,
-          });
+          case ImageOperation.preprocessMobileFaceNetOnnx:
+            final imagePath = args['imagePath'] as String;
+            final facesJson = args['facesJson'] as List<Map<String, dynamic>>;
+            final List<FaceDetectionRelative> relativeFaces = facesJson
+                .map((face) => FaceDetectionRelative.fromJson(face))
+                .toList();
+            final (
+              inputs,
+              alignmentResults,
+              isBlurs,
+              blurValues,
+              originalSize
+            ) = await preprocessToMobileFaceNetFloat32List(
+              imagePath,
+              relativeFaces,
+            );
+            final List<Map<String, dynamic>> alignmentResultsJson =
+                alignmentResults.map((result) => result.toJson()).toList();
+            sendPort.send({
+              'inputs': inputs,
+              'alignmentResultsJson': alignmentResultsJson,
+              'isBlurs': isBlurs,
+              'blurValues': blurValues,
+              'originalWidth': originalSize.width,
+              'originalHeight': originalSize.height,
+            });
           case ImageOperation.generateFaceThumbnail:
             final imageData = args['imageData'] as Uint8List;
             final faceDetectionJson =
@@ -234,28 +248,30 @@ class ImageMlIsolate {
     (ImageOperation, Map<String, dynamic>) message,
   ) async {
     await ensureSpawned();
-    _resetInactivityTimer();
-    final completer = Completer<dynamic>();
-    final answerPort = ReceivePort();
+    return _functionLock.synchronized(() async {
+      _resetInactivityTimer();
+      final completer = Completer<dynamic>();
+      final answerPort = ReceivePort();
 
       _activeTasks++;
-    _mainSendPort.send([message.$1.index, message.$2, answerPort.sendPort]);
+      _mainSendPort.send([message.$1.index, message.$2, answerPort.sendPort]);
 
-    answerPort.listen((receivedMessage) {
-      if (receivedMessage is Map && receivedMessage.containsKey('error')) {
-        // Handle the error
-        final errorMessage = receivedMessage['error'];
-        final errorStackTrace = receivedMessage['stackTrace'];
-        final exception = Exception(errorMessage);
-        final stackTrace = StackTrace.fromString(errorStackTrace);
-        completer.completeError(exception, stackTrace);
-      } else {
-        completer.complete(receivedMessage);
-      }
-    });
+      answerPort.listen((receivedMessage) {
+        if (receivedMessage is Map && receivedMessage.containsKey('error')) {
+          // Handle the error
+          final errorMessage = receivedMessage['error'];
+          final errorStackTrace = receivedMessage['stackTrace'];
+          final exception = Exception(errorMessage);
+          final stackTrace = StackTrace.fromString(errorStackTrace);
+          completer.completeError(exception, stackTrace);
+        } else {
+          completer.complete(receivedMessage);
+        }
+      });
       _activeTasks--;
 
-    return completer.future;
+      return completer.future;
+    });
   }
 
   /// Resets a timer that kills the isolate after a certain amount of inactivity.
@@ -453,7 +469,7 @@ class ImageMlIsolate {
       results['originalWidth'] as double,
       results['originalHeight'] as double,
     );
-    
+
     return (inputs, alignmentResults, isBlurs, blurValues, originalSize);
   }
 

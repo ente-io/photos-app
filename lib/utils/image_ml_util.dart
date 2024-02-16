@@ -820,7 +820,7 @@ Future<
 Future<(Float32List, List<AlignmentResult>, List<bool>, List<double>, Size)>
     preprocessToMobileFaceNetFloat32List(
   String imagePath,
-  List<Map<String, dynamic>> facesJson, {
+  List<FaceDetectionRelative> relativeFaces, {
   int width = 112,
   int height = 112,
 }) async {
@@ -828,9 +828,6 @@ Future<(Float32List, List<AlignmentResult>, List<bool>, List<double>, Size)>
   final Image image = await decodeImageFromData(imageData);
   final Size originalSize =
       Size(image.width.toDouble(), image.height.toDouble());
-
-  final List<FaceDetectionRelative> relativeFaces =
-      facesJson.map((face) => FaceDetectionRelative.fromJson(face)).toList();
 
   final List<FaceDetectionAbsolute> absoluteFaces =
       relativeToAbsoluteDetections(
