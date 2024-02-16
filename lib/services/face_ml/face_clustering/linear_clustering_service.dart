@@ -29,6 +29,8 @@ class FaceLinearClustering {
 
   Timer? _inactivityTimer;
   final Duration _inactivityDuration = const Duration(seconds: 30);
+  int _activeTasks = 0;
+
 
   final _initLock = Lock();
 
@@ -112,6 +114,7 @@ class FaceLinearClustering {
     final completer = Completer<dynamic>();
     final answerPort = ReceivePort();
 
+    _activeTasks++;
     _mainSendPort.send([message.$1.index, message.$2, answerPort.sendPort]);
 
     answerPort.listen((receivedMessage) {
@@ -126,6 +129,7 @@ class FaceLinearClustering {
         completer.complete(receivedMessage);
       }
     });
+    _activeTasks--;
 
     return completer.future;
   }
@@ -136,10 +140,16 @@ class FaceLinearClustering {
   void _resetInactivityTimer() {
     _inactivityTimer?.cancel();
     _inactivityTimer = Timer(_inactivityDuration, () {
-      _logger.info(
-        'Clustering Isolate has been inactive for ${_inactivityDuration.inSeconds} seconds. Killing isolate.',
+      if (_activeTasks > 0) {
+        _logger.info('Tasks are still running. Delaying isolate disposal.');
+        // Optionally, reschedule the timer to check again later.
+        _resetInactivityTimer();
+      } else {
+        _logger.info(
+        'Clustering Isolate has been inactive for ${_inactivityDuration.inSeconds} seconds with no tasks running. Killing isolate.',
       );
-      dispose();
+        dispose();
+      }
     });
   }
 
