@@ -1,166 +1,194 @@
-import 'dart:async';
+import "dart:async";
 
-import 'package:flutter/material.dart';
-import 'package:logging/logging.dart';
-import 'package:photos/ente_theme_data.dart';
-import "package:photos/generated/l10n.dart";
-import 'package:photos/models/search/search_result.dart';
-import 'package:photos/services/search_service.dart';
+import "package:flutter/material.dart";
+import "package:flutter/scheduler.dart";
+import "package:photos/core/event_bus.dart";
+import "package:photos/events/clear_and_unfocus_search_bar_event.dart";
+import "package:photos/events/tab_changed_event.dart";
+import "package:photos/models/search/index_of_indexed_stack.dart";
+import "package:photos/models/search/search_result.dart";
+import "package:photos/services/search_service.dart";
 import "package:photos/theme/ente_theme.dart";
-import 'package:photos/ui/components/buttons/icon_button_widget.dart';
-import "package:photos/ui/map/enable_map.dart";
-import "package:photos/ui/map/map_screen.dart";
-import 'package:photos/ui/viewer/search/result/no_result_widget.dart';
-import 'package:photos/ui/viewer/search/search_suffix_icon_widget.dart';
-import 'package:photos/ui/viewer/search/search_suggestions.dart';
-import 'package:photos/utils/date_time_util.dart';
-import 'package:photos/utils/debouncer.dart';
-import 'package:photos/utils/navigation_util.dart';
-
-class SearchIconWidget extends StatefulWidget {
-  const SearchIconWidget({Key? key}) : super(key: key);
-
-  @override
-  State<SearchIconWidget> createState() => _SearchIconWidgetState();
-}
-
-class _SearchIconWidgetState extends State<SearchIconWidget> {
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Hero(
-      tag: "search_icon",
-      child: IconButtonWidget(
-        iconButtonType: IconButtonType.primary,
-        icon: Icons.search,
-        onTap: () {
-          Navigator.push(
-            context,
-            TransparentRoute(
-              builder: (BuildContext context) => const SearchWidget(),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
+import "package:photos/ui/viewer/search/search_suffix_icon_widget.dart";
+import "package:photos/utils/date_time_util.dart";
+import "package:photos/utils/debouncer.dart";
 
 class SearchWidget extends StatefulWidget {
   const SearchWidget({Key? key}) : super(key: key);
 
   @override
-  State<SearchWidget> createState() => _SearchWidgetState();
+  State<SearchWidget> createState() => SearchWidgetState();
 }
 
-class _SearchWidgetState extends State<SearchWidget> {
-  String _query = "";
-  final List<SearchResult> _results = [];
+class SearchWidgetState extends State<SearchWidget> {
+  static final ValueNotifier<Stream<List<SearchResult>>?>
+      searchResultsStreamNotifier = ValueNotifier(null);
+
+  ///This stores the query that is being searched for. When going to other tabs
+  ///when searching, this state gets disposed and when coming back to the
+  ///search tab, this query is used to populate the search bar.
+  static String query = "";
+  //Debouncing + querying
+  static final isLoading = ValueNotifier(false);
   final _searchService = SearchService.instance;
-  final _debouncer = Debouncer(const Duration(milliseconds: 100));
-  final Logger _logger = Logger((_SearchWidgetState).toString());
+  final _debouncer = Debouncer(const Duration(milliseconds: 200));
+  late FocusNode focusNode;
+  StreamSubscription<TabDoubleTapEvent>? _tabDoubleTapEvent;
+  double _bottomPadding = 0.0;
+  double _distanceOfWidgetFromBottom = 0;
+  GlobalKey widgetKey = GlobalKey();
+  TextEditingController textController = TextEditingController();
+  late final StreamSubscription<ClearAndUnfocusSearchBar>
+      _clearAndUnfocusSearchBar;
+
+  @override
+  void initState() {
+    super.initState();
+    focusNode = FocusNode();
+    _tabDoubleTapEvent =
+        Bus.instance.on<TabDoubleTapEvent>().listen((event) async {
+      debugPrint("Firing now ${event.selectedIndex}");
+      if (mounted && event.selectedIndex == 3) {
+        focusNode.requestFocus();
+      }
+    });
+
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      //This buffer is for doing this operation only after SearchWidget's
+      //animation is complete.
+      Future.delayed(const Duration(milliseconds: 300), () {
+        final RenderBox box =
+            widgetKey.currentContext!.findRenderObject() as RenderBox;
+        final heightOfWidget = box.size.height;
+        final offsetPosition = box.localToGlobal(Offset.zero);
+        final y = offsetPosition.dy;
+        final heightOfScreen = MediaQuery.sizeOf(context).height;
+        _distanceOfWidgetFromBottom = heightOfScreen - (y + heightOfWidget);
+      });
+
+      textController.addListener(textControllerListener);
+    });
+
+    //Populate the serach tab with the latest query when coming back
+    //to the serach tab.
+    textController.text = query;
+
+    _clearAndUnfocusSearchBar =
+        Bus.instance.on<ClearAndUnfocusSearchBar>().listen((event) {
+      textController.clear();
+      focusNode.unfocus();
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _bottomPadding =
+        (MediaQuery.viewInsetsOf(context).bottom - _distanceOfWidgetFromBottom);
+    if (_bottomPadding < 0) {
+      _bottomPadding = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _debouncer.cancelDebounce();
+    focusNode.dispose();
+    _tabDoubleTapEvent?.cancel();
+    textController.removeListener(textControllerListener);
+    textController.dispose();
+    _clearAndUnfocusSearchBar.cancel();
+    super.dispose();
+  }
+
+  Future<void> textControllerListener() async {
+    isLoading.value = true;
+    _debouncer.run(() async {
+      if (mounted) {
+        query = textController.text;
+        IndexOfStackNotifier().isSearchQueryEmpty = query.isEmpty;
+        searchResultsStreamNotifier.value =
+            _getSearchResultsStream(context, query);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.pop(context);
-      },
-      child: Container(
-        color: Theme.of(context).colorScheme.searchResultsBackgroundColor,
-        child: SafeArea(
+    final colorScheme = getEnteColorScheme(context);
+    return RepaintBoundary(
+      key: widgetKey,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: _bottomPadding),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    height: 44,
-                    color: Theme.of(context).colorScheme.defaultBackgroundColor,
-                    child: TextFormField(
-                      style: Theme.of(context).textTheme.titleMedium,
-                      // Below parameters are to disable auto-suggestion
-                      enableSuggestions: false,
-                      autocorrect: false,
-                      // Above parameters are to disable auto-suggestion
-                      decoration: InputDecoration(
-                        hintText: S.of(context).searchHintText,
-                        filled: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 10,
-                        ),
-                        border: const UnderlineInputBorder(
-                          borderSide: BorderSide.none,
-                        ),
-                        focusedBorder: const UnderlineInputBorder(
-                          borderSide: BorderSide.none,
-                        ),
-                        prefixIconConstraints: const BoxConstraints(
-                          maxHeight: 44,
-                          maxWidth: 44,
-                          minHeight: 44,
-                          minWidth: 44,
-                        ),
-                        suffixIconConstraints: const BoxConstraints(
-                          maxHeight: 44,
-                          maxWidth: 44,
-                          minHeight: 44,
-                          minWidth: 44,
-                        ),
-                        prefixIcon: Hero(
-                          tag: "search_icon",
-                          child: Icon(
-                            Icons.search,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .iconColor
-                                .withOpacity(0.5),
-                          ),
-                        ),
-                        /*Using valueListenableBuilder inside a stateful widget because this widget is only rebuild when
-                        setState is called when deboucncing is over and the spinner needs to be shown while debouncing */
-                        suffixIcon: ValueListenableBuilder(
-                          valueListenable: _debouncer.debounceActiveNotifier,
-                          builder: (
-                            BuildContext context,
-                            bool isDebouncing,
-                            Widget? child,
-                          ) {
-                            return SearchSuffixIcon(
-                              isDebouncing,
-                            );
-                          },
+            padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                color: colorScheme.backgroundBase,
+                child: Container(
+                  height: 44,
+                  color: colorScheme.fillFaint,
+                  child: TextFormField(
+                    controller: textController,
+                    focusNode: focusNode,
+                    style: Theme.of(context).textTheme.titleMedium,
+                    // Below parameters are to disable auto-suggestion
+                    enableSuggestions: false,
+                    autocorrect: false,
+                    // Above parameters are to disable auto-suggestion
+                    decoration: InputDecoration(
+                      // hintText: S.of(context).searchHintText,
+                      hintText: "Search",
+                      filled: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 10,
+                      ),
+                      border: const UnderlineInputBorder(
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: const UnderlineInputBorder(
+                        borderSide: BorderSide.none,
+                      ),
+                      prefixIconConstraints: const BoxConstraints(
+                        maxHeight: 44,
+                        maxWidth: 44,
+                        minHeight: 44,
+                        minWidth: 44,
+                      ),
+                      suffixIconConstraints: const BoxConstraints(
+                        maxHeight: 44,
+                        maxWidth: 44,
+                        minHeight: 44,
+                        minWidth: 44,
+                      ),
+                      prefixIcon: Hero(
+                        tag: "search_icon",
+                        child: Icon(
+                          Icons.search,
+                          color: colorScheme.strokeFaint,
                         ),
                       ),
-                      onChanged: (value) async {
-                        _query = value;
-                        final List<SearchResult> allResults =
-                            await getSearchResultsForQuery(context, value);
-                        /*checking if _query == value to make sure that the results are from the current query
-                        and not from the previous query (race condition).*/
-                        if (mounted && _query == value) {
-                          setState(() {
-                            _results.clear();
-                            _results.addAll(allResults);
-                          });
-                        }
-                      },
-                      autofocus: true,
+                      /*Using valueListenableBuilder inside a stateful widget because this widget is only rebuild when
+                      setState is called when deboucncing is over and the spinner needs to be shown while debouncing */
+                      suffixIcon: ValueListenableBuilder(
+                        valueListenable: isLoading,
+                        builder: (
+                          BuildContext context,
+                          bool isSearching,
+                          Widget? child,
+                        ) {
+                          return SearchSuffixIcon(
+                            isSearching,
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ),
-                _results.isNotEmpty
-                    ? SearchSuggestionsWidget(_results)
-                    : _query.isNotEmpty
-                        ? const NoResultWidget()
-                        : const NavigateToMap(),
-              ],
+              ),
             ),
           ),
         ),
@@ -168,112 +196,99 @@ class _SearchWidgetState extends State<SearchWidget> {
     );
   }
 
-  @override
-  void dispose() {
-    _debouncer.cancelDebounce();
-    super.dispose();
-  }
-
-  Future<List<SearchResult>> getSearchResultsForQuery(
+  Stream<List<SearchResult>> _getSearchResultsStream(
     BuildContext context,
     String query,
-  ) async {
-    final Completer<List<SearchResult>> completer = Completer();
+  ) {
+    int resultCount = 0;
+    final maxResultCount = _isYearValid(query) ? 11 : 10;
+    final streamController = StreamController<List<SearchResult>>();
 
-    _debouncer.run(
-      () {
-        return _getSearchResultsFromService(context, query, completer);
+    if (query.isEmpty) {
+      streamController.sink.add([]);
+      streamController.close();
+      return streamController.stream;
+    }
+
+    void onResultsReceived(List<SearchResult> results) {
+      streamController.sink.add(results);
+      resultCount++;
+      if (resultCount == maxResultCount) {
+        streamController.close();
+      }
+    }
+
+    if (_isYearValid(query)) {
+      _searchService.getYearSearchResults(query).then((yearSearchResults) {
+        onResultsReceived(yearSearchResults);
+      });
+    }
+
+    _searchService.getHolidaySearchResults(context, query).then(
+      (holidayResults) {
+        onResultsReceived(holidayResults);
       },
     );
 
-    return completer.future;
-  }
+    _searchService.getFileTypeResults(context, query).then(
+      (fileTypeSearchResults) {
+        onResultsReceived(fileTypeSearchResults);
+      },
+    );
 
-  Future<void> _getSearchResultsFromService(
-    BuildContext context,
-    String query,
-    Completer completer,
-  ) async {
-    final List<SearchResult> allResults = [];
-    if (query.isEmpty) {
-      completer.complete(allResults);
-      return;
-    }
-    try {
-      if (_isYearValid(query)) {
-        final yearResults = await _searchService.getYearSearchResults(query);
-        allResults.addAll(yearResults);
-      }
+    _searchService.getCaptionAndNameResults(query).then(
+      (captionAndDisplayNameResult) {
+        onResultsReceived(captionAndDisplayNameResult);
+      },
+    );
 
-      final holidayResults =
-      await _searchService.getHolidaySearchResults(context, query);
-      allResults.addAll(holidayResults);
+    _searchService.getFileExtensionResults(query).then(
+      (fileExtnResult) {
+        onResultsReceived(fileExtnResult);
+      },
+    );
 
-      final fileTypeSearchResults =
-          await _searchService.getFileTypeResults(query);
-      allResults.addAll(fileTypeSearchResults);
+    _searchService.getLocationResults(query).then(
+      (locationResult) {
+        onResultsReceived(locationResult);
+      },
+    );
 
-      final captionAndDisplayNameResult =
-          await _searchService.getCaptionAndNameResults(query);
-      allResults.addAll(captionAndDisplayNameResult);
+    _searchService.getCollectionSearchResults(query).then(
+      (collectionResults) {
+        onResultsReceived(collectionResults);
+      },
+    );
 
-      final fileExtnResult =
-          await _searchService.getFileExtensionResults(query);
-      allResults.addAll(fileExtnResult);
+    _searchService.getMonthSearchResults(context, query).then(
+      (monthResults) {
+        onResultsReceived(monthResults);
+      },
+    );
 
-      final locationResult = await _searchService.getLocationResults(query);
-      allResults.addAll(locationResult);
+    _searchService.getDateResults(context, query).then(
+      (possibleEvents) {
+        onResultsReceived(possibleEvents);
+      },
+    );
 
-      final collectionResults =
-          await _searchService.getCollectionSearchResults(query);
-      allResults.addAll(collectionResults);
+    _searchService.getMagicSearchResults(context, query).then(
+      (magicResults) {
+        onResultsReceived(magicResults);
+      },
+    );
 
-      final monthResults =
-          await _searchService.getMonthSearchResults(context, query);
-      allResults.addAll(monthResults);
+    _searchService.getContactSearchResults(query).then(
+      (contactResults) {
+        onResultsReceived(contactResults);
+      },
+    );
 
-      final possibleEvents =
-          await _searchService.getDateResults(context, query);
-      allResults.addAll(possibleEvents);
-    } catch (e, s) {
-      _logger.severe("error during search", e, s);
-    }
-    completer.complete(allResults);
+    return streamController.stream;
   }
 
   bool _isYearValid(String year) {
     final yearAsInt = int.tryParse(year); //returns null if cannot be parsed
     return yearAsInt != null && yearAsInt <= currentYear;
-  }
-}
-
-class NavigateToMap extends StatelessWidget {
-  const NavigateToMap({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = getEnteColorScheme(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: IconButtonWidget(
-        icon: Icons.map_sharp,
-        iconButtonType: IconButtonType.primary,
-        defaultColor: colorScheme.backgroundElevated,
-        pressedColor: colorScheme.backgroundElevated2,
-        size: 28,
-        onTap: () async {
-          final bool result = await requestForMapEnable(context);
-          if (result) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (context) => MapScreen(
-                  filesFutureFn: SearchService.instance.getAllFiles,
-                ),
-              ),
-            );
-          }
-        },
-      ),
-    );
   }
 }

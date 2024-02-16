@@ -63,7 +63,7 @@ class DebugSectionWidget extends StatelessWidget {
           trailingIconIsMuted: true,
           onTap: () async {
             await IgnoredFilesService.instance.reset();
-            SyncService.instance.sync();
+            SyncService.instance.sync().ignore();
             showShortToast(context, "Done");
           },
         ),

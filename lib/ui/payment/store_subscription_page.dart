@@ -52,6 +52,7 @@ class _StoreSubscriptionPageState extends State<StoreSubscriptionPage> {
   late ProgressDialog _dialog;
   late UserDetails _userDetails;
   late bool _hasActiveSubscription;
+  bool _hideCurrentPlanSelection = false;
   late FreePlan _freePlan;
   late List<BillingPlan> _plans;
   bool _hasLoadedData = false;
@@ -118,11 +119,13 @@ class _StoreSubscriptionPageState extends State<StoreSubscriptionPage> {
                 ? S.of(context).googlePlayId
                 : S.of(context).appleId;
             final String message = S.of(context).subAlreadyLinkedErrMessage(id);
+            // ignore: unawaited_futures
             showErrorDialog(context, title, message);
             return;
           } catch (e) {
             _logger.warning("Could not complete payment ", e);
             await _dialog.hide();
+            // ignore: unawaited_futures
             showErrorDialog(
               context,
               S.of(context).paymentFailed,
@@ -174,10 +177,14 @@ class _StoreSubscriptionPageState extends State<StoreSubscriptionPage> {
   }
 
   Future<void> _fetchSubData() async {
+    // ignore: unawaited_futures
     _userService.getUserDetailsV2(memoryCount: false).then((userDetails) async {
       _userDetails = userDetails;
       _currentSubscription = userDetails.subscription;
+
       _hasActiveSubscription = _currentSubscription!.isValid();
+      _hideCurrentPlanSelection =
+          _currentSubscription?.attributes?.isCancelled ?? false;
       showYearlyPlan = _currentSubscription!.isYearlyPlan();
       final billingPlans = await _billingService.getBillingPlans();
       _isActiveStripeSubscriber =
@@ -239,8 +246,13 @@ class _StoreSubscriptionPageState extends State<StoreSubscriptionPage> {
       widgets.add(_showSubscriptionToggle());
     }
 
-    if (_hasActiveSubscription) {
-      widgets.add(ValidityWidget(currentSubscription: _currentSubscription));
+    if (_currentSubscription != null) {
+      widgets.add(
+        ValidityWidget(
+          currentSubscription: _currentSubscription,
+          bonusData: _userDetails.bonusData,
+        ),
+      );
     }
 
     if (_currentSubscription!.productID == freeProductID) {
@@ -307,7 +319,9 @@ class _StoreSubscriptionPageState extends State<StoreSubscriptionPage> {
             singleBorderRadius: 4,
             alignCaptionedTextToLeft: true,
             onTap: () async {
-              _billingService.launchFamilyPortal(context, _userDetails);
+              unawaited(
+                _billingService.launchFamilyPortal(context, _userDetails),
+              );
             },
           ),
         ),
@@ -443,6 +457,7 @@ class _StoreSubscriptionPageState extends State<StoreSubscriptionPage> {
               if (isActive) {
                 return;
               }
+              // ignore: unawaited_futures
               showErrorDialog(
                 context,
                 S.of(context).sorry,
@@ -453,7 +468,7 @@ class _StoreSubscriptionPageState extends State<StoreSubscriptionPage> {
               storage: plan.storage,
               price: plan.price,
               period: plan.period,
-              isActive: isActive,
+              isActive: isActive && !_hideCurrentPlanSelection,
             ),
           ),
         ),
@@ -504,6 +519,7 @@ class _StoreSubscriptionPageState extends State<StoreSubscriptionPage> {
                   "addOnBonus ${convertBytesToReadableFormat(addOnBonus)},"
                   "overshooting by ${convertBytesToReadableFormat(_userDetails.getFamilyOrPersonalUsage() - (plan.storage + addOnBonus))}",
                 );
+                // ignore: unawaited_futures
                 showErrorDialog(
                   context,
                   S.of(context).sorry,
@@ -515,11 +531,14 @@ class _StoreSubscriptionPageState extends State<StoreSubscriptionPage> {
               final ProductDetailsResponse response =
                   await InAppPurchase.instance.queryProductDetails({productID});
               if (response.notFoundIDs.isNotEmpty) {
-                _logger.severe(
-                  "Could not find products: " + response.notFoundIDs.toString(),
-                );
+                final errMsg = "Could not find products: " +
+                    response.notFoundIDs.toString();
+                _logger.severe(errMsg);
                 await _dialog.hide();
-                showGenericErrorDialog(context: context);
+                await showGenericErrorDialog(
+                  context: context,
+                  error: Exception(errMsg),
+                );
                 return;
               }
               final isCrossGradingOnAndroid = Platform.isAndroid &&
@@ -528,6 +547,7 @@ class _StoreSubscriptionPageState extends State<StoreSubscriptionPage> {
                   _currentSubscription!.productID != plan.androidID;
               if (isCrossGradingOnAndroid) {
                 await _dialog.hide();
+                // ignore: unawaited_futures
                 showErrorDialog(
                   context,
                   S.of(context).couldNotUpdateSubscription,

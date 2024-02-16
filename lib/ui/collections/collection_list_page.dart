@@ -45,7 +45,7 @@ class _CollectionListPageState extends State<CollectionListPage> {
     collections = widget.collections;
     _collectionUpdatesSubscription =
         Bus.instance.on<CollectionUpdatedEvent>().listen((event) async {
-      refreshCollections();
+      unawaited(refreshCollections());
     });
   }
 
@@ -60,6 +60,7 @@ class _CollectionListPageState extends State<CollectionListPage> {
     return Scaffold(
       body: SafeArea(
         child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
           controller: ScrollController(
             initialScrollOffset: widget.initialScrollOffset ?? 0,
           ),

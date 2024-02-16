@@ -1,3 +1,5 @@
+import "dart:async";
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
@@ -7,11 +9,13 @@ import 'package:photos/core/event_bus.dart';
 import 'package:photos/events/account_configured_event.dart';
 import 'package:photos/events/subscription_purchased_event.dart';
 import "package:photos/generated/l10n.dart";
+import "package:photos/l10n/l10n.dart";
 import "package:photos/models/key_gen_result.dart";
 import 'package:photos/services/user_service.dart';
 import 'package:photos/ui/account/recovery_key_page.dart';
 import 'package:photos/ui/common/dynamic_fab.dart';
 import 'package:photos/ui/common/web_page.dart';
+import "package:photos/ui/components/models/button_type.dart";
 import 'package:photos/ui/payment/subscription.dart';
 import 'package:photos/utils/dialog_util.dart';
 import 'package:photos/utils/navigation_util.dart';
@@ -27,9 +31,10 @@ enum PasswordEntryMode {
 class PasswordEntryPage extends StatefulWidget {
   final PasswordEntryMode mode;
 
-  const PasswordEntryPage({required this.mode, Key?
-  key,})
-      : super(key: key);
+  const PasswordEntryPage({
+    required this.mode,
+    Key? key,
+  }) : super(key: key);
 
   @override
   State<PasswordEntryPage> createState() => _PasswordEntryPageState();
@@ -379,13 +384,18 @@ class _PasswordEntryPageState extends State<PasswordEntryPage> {
   }
 
   void _updatePassword() async {
+    final logOutFromOthers = await logOutFromOtherDevices(context);
     final dialog =
         createProgressDialog(context, S.of(context).generatingEncryptionKeys);
     await dialog.show();
     try {
       final result = await Configuration.instance
           .getAttributesForNewPassword(_passwordController1.text);
-      await UserService.instance.updateKeyAttributes(result.item1, result.item2);
+      await UserService.instance.updateKeyAttributes(
+        result.item1,
+        result.item2,
+        logoutOtherDevices: logOutFromOthers,
+      );
       await dialog.hide();
       showShortToast(context, S.of(context).passwordChangedSuccessfully);
       Navigator.of(context).pop();
@@ -396,8 +406,28 @@ class _PasswordEntryPageState extends State<PasswordEntryPage> {
     } catch (e, s) {
       _logger.severe(e, s);
       await dialog.hide();
-      showGenericErrorDialog(context: context);
+      await showGenericErrorDialog(context: context, error: e);
     }
+  }
+
+  Future<bool> logOutFromOtherDevices(BuildContext context) async {
+    bool logOutFromOther = true;
+    await showChoiceDialog(
+      context,
+      title: context.l10n.signOutFromOtherDevices,
+      body: context.l10n.signOutOtherBody,
+      isDismissible: false,
+      firstButtonLabel: context.l10n.signOutOtherDevices,
+      firstButtonType: ButtonType.critical,
+      firstButtonOnTap: () async {
+        logOutFromOther = true;
+      },
+      secondButtonLabel: context.l10n.doNotSignOut,
+      secondButtonOnTap: () async {
+        logOutFromOther = false;
+      },
+    );
+    return logOutFromOther;
   }
 
   Future<void> _showRecoveryCodeDialog(String password) async {
@@ -405,7 +435,8 @@ class _PasswordEntryPageState extends State<PasswordEntryPage> {
         createProgressDialog(context, S.of(context).generatingEncryptionKeys);
     await dialog.show();
     try {
-      final KeyGenResult result = await Configuration.instance.generateKey(password);
+      final KeyGenResult result =
+          await Configuration.instance.generateKey(password);
       Configuration.instance.setVolatilePassword(null);
       await dialog.hide();
       onDone() async {
@@ -416,6 +447,7 @@ class _PasswordEntryPageState extends State<PasswordEntryPage> {
           await dialog.hide();
           Configuration.instance.setVolatilePassword(null);
           Bus.instance.fire(AccountConfiguredEvent());
+          // ignore: unawaited_futures
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(
               builder: (BuildContext context) {
@@ -427,10 +459,11 @@ class _PasswordEntryPageState extends State<PasswordEntryPage> {
         } catch (e, s) {
           _logger.severe(e, s);
           await dialog.hide();
-          showGenericErrorDialog(context: context);
+          await showGenericErrorDialog(context: context, error: e);
         }
       }
 
+      // ignore: unawaited_futures
       routeToPage(
         context,
         RecoveryKeyPage(
@@ -446,13 +479,14 @@ class _PasswordEntryPageState extends State<PasswordEntryPage> {
       _logger.severe(e);
       await dialog.hide();
       if (e is UnsupportedError) {
+        // ignore: unawaited_futures
         showErrorDialog(
           context,
           S.of(context).insecureDevice,
           S.of(context).sorryWeCouldNotGenerateSecureKeysOnThisDevicennplease,
         );
       } else {
-        showGenericErrorDialog(context: context);
+        await showGenericErrorDialog(context: context, error: e);
       }
     }
   }

@@ -406,6 +406,15 @@
   },
   "photoGridSize": "Photo grid size",
   "manageDeviceStorage": "Manage device storage",
+  "machineLearning": "Machine learning",
+  "magicSearch": "Magic search",
+  "magicSearchDescription": "Please note that this will result in a higher bandwidth and battery usage until all items are indexed.",
+  "loadingModel": "Downloading models...",
+  "waitingForWifi": "Waiting for WiFi...",
+  "status": "Status",
+  "indexedItems": "Indexed items",
+  "pendingItems": "Pending items",
+  "clearIndexes": "Clear indexes",
   "selectFoldersForBackup": "Select folders for backup",
   "selectedFoldersWillBeEncryptedAndBackedUp": "Selected folders will be encrypted and backed up",
   "unselectAll": "Unselect all",
@@ -489,7 +498,7 @@
   },
   "remindToEmptyEnteTrash": "Also empty your \"Trash\" to claim the freed up space",
   "sparkleSuccess": "✨ Success",
-  "duplicateFileCountWithStorageSaved": "Your have cleaned up {count, plural, one{{count} duplicate file} other{{count} duplicate files}}, saving ({storageSaved}!)",
+  "duplicateFileCountWithStorageSaved": "You have cleaned up {count, plural, one{{count} duplicate file} other{{count} duplicate files}}, saving ({storageSaved}!)",
   "@duplicateFileCountWithStorageSaved": {
     "description": "The text to display when the user has successfully cleaned up duplicate files",
     "type": "text",
@@ -555,9 +564,10 @@
     "type": "text"
   },
   "faqs": "FAQs",
-  "renewsOn": "Renews on {endDate}",
+  "renewsOn": "Subscription renews on {endDate}",
   "freeTrialValidTill": "Free trial valid till {endDate}",
   "validTill": "Valid till {endDate}",
+  "addOnValidTill": "Your {storageAmount} add-on is valid till {endDate}",
   "playStoreFreeTrialValidTill": "Free trial valid till {endDate}.\nYou can choose a paid plan afterwards.",
   "subWillBeCancelledOn": "Your subscription will be cancelled on {endDate}",
   "subscription": "Subscription",
@@ -695,6 +705,21 @@
   "deleteEmptyAlbumsWithQuestionMark": "Delete empty albums?",
   "deleteAlbumsDialogBody": "This will delete all empty albums. This is useful when you want to reduce the clutter in your album list.",
   "deleteProgress": "Deleting {currentlyDeleting} / {totalCount}",
+  "genericProgress": "Processing {currentlyProcessing} / {totalCount}",
+  "@genericProgress": {
+    "description": "Generic progress text to display when processing multiple items",
+    "type": "text",
+    "placeholders": {
+      "currentlyProcessing": {
+        "example": "1",
+        "type": "int"
+      },
+      "totalCount": {
+        "example": "10",
+        "type": "int"
+      }
+    }
+  },
   "permanentlyDelete": "Permanently delete",
   "canOnlyCreateLinkForFilesOwnedByYou": "Can only create link for files owned by you",
   "publicLinkCreated": "Public link created",
@@ -899,10 +924,10 @@
     "description": "Text to tell user how many memories have been preserved",
     "placeholders": {
       "completed": {
-        "type": "int"
+        "type": "String"
       },
       "total": {
-        "type": "int"
+        "type": "String"
       }
     }
   },
@@ -928,6 +953,8 @@
   "itLooksLikeSomethingWentWrongPleaseRetryAfterSome": "It looks like something went wrong. Please retry after some time. If the error persists, please contact our support team.",
   "error": "Error",
   "tempErrorContactSupportIfPersists": "It looks like something went wrong. Please retry after some time. If the error persists, please contact our support team.",
+  "networkHostLookUpErr": "Unable to connect to Ente, please check your network settings and contact support if the error persists.",
+  "networkConnectionRefusedErr": "Unable to connect to Ente, please retry after sometime. If the error persists, please contact support.",
   "cachedData": "Cached data",
   "clearCaches": "Clear caches",
   "remoteImages": "Remote images",
@@ -948,7 +975,7 @@
   "didYouKnow": "Did you know?",
   "loadingMessage": "Loading your photos...",
   "loadMessage1": "You can share your subscription with your family",
-  "loadMessage2": "We have preserved over 10 million memories so far",
+  "loadMessage2": "We have preserved over 30 million memories so far",
   "loadMessage3": "We keep 3 copies of your data, one in an underground fallout shelter",
   "loadMessage4": "All our apps are open source",
   "loadMessage5": "Our source code and cryptography have been externally audited",
@@ -956,12 +983,22 @@
   "loadMessage7": "Our mobile apps run in the background to encrypt and backup any new photos you click",
   "loadMessage8": "web.ente.io has a slick uploader",
   "loadMessage9": "We use Xchacha20Poly1305 to safely encrypt your data",
+  "photoDescriptions": "Photo descriptions",
+  "fileTypesAndNames": "File types and names",
+  "location": "Location",
+  "moments": "Moments",
+  "searchFaceEmptySection": "Find all photos of a person",
+  "searchDatesEmptySection": "Search by a date, month or year",
+  "searchLocationEmptySection": "Group photos that are taken within some radius of a photo",
+  "searchPeopleEmptySection": "Invite people, and you'll see all photos shared by them here",
+  "searchAlbumsEmptySection": "Albums",
+  "searchFileTypesAndNamesEmptySection": "File types and names",
+  "searchCaptionEmptySection": "Add descriptions like \"#trip\" in photo info to quickly find them here",
   "language": "Language",
   "selectLanguage": "Select Language",
   "locationName": "Location name",
   "addLocation": "Add location",
   "groupNearbyPhotos": "Group nearby photos",
-  "location": "Location",
   "kiloMeterUnit": "km",
   "addLocationButton": "Add",
   "radius": "Radius",
@@ -1103,7 +1140,61 @@
   "crashReporting": "Crash reporting",
   "addToHiddenAlbum": "Add to hidden album",
   "moveToHiddenAlbum": "Move to hidden album",
-  "deleteConfirmDialogBody": "This account is linked to other ente apps, if you use any.\\n\\nYour uploaded data, across all ente apps, will be scheduled for deletion, and your account will be permanently deleted.",
+  "fileTypes": "File types",
+  "deleteConfirmDialogBody": "This account is linked to other ente apps, if you use any. Your uploaded data, across all ente apps, will be scheduled for deletion, and your account will be permanently deleted.",
+  "hearUsWhereTitle": "How did you hear about Ente? (optional)",
+  "hearUsExplanation": "We don't track app installs. It'd help if you told us where you found us!",
+  "viewAddOnButton": "View add-ons",
+  "addOns": "Add-ons",
+  "addOnPageSubtitle": "Details of add-ons",
+  "yourMap": "Your map",
+  "modifyYourQueryOrTrySearchingFor": "Modify your query, or try searching for",
+  "blackFridaySale": "Black Friday Sale",
+  "upto50OffUntil4thDec": "Upto 50% off, until 4th Dec.",
+  "photos": "Photos",
+  "videos": "Videos",
+  "livePhotos": "Live Photos",
+  "searchHint1": "Fast, on-device search",
+  "searchHint2": "Photo dates, descriptions",
+  "searchHint3": "Albums, file names, and types",
+  "searchHint4": "Location",
+  "searchHint5": "Coming soon: Faces & magic search ✨",
+  "addYourPhotosNow": "Add your photos now",
+  "searchResultCount": "{count, plural, one{{count} result found} other{{count} results found}}",
+  "@searchResultCount": {
+    "description": "Text to tell user how many results were found for their search query",
+    "placeholders": {
+      "count": {
+        "example": "1|2|3",
+        "type": "int"
+      }
+    }
+  },
+  "faces": "Faces",
+  "contents": "Contents",
+  "addNew": "Add new",
+  "@addNew": {
+    "description": "Text to add a new item (location tag, album, caption etc)"
+  },
+  "contacts": "Contacts",
+  "noInternetConnection": "No internet connection",
+  "pleaseCheckYourInternetConnectionAndTryAgain": "Please check your internet connection and try again.",
+  "signOutFromOtherDevices": "Sign out from other devices",
+  "signOutOtherBody": "If you think someone might know your password, you can force all other devices using your account to sign out.",
+  "signOutOtherDevices": "Sign out other devices",
+  "doNotSignOut": "Do not sign out",
+  "editLocation": "Edit location",
+  "selectALocation": "Select a location",
+  "selectALocationFirst": "Select a location first",
+  "changeLocationOfSelectedItems": "Change location of selected items?",
+  "editsToLocationWillOnlyBeSeenWithinEnte": "Edits to location will only be seen within Ente",
+  "cleanUncategorized": "Clean Uncategorized",
+  "playOnTv": "Play album on TV",
+  "pair": "Pair",
+  "deviceNotFound": "Device not found",
+  "castInstruction": "Visit cast.ente.io on the device you want to pair.\n\nEnter the code below to play the album on your TV.",
+  "deviceCodeHint": "Enter the code",
+  "joinDiscord": "Join Discord",
   "emergencyContacts": "Emergency Contacts",
   "acceptTrustInvite": "Accept Invite",
   "declineTrustInvite": "Decline Invite",
@@ -1115,10 +1206,5 @@
   "cancelAccountRecovery": "Cancel recovery",
   "cancelAccountRecoveryBody": "Are you sure you want to cancel recovery?",
   "startAccountRecoveryTitle": "Start recovery",
-  "hearUsWhereTitle": "How did you hear about Ente? (optional)",
-  "hearUsExplanation": "We don't track app installs. It'd help if you told us where you found us!",
-  "viewAddOnButton": "View add-ons",
-  "addOns": "Add-ons",
-  "addOnPageSubtitle": "Details of add-ons",
   "whyAddTrustContact": "Trusted contact can help in recovering your data."
 }

@@ -6,10 +6,14 @@ import "package:flutter/cupertino.dart";
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:photos/core/configuration.dart';
+import "package:photos/core/constants.dart";
 import 'package:photos/core/event_bus.dart';
+import "package:photos/core/network/network.dart";
 import "package:photos/db/files_db.dart";
 import 'package:photos/events/subscription_purchased_event.dart';
+import "package:photos/gateways/cast_gw.dart";
 import "package:photos/generated/l10n.dart";
+import "package:photos/l10n/l10n.dart";
 import 'package:photos/models/backup_status.dart';
 import 'package:photos/models/collection/collection.dart';
 import 'package:photos/models/device_collection.dart';
@@ -36,6 +40,7 @@ import 'package:photos/utils/dialog_util.dart';
 import 'package:photos/utils/magic_util.dart';
 import 'package:photos/utils/navigation_util.dart';
 import 'package:photos/utils/toast_util.dart';
+import "package:uuid/uuid.dart";
 
 class GalleryAppBarWidget extends StatefulWidget {
   final GalleryType type;
@@ -64,6 +69,7 @@ enum AlbumPopupAction {
   ownedArchive,
   sharedArchive,
   ownedHide,
+  playOnTv,
   sort,
   leave,
   freeUpSpace,
@@ -71,6 +77,7 @@ enum AlbumPopupAction {
   addPhotos,
   pinAlbum,
   removeLink,
+  cleanUncategorized,
 }
 
 class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
@@ -113,15 +120,14 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
         : AppBar(
             elevation: 0,
             centerTitle: false,
-            title: TextButton(
-              child: Text(
-                _appBarTitle!,
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineSmall!
-                    .copyWith(fontSize: 16),
-              ),
-              onPressed: () => _renameAlbum(context),
+            title: Text(
+              _appBarTitle!,
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineSmall!
+                  .copyWith(fontSize: 16),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
             actions: _getDefaultActions(context),
           );
@@ -136,6 +142,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
         'Type of galler $galleryType is not supported for '
         'rename',
       );
+
       return;
     }
     final result = await showTextInputDialog(
@@ -173,7 +180,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
       },
     );
     if (result is Exception) {
-      showGenericErrorDialog(context: context);
+      await showGenericErrorDialog(context: context, error: result);
     }
   }
 
@@ -205,7 +212,10 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
     );
     if (actionResult?.action != null && mounted) {
       if (actionResult!.action == ButtonAction.error) {
-        showGenericErrorDialog(context: context);
+        await showGenericErrorDialog(
+          context: context,
+          error: actionResult.exception,
+        );
       } else if (actionResult.action == ButtonAction.first) {
         Navigator.of(context).pop();
       }
@@ -225,13 +235,13 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
           .getBackupStatus(pathID: widget.deviceCollection!.id);
     } catch (e) {
       await dialog.hide();
-      showGenericErrorDialog(context: context);
+      unawaited(showGenericErrorDialog(context: context, error: e));
       return;
     }
 
     await dialog.hide();
     if (status.localIDs.isEmpty) {
-      showErrorDialog(
+      await showErrorDialog(
         context,
         S.of(context).allClear,
         S.of(context).youveNoFilesInThisAlbumThatCanBeDeleted,
@@ -254,7 +264,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
       body: S.of(context).youHaveSuccessfullyFreedUp(formatBytes(status.size)),
       firstButtonLabel: S.of(context).rateUs,
       firstButtonOnTap: () async {
-        UpdateService.instance.launchReviewUrl();
+        await UpdateService.instance.launchReviewUrl();
       },
       firstButtonType: ButtonType.primary,
       secondButtonLabel: S.of(context).ok,
@@ -380,6 +390,23 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
         ),
       );
     }
+
+    if (galleryType == GalleryType.uncategorized) {
+      items.add(
+        PopupMenuItem(
+          value: AlbumPopupAction.cleanUncategorized,
+          child: Row(
+            children: [
+              const Icon(Icons.crop_original_outlined),
+              const Padding(
+                padding: EdgeInsets.all(8),
+              ),
+              Text(S.of(context).cleanUncategorized),
+            ],
+          ),
+        ),
+      );
+    }
     if (galleryType.canPin()) {
       items.add(
         PopupMenuItem(
@@ -446,6 +473,22 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
               Text(
                 isHidden ? S.of(context).unhide : S.of(context).hide,
               ),
+            ],
+          ),
+        ),
+      );
+    }
+    if (widget.collection != null && isInternalUser) {
+      items.add(
+        PopupMenuItem(
+          value: AlbumPopupAction.playOnTv,
+          child: Row(
+            children: [
+              const Icon(Icons.tv_outlined),
+              const Padding(
+                padding: EdgeInsets.all(8),
+              ),
+              Text(context.l10n.playOnTv),
             ],
           ),
         ),
@@ -558,6 +601,8 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
               await _removeQuickLink();
             } else if (value == AlbumPopupAction.leave) {
               await _leaveAlbum(context);
+            } else if (value == AlbumPopupAction.playOnTv) {
+              await castAlbum();
             } else if (value == AlbumPopupAction.freeUpSpace) {
               await _deleteBackedUpFiles(context);
             } else if (value == AlbumPopupAction.setCover) {
@@ -583,6 +628,11 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
               }
             } else if (value == AlbumPopupAction.map) {
               await showOnMap();
+            } else if (value == AlbumPopupAction.cleanUncategorized) {
+              await collectionActions.removeFromUncatIfPresentInOtherAlbum(
+                widget.collection!,
+                context,
+              );
             } else {
               showToast(context, S.of(context).somethingWentWrong);
             }
@@ -600,21 +650,23 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
       widget.collection!,
     );
     if (coverPhotoID != null) {
-      changeCoverPhoto(context, widget.collection!, coverPhotoID);
+      unawaited(changeCoverPhoto(context, widget.collection!, coverPhotoID));
     }
   }
 
   Future<void> showOnMap() async {
     final bool result = await requestForMapEnable(context);
     if (result) {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => MapScreen(
-            filesFutureFn: () async {
-              return FilesDB.instance.getAllFilesCollection(
-                widget.collection!.id,
-              );
-            },
+      unawaited(
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => MapScreen(
+              filesFutureFn: () async {
+                return FilesDB.instance.getAllFilesCollection(
+                  widget.collection!.id,
+                );
+              },
+            ),
           ),
         ),
       );
@@ -642,7 +694,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
       ],
     );
     if (sortByAsc != null) {
-      changeSortOrder(bContext, widget.collection!, sortByAsc);
+      unawaited(changeSortOrder(bContext, widget.collection!, sortByAsc));
     }
   }
 
@@ -665,7 +717,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
       } catch (e, s) {
         _logger.severe("failed to trash collection", e, s);
         await dialog.hide();
-        showGenericErrorDialog(context: context);
+        await showGenericErrorDialog(context: context, error: e);
       }
     } else {
       final bool result = await collectionActions.deleteCollectionSheet(
@@ -692,7 +744,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
       }
     } catch (e, s) {
       _logger.severe("failed to trash collection", e, s);
-      showGenericErrorDialog(context: context);
+      await showGenericErrorDialog(context: context, error: e);
     }
   }
 
@@ -727,7 +779,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
       }
     } catch (e, s) {
       _logger.severe(e, s);
-      showGenericErrorDialog(context: context);
+      await showGenericErrorDialog(context: context, error: e);
     }
   }
 
@@ -737,7 +789,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
       await showAddPhotosSheet(bContext, collection!);
     } catch (e, s) {
       _logger.severe(e, s);
-      showGenericErrorDialog(context: bContext);
+      await showGenericErrorDialog(context: bContext, error: e);
     }
   }
 
@@ -768,5 +820,41 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
       prevVisibility: prevVisiblity,
     );
     setState(() {});
+  }
+
+  Future<void> castAlbum() async {
+    final gw = CastGateway(NetworkClient.instance.enteDio);
+    // stop any existing cast session
+    gw.revokeAllTokens().ignore();
+    await showTextInputDialog(
+      context,
+      title: context.l10n.playOnTv,
+      body: S.of(context).castInstruction,
+      submitButtonLabel: S.of(context).pair,
+      textInputType: TextInputType.streetAddress,
+      hintText: context.l10n.deviceCodeHint,
+      onSubmit: (String text) async {
+        try {
+          String code = text.trim();
+          final String? publicKey = await gw.getPublicKey(code);
+          if (publicKey == null) {
+            showToast(context, S.of(context).deviceNotFound);
+            return;
+          }
+          final String castToken = Uuid().v4().toString();
+          final castPayload = CollectionsService.instance
+              .getCastData(castToken, widget.collection!, publicKey);
+          await gw.publishCastPayload(
+            code,
+            castPayload,
+            widget.collection!.id,
+            castToken,
+          );
+        } catch (e, s) {
+          _logger.severe("Failed to cast album", e, s);
+          await showGenericErrorDialog(context: context, error: e);
+        }
+      },
+    );
   }
 }

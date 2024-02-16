@@ -61,6 +61,7 @@ class AccountSectionWidget extends StatelessWidget {
               S.of(context).authToChangeYourEmail,
             );
             if (hasAuthenticated) {
+              // ignore: unawaited_futures
               showDialog(
                 context: context,
                 builder: (BuildContext context) {
@@ -88,6 +89,7 @@ class AccountSectionWidget extends StatelessWidget {
               S.of(context).authToChangeYourPassword,
             );
             if (hasAuthenticated) {
+              // ignore: unawaited_futures
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (BuildContext context) {
@@ -136,6 +138,7 @@ class AccountSectionWidget extends StatelessWidget {
           trailingIcon: Icons.chevron_right_outlined,
           trailingIconIsMuted: true,
           onTap: () async {
+            // ignore: unawaited_futures
             launchUrlString("https://ente.io/faq/migration/out-of-ente/");
           },
         ),

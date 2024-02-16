@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import "package:photos/models/button_result.dart";
 import 'package:photos/models/execution_states.dart';
-import "package:photos/models/search/button_result.dart";
 import 'package:photos/models/typedefs.dart';
 import 'package:photos/theme/colors.dart';
 import 'package:photos/theme/ente_theme.dart';
@@ -498,7 +498,7 @@ class _ButtonChildWidgetState extends State<ButtonChildWidget> {
       } else if (exception != null) {
         //This is to show the execution was unsuccessful if the dialog is manually
         //closed before the execution completes.
-        showGenericErrorDialog(context: context);
+        showGenericErrorDialog(context: context, error: exception).ignore();
       }
     }
   }

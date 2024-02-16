@@ -51,7 +51,7 @@ class _VerifyRecoveryPageState extends State<VerifyRecoveryPage> {
               "Please check your internet connection and try again.",
             );
           } else {
-            await showGenericErrorDialog(context: context);
+            await showGenericErrorDialog(context: context, error: e);
           }
           return;
         }
@@ -97,6 +97,7 @@ class _VerifyRecoveryPageState extends State<VerifyRecoveryPage> {
         recoveryKey = CryptoUtil.bin2hex(
           await UserService.instance.getOrCreateRecoveryKey(context),
         );
+        // ignore: unawaited_futures
         routeToPage(
           context,
           RecoveryKeyPage(
@@ -109,7 +110,7 @@ class _VerifyRecoveryPageState extends State<VerifyRecoveryPage> {
           ),
         );
       } catch (e) {
-        showGenericErrorDialog(context: context);
+        await showGenericErrorDialog(context: context, error: e);
         return;
       }
     }

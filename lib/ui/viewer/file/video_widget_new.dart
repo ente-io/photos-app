@@ -3,15 +3,19 @@ import "dart:io";
 
 import "package:flutter/cupertino.dart";
 import "package:flutter/material.dart";
+import "package:logging/logging.dart";
 import "package:media_kit/media_kit.dart";
 import "package:media_kit_video/media_kit_video.dart";
 import "package:photos/core/constants.dart";
+import "package:photos/core/event_bus.dart";
+import "package:photos/events/pause_video_event.dart";
 import "package:photos/generated/l10n.dart";
 import "package:photos/models/file/extensions/file_props.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/services/files_service.dart";
 import "package:photos/theme/colors.dart";
 import "package:photos/theme/ente_theme.dart";
+import "package:photos/ui/actions/file/file_actions.dart";
 import "package:photos/ui/viewer/file/thumbnail_widget.dart";
 import "package:photos/utils/dialog_util.dart";
 import "package:photos/utils/file_util.dart";
@@ -34,15 +38,20 @@ class VideoWidgetNew extends StatefulWidget {
 
 class _VideoWidgetNewState extends State<VideoWidgetNew>
     with WidgetsBindingObserver {
+  final Logger _logger = Logger("VideoWidgetNew");
   static const verticalMargin = 72.0;
   late final player = Player();
   VideoController? controller;
   final _progressNotifier = ValueNotifier<double?>(null);
   late StreamSubscription<bool> playingStreamSubscription;
   bool _isAppInFG = true;
+  late StreamSubscription<PauseVideoEvent> pauseVideoSubscription;
 
   @override
   void initState() {
+    _logger.info(
+      'initState for ${widget.file.generatedID} with tag ${widget.file.tag} and name ${widget.file.displayName}',
+    );
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     if (widget.file.isRemoteFile) {
@@ -62,6 +71,7 @@ class _VideoWidgetNewState extends State<VideoWidgetNew>
             _loadNetworkVideo();
           }
         } else {
+          // ignore: unawaited_futures
           asset.getMediaUrl().then((url) {
             _setVideoController(
               url ??
@@ -76,6 +86,10 @@ class _VideoWidgetNewState extends State<VideoWidgetNew>
         widget.playbackCallback!(event);
       }
     });
+
+    pauseVideoSubscription = Bus.instance.on<PauseVideoEvent>().listen((event) {
+      player.pause();
+    });
   }
 
   @override
@@ -89,10 +103,12 @@ class _VideoWidgetNewState extends State<VideoWidgetNew>
 
   @override
   void dispose() {
+    pauseVideoSubscription.cancel();
+    removeCallBack(widget.file);
+    _progressNotifier.dispose();
     WidgetsBinding.instance.removeObserver(this);
     playingStreamSubscription.cancel();
     player.dispose();
-    _progressNotifier.dispose();
     super.dispose();
   }
 
@@ -133,7 +149,14 @@ class _VideoWidgetNewState extends State<VideoWidgetNew>
         fullscreen: const MaterialVideoControlsThemeData(),
         child: GestureDetector(
           onVerticalDragUpdate: (d) => {
-            if (d.delta.dy > dragSensitivity) {Navigator.of(context).pop()},
+            if (d.delta.dy > dragSensitivity)
+              {
+                Navigator.of(context).pop(),
+              }
+            else if (d.delta.dy < (dragSensitivity * -1))
+              {
+                showDetailsSheet(context, widget.file),
+              },
           },
           child: Center(
             child: controller != null
@@ -151,6 +174,9 @@ class _VideoWidgetNewState extends State<VideoWidgetNew>
     getFileFromServer(
       widget.file,
       progressCallback: (count, total) {
+        if (!mounted) {
+          return;
+        }
         _progressNotifier.value = count / (widget.file.fileSize ?? total);
         if (_progressNotifier.value == 1) {
           if (mounted) {
@@ -227,6 +253,7 @@ class _VideoWidgetNewState extends State<VideoWidgetNew>
   void _setVideoController(String url) {
     if (mounted) {
       setState(() {
+        player.setPlaylistMode(PlaylistMode.single);
         controller = VideoController(player);
         player.open(Media(url), play: _isAppInFG);
       });

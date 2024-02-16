@@ -20,7 +20,7 @@ typedef String MessageIfAbsent(String messageStr, List<dynamic> args);
 class MessageLookup extends MessageLookupByLibrary {
   String get localeName => 'pl';
 
-  static String m32(passwordStrengthValue) =>
+  static String m34(passwordStrengthValue) =>
       "Siła hasła: ${passwordStrengthValue}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
@@ -35,6 +35,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "cancel": MessageLookupByLibrary.simpleMessage("Anuluj"),
         "changeEmail":
             MessageLookupByLibrary.simpleMessage("Zmień adres e-mail"),
+        "changeLocationOfSelectedItems": MessageLookupByLibrary.simpleMessage(
+            "Change location of selected items?"),
         "changePasswordTitle":
             MessageLookupByLibrary.simpleMessage("Zmień hasło"),
         "checkInboxAndSpamFolder": MessageLookupByLibrary.simpleMessage(
@@ -50,6 +52,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Powtórz hasło"),
         "contactSupport": MessageLookupByLibrary.simpleMessage(
             "Skontaktuj się z pomocą techniczną"),
+        "contacts": MessageLookupByLibrary.simpleMessage("Contacts"),
         "continueLabel": MessageLookupByLibrary.simpleMessage("Kontynuuj"),
         "createAccount": MessageLookupByLibrary.simpleMessage("Stwórz konto"),
         "createNewAccount":
@@ -76,6 +79,10 @@ class MessageLookup extends MessageLookupByLibrary {
         "deleteRequestSLAText": MessageLookupByLibrary.simpleMessage(
             "Twoje żądanie zostanie przetworzone w ciągu 72 godzin."),
         "doThisLater": MessageLookupByLibrary.simpleMessage("Spróbuj później"),
+        "editLocation": MessageLookupByLibrary.simpleMessage("Edit location"),
+        "editsToLocationWillOnlyBeSeenWithinEnte":
+            MessageLookupByLibrary.simpleMessage(
+                "Edits to location will only be seen within Ente"),
         "email": MessageLookupByLibrary.simpleMessage("Adres e-mail"),
         "encryption": MessageLookupByLibrary.simpleMessage("Szyfrowanie"),
         "enterCode": MessageLookupByLibrary.simpleMessage("Wprowadź kod"),
@@ -92,6 +99,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "enterYourRecoveryKey": MessageLookupByLibrary.simpleMessage(
             "Wprowadź swój klucz odzyskiwania"),
         "feedback": MessageLookupByLibrary.simpleMessage("Informacja zwrotna"),
+        "fileTypes": MessageLookupByLibrary.simpleMessage("File types"),
         "forgotPassword":
             MessageLookupByLibrary.simpleMessage("Nie pamiętam hasła"),
         "generatingEncryptionKeys": MessageLookupByLibrary.simpleMessage(
@@ -105,10 +113,14 @@ class MessageLookup extends MessageLookupByLibrary {
             "Nieprawidłowy klucz odzyskiwania"),
         "invalidEmailAddress":
             MessageLookupByLibrary.simpleMessage("Nieprawidłowy adres e-mail"),
+        "joinDiscord": MessageLookupByLibrary.simpleMessage("Join Discord"),
         "kindlyHelpUsWithThisInformation":
             MessageLookupByLibrary.simpleMessage("Pomóż nam z tą informacją"),
         "logInLabel": MessageLookupByLibrary.simpleMessage("Zaloguj się"),
         "moderateStrength": MessageLookupByLibrary.simpleMessage("Umiarkowana"),
+        "modifyYourQueryOrTrySearchingFor":
+            MessageLookupByLibrary.simpleMessage(
+                "Modify your query, or try searching for"),
         "moveToHiddenAlbum":
             MessageLookupByLibrary.simpleMessage("Move to hidden album"),
         "noRecoveryKey":
@@ -120,7 +132,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "password": MessageLookupByLibrary.simpleMessage("Hasło"),
         "passwordChangedSuccessfully": MessageLookupByLibrary.simpleMessage(
             "Hasło zostało pomyślnie zmienione"),
-        "passwordStrength": m32,
+        "passwordStrength": m34,
         "passwordWarning": MessageLookupByLibrary.simpleMessage(
             "Nie przechowujemy tego hasła, więc jeśli go zapomnisz, <underline>nie będziemy w stanie odszyfrować Twoich danych</underline>"),
         "pleaseTryAgain":
@@ -144,6 +156,10 @@ class MessageLookup extends MessageLookupByLibrary {
         "resetPasswordTitle":
             MessageLookupByLibrary.simpleMessage("Zresetuj hasło"),
         "saveKey": MessageLookupByLibrary.simpleMessage("Zapisz klucz"),
+        "selectALocation":
+            MessageLookupByLibrary.simpleMessage("Select a location"),
+        "selectALocationFirst":
+            MessageLookupByLibrary.simpleMessage("Select a location first"),
         "selectReason": MessageLookupByLibrary.simpleMessage("Wybierz powód"),
         "sendEmail": MessageLookupByLibrary.simpleMessage("Wyślij e-mail"),
         "setPasswordTitle": MessageLookupByLibrary.simpleMessage("Ustaw hasło"),
@@ -180,7 +196,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Zweryfikuj hasło"),
         "weakStrength": MessageLookupByLibrary.simpleMessage("Słabe"),
         "welcomeBack": MessageLookupByLibrary.simpleMessage("Witaj ponownie!"),
-        "yourAccountHasBeenDeleted":
-            MessageLookupByLibrary.simpleMessage("Twoje konto zostało usunięte")
+        "yourAccountHasBeenDeleted": MessageLookupByLibrary.simpleMessage(
+            "Twoje konto zostało usunięte"),
+        "yourMap": MessageLookupByLibrary.simpleMessage("Your map")
       };
 }

@@ -18,8 +18,13 @@ class MapView extends StatefulWidget {
   final double minZoom;
   final double maxZoom;
   final double initialZoom;
-  final int debounceDuration;
   final double bottomSheetDraggableAreaHeight;
+  final bool showControls;
+  final int interactiveFlags;
+  final VoidCallback? onTap;
+  final Size markerSize;
+  final MapAttributionOptions mapAttributionOptions;
+  static const defaultMarkerSize = Size(75, 75);
 
   const MapView({
     Key? key,
@@ -30,8 +35,12 @@ class MapView extends StatefulWidget {
     required this.minZoom,
     required this.maxZoom,
     required this.initialZoom,
-    required this.debounceDuration,
     required this.bottomSheetDraggableAreaHeight,
+    this.mapAttributionOptions = const MapAttributionOptions(),
+    this.markerSize = MapView.defaultMarkerSize,
+    this.onTap,
+    this.interactiveFlags = InteractiveFlag.all,
+    this.showControls = true,
   }) : super(key: key);
 
   @override
@@ -40,8 +49,10 @@ class MapView extends StatefulWidget {
 
 class _MapViewState extends State<MapView> {
   late List<Marker> _markers;
-  final _debouncer =
-      Debouncer(const Duration(milliseconds: 300), executionInterval: 750);
+  final _debouncer = Debouncer(
+    const Duration(milliseconds: 300),
+    executionInterval: const Duration(milliseconds: 750),
+  );
 
   @override
   void initState() {
@@ -69,27 +80,35 @@ class _MapViewState extends State<MapView> {
         FlutterMap(
           mapController: widget.controller,
           options: MapOptions(
+            onTap: widget.onTap != null
+                ? (_, __) {
+                    widget.onTap!.call();
+                  }
+                : null,
             center: widget.center,
             minZoom: widget.minZoom,
             maxZoom: widget.maxZoom,
             enableMultiFingerGestureRace: true,
             zoom: widget.initialZoom,
             maxBounds: LatLngBounds(
-              LatLng(-90, -180),
-              LatLng(90, 180),
+              const LatLng(-90, -180),
+              const LatLng(90, 180),
             ),
             onPositionChanged: (position, hasGesture) {
               if (position.bounds != null) {
                 onChange(position.bounds!);
               }
             },
+            interactiveFlags: widget.interactiveFlags,
           ),
           nonRotatedChildren: [
             Padding(
               padding: EdgeInsets.only(
                 bottom: widget.bottomSheetDraggableAreaHeight,
               ),
-              child: const OSMFranceTileAttributes(),
+              child: OSMFranceTileAttributes(
+                options: widget.mapAttributionOptions,
+              ),
             ),
           ],
           children: [
@@ -99,7 +118,7 @@ class _MapViewState extends State<MapView> {
                 anchorPos: AnchorPos.align(AnchorAlign.top),
                 maxClusterRadius: 100,
                 showPolygon: false,
-                size: const Size(75, 75),
+                size: widget.markerSize,
                 fitBoundsOptions: const FitBoundsOptions(
                   padding: EdgeInsets.all(80),
                 ),
@@ -131,47 +150,51 @@ class _MapViewState extends State<MapView> {
             ),
           ],
         ),
-        Positioned(
-          top: 4,
-          left: 10,
-          child: SafeArea(
-            child: MapButton(
-              icon: Icons.arrow_back,
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              heroTag: 'back',
-            ),
-          ),
-        ),
-        Positioned(
-          bottom: widget.bottomSheetDraggableAreaHeight + 10,
-          right: 10,
-          child: Column(
-            children: [
-              MapButton(
-                icon: Icons.add,
-                onPressed: () {
-                  widget.controller.move(
-                    widget.controller.center,
-                    widget.controller.zoom + 1,
-                  );
-                },
-                heroTag: 'zoom-in',
-              ),
-              MapButton(
-                icon: Icons.remove,
-                onPressed: () {
-                  widget.controller.move(
-                    widget.controller.center,
-                    widget.controller.zoom - 1,
-                  );
-                },
-                heroTag: 'zoom-out',
-              ),
-            ],
-          ),
-        ),
+        widget.showControls
+            ? Positioned(
+                top: 4,
+                left: 10,
+                child: SafeArea(
+                  child: MapButton(
+                    icon: Icons.arrow_back,
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    heroTag: 'back',
+                  ),
+                ),
+              )
+            : const SizedBox.shrink(),
+        widget.showControls
+            ? Positioned(
+                bottom: widget.bottomSheetDraggableAreaHeight + 10,
+                right: 10,
+                child: Column(
+                  children: [
+                    MapButton(
+                      icon: Icons.add,
+                      onPressed: () {
+                        widget.controller.move(
+                          widget.controller.center,
+                          widget.controller.zoom + 1,
+                        );
+                      },
+                      heroTag: 'zoom-in',
+                    ),
+                    MapButton(
+                      icon: Icons.remove,
+                      onPressed: () {
+                        widget.controller.move(
+                          widget.controller.center,
+                          widget.controller.zoom - 1,
+                        );
+                      },
+                      heroTag: 'zoom-out',
+                    ),
+                  ],
+                ),
+              )
+            : const SizedBox.shrink(),
       ],
     );
   }
@@ -179,7 +202,11 @@ class _MapViewState extends State<MapView> {
   List<Marker> _buildMakers() {
     return List<Marker>.generate(widget.imageMarkers.length, (index) {
       final imageMarker = widget.imageMarkers[index];
-      return mapMarker(imageMarker, index.toString());
+      return mapMarker(
+        imageMarker,
+        index.toString(),
+        markerSize: widget.markerSize,
+      );
     });
   }
 }

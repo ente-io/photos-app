@@ -6,9 +6,10 @@ enum InvalidReason {
   imageToLivePhotoTypeChanged,
   livePhotoVideoMissing,
   thumbnailMissing,
+  tooLargeFile,
   unknown,
-
 }
+
 extension InvalidReasonExn on InvalidReason {
   bool get isLivePhotoErr =>
       this == InvalidReason.livePhotoToImageTypeChanged ||
@@ -72,6 +73,8 @@ class InvalidStateError extends AssertionError {
 }
 
 class KeyDerivationError extends Error {}
+
+class LoginKeyDerivationError extends Error {}
 
 class SrpSetupNotCompleteError extends Error {}
 

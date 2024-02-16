@@ -73,7 +73,6 @@ class DetailPage extends StatefulWidget {
 class _DetailPageState extends State<DetailPage> {
   static const kLoadLimit = 100;
   final _logger = Logger("DetailPageState");
-  bool _shouldDisableScroll = false;
   List<EnteFile>? _files;
   late PageController _pageController;
   final _selectedIndexNotifier = ValueNotifier(0);
@@ -164,7 +163,6 @@ class _DetailPageState extends State<DetailPage> {
   }
 
   Widget _buildPageView(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
     return PageView.builder(
       itemBuilder: (context, index) {
         final file = _files![index];
@@ -173,14 +171,6 @@ class _DetailPageState extends State<DetailPage> {
           file,
           autoPlay: shouldAutoPlay(),
           tagPrefix: widget.config.tagPrefix,
-          shouldDisableScroll: (value) {
-            if (_shouldDisableScroll != value) {
-              setState(() {
-                _logger.fine('setState $_shouldDisableScroll to $value');
-                _shouldDisableScroll = value;
-              });
-            }
-          },
           playbackCallback: (isPlaying) {
             Future.delayed(Duration.zero, () {
               _toggleFullScreen(shouldEnable: isPlaying);
@@ -192,21 +182,7 @@ class _DetailPageState extends State<DetailPage> {
           onTap: () {
             file.fileType != FileType.video ? _toggleFullScreen() : null;
           },
-          child: kDebugMode
-              ? Stack(
-                  children: [
-                    fileContent,
-                    Positioned(
-                      top: 80,
-                      right: 80,
-                      child: Text(
-                        file.generatedID?.toString() ?? 'null',
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  ],
-                )
-              : fileContent,
+          child: fileContent,
         );
       },
       onPageChanged: (index) {
@@ -223,9 +199,7 @@ class _DetailPageState extends State<DetailPage> {
         }
         _preloadEntries();
       },
-      physics: _shouldDisableScroll
-          ? const NeverScrollableScrollPhysics()
-          : const FastScrollPhysics(speedFactor: 4.0),
+      physics: const FastScrollPhysics(speedFactor: 4.0),
       controller: _pageController,
       itemCount: _files!.length,
     );
@@ -350,7 +324,7 @@ class _DetailPageState extends State<DetailPage> {
         ? currentPageIndex
         : currentPageIndex - 1;
     if (_files!.isNotEmpty) {
-      _pageController.animateToPage(
+      await _pageController.animateToPage(
         targetPageIndex,
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
@@ -366,6 +340,7 @@ class _DetailPageState extends State<DetailPage> {
         UnauthorizedEditError(),
         StackTrace.current,
       );
+      // ignore: unawaited_futures
       showErrorDialog(
         context,
         S.of(context).sorry,

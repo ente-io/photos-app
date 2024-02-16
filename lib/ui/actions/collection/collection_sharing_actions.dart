@@ -1,3 +1,5 @@
+import "dart:async";
+
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:photos/core/configuration.dart';
@@ -51,7 +53,7 @@ class CollectionActions {
         _showUnSupportedAlert(context);
       } else {
         logger.severe("Failed to update shareUrl collection", e);
-        showGenericErrorDialog(context: context);
+        await showGenericErrorDialog(context: context, error: e);
       }
       return false;
     }
@@ -92,7 +94,10 @@ class CollectionActions {
     );
     if (actionResult?.action != null) {
       if (actionResult!.action == ButtonAction.error) {
-        showGenericErrorDialog(context: context);
+        await showGenericErrorDialog(
+          context: context,
+          error: actionResult.exception,
+        );
       }
       return actionResult.action == ButtonAction.first;
     } else {
@@ -109,7 +114,7 @@ class CollectionActions {
       S.of(context).creatingLink,
       isDismissible: true,
     );
-    dialog.show();
+    await dialog.show();
     try {
       // create album with emptyName, use collectionCreationTime on UI to
       // show name
@@ -137,11 +142,11 @@ class CollectionActions {
       await collectionsService.addToCollection(collection.id, files);
       logger.finest("creating public link for the newly created album");
       await CollectionsService.instance.createShareUrl(collection);
-      dialog.hide();
+      await dialog.hide();
       return collection;
     } catch (e, s) {
-      dialog.hide();
-      showGenericErrorDialog(context: context);
+      await dialog.hide();
+      await showGenericErrorDialog(context: context, error: e);
       logger.severe("Failing to create link for selected files", e, s);
     }
     return null;
@@ -182,7 +187,10 @@ class CollectionActions {
     );
     if (actionResult?.action != null) {
       if (actionResult!.action == ButtonAction.error) {
-        showGenericErrorDialog(context: context);
+        await showGenericErrorDialog(
+          context: context,
+          error: actionResult.exception,
+        );
       }
       return actionResult.action == ButtonAction.first;
     }
@@ -229,7 +237,7 @@ class CollectionActions {
     } catch (e) {
       await dialog?.hide();
       logger.severe("Failed to get public key", e);
-      showGenericErrorDialog(context: context);
+      await showGenericErrorDialog(context: context, error: e);
       return false;
     }
     // getPublicKey can return null when no user is associated with given
@@ -252,7 +260,7 @@ class CollectionActions {
           _showUnSupportedAlert(context);
         } else {
           logger.severe("failed to share collection", e);
-          showGenericErrorDialog(context: context);
+          await showGenericErrorDialog(context: context, error: e);
         }
         return false;
       }
@@ -333,7 +341,10 @@ class CollectionActions {
     );
     if (actionResult?.action != null &&
         actionResult!.action == ButtonAction.error) {
-      showGenericErrorDialog(context: bContext);
+      await showGenericErrorDialog(
+        context: bContext,
+        error: actionResult.exception,
+      );
       return false;
     }
     if ((actionResult?.action != null) &&
@@ -353,6 +364,23 @@ class CollectionActions {
     await moveFilesFromCurrentCollection(bContext, collection, files);
     // collection should be empty on server now
     await collectionsService.trashEmptyCollection(collection);
+  }
+
+  Future<void> removeFromUncatIfPresentInOtherAlbum(
+    Collection collection,
+    BuildContext bContext,
+  ) async {
+    try {
+      final List<EnteFile> files =
+          await FilesDB.instance.getAllFilesCollection(collection.id);
+      await moveFilesFromCurrentCollection(bContext, collection, files);
+    } catch (e) {
+      logger.severe("Failed to remove files from uncategorized", e);
+      await showErrorDialogForException(
+        context: bContext,
+        exception: e as Exception,
+      );
+    }
   }
 
   // _confirmSharedAlbumDeletion should be shown when user tries to delete an
@@ -499,7 +527,20 @@ class CollectionActions {
 
     for (MapEntry<int, List<EnteFile>> entry
         in destCollectionToFilesMap.entries) {
-      await collectionsService.move(entry.key, collection.id, entry.value);
+      if (collection.type == CollectionType.uncategorized &&
+          entry.key == collection.id) {
+        // skip moving files to uncategorized collection from uncategorized
+        // this flow is triggered while cleaning up uncategerized collection
+        logger.info(
+          'skipping moving ${entry.value.length} files to uncategorized collection',
+        );
+      } else {
+        await collectionsService.move(
+          entry.key,
+          collection.id,
+          entry.value,
+        );
+      }
     }
   }
 

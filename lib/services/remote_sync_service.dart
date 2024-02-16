@@ -13,6 +13,7 @@ import 'package:photos/db/file_updation_db.dart';
 import 'package:photos/db/files_db.dart';
 import 'package:photos/events/backup_folders_updated_event.dart';
 import 'package:photos/events/collection_updated_event.dart';
+import "package:photos/events/diff_sync_complete_event.dart";
 import 'package:photos/events/files_updated_event.dart';
 import 'package:photos/events/force_reload_home_gallery_event.dart';
 import 'package:photos/events/local_photos_updated_event.dart';
@@ -45,6 +46,7 @@ class RemoteSyncService {
   final LocalFileUpdateService _localFileUpdateService =
       LocalFileUpdateService.instance;
   int _completedUploads = 0;
+  int _ignoredUploads = 0;
   late SharedPreferences _prefs;
   Completer<void>? _existingSync;
   bool _isExistingSyncSilent = false;
@@ -72,6 +74,7 @@ class RemoteSyncService {
     Bus.instance.on<LocalPhotosUpdatedEvent>().listen((event) async {
       if (event.type == EventType.addedOrUpdated) {
         if (_existingSync == null) {
+          // ignore: unawaited_futures
           sync();
         }
       }
@@ -122,7 +125,13 @@ class RemoteSyncService {
       }
       final filesToBeUploaded = await _getFilesToBeUploaded();
       final hasUploadedFiles = await _uploadFiles(filesToBeUploaded);
-      _logger.info("File upload complete");
+      if (filesToBeUploaded.isNotEmpty) {
+        _logger.info(
+            "Files ${filesToBeUploaded.length} queued for upload, completed: "
+            "$_completedUploads, ignored $_ignoredUploads");
+      } else {
+        _logger.info("No files to upload for this session");
+      }
       if (hasUploadedFiles) {
         await _pullDiff();
         _existingSync?.complete();
@@ -133,6 +142,7 @@ class RemoteSyncService {
         if (hasMoreFilesToBackup && !_shouldThrottleSync()) {
           // Skipping a resync to ensure that files that were ignored in this
           // session are not processed now
+          // ignore: unawaited_futures
           sync();
         } else {
           _logger.info("Fire backup completed event");
@@ -143,6 +153,11 @@ class RemoteSyncService {
         // directory
         if (filesToBeUploaded.isEmpty) {
           await _uploader.removeStaleFiles();
+        }
+        if (_ignoredUploads > 0) {
+          _logger.info("Ignored $_ignoredUploads files for upload, fire "
+              "backup done");
+          Bus.instance.fire(SyncStatusUpdate(SyncStatus.completedBackup));
         }
         _existingSync?.complete();
         _existingSync = null;
@@ -156,7 +171,7 @@ class RemoteSyncService {
           e is WiFiUnavailableError ||
           e is StorageLimitExceededError ||
           e is SyncStopRequestedError) {
-        _logger.warning("Error executing remote sync", e);
+        _logger.warning("Error executing remote sync", e, s);
         rethrow;
       } else {
         _logger.severe("Error executing remote sync ", e, s);
@@ -213,6 +228,7 @@ class RemoteSyncService {
       await _collectionsService.setCollectionSyncTime(cid, remoteUpdateTime);
     }
     _logger.info("All updated collections synced");
+    Bus.instance.fire(DiffSyncCompleteEvent());
   }
 
   Future<void> _resetAllCollectionsSyncTime() async {
@@ -535,6 +551,7 @@ class RemoteSyncService {
     }
 
     _completedUploads = 0;
+    _ignoredUploads = 0;
     final int toBeUploaded = filesToBeUploaded.length + updatedFileIDs.length;
     if (toBeUploaded > 0) {
       Bus.instance.fire(SyncStatusUpdate(SyncStatus.preparingForUpload));
@@ -552,12 +569,27 @@ class RemoteSyncService {
             .info("Skipping some updated files as we are throttling uploads");
         break;
       }
-      final file = await _db.getUploadedLocalFileInAnyCollection(
+      final allFiles = await _db.getFilesInAllCollection(
         uploadedFileID,
         ownerID,
       );
-      if (file != null) {
-        _uploadFile(file, file.collectionID!, futures);
+      if (allFiles.isEmpty) {
+        _logger.warning("No files found for uploadedFileID $uploadedFileID");
+        continue;
+      }
+      EnteFile? fileInCollectionOwnedByUser;
+      for (final file in allFiles) {
+        if (file.canReUpload(ownerID)) {
+          fileInCollectionOwnedByUser = file;
+          break;
+        }
+      }
+      if (fileInCollectionOwnedByUser != null) {
+        _uploadFile(
+          fileInCollectionOwnedByUser,
+          fileInCollectionOwnedByUser.collectionID!,
+          futures,
+        );
       }
     }
 
@@ -599,7 +631,10 @@ class RemoteSyncService {
   void _uploadFile(EnteFile file, int collectionID, List<Future> futures) {
     final future = _uploader
         .upload(file, collectionID)
-        .then((uploadedFile) => _onFileUploaded(uploadedFile));
+        .then((uploadedFile) => _onFileUploaded(uploadedFile))
+        .onError(
+          (error, stackTrace) => _onFileUploadError(error, stackTrace, file),
+        );
     futures.add(future);
   }
 
@@ -631,6 +666,22 @@ class RemoteSyncService {
         total: toBeUploadedInThisSession,
       ),
     );
+  }
+
+  void _onFileUploadError(
+    Object? error,
+    StackTrace stackTrace,
+    EnteFile file,
+  ) {
+    if (error == null) {
+      return;
+    }
+    if (error is InvalidFileError) {
+      _ignoredUploads++;
+      _logger.warning("Invalid file error", error);
+    } else {
+      throw error;
+    }
   }
 
   /* _storeDiff maps each remoteFile to existing
@@ -910,6 +961,7 @@ class RemoteSyncService {
           'creating notification for ${collection?.displayName} '
           'shared: $sharedFilesIDs, collected: $collectedFilesIDs files',
         );
+        // ignore: unawaited_futures
         NotificationService.instance.showNotification(
           collection!.displayName,
           totalCount.toString() + " new 📸",

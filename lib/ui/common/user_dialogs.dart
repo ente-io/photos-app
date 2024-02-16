@@ -1,3 +1,5 @@
+import "dart:async";
+
 import "package:flutter/material.dart";
 import "package:photos/generated/l10n.dart";
 import "package:photos/ui/components/buttons/button_widget.dart";
@@ -19,8 +21,10 @@ Future<void> showInviteDialog(BuildContext context, String email) async {
         labelText: S.of(context).sendInvite,
         isInAlert: true,
         onTap: () async {
-          shareText(
-            S.of(context).shareTextRecommendUsingEnte,
+          unawaited(
+            shareText(
+              S.of(context).shareTextRecommendUsingEnte,
+            ),
           );
         },
       ),

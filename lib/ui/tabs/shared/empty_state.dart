@@ -92,6 +92,7 @@ class SharedEmptyStateWidget extends StatelessWidget {
                       labelText: S.of(context).inviteYourFriends,
                       icon: Icons.ios_share_outlined,
                       onTap: () async {
+                        // ignore: unawaited_futures
                         shareText(S.of(context).shareTextRecommendUsingEnte);
                       },
                     ),
@@ -139,7 +140,7 @@ class OutgoingAlbumEmptyState extends StatelessWidget {
             labelText: S.of(context).shareYourFirstAlbum,
             icon: Icons.add,
             onTap: () async {
-              await showToast(
+              showToast(
                 context,
                 S.of(context).shareAlbumHint,
               );
@@ -188,6 +189,7 @@ class IncomingAlbumEmptyState extends StatelessWidget {
             labelText: S.of(context).inviteYourFriends,
             icon: Icons.ios_share_outlined,
             onTap: () async {
+              // ignore: unawaited_futures
               shareText(S.of(context).shareTextRecommendUsingEnte);
             },
           ),

@@ -102,7 +102,7 @@ Future<void> deleteFilesFromEverywhere(
       await FilesDB.instance.deleteMultipleUploadedFiles(fileIDs);
     } catch (e) {
       _logger.severe(e);
-      showGenericErrorDialog(context: context);
+      await showGenericErrorDialog(context: context, error: e);
       rethrow;
     }
     for (final collectionID in updatedCollectionIDs) {
@@ -133,6 +133,7 @@ Future<void> deleteFilesFromEverywhere(
     }
   }
   if (uploadedFilesToBeTrashed.isNotEmpty) {
+    // ignore: unawaited_futures
     RemoteSyncService.instance.sync(silently: true);
   }
 }
@@ -163,7 +164,7 @@ Future<void> deleteFilesFromRemoteOnly(
     await FilesDB.instance.deleteMultipleUploadedFiles(uploadedFileIDs);
   } catch (e, s) {
     _logger.severe("Failed to delete files from remote", e, s);
-    showGenericErrorDialog(context: context);
+    await showGenericErrorDialog(context: context, error: e);
     rethrow;
   }
   for (final collectionID in updatedCollectionIDs) {
@@ -183,7 +184,9 @@ Future<void> deleteFilesFromRemoteOnly(
       source: "deleteFromRemoteOnly",
     ),
   );
+  // ignore: unawaited_futures
   SyncService.instance.sync();
+  // ignore: unawaited_futures
   RemoteSyncService.instance.sync(silently: true);
 }
 
@@ -232,7 +235,7 @@ Future<void> deleteFilesOnDeviceOnly(
         alreadyDeletedIDs.contains(file.localID)) {
       deletedFiles.add(file);
       file.localID = null;
-      FilesDB.instance.update(file);
+      await FilesDB.instance.update(file);
     }
   }
   if (deletedFiles.isNotEmpty || alreadyDeletedIDs.isNotEmpty) {
@@ -279,7 +282,10 @@ Future<bool> deleteFromTrash(BuildContext context, List<EnteFile> files) async {
       actionResult!.action == ButtonAction.cancel) {
     return didDeletionStart ? true : false;
   } else if (actionResult.action == ButtonAction.error) {
-    await showGenericErrorDialog(context: context);
+    await showGenericErrorDialog(
+      context: context,
+      error: actionResult.exception,
+    );
     return false;
   } else {
     return true;
@@ -306,7 +312,10 @@ Future<bool> emptyTrash(BuildContext context) async {
       actionResult!.action == ButtonAction.cancel) {
     return false;
   } else if (actionResult.action == ButtonAction.error) {
-    await showGenericErrorDialog(context: context);
+    await showGenericErrorDialog(
+      context: context,
+      error: actionResult.exception,
+    );
     return false;
   } else {
     return true;
@@ -405,6 +414,7 @@ Future<List<String>> deleteLocalFilesInBatches(
     "Deleting " + localIDs.length.toString() + " backed up files...",
     key: dialogKey,
   );
+  // ignore: unawaited_futures
   showDialog(
     context: context,
     builder: (context) {
@@ -555,7 +565,7 @@ Future<void> showDeleteSheet(
               showShortToast(context, S.of(context).movedToTrash);
             },
             onError: (e, s) {
-              showGenericErrorDialog(context: context);
+              showGenericErrorDialog(context: context, error: e);
             },
           );
         },
@@ -620,7 +630,10 @@ Future<void> showDeleteSheet(
   );
   if (actionResult?.action != null &&
       actionResult!.action == ButtonAction.error) {
-    showGenericErrorDialog(context: context);
+    await showGenericErrorDialog(
+      context: context,
+      error: actionResult.exception,
+    );
   } else {
     selectedFiles.clearAll();
   }

@@ -1,3 +1,5 @@
+import "dart:async";
+
 import 'package:flutter/cupertino.dart';
 import "package:photo_manager/photo_manager.dart";
 import "package:photos/core/configuration.dart";
@@ -73,7 +75,10 @@ extension CollectionFileActions on CollectionActions {
     );
     if (actionResult?.action != null &&
         actionResult!.action == ButtonAction.error) {
-      showGenericErrorDialog(context: bContext);
+      await showGenericErrorDialog(
+        context: bContext,
+        error: actionResult.exception,
+      );
     } else {
       selectedFiles.clearAll();
     }
@@ -117,7 +122,7 @@ extension CollectionFileActions on CollectionActions {
         for (final file in selectedFiles!) {
           EnteFile? currentFile;
           if (file.uploadedFileID != null) {
-            currentFile = file;
+            currentFile = file.copyWith();
           } else if (file.generatedID != null) {
             // when file is not uploaded, refresh the state from the db to
             // ensure we have latest upload status for given file before
@@ -181,13 +186,13 @@ extension CollectionFileActions on CollectionActions {
       if (files.isNotEmpty) {
         await CollectionsService.instance.addToCollection(collectionID, files);
       }
-      RemoteSyncService.instance.sync(silently: true);
+      unawaited(RemoteSyncService.instance.sync(silently: true));
       await dialog?.hide();
       return true;
     } catch (e, s) {
       logger.severe("Failed to add to album", e, s);
       await dialog?.hide();
-      showGenericErrorDialog(context: context);
+      await showGenericErrorDialog(context: context, error: e);
       rethrow;
     }
   }

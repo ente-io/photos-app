@@ -1,5 +1,35 @@
 # CHANGELOG
 
+## v0.8.54
+
+### Added
+* #### Map View ✨
+
+    You can now view the location where a photo was clicked. Open a photo and tap the Info button to view its place on the map!
+
+* #### Bug Fixes
+
+    Many a bugs were squashed in this release. If you run into any, please write to team@ente.io, or let us know on Discord! 🙏
+
+
+
+## v0.7.118
+
+### Added
+* #### Explore with the new Search Tab ✨
+
+    Introducing a dedicated search tab with distinct sections for effortless discovery.
+
+    You can now discover items that come under different Locations, Moments, Contacts, Photo descriptions, Albums and File types with ease.
+
+* #### Black Friday Sale 🎉
+
+    You can now purchase Ente's plans for 3 years at 30% off and 5 years at 50% off.
+
+    The storage you purchase will be stacked on top of your current plan.
+
+    This is the lowest our prices will ever be, so do consider upgrading!
+
 
 ## v0.7.82
 

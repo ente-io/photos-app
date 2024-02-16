@@ -165,9 +165,10 @@ Future<File?> getFileFromServer(
         },
       );
     }
-    downloadFuture.then((downloadedFile) {
+    // ignore: unawaited_futures
+    downloadFuture.then((downloadedFile) async {
       completer.complete(downloadedFile);
-      _fileDownloadsInProgress.remove(downloadID);
+      await _fileDownloadsInProgress.remove(downloadID);
       _progressCallbacks.remove(downloadID);
     });
   }
@@ -197,14 +198,14 @@ Future<File?> _getLivePhotoFromServer(
           _downloadLivePhoto(file, progressCallback: progressCallback);
     }
     final livePhoto = await _livePhotoDownloadsTracker[file.uploadedFileID];
-    _livePhotoDownloadsTracker.remove(downloadID);
+    await _livePhotoDownloadsTracker.remove(downloadID);
     if (livePhoto == null) {
       return null;
     }
     return needLiveVideo ? livePhoto.video : livePhoto.image;
   } catch (e, s) {
     _logger.warning("live photo get failed", e, s);
-    _livePhotoDownloadsTracker.remove(downloadID);
+    await _livePhotoDownloadsTracker.remove(downloadID);
     return null;
   }
 }
@@ -348,9 +349,9 @@ Future<Uint8List> compressThumbnail(Uint8List thumbnail) {
 
 Future<void> clearCache(EnteFile file) async {
   if (file.fileType == FileType.video) {
-    VideoCacheManager.instance.removeFile(file.downloadUrl);
+    await VideoCacheManager.instance.removeFile(file.downloadUrl);
   } else {
-    DefaultCacheManager().removeFile(file.downloadUrl);
+    await DefaultCacheManager().removeFile(file.downloadUrl);
   }
   final cachedThumbnail = File(
     Configuration.instance.getThumbnailCacheDirectory() +

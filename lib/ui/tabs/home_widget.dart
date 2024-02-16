@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
+import "package:flutter_animate/flutter_animate.dart";
 import "package:flutter_local_notifications/flutter_local_notifications.dart";
 import 'package:logging/logging.dart';
 import 'package:media_extension/media_extension_action_types.dart';
@@ -34,6 +35,7 @@ import 'package:photos/services/update_service.dart';
 import 'package:photos/services/user_service.dart';
 import 'package:photos/states/user_details_state.dart';
 import 'package:photos/theme/colors.dart';
+import "package:photos/theme/effects.dart";
 import 'package:photos/theme/ente_theme.dart';
 import 'package:photos/ui/collections/collection_action_sheet.dart';
 import 'package:photos/ui/extents_page_view.dart';
@@ -43,14 +45,15 @@ import 'package:photos/ui/home/home_bottom_nav_bar.dart';
 import 'package:photos/ui/home/home_gallery_widget.dart';
 import 'package:photos/ui/home/landing_page_widget.dart';
 import "package:photos/ui/home/loading_photos_widget.dart";
-import 'package:photos/ui/home/preserve_footer_widget.dart';
 import 'package:photos/ui/home/start_backup_hook_widget.dart';
 import 'package:photos/ui/notification/update/change_log_page.dart';
+import "package:photos/ui/search_tab.dart";
 import 'package:photos/ui/settings/app_update_dialog.dart';
-import 'package:photos/ui/settings_page.dart';
+import "package:photos/ui/settings_page.dart";
 import "package:photos/ui/tabs/shared_collections_tab.dart";
 import "package:photos/ui/tabs/user_collections_tab.dart";
 import "package:photos/ui/viewer/gallery/collection_page.dart";
+import 'package:photos/ui/viewer/search/search_widget.dart';
 import 'package:photos/utils/dialog_util.dart';
 import "package:photos/utils/navigation_util.dart";
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
@@ -69,6 +72,7 @@ class HomeWidget extends StatefulWidget {
 class _HomeWidgetState extends State<HomeWidget> {
   static const _userCollectionsTab = UserCollectionsTab();
   static const _sharedCollectionTab = SharedCollectionsTab();
+  static const _searchTab = SearchTab();
   static final _settingsPage = SettingsPage(
     emailNotifier: UserService.instance.emailValueNotifier,
   );
@@ -87,6 +91,7 @@ class _HomeWidgetState extends State<HomeWidget> {
   List<SharedMediaFile>? _sharedFiles;
   bool _shouldRenderCreateCollectionSheet = false;
   bool _showShowBackupHook = false;
+  final isOnSearchTabNotifier = ValueNotifier<bool>(false);
 
   late StreamSubscription<TabChangedEvent> _tabChangedEventSubscription;
   late StreamSubscription<SubscriptionPurchasedEvent>
@@ -104,12 +109,17 @@ class _HomeWidgetState extends State<HomeWidget> {
     _logger.info("Building initstate");
     _tabChangedEventSubscription =
         Bus.instance.on<TabChangedEvent>().listen((event) {
+      _selectedTabIndex = event.selectedIndex;
+
+      if (event.selectedIndex == 3) {
+        isOnSearchTabNotifier.value = true;
+      } else {
+        isOnSearchTabNotifier.value = false;
+      }
       if (event.source != TabChangedEventSource.pageView) {
         debugPrint(
           "TabChange going from $_selectedTabIndex to ${event.selectedIndex} souce: ${event.source}",
         );
-        _selectedTabIndex = event.selectedIndex;
-        // _pageController.jumpToPage(_selectedTabIndex);
         _pageController.animateToPage(
           event.selectedIndex,
           duration: const Duration(milliseconds: 100),
@@ -184,9 +194,9 @@ class _HomeWidgetState extends State<HomeWidget> {
       },
     );
     _initDeepLinks();
-    UpdateService.instance.shouldUpdate().then((shouldUpdate) {
-      if (shouldUpdate) {
-        Future.delayed(Duration.zero, () {
+    UpdateService.instance.shouldShowUpdateNoification().then((value) {
+      Future.delayed(Duration.zero, () {
+        if (value) {
           showDialog(
             context: context,
             builder: (BuildContext context) {
@@ -196,9 +206,11 @@ class _HomeWidgetState extends State<HomeWidget> {
             },
             barrierColor: Colors.black.withOpacity(0.85),
           );
-        });
-      }
+          UpdateService.instance.resetUpdateAvailableShownTime();
+        }
+      });
     });
+
     // For sharing images coming from outside the app
     _initMediaShareSubscription();
     WidgetsBinding.instance.addPostFrameCallback(
@@ -263,6 +275,7 @@ class _HomeWidgetState extends State<HomeWidget> {
     _accountConfiguredEvent.cancel();
     _intentDataStreamSubscription?.cancel();
     _collectionUpdatedEvent.cancel();
+    isOnSearchTabNotifier.dispose();
     _pageController.dispose();
     super.dispose();
   }
@@ -331,7 +344,7 @@ class _HomeWidgetState extends State<HomeWidget> {
               return false;
             }
             if (Platform.isAndroid && action == IntentAction.main) {
-              MoveToBackground.moveTaskToBack();
+              unawaited(MoveToBackground.moveTaskToBack());
               return false;
             } else {
               return true;
@@ -402,20 +415,64 @@ class _HomeWidgetState extends State<HomeWidget> {
                     ? const StartBackupHookWidget(headerWidget: _headerWidget)
                     : HomeGalleryWidget(
                         header: _headerWidget,
-                        footer: const PreserveFooterWidget(),
+                        footer: const SizedBox(
+                          height: 160,
+                        ),
                         selectedFiles: _selectedFiles,
                       ),
                 _userCollectionsTab,
                 _sharedCollectionTab,
+                _searchTab,
               ],
             );
           },
         ),
         Align(
           alignment: Alignment.bottomCenter,
-          child: HomeBottomNavigationBar(
-            _selectedFiles,
-            selectedTabIndex: _selectedTabIndex,
+          child: ValueListenableBuilder(
+            valueListenable: isOnSearchTabNotifier,
+            builder: (context, value, child) {
+              return Container(
+                decoration: value
+                    ? BoxDecoration(
+                        color: getEnteColorScheme(context).backgroundElevated,
+                        boxShadow: shadowFloatFaintLight,
+                      )
+                    : null,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    value
+                        ? const SearchWidget()
+                            .animate()
+                            .fadeIn(
+                              duration: const Duration(milliseconds: 225),
+                              curve: Curves.easeInOutSine,
+                            )
+                            .scale(
+                              begin: const Offset(0.8, 0.8),
+                              end: const Offset(1, 1),
+                              duration: const Duration(
+                                milliseconds: 225,
+                              ),
+                              curve: Curves.easeInOutSine,
+                            )
+                            .slide(
+                              begin: const Offset(0, 0.4),
+                              curve: Curves.easeInOutSine,
+                              duration: const Duration(
+                                milliseconds: 225,
+                              ),
+                            )
+                        : const SizedBox.shrink(),
+                    HomeBottomNavigationBar(
+                      _selectedFiles,
+                      selectedTabIndex: _selectedTabIndex,
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
         ),
       ],
@@ -512,6 +569,7 @@ class _HomeWidgetState extends State<HomeWidget> {
             .getCollectionByID(int.parse(collectionID))!;
         final thumbnail =
             await CollectionsService.instance.getCover(collection);
+        // ignore: unawaited_futures
         routeToPage(
           context,
           CollectionPage(

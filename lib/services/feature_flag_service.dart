@@ -71,9 +71,10 @@ class FeatureFlagService {
   bool isInternalUserOrDebugBuild() {
     final String? email = Configuration.instance.getEmail();
     final userID = Configuration.instance.getUserID();
-    return (email != null && email.endsWith("@ente.io")) ||
+    isInternalUser = (email != null && email.endsWith("@ente.io")) ||
         _internalUserIDs.contains(userID) ||
         kDebugMode;
+    return isInternalUser;
   }
 
   Future<void> fetchFeatureFlags() async {
@@ -82,7 +83,7 @@ class FeatureFlagService {
           .getDio()
           .get("https://static.ente.io/feature_flags.json");
       final flagsResponse = FeatureFlags.fromMap(response.data);
-      _prefs.setString(_featureFlagsKey, flagsResponse.toJson());
+      await _prefs.setString(_featureFlagsKey, flagsResponse.toJson());
       _featureFlags = flagsResponse;
     } catch (e) {
       _logger.severe("Failed to sync feature flags ", e);

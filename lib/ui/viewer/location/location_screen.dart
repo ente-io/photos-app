@@ -1,3 +1,4 @@
+import "dart:async";
 import 'dart:developer' as dev;
 
 import "package:flutter/material.dart";
@@ -28,7 +29,8 @@ import "package:photos/ui/viewer/location/edit_location_sheet.dart";
 import "package:photos/utils/dialog_util.dart";
 
 class LocationScreen extends StatelessWidget {
-  const LocationScreen({super.key});
+  final String tagPrefix;
+  const LocationScreen({this.tagPrefix = "", super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +51,9 @@ class LocationScreen extends StatelessWidget {
             height: MediaQuery.of(context).size.height -
                 (heightOfAppBar + heightOfStatusBar),
             width: double.infinity,
-            child: const LocationGalleryWidget(),
+            child: LocationGalleryWidget(
+              tagPrefix: tagPrefix,
+            ),
           ),
         ],
       ),
@@ -115,7 +119,7 @@ class LocationScreenPopUpMenu extends StatelessWidget {
                 );
                 Navigator.of(context).pop();
               } catch (e) {
-                showGenericErrorDialog(context: context);
+                await showGenericErrorDialog(context: context, error: e);
               }
             }
           },
@@ -126,7 +130,8 @@ class LocationScreenPopUpMenu extends StatelessWidget {
 }
 
 class LocationGalleryWidget extends StatefulWidget {
-  const LocationGalleryWidget({super.key});
+  final String tagPrefix;
+  const LocationGalleryWidget({required this.tagPrefix, super.key});
 
   @override
   State<LocationGalleryWidget> createState() => _LocationGalleryWidgetState();
@@ -134,15 +139,17 @@ class LocationGalleryWidget extends StatefulWidget {
 
 class _LocationGalleryWidgetState extends State<LocationGalleryWidget> {
   late final Future<FileLoadResult> fileLoadResult;
+  late final List<EnteFile> allFilesWithLocation;
 
   late Widget galleryHeaderWidget;
   final _selectedFiles = SelectedFiles();
+  late final StreamSubscription<LocalPhotosUpdatedEvent> _filesUpdateEvent;
   @override
   void initState() {
     final collectionsToHide =
         CollectionsService.instance.archivedOrHiddenCollectionIds();
-    fileLoadResult =
-        FilesDB.instance.fetchAllUploadedAndSharedFilesWithLocation(
+    fileLoadResult = FilesDB.instance
+        .fetchAllUploadedAndSharedFilesWithLocation(
       galleryLoadStartTime,
       galleryLoadEndTime,
       limit: null,
@@ -151,14 +158,35 @@ class _LocationGalleryWidgetState extends State<LocationGalleryWidget> {
         ignoredCollectionIDs: collectionsToHide,
         hideIgnoredForUpload: true,
       ),
-    );
+    )
+        .then((value) {
+      allFilesWithLocation = value.files;
+      _filesUpdateEvent =
+          Bus.instance.on<LocalPhotosUpdatedEvent>().listen((event) {
+        if (event.type == EventType.deletedFromDevice ||
+            event.type == EventType.deletedFromEverywhere ||
+            event.type == EventType.deletedFromRemote ||
+            event.type == EventType.hide) {
+          for (var updatedFile in event.updatedFiles) {
+            allFilesWithLocation.remove(updatedFile);
+          }
+          if (mounted) {
+            setState(() {});
+          }
+        }
+      });
+      return value;
+    });
+
     galleryHeaderWidget = const GalleryHeaderWidget();
+
     super.initState();
   }
 
   @override
   void dispose() {
     InheritedLocationScreenState.memoryCountNotifier.value = null;
+    _filesUpdateEvent.cancel();
     super.dispose();
   }
 
@@ -170,13 +198,14 @@ class _LocationGalleryWidgetState extends State<LocationGalleryWidget> {
         .locationTagEntity
         .item
         .centerPoint;
+
     Future<FileLoadResult> filterFiles() async {
-      final FileLoadResult result = await fileLoadResult;
-      //wait for ignored files to be removed after init
+      //waiting for allFilesWithLocation to be initialized
+      await fileLoadResult;
       final stopWatch = Stopwatch()..start();
-      final copyOfFiles = List<EnteFile>.from(result.files);
-      copyOfFiles.removeWhere((f) {
-        return !LocationService.instance.isFileInsideLocationTag(
+      final filesInLocation = allFilesWithLocation;
+      filesInLocation.removeWhere((f) {
+        return !isFileInsideLocationTag(
           centerPoint,
           f.location!,
           selectedRadius,
@@ -187,12 +216,12 @@ class _LocationGalleryWidgetState extends State<LocationGalleryWidget> {
       );
       stopWatch.stop();
       InheritedLocationScreenState.memoryCountNotifier.value =
-          copyOfFiles.length;
+          filesInLocation.length;
 
       return Future.value(
         FileLoadResult(
-          copyOfFiles,
-          result.hasMore,
+          filesInLocation,
+          false,
         ),
       );
     }
@@ -229,7 +258,7 @@ class _LocationGalleryWidgetState extends State<LocationGalleryWidget> {
                   EventType.deletedFromEverywhere,
                 },
                 selectedFiles: _selectedFiles,
-                tagPrefix: "location_gallery",
+                tagPrefix: widget.tagPrefix,
               ),
               FileSelectionOverlayBar(
                 GalleryType.locationTag,

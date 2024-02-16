@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import "package:intl/intl.dart";
 import 'package:photos/ente_theme_data.dart';
 import "package:photos/generated/l10n.dart";
+import "package:photos/models/api/storage_bonus/bonus.dart";
 import 'package:photos/models/subscription.dart';
 import "package:photos/services/update_service.dart";
 import "package:photos/theme/ente_theme.dart";
@@ -87,13 +88,24 @@ class _SubscriptionHeaderWidgetState extends State<SubscriptionHeaderWidget> {
 
 class ValidityWidget extends StatelessWidget {
   final Subscription? currentSubscription;
+  final BonusData? bonusData;
 
-  const ValidityWidget({Key? key, this.currentSubscription}) : super(key: key);
+  const ValidityWidget({Key? key, this.currentSubscription, this.bonusData})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     if (currentSubscription == null) {
       return const SizedBox.shrink();
+    }
+    final List<Bonus> addOnBonus = bonusData?.getAddOnBonuses() ?? <Bonus>[];
+    final bool isFreeTrialSub = currentSubscription!.productID == freeProductID;
+    bool hideSubValidityView = false;
+    if (isFreeTrialSub && addOnBonus.isNotEmpty) {
+      hideSubValidityView = true;
+    }
+    if (!currentSubscription!.isValid()) {
+      hideSubValidityView = true;
     }
     final endDate =
         DateFormat.yMMMd(Localizations.localeOf(context).languageCode).format(
@@ -101,17 +113,51 @@ class ValidityWidget extends StatelessWidget {
     );
 
     var message = S.of(context).renewsOn(endDate);
-    if (currentSubscription!.productID == freeProductID) {
+    if (isFreeTrialSub) {
       message = UpdateService.instance.isPlayStoreFlavor()
           ? S.of(context).playStoreFreeTrialValidTill(endDate)
           : S.of(context).freeTrialValidTill(endDate);
     } else if (currentSubscription!.attributes?.isCancelled ?? false) {
       message = S.of(context).subWillBeCancelledOn(endDate);
+      if (addOnBonus.isNotEmpty) {
+        hideSubValidityView = true;
+      }
     }
+
     return Padding(
-      padding: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.only(top: 0),
+      child: Column(
+        children: [
+          if (!hideSubValidityView)
+            Text(
+              message,
+              style: Theme.of(context).textTheme.bodySmall,
+              textAlign: TextAlign.center,
+            ),
+          if (addOnBonus.isNotEmpty)
+            ...addOnBonus.map((bonus) => AddOnBonusValidity(bonus)).toList(),
+        ],
+      ),
+    );
+  }
+}
+
+class AddOnBonusValidity extends StatelessWidget {
+  final Bonus bonus;
+
+  const AddOnBonusValidity(this.bonus, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final endDate =
+        DateFormat.yMMMd(Localizations.localeOf(context).languageCode).format(
+      DateTime.fromMicrosecondsSinceEpoch(bonus.validTill),
+    );
+    final String storage = convertBytesToReadableFormat(bonus.storage);
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 8),
       child: Text(
-        message,
+        S.of(context).addOnValidTill(storage, endDate),
         style: Theme.of(context).textTheme.bodySmall,
         textAlign: TextAlign.center,
       ),
@@ -141,6 +187,7 @@ class SubFaqWidget extends StatelessWidget {
         singleBorderRadius: 4,
         alignCaptionedTextToLeft: true,
         onTap: () async {
+          // ignore: unawaited_futures
           showModalBottomSheet<void>(
             backgroundColor: Theme.of(context).colorScheme.bgColorForQuestions,
             barrierColor: Colors.black87,

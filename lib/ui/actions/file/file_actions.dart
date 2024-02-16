@@ -1,3 +1,5 @@
+import "dart:async";
+
 import "package:flutter/cupertino.dart";
 import "package:modal_bottom_sheet/modal_bottom_sheet.dart";
 import "package:photos/generated/l10n.dart";
@@ -125,7 +127,10 @@ Future<void> showSingleFileDeleteSheet(
   );
   if (actionResult?.action != null &&
       actionResult!.action == ButtonAction.error) {
-    showGenericErrorDialog(context: context);
+    await showGenericErrorDialog(
+      context: context,
+      error: actionResult.exception,
+    );
   }
 }
 

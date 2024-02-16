@@ -1,3 +1,5 @@
+import "dart:async";
+
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart';
@@ -218,7 +220,7 @@ Future<void> editFilename(
   );
   if (result is Exception) {
     _logger.severe("Failed to rename file");
-    showGenericErrorDialog(context: context);
+    await showGenericErrorDialog(context: context, error: result);
   }
 }
 

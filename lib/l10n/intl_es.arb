@@ -897,7 +897,7 @@
   "didYouKnow": "¿Sabías que?",
   "loadingMessage": "Cargando tus fotos...",
   "loadMessage1": "Puedes compartir tu suscripción con tu familia",
-  "loadMessage2": "Hasta ahora hemos conservado más de 10 millones de recuerdos",
+  "loadMessage2": "Hasta ahora hemos conservado más de 30 millones de recuerdos",
   "loadMessage3": "Guardamos 3 copias de sus datos, una en un refugio subterráneo",
   "loadMessage4": "Todas nuestras aplicaciones son de código abierto",
   "loadMessage5": "Nuestro código fuente y criptografía han sido auditados externamente",
@@ -964,5 +964,15 @@
   "familyPlanOverview": "Añada 5 familiares a su plan existente sin pagar más.\n\nCada miembro tiene su propio espacio privado y no puede ver los archivos del otro a menos que sean compartidos.\n\nLos planes familiares están disponibles para los clientes que tienen una suscripción de ente pagada.\n\n¡Suscríbete ahora para empezar!",
   "addToHiddenAlbum": "Add to hidden album",
   "moveToHiddenAlbum": "Move to hidden album",
-  "deleteConfirmDialogBody": "This account is linked to other ente apps, if you use any.\\n\\nYour uploaded data, across all ente apps, will be scheduled for deletion, and your account will be permanently deleted."
+  "fileTypes": "File types",
+  "deleteConfirmDialogBody": "This account is linked to other ente apps, if you use any.\\n\\nYour uploaded data, across all ente apps, will be scheduled for deletion, and your account will be permanently deleted.",
+  "yourMap": "Your map",
+  "modifyYourQueryOrTrySearchingFor": "Modify your query, or try searching for",
+  "contacts": "Contacts",
+  "editLocation": "Edit location",
+  "selectALocation": "Select a location",
+  "selectALocationFirst": "Select a location first",
+  "changeLocationOfSelectedItems": "Change location of selected items?",
+  "editsToLocationWillOnlyBeSeenWithinEnte": "Edits to location will only be seen within Ente",
+  "joinDiscord": "Join Discord"
 }

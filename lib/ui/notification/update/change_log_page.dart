@@ -1,3 +1,5 @@
+import "dart:async";
+
 import 'package:flutter/material.dart';
 import "package:photos/generated/l10n.dart";
 import 'package:photos/services/update_service.dart';
@@ -79,6 +81,21 @@ class _ChangeLogPageState extends State<ChangeLogPage> {
                     const SizedBox(
                       height: 8,
                     ),
+                    ButtonWidget(
+                      buttonType: ButtonType.trailingIconSecondary,
+                      buttonSize: ButtonSize.large,
+                      labelText: S.of(context).joinDiscord,
+                      icon: Icons.discord_outlined,
+                      iconColor: enteColorScheme.primary500,
+                      onTap: () async {
+                        unawaited(
+                          launchUrlString(
+                            "https://discord.com/invite/z2YVKkycX3",
+                            mode: LaunchMode.externalApplication,
+                          ),
+                        );
+                      },
+                    ),
                     // ButtonWidget(
                     //   buttonType: ButtonType.trailingIconSecondary,
                     //   buttonSize: ButtonSize.large,
@@ -89,19 +106,6 @@ class _ChangeLogPageState extends State<ChangeLogPage> {
                     //     await UpdateService.instance.launchReviewUrl();
                     //   },
                     // ),
-                    ButtonWidget(
-                      buttonType: ButtonType.trailingIconSecondary,
-                      buttonSize: ButtonSize.large,
-                      labelText: "Join the ente community",
-                      icon: Icons.people_alt_rounded,
-                      iconColor: enteColorScheme.primary500,
-                      onTap: () async {
-                        launchUrlString(
-                          "https://ente.io/community",
-                          mode: LaunchMode.externalApplication,
-                        );
-                      },
-                    ),
                     const SizedBox(height: 8),
                   ],
                 ),
@@ -116,37 +120,19 @@ class _ChangeLogPageState extends State<ChangeLogPage> {
   Widget _getChangeLog() {
     final scrollController = ScrollController();
     final List<ChangeLogEntry> items = [];
-    items.add(
+    items.addAll([
       ChangeLogEntry(
-        "Hidden albums ✨",
-        'You can now hide albums, just like individual memories.\n',
+        "Map View ✨",
+        'You can now view the location where a photo was clicked.\n'
+            '\nOpen a photo and tap the Info button to view its place on the map!',
       ),
-    );
-    items.add(
       ChangeLogEntry(
-          "Album improvements ✨",
-          'You can now pin your favourite albums, and set cover photos for them.\n'
-              '\nWe have also added a way to first create empty albums, and then add photos to it, both from ente and your device gallery.\n'),
-    );
+        "Bug Fixes",
+        'Many a bugs were squashed in this release.\n'
+            '\nIf you run into any, please write to team@ente.io, or let us know on Discord! 🙏',
+      ),
+    ]);
 
-    items.add(
-      ChangeLogEntry(
-        "Email verification ✨",
-        'We have now made email verification optional, so you can sign in with'
-            ' just your email address and password, without waiting for a verification code.\n'
-            '\nYou can opt in / out of email verification from Settings > Security.\n',
-      ),
-    );
-
-    items.add(
-      ChangeLogEntry(
-        "Bug fixes & other enhancements",
-        'We have squashed a few pesky bugs that were reported by our community,'
-            'and have improved the experience for albums and quick links.\n'
-            '\nIf you would like to help us improve ente, come join the ente community!',
-        isFeature: false,
-      ),
-    );
     return Container(
       padding: const EdgeInsets.only(left: 16),
       child: Scrollbar(

@@ -52,12 +52,11 @@ class LazyGroupGallery extends StatefulWidget {
 class _LazyGroupGalleryState extends State<LazyGroupGallery> {
   static const numberOfGroupsToRenderBeforeAndAfter = 8;
   late final ValueNotifier<bool> _showSelectAllButtonNotifier;
-  late final ValueNotifier<bool> _areAllFromGroupSelectedNotifer;
+  late final ValueNotifier<bool> _areAllFromGroupSelectedNotifier;
 
   late Logger _logger;
 
-  late List<EnteFile> _files;
-  Set<EnteFile>? _filesAsSet;
+  late List<EnteFile> _filesInGroup;
   late StreamSubscription<FilesUpdatedEvent>? _reloadEventSubscription;
   late StreamSubscription<int> _currentIndexSubscription;
   bool? _shouldRender;
@@ -65,7 +64,8 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
   @override
   void initState() {
     super.initState();
-    _areAllFromGroupSelectedNotifer = ValueNotifier(_areAllFromGroupSelected());
+    _areAllFromGroupSelectedNotifier =
+        ValueNotifier(_areAllFromGroupSelected());
 
     widget.selectedFiles?.addListener(_selectedFilesListener);
     _showSelectAllButtonNotifier = ValueNotifier(widget.showSelectAllByDefault);
@@ -75,7 +75,8 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
   void _init() {
     _logger = Logger("LazyLoading_${widget.logTag}");
     _shouldRender = true;
-    _files = widget.files;
+    _filesInGroup = widget.files;
+    _areAllFromGroupSelectedNotifier.value = _areAllFromGroupSelected();
     _reloadEventSubscription = widget.reloadEvent?.listen((e) => _onReload(e));
 
     _currentIndexSubscription =
@@ -90,15 +91,9 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
     });
   }
 
-  Set<EnteFile> get _setOfFiles {
-    _filesAsSet ??= _files.toSet();
-    return _filesAsSet!;
-  }
-
   bool _areAllFromGroupSelected() {
     if (widget.selectedFiles != null &&
         widget.selectedFiles!.files.length >= widget.files.length) {
-      widget.selectedFiles!.files.containsAll(widget.files);
       return widget.selectedFiles!.files.containsAll(widget.files);
     } else {
       return false;
@@ -106,11 +101,11 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
   }
 
   Future _onReload(FilesUpdatedEvent event) async {
-    if (_files.isEmpty) {
+    if (_filesInGroup.isEmpty) {
       return;
     }
     final DateTime groupDate =
-        DateTime.fromMicrosecondsSinceEpoch(_files[0].creationTime!);
+        DateTime.fromMicrosecondsSinceEpoch(_filesInGroup[0].creationTime!);
     // iterate over  files and check if any of the belongs to this group
     final anyCandidateForGroup = event.updatedFiles.any((file) {
       final fileDate = DateTime.fromMicrosecondsSinceEpoch(file.creationTime!);
@@ -152,7 +147,7 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
         final galleryState = context.findAncestorStateOfType<GalleryState>();
         if (galleryState?.mounted ?? false) {
           galleryState!.setState(() {});
-          _files = result.files;
+          _filesInGroup = result.files;
         }
       } else if (kDebugMode) {
         debugPrint("Unexpected event ${event.type.name}");
@@ -164,7 +159,7 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
   void dispose() {
     _reloadEventSubscription?.cancel();
     _currentIndexSubscription.cancel();
-    _areAllFromGroupSelectedNotifer.dispose();
+    _areAllFromGroupSelectedNotifier.dispose();
     widget.selectedFiles?.removeListener(_selectedFilesListener);
     super.dispose();
   }
@@ -172,7 +167,7 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
   @override
   void didUpdateWidget(LazyGroupGallery oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!listEquals(_files, widget.files)) {
+    if (!listEquals(_filesInGroup, widget.files)) {
       _reloadEventSubscription?.cancel();
       _init();
     }
@@ -180,7 +175,7 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
 
   @override
   Widget build(BuildContext context) {
-    if (_files.isEmpty) {
+    if (_filesInGroup.isEmpty) {
       return const SizedBox.shrink();
     }
     return Column(
@@ -190,9 +185,10 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
           children: [
             if (widget.enableFileGrouping)
               GroupHeaderWidget(
-                timestamp: _files[0].creationTime!,
+                timestamp: _filesInGroup[0].creationTime!,
                 gridSize: widget.photoGridSize,
               ),
+            Expanded(child: Container()),
             widget.limitSelectionToOne
                 ? const SizedBox.shrink()
                 : ValueListenableBuilder(
@@ -207,7 +203,7 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
                                 height: 44,
                                 child: ValueListenableBuilder(
                                   valueListenable:
-                                      _areAllFromGroupSelectedNotifer,
+                                      _areAllFromGroupSelectedNotifier,
                                   builder: (context, dynamic value, _) {
                                     return value
                                         ? const Icon(
@@ -225,7 +221,7 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
                               ),
                               onTap: () {
                                 widget.selectedFiles?.toggleGroupSelection(
-                                  _setOfFiles,
+                                  _filesInGroup.toSet(),
                                 );
                               },
                             );
@@ -236,7 +232,7 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
         _shouldRender!
             ? GroupGallery(
                 photoGridSize: widget.photoGridSize,
-                files: _files,
+                files: _filesInGroup,
                 tag: widget.tag,
                 asyncLoader: widget.asyncLoader,
                 selectedFiles: widget.selectedFiles,
@@ -245,7 +241,7 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
             // todo: perf eval should we have separate PlaceHolder for Groups
             //  instead of creating a large cached view
             : PlaceHolderGridViewWidget(
-                _files.length,
+                _filesInGroup.length,
                 widget.photoGridSize,
               ),
       ],
@@ -254,8 +250,8 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
 
   void _selectedFilesListener() {
     if (widget.selectedFiles == null) return;
-    _areAllFromGroupSelectedNotifer.value =
-        widget.selectedFiles!.files.containsAll(_setOfFiles);
+    _areAllFromGroupSelectedNotifier.value =
+        widget.selectedFiles!.files.containsAll(_filesInGroup.toSet());
 
     //Can remove this if we decide to show select all by default for all galleries
     if (widget.selectedFiles!.files.isEmpty && !widget.showSelectAllByDefault) {

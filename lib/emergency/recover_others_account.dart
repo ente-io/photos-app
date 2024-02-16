@@ -358,7 +358,7 @@ class _RecoverOthersAccountState extends State<RecoverOthersAccount> {
     } catch (e, s) {
       _logger.severe(e, s);
       await dialog.hide();
-      showGenericErrorDialog(context: context);
+      showGenericErrorDialog(context: context, error: e).ignore();
     }
   }
 }

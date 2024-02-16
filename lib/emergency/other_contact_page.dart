@@ -140,7 +140,7 @@ class _OtherContactPageState extends State<OtherContactPage> {
                               await EmergencyContactService.instance
                                   .startRecovery(widget.contact);
                               if (mounted) {
-                                _fetchData();
+                                _fetchData().ignore();
                                 await showErrorDialog(
                                   context,
                                   "Done",
@@ -149,7 +149,8 @@ class _OtherContactPageState extends State<OtherContactPage> {
                                 );
                               }
                             } catch (e) {
-                              showGenericErrorDialog(context: context);
+                              showGenericErrorDialog(context: context, error: e)
+                                  .ignore();
                             }
                           }
                         }
@@ -224,7 +225,8 @@ class _OtherContactPageState extends State<OtherContactPage> {
                       );
                       Navigator.of(context).pop(true);
                     } catch (e) {
-                      showGenericErrorDialog(context: context);
+                      showGenericErrorDialog(context: context, error: e)
+                          .ignore();
                     }
                   },
                 );
