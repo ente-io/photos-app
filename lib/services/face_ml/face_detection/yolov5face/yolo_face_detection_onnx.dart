@@ -342,6 +342,9 @@ class YoloOnnxFaceDetection {
     );
     final inputs = {'input': inputOrt};
     stopwatchDecoding.stop();
+    dev.log(
+      'Face detection image decoding and preprocessing is finished, in ${stopwatchDecoding.elapsedMilliseconds}ms',
+    );
     _logger.info(
       'Image decoding and preprocessing is finished, in ${stopwatchDecoding.elapsedMilliseconds}ms',
     );

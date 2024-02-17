@@ -634,7 +634,10 @@ Future<(Float32List, Size, Size)> preprocessImageToFloat32ChannelsFirst(
       : normalization == 1
           ? normalizePixelRange1
           : normalizePixelNoRange;
+  final stopwatch = Stopwatch()..start();
   final Image image = await decodeImageFromData(imageData);
+  stopwatch.stop();
+  log("Face Detection decoding ui image took: ${stopwatch.elapsedMilliseconds} ms");
   final originalSize = Size(image.width.toDouble(), image.height.toDouble());
 
   if (image.width == requiredWidth && image.height == requiredHeight) {
@@ -825,7 +828,10 @@ Future<(Float32List, List<AlignmentResult>, List<bool>, List<double>, Size)>
   int height = 112,
 }) async {
   final Uint8List imageData = await File(imagePath).readAsBytes();
+  final stopwatch = Stopwatch()..start();
   final Image image = await decodeImageFromData(imageData);
+  stopwatch.stop();
+  log("Face Alignment decoding ui image took: ${stopwatch.elapsedMilliseconds} ms");
   final Size originalSize =
       Size(image.width.toDouble(), image.height.toDouble());
 

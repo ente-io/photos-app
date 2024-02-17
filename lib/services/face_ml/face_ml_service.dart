@@ -48,7 +48,7 @@ enum FaceMlOperation { analyzeImage }
 ///
 /// The pipeline consists of face detection, face alignment and face embedding.
 class FaceMlService {
-  static final _logger = Logger("FaceMlService");
+  final _logger = Logger("FaceMlService");
 
   // Flutter isolate things for running the image ml pipeline
   Timer? _inactivityTimer;
@@ -198,6 +198,7 @@ class FaceMlService {
             dev.log(
               "Start analyzing image with uploadedFileID: $enteFileID inside the isolate",
             );
+            final stopwatchTotal = Stopwatch()..start();
             final stopwatch = Stopwatch()..start();
 
             // Get the faces
@@ -208,7 +209,8 @@ class FaceMlService {
               resultBuilder: resultBuilder,
             );
 
-            // _logger.info("Completed `detectFaces` function");
+            dev.log("Completed `detectFaces` function, in "
+                "${stopwatch.elapsedMilliseconds} ms");
 
             // If no faces were detected, return a result with no faces. Otherwise, continue.
             if (faceDetectionResult.isEmpty) {
@@ -219,6 +221,7 @@ class FaceMlService {
               break;
             }
 
+            stopwatch.reset();
             // Align the faces
             final Float32List faceAlignmentResult =
                 await FaceMlService.alignFacesSync(
@@ -227,8 +230,10 @@ class FaceMlService {
               resultBuilder: resultBuilder,
             );
 
-            _logger.info("Completed `alignFaces` function");
+            dev.log("Completed `alignFaces` function, in "
+                "${stopwatch.elapsedMilliseconds} ms");
 
+            stopwatch.reset();
             // Get the embeddings of the faces
             final embeddings = await FaceMlService.embedFacesSync(
               faceAlignmentResult,
@@ -236,13 +241,14 @@ class FaceMlService {
               resultBuilder: resultBuilder,
             );
 
-            _logger.info("Completed `embedBatchFaces` function");
+            dev.log("Completed `embedBatchFaces` function, in "
+                "${stopwatch.elapsedMilliseconds} ms");
 
             stopwatch.stop();
-            _logger.info(
-                "Finished Analyze image (${embeddings.length} faces) with "
+            stopwatchTotal.stop();
+            dev.log("Finished Analyze image (${embeddings.length} faces) with "
                 "uploadedFileID $enteFileID, in "
-                "${stopwatch.elapsedMilliseconds} ms");
+                "${stopwatchTotal.elapsedMilliseconds} ms");
 
             sendPort.send(resultBuilder.build().toJsonString());
             break;
@@ -421,7 +427,7 @@ class FaceMlService {
 
       stopwatch.stop();
       _logger.info(
-        "`indexAllImages()` finished. Analyzed $fileAnalyzedCount images, in ${stopwatch.elapsed.inSeconds} seconds (skipped $fileSkippedCount images)",
+        "`indexAllImages()` finished. Analyzed $fileAnalyzedCount images, in ${stopwatch.elapsed.inSeconds} seconds (avg of ${stopwatch.elapsed.inSeconds / fileAnalyzedCount} seconds per image, skipped $fileSkippedCount images)",
       );
 
       // Dispose of all the isolates
@@ -590,8 +596,10 @@ class FaceMlService {
   }) async {
     _checkEnteFileForID(enteFile);
 
-    final String? thumbnailPath =
-        await _getImagePathForML(enteFile, typeOfData: FileDataForML.fileData);
+    final String? thumbnailPath = await _getImagePathForML(
+      enteFile,
+      typeOfData: FileDataForML.thumbnailData,
+    );
     String? filePath;
 
     // // TODO: remove/optimize this later. Not now though: premature optimization
@@ -690,8 +698,10 @@ class FaceMlService {
     _checkEnteFileForID(enteFile);
     await ensureInitialized();
 
-    final String? thumbnailPath =
-        await _getImagePathForML(enteFile, typeOfData: FileDataForML.fileData);
+    final String? thumbnailPath = await _getImagePathForML(
+      enteFile,
+      typeOfData: FileDataForML.thumbnailData,
+    );
     final String? filePath =
         await _getImagePathForML(enteFile, typeOfData: FileDataForML.fileData);
 
@@ -888,7 +898,7 @@ class FaceMlService {
     int interpreterAddress, {
     FaceMlResultBuilder? resultBuilder,
   }) async {
-    _logger.info(
+    dev.log(
       "isInitialized: ${YoloOnnxFaceDetection.instance.isInitialized}, sessionOptions: ${YoloOnnxFaceDetection.instance.sessionOptions}",
     );
     try {
@@ -910,7 +920,7 @@ class FaceMlService {
     } on YOLOInterpreterRunException {
       throw CouldNotRunFaceDetector();
     } catch (e) {
-      _logger.severe('Face detection failed: $e');
+      dev.log('[SEVERE] Face detection failed: $e');
       throw GeneralFaceMlException('Face detection failed: $e');
     }
   }
@@ -967,6 +977,7 @@ class FaceMlService {
     FaceMlResultBuilder? resultBuilder,
   }) async {
     try {
+      final stopwatch = Stopwatch()..start();
       final (
         alignedFaces,
         alignmentResults,
@@ -974,6 +985,10 @@ class FaceMlService {
         blurValues,
         originalImageSize
       ) = await preprocessToMobileFaceNetFloat32List(imagePath, faces);
+      stopwatch.stop();
+      dev.log(
+        "Face alignment image decoding and processing took ${stopwatch.elapsedMilliseconds} ms",
+      );
 
       if (resultBuilder != null) {
         resultBuilder.addAlignmentResults(
@@ -985,7 +1000,7 @@ class FaceMlService {
 
       return alignedFaces;
     } catch (e, s) {
-      _logger.severe('Face alignment failed: $e', e, s);
+      dev.log('[SEVERE] Face alignment failed: $e $s');
       throw CouldNotWarpAffine();
     }
   }
@@ -1057,7 +1072,7 @@ class FaceMlService {
       throw InputProblemFaceEmbeddor("Input range is wrong");
       // ignore: avoid_catches_without_on_clauses
     } catch (e) {
-      _logger.severe('Face embedding (batch) failed: $e');
+      dev.log('[SEVERE] Face embedding (batch) failed: $e');
       throw GeneralFaceMlException('Face embedding (batch) failed: $e');
     }
   }
