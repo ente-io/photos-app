@@ -132,7 +132,6 @@ class SearchWidgetState extends State<SearchWidget> {
               child: Container(
                 color: colorScheme.backgroundBase,
                 child: Container(
-                  height: 44,
                   color: colorScheme.fillFaint,
                   child: TextFormField(
                     controller: textController,

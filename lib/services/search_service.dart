@@ -3,6 +3,7 @@ import "dart:math";
 import "package:flutter/cupertino.dart";
 import "package:intl/intl.dart";
 import 'package:logging/logging.dart';
+import "package:photos/core/constants.dart";
 import 'package:photos/core/event_bus.dart';
 import 'package:photos/data/holidays.dart';
 import 'package:photos/data/months.dart';
@@ -19,6 +20,7 @@ import "package:photos/models/file/extensions/file_props.dart";
 import 'package:photos/models/file/file.dart';
 import 'package:photos/models/file/file_type.dart';
 import "package:photos/models/local_entity_data.dart";
+import "package:photos/models/location/location.dart";
 import "package:photos/models/location_tag/location_tag.dart";
 import 'package:photos/models/search/album_search_result.dart';
 import 'package:photos/models/search/generic_search_result.dart';
@@ -26,8 +28,9 @@ import "package:photos/models/search/search_constants.dart";
 import "package:photos/models/search/search_types.dart";
 import 'package:photos/services/collections_service.dart';
 import "package:photos/services/location_service.dart";
-import 'package:photos/services/semantic_search/semantic_search_service.dart';
+import 'package:photos/services/machine_learning/semantic_search/semantic_search_service.dart';
 import "package:photos/states/location_screen_state.dart";
+import "package:photos/ui/viewer/location/add_location_sheet.dart";
 import "package:photos/ui/viewer/location/location_screen.dart";
 import "package:photos/ui/viewer/people/cluster_page.dart";
 import "package:photos/ui/viewer/people/people_page.dart";
@@ -614,9 +617,6 @@ class SearchService {
         result[tag] = [];
       }
     }
-    if (result.isEmpty && !showNoLocationTag) {
-      return searchResults;
-    }
     final allFiles = await getAllFiles();
     for (EnteFile file in allFiles) {
       if (file.hasLocation) {
@@ -680,6 +680,28 @@ class SearchService {
                 ),
               );
             },
+          ),
+        );
+      }
+    }
+    //todo: remove this later, this hack is for interval+external evaluation
+    // for suggestions
+    final allCitiesSearch = query == '__city';
+    if (allCitiesSearch) {
+      query = '';
+    }
+    final results =
+        await LocationService.instance.getFilesInCity(allFiles, query);
+    final List<City> sortedByResultCount = results.keys.toList()
+      ..sort((a, b) => results[b]!.length.compareTo(results[a]!.length));
+    for (final city in sortedByResultCount) {
+      // If the location tag already exists for a city, don't add it again
+      if (!locationTagNames.contains(city.city)) {
+        searchResults.add(
+          GenericSearchResult(
+            ResultType.location,
+            city.city,
+            results[city]!,
           ),
         );
       }
@@ -834,6 +856,7 @@ class SearchService {
       final locationTagEntities =
           (await LocationService.instance.getLocationTags());
       final allFiles = await getAllFiles();
+      final List<EnteFile> filesWithNoLocTag = [];
 
       for (int i = 0; i < locationTagEntities.length; i++) {
         if (limit != null && i >= limit) break;
@@ -842,14 +865,21 @@ class SearchService {
 
       for (EnteFile file in allFiles) {
         if (file.hasLocation) {
+          bool hasLocationTag = false;
           for (LocalEntity<LocationTag> tag in tagToItemsMap.keys) {
             if (isFileInsideLocationTag(
               tag.item.centerPoint,
               file.location!,
               tag.item.radius,
             )) {
+              hasLocationTag = true;
               tagToItemsMap[tag]!.add(file);
             }
+          }
+          // If the location tag already exists for a city, do not consider
+          // it for the city suggestions
+          if (!hasLocationTag) {
+            filesWithNoLocTag.add(file);
           }
         }
       }
@@ -873,6 +903,30 @@ class SearchService {
                           "${ResultType.location.toString()}_${entry.key.item.name}",
                     ),
                   ),
+                );
+              },
+            ),
+          );
+        }
+      }
+      if (limit == null || tagSearchResults.length < limit) {
+        final results = await LocationService.instance
+            .getFilesInCity(filesWithNoLocTag, '');
+        final List<City> sortedByResultCount = results.keys.toList()
+          ..sort((a, b) => results[b]!.length.compareTo(results[a]!.length));
+        for (final city in sortedByResultCount) {
+          if (results[city]!.length <= 1) continue;
+          tagSearchResults.add(
+            GenericSearchResult(
+              ResultType.locationSuggestion,
+              city.city,
+              results[city]!,
+              onResultTap: (ctx) {
+                showAddLocationSheet(
+                  ctx,
+                  Location(latitude: city.lat, longitude: city.lng),
+                  name: city.city,
+                  radius: defaultCityRadius,
                 );
               },
             ),
