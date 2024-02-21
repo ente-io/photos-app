@@ -17,6 +17,7 @@ enum ImageOperation {
   preprocessYoloOnnx,
   preprocessFaceAlign,
   preprocessMobileFaceNet,
+  preprocessMobileFaceNetOnnx,
   generateFaceThumbnail,
   generateFaceThumbnailsForImage,
   cropAndPadFace,
@@ -36,8 +37,10 @@ class ImageMlIsolate {
 
   Timer? _inactivityTimer;
   final Duration _inactivityDuration = const Duration(seconds: 60);
+  int _activeTasks = 0;
 
   final _initLock = Lock();
+  final _functionLock = Lock();
 
   late FlutterIsolate _isolate;
   late ReceivePort _receivePort = ReceivePort();
@@ -159,10 +162,41 @@ class ImageMlIsolate {
           case ImageOperation.preprocessMobileFaceNet:
             final imageData = args['imageData'] as Uint8List;
             final facesJson = args['facesJson'] as List<Map<String, dynamic>>;
-            final (inputs, alignmentResults, isBlurs, blurValues, originalSize) =
-                await preprocessToMobileFaceNetInput(
+            final (
+              inputs,
+              alignmentResults,
+              isBlurs,
+              blurValues,
+              originalSize
+            ) = await preprocessToMobileFaceNetInput(
               imageData,
               facesJson,
+            );
+            final List<Map<String, dynamic>> alignmentResultsJson =
+                alignmentResults.map((result) => result.toJson()).toList();
+            sendPort.send({
+              'inputs': inputs,
+              'alignmentResultsJson': alignmentResultsJson,
+              'isBlurs': isBlurs,
+              'blurValues': blurValues,
+              'originalWidth': originalSize.width,
+              'originalHeight': originalSize.height,
+            });
+          case ImageOperation.preprocessMobileFaceNetOnnx:
+            final imagePath = args['imagePath'] as String;
+            final facesJson = args['facesJson'] as List<Map<String, dynamic>>;
+            final List<FaceDetectionRelative> relativeFaces = facesJson
+                .map((face) => FaceDetectionRelative.fromJson(face))
+                .toList();
+            final (
+              inputs,
+              alignmentResults,
+              isBlurs,
+              blurValues,
+              originalSize
+            ) = await preprocessToMobileFaceNetFloat32List(
+              imagePath,
+              relativeFaces,
             );
             final List<Map<String, dynamic>> alignmentResultsJson =
                 alignmentResults.map((result) => result.toJson()).toList();
@@ -214,26 +248,30 @@ class ImageMlIsolate {
     (ImageOperation, Map<String, dynamic>) message,
   ) async {
     await ensureSpawned();
-    _resetInactivityTimer();
-    final completer = Completer<dynamic>();
-    final answerPort = ReceivePort();
+    return _functionLock.synchronized(() async {
+      _resetInactivityTimer();
+      final completer = Completer<dynamic>();
+      final answerPort = ReceivePort();
 
-    _mainSendPort.send([message.$1.index, message.$2, answerPort.sendPort]);
+      _activeTasks++;
+      _mainSendPort.send([message.$1.index, message.$2, answerPort.sendPort]);
 
-    answerPort.listen((receivedMessage) {
-      if (receivedMessage is Map && receivedMessage.containsKey('error')) {
-        // Handle the error
-        final errorMessage = receivedMessage['error'];
-        final errorStackTrace = receivedMessage['stackTrace'];
-        final exception = Exception(errorMessage);
-        final stackTrace = StackTrace.fromString(errorStackTrace);
-        completer.completeError(exception, stackTrace);
-      } else {
-        completer.complete(receivedMessage);
-      }
+      answerPort.listen((receivedMessage) {
+        if (receivedMessage is Map && receivedMessage.containsKey('error')) {
+          // Handle the error
+          final errorMessage = receivedMessage['error'];
+          final errorStackTrace = receivedMessage['stackTrace'];
+          final exception = Exception(errorMessage);
+          final stackTrace = StackTrace.fromString(errorStackTrace);
+          completer.completeError(exception, stackTrace);
+        } else {
+          completer.complete(receivedMessage);
+        }
+      });
+      _activeTasks--;
+
+      return completer.future;
     });
-
-    return completer.future;
   }
 
   /// Resets a timer that kills the isolate after a certain amount of inactivity.
@@ -242,10 +280,16 @@ class ImageMlIsolate {
   void _resetInactivityTimer() {
     _inactivityTimer?.cancel();
     _inactivityTimer = Timer(_inactivityDuration, () {
-      _logger.info(
-        'Flutter Isolate has been inactive for ${_inactivityDuration.inSeconds} seconds. Killing isolate.',
+      if (_activeTasks > 0) {
+        _logger.info('Tasks are still running. Delaying isolate disposal.');
+        // Optionally, reschedule the timer to check again later.
+        _resetInactivityTimer();
+      } else {
+        _logger.info(
+        'Clustering Isolate has been inactive for ${_inactivityDuration.inSeconds} seconds with no tasks running. Killing isolate.',
       );
-      dispose();
+        dispose();
+      }
     });
   }
 
@@ -393,6 +437,39 @@ class ImageMlIsolate {
       results['originalWidth'] as double,
       results['originalHeight'] as double,
     );
+    return (inputs, alignmentResults, isBlurs, blurValues, originalSize);
+  }
+
+  /// Uses [preprocessToMobileFaceNetFloat32List] inside the isolate.
+  Future<(Float32List, List<AlignmentResult>, List<bool>, List<double>, Size)>
+      preprocessMobileFaceNetOnnx(
+    String imagePath,
+    List<FaceDetectionRelative> faces,
+  ) async {
+    final List<Map<String, dynamic>> facesJson =
+        faces.map((face) => face.toJson()).toList();
+    final Map<String, dynamic> results = await _runInIsolate(
+      (
+        ImageOperation.preprocessMobileFaceNetOnnx,
+        {
+          'imagePath': imagePath,
+          'facesJson': facesJson,
+        },
+      ),
+    );
+    final inputs = results['inputs'] as Float32List;
+    final alignmentResultsJson =
+        results['alignmentResultsJson'] as List<Map<String, dynamic>>;
+    final alignmentResults = alignmentResultsJson.map((json) {
+      return AlignmentResult.fromJson(json);
+    }).toList();
+    final isBlurs = results['isBlurs'] as List<bool>;
+    final blurValues = results['blurValues'] as List<double>;
+    final originalSize = Size(
+      results['originalWidth'] as double,
+      results['originalHeight'] as double,
+    );
+
     return (inputs, alignmentResults, isBlurs, blurValues, originalSize);
   }
 

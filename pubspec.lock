@@ -1405,8 +1405,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: HEAD
-      resolved-ref: "1318dce97f3aae5ec9bdf7491d5eff0ad6beb378"
+      ref: isolates
+      resolved-ref: c967297d832033b850e821611b13fdcdde5c650d
       url: "https://github.com/ente-io/onnxruntime.git"
     source: git
     version: "1.1.0"

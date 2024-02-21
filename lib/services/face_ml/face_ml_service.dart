@@ -1,8 +1,11 @@
 import "dart:async";
-import "dart:io" as io;
+import "dart:developer" as dev show log;
+import "dart:io" show File;
+import "dart:isolate";
+import "dart:typed_data" show Uint8List, Float32List;
 
-import "package:flutter/foundation.dart";
 import "package:flutter_image_compress/flutter_image_compress.dart";
+import "package:flutter_isolate/flutter_isolate.dart";
 import "package:logging/logging.dart";
 import "package:photos/core/configuration.dart";
 import "package:photos/core/constants.dart";
@@ -18,24 +21,26 @@ import "package:photos/face/model/landmark.dart";
 import "package:photos/models/file/extensions/file_props.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/models/file/file_type.dart";
-import 'package:photos/models/ml/ml_typedefs.dart';
 import "package:photos/models/ml/ml_versions.dart";
 import "package:photos/services/face_ml/face_clustering/linear_clustering_service.dart";
 import "package:photos/services/face_ml/face_detection/detection.dart";
 import "package:photos/services/face_ml/face_detection/yolov5face/yolo_face_detection_exceptions.dart";
 import "package:photos/services/face_ml/face_detection/yolov5face/yolo_face_detection_onnx.dart";
 import "package:photos/services/face_ml/face_embedding/face_embedding_exceptions.dart";
-import "package:photos/services/face_ml/face_embedding/face_embedding_service.dart";
+import "package:photos/services/face_ml/face_embedding/face_embedding_onnx.dart";
 import "package:photos/services/face_ml/face_ml_exceptions.dart";
 import "package:photos/services/face_ml/face_ml_result.dart";
 import "package:photos/services/search_service.dart";
 import "package:photos/utils/file_util.dart";
 import 'package:photos/utils/image_ml_isolate.dart';
+import "package:photos/utils/image_ml_util.dart";
 import "package:photos/utils/local_settings.dart";
 import "package:photos/utils/thumbnail_util.dart";
 import "package:synchronized/synchronized.dart";
 
 enum FileDataForML { thumbnailData, fileData, compressedFileData }
+
+enum FaceMlOperation { analyzeImage }
 
 /// This class is responsible for running the full face ml pipeline on images.
 ///
@@ -45,7 +50,16 @@ enum FileDataForML { thumbnailData, fileData, compressedFileData }
 class FaceMlService {
   final _logger = Logger("FaceMlService");
 
-  // late SimilarityTransform _similarityTransform;
+  // Flutter isolate things for running the image ml pipeline
+  Timer? _inactivityTimer;
+  final Duration _inactivityDuration = const Duration(seconds: 120);
+  int _activeTasks = 0;
+  final _initLockIsolate = Lock();
+  late FlutterIsolate _isolate;
+  late ReceivePort _receivePort = ReceivePort();
+  late SendPort _mainSendPort;
+
+  bool isIsolateSpawned = false;
 
   // singleton pattern
   FaceMlService._privateConstructor();
@@ -53,12 +67,13 @@ class FaceMlService {
   factory FaceMlService() => instance;
 
   final _initLock = Lock();
+  final _functionLock = Lock();
 
   bool initialized = false;
   bool isImageIndexRunning = false;
-  int kParallelism = 1;
+  int kParallelism = 15;
 
-  Future<void> init() async {
+  Future<void> init({bool initializeImageMlIsolate = false}) async {
     return _initLock.synchronized(() async {
       if (initialized) {
         return;
@@ -69,13 +84,15 @@ class FaceMlService {
       } catch (e, s) {
         _logger.severe("Could not initialize yolo onnx", e, s);
       }
-      try {
-        await ImageMlIsolate.instance.init();
-      } catch (e, s) {
-        _logger.severe("Could not initialize image ml isolate", e, s);
+      if (initializeImageMlIsolate) {
+        try {
+          await ImageMlIsolate.instance.init();
+        } catch (e, s) {
+          _logger.severe("Could not initialize image ml isolate", e, s);
+        }
       }
       try {
-        await FaceEmbedding.instance.init();
+        await FaceEmbeddingOnnx.instance.init();
       } catch (e, s) {
         _logger.severe("Could not initialize mobilefacenet", e, s);
       }
@@ -93,7 +110,7 @@ class FaceMlService {
     });
   }
 
-  Future<void> ensureSpawned() async {
+  Future<void> ensureInitialized() async {
     if (!initialized) {
       await init();
     }
@@ -116,12 +133,195 @@ class FaceMlService {
         _logger.severe("Could not dispose image ml isolate", e, s);
       }
       try {
-        await FaceEmbedding.instance.dispose();
+        await FaceEmbeddingOnnx.instance.dispose();
       } catch (e, s) {
         _logger.severe("Could not dispose mobilefacenet", e, s);
       }
       initialized = false;
     });
+  }
+
+  Future<void> initIsolate() async {
+    return _initLockIsolate.synchronized(() async {
+      if (isIsolateSpawned) return;
+      _logger.info("initIsolate called");
+
+      _receivePort = ReceivePort();
+
+      try {
+        _isolate = await FlutterIsolate.spawn(
+          _isolateMain,
+          _receivePort.sendPort,
+        );
+        _mainSendPort = await _receivePort.first as SendPort;
+        isIsolateSpawned = true;
+
+        _resetInactivityTimer();
+      } catch (e) {
+        _logger.severe('Could not spawn isolate', e);
+        isIsolateSpawned = false;
+      }
+    });
+  }
+
+  Future<void> ensureSpawnedIsolate() async {
+    if (!isIsolateSpawned) {
+      await initIsolate();
+    }
+  }
+
+  /// The main execution function of the isolate.
+  static void _isolateMain(SendPort mainSendPort) async {
+    final receivePort = ReceivePort();
+    mainSendPort.send(receivePort.sendPort);
+
+    receivePort.listen((message) async {
+      final functionIndex = message[0] as int;
+      final function = FaceMlOperation.values[functionIndex];
+      final args = message[1] as Map<String, dynamic>;
+      final sendPort = message[2] as SendPort;
+
+      try {
+        switch (function) {
+          case FaceMlOperation.analyzeImage:
+            final int enteFileID = args["enteFileID"] as int;
+            final String smallDataPath = args["smallDataPath"] as String;
+            final String largeDataPath = args["largeDataPath"] as String;
+            final int faceDetectionAddress =
+                args["faceDetectionAddress"] as int;
+            final int faceEmbeddingAddress =
+                args["faceEmbeddingAddress"] as int;
+
+            final resultBuilder =
+                FaceMlResultBuilder.fromEnteFileID(enteFileID);
+
+            dev.log(
+              "Start analyzing image with uploadedFileID: $enteFileID inside the isolate",
+            );
+            final stopwatchTotal = Stopwatch()..start();
+            final stopwatch = Stopwatch()..start();
+
+            // Get the faces
+            final List<FaceDetectionRelative> faceDetectionResult =
+                await FaceMlService.detectFacesSync(
+              smallDataPath,
+              faceDetectionAddress,
+              resultBuilder: resultBuilder,
+            );
+
+            dev.log("Completed `detectFaces` function, in "
+                "${stopwatch.elapsedMilliseconds} ms");
+
+            // If no faces were detected, return a result with no faces. Otherwise, continue.
+            if (faceDetectionResult.isEmpty) {
+              dev.log(
+                  "No faceDetectionResult, Completed analyzing image with uploadedFileID $enteFileID, in "
+                  "${stopwatch.elapsedMilliseconds} ms");
+              sendPort.send(resultBuilder.buildNoFaceDetected().toJsonString());
+              break;
+            }
+
+            stopwatch.reset();
+            // Align the faces
+            final Float32List faceAlignmentResult =
+                await FaceMlService.alignFacesSync(
+              largeDataPath,
+              faceDetectionResult,
+              resultBuilder: resultBuilder,
+            );
+
+            dev.log("Completed `alignFaces` function, in "
+                "${stopwatch.elapsedMilliseconds} ms");
+
+            stopwatch.reset();
+            // Get the embeddings of the faces
+            final embeddings = await FaceMlService.embedFacesSync(
+              faceAlignmentResult,
+              faceEmbeddingAddress,
+              resultBuilder: resultBuilder,
+            );
+
+            dev.log("Completed `embedBatchFaces` function, in "
+                "${stopwatch.elapsedMilliseconds} ms");
+
+            stopwatch.stop();
+            stopwatchTotal.stop();
+            dev.log("Finished Analyze image (${embeddings.length} faces) with "
+                "uploadedFileID $enteFileID, in "
+                "${stopwatchTotal.elapsedMilliseconds} ms");
+
+            sendPort.send(resultBuilder.build().toJsonString());
+            break;
+        }
+      } catch (e, stackTrace) {
+        dev.log(
+          "[SEVERE] Error in FaceML isolate: $e",
+          error: e,
+          stackTrace: stackTrace,
+        );
+        sendPort
+            .send({'error': e.toString(), 'stackTrace': stackTrace.toString()});
+      }
+    });
+  }
+
+  /// The common method to run any operation in the isolate. It sends the [message] to [_isolateMain] and waits for the result.
+  Future<dynamic> _runInIsolate(
+    (FaceMlOperation, Map<String, dynamic>) message,
+  ) async {
+    await ensureSpawnedIsolate();
+    return _functionLock.synchronized(() async {
+      _resetInactivityTimer();
+      final completer = Completer<dynamic>();
+      final answerPort = ReceivePort();
+
+      _activeTasks++;
+      _mainSendPort.send([message.$1.index, message.$2, answerPort.sendPort]);
+
+      answerPort.listen((receivedMessage) {
+        if (receivedMessage is Map && receivedMessage.containsKey('error')) {
+          // Handle the error
+          final errorMessage = receivedMessage['error'];
+          final errorStackTrace = receivedMessage['stackTrace'];
+          final exception = Exception(errorMessage);
+          final stackTrace = StackTrace.fromString(errorStackTrace);
+          completer.completeError(exception, stackTrace);
+        } else {
+          completer.complete(receivedMessage);
+        }
+      });
+      _activeTasks--;
+
+      return completer.future;
+    });
+  }
+
+  /// Resets a timer that kills the isolate after a certain amount of inactivity.
+  ///
+  /// Should be called after initialization (e.g. inside `init()`) and after every call to isolate (e.g. inside `_runInIsolate()`)
+  void _resetInactivityTimer() {
+    _inactivityTimer?.cancel();
+    _inactivityTimer = Timer(_inactivityDuration, () {
+      if (_activeTasks > 0) {
+        _logger.info('Tasks are still running. Delaying isolate disposal.');
+        // Optionally, reschedule the timer to check again later.
+        _resetInactivityTimer();
+      } else {
+        _logger.info(
+          'Clustering Isolate has been inactive for ${_inactivityDuration.inSeconds} seconds with no tasks running. Killing isolate.',
+        );
+        dispose();
+      }
+    });
+  }
+
+  void disposeIsolate() {
+    if (!isIsolateSpawned) return;
+
+    isIsolateSpawned = false;
+    _isolate.kill();
+    _receivePort.close();
+    _inactivityTimer?.cancel();
   }
 
   Future<void> indexAndClusterAllImages() async {
@@ -178,7 +378,7 @@ class FaceMlService {
     }
     // verify indexing is enabled
     if (LocalSettings.instance.isFaceIndexingEnabled == false) {
-      debugPrint("indexAllImages is disabled");
+      _logger.warning("indexAllImages is disabled");
       return;
     }
     try {
@@ -192,7 +392,7 @@ class FaceMlService {
 
       // Make sure the image conversion isolate is spawned
       // await ImageMlIsolate.instance.ensureSpawned();
-      await ensureSpawned();
+      await ensureInitialized();
 
       int fileAnalyzedCount = 0;
       int fileSkippedCount = 0;
@@ -227,7 +427,7 @@ class FaceMlService {
 
       stopwatch.stop();
       _logger.info(
-        "`indexAllImages()` finished. Analyzed $fileAnalyzedCount images, in ${stopwatch.elapsed.inSeconds} seconds (skipped $fileSkippedCount images)",
+        "`indexAllImages()` finished. Analyzed $fileAnalyzedCount images, in ${stopwatch.elapsed.inSeconds} seconds (avg of ${stopwatch.elapsed.inSeconds / fileAnalyzedCount} seconds per image, skipped $fileSkippedCount images)",
       );
 
       // Dispose of all the isolates
@@ -249,10 +449,10 @@ class FaceMlService {
     );
 
     try {
-      final FaceMlResult result = await analyzeImage(
+      final FaceMlResult result = await analyzeImageInSingleIsolate(
         enteFile,
-        preferUsingThumbnailForEverything: false,
-        disposeImageIsolateAfterUse: false,
+        // preferUsingThumbnailForEverything: false,
+        // disposeImageIsolateAfterUse: false,
       );
       final List<Face> faces = [];
       if (!result.hasFaces) {
@@ -336,7 +536,7 @@ class FaceMlService {
     isImageIndexRunning = false;
   }
 
-  /// Analyzes the given image data by running the full pipeline using [analyzeImage] and stores the result in the database [MlDataDB].
+  /// Analyzes the given image data by running the full pipeline using [analyzeImageInComputerAndImageIsolate] and stores the result in the database [MlDataDB].
   /// This function first checks if the image has already been analyzed (with latest ml version) and stored in the database. If so, it returns the stored result.
   ///
   /// 'enteFile': The ente file to analyze.
@@ -360,7 +560,7 @@ class FaceMlService {
     );
     FaceMlResult result;
     try {
-      result = await analyzeImage(enteFile);
+      result = await analyzeImageInComputerAndImageIsolate(enteFile);
     } catch (e, s) {
       _logger.severe(
         "`indexImage` failed on image with uploadedFileID ${enteFile.uploadedFileID}",
@@ -389,25 +589,29 @@ class FaceMlService {
   /// Does not store the result in the database, for that you should use [indexImage].
   /// Throws [CouldNotRetrieveAnyFileData] or [GeneralFaceMlException] if something goes wrong.
   /// TODO: improve function such that it only uses full image if it is already on the device, otherwise it uses thumbnail. And make sure to store what is used!
-  Future<FaceMlResult> analyzeImage(
+  Future<FaceMlResult> analyzeImageInComputerAndImageIsolate(
     EnteFile enteFile, {
     bool preferUsingThumbnailForEverything = false,
     bool disposeImageIsolateAfterUse = true,
   }) async {
     _checkEnteFileForID(enteFile);
 
-    final Uint8List? thumbnailData =
-        await _getDataForML(enteFile, typeOfData: FileDataForML.fileData);
-    Uint8List? fileData;
+    final String? thumbnailPath = await _getImagePathForML(
+      enteFile,
+      typeOfData: FileDataForML.thumbnailData,
+    );
+    String? filePath;
 
     // // TODO: remove/optimize this later. Not now though: premature optimization
     // fileData =
     //     await _getDataForML(enteFile, typeOfData: FileDataForML.fileData);
 
-    if (thumbnailData == null) {
-      fileData =
-          await _getDataForML(enteFile, typeOfData: FileDataForML.fileData);
-      if (thumbnailData == null && fileData == null) {
+    if (thumbnailPath == null) {
+      filePath = await _getImagePathForML(
+        enteFile,
+        typeOfData: FileDataForML.fileData,
+      );
+      if (thumbnailPath == null && filePath == null) {
         _logger.severe(
           "Failed to get any data for enteFile with uploadedFileID ${enteFile.uploadedFileID}",
         );
@@ -415,7 +619,7 @@ class FaceMlService {
       }
     }
     // TODO: use smallData and largeData instead of thumbnailData and fileData again!
-    final Uint8List smallData = thumbnailData ?? fileData!;
+    final String smallDataPath = thumbnailPath ?? filePath!;
 
     final resultBuilder = FaceMlResultBuilder.fromEnteFile(enteFile);
 
@@ -427,8 +631,8 @@ class FaceMlService {
     try {
       // Get the faces
       final List<FaceDetectionRelative> faceDetectionResult =
-          await _detectFaces(
-        smallData,
+          await _detectFacesIsolate(
+        smallDataPath,
         resultBuilder: resultBuilder,
       );
 
@@ -443,15 +647,17 @@ class FaceMlService {
       }
 
       if (!preferUsingThumbnailForEverything) {
-        fileData ??=
-            await _getDataForML(enteFile, typeOfData: FileDataForML.fileData);
+        filePath ??= await _getImagePathForML(
+          enteFile,
+          typeOfData: FileDataForML.fileData,
+        );
       }
-      resultBuilder.onlyThumbnailUsed = fileData == null;
-      final Uint8List largeData = fileData ?? thumbnailData!;
+      resultBuilder.onlyThumbnailUsed = filePath == null;
+      final String largeDataPath = filePath ?? thumbnailPath!;
 
       // Align the faces
-      final List<List<List<List<num>>>> faceAlignmentResult = await _alignFaces(
-        largeData,
+      final Float32List faceAlignmentResult = await _alignFaces(
+        largeDataPath,
         faceDetectionResult,
         resultBuilder: resultBuilder,
       );
@@ -488,6 +694,111 @@ class FaceMlService {
     }
   }
 
+  Future<FaceMlResult> analyzeImageInSingleIsolate(EnteFile enteFile) async {
+    _checkEnteFileForID(enteFile);
+    await ensureInitialized();
+
+    final String? thumbnailPath = await _getImagePathForML(
+      enteFile,
+      typeOfData: FileDataForML.thumbnailData,
+    );
+    final String? filePath =
+        await _getImagePathForML(enteFile, typeOfData: FileDataForML.fileData);
+
+    if (thumbnailPath == null && filePath == null) {
+      _logger.severe(
+        "Failed to get any data for enteFile with uploadedFileID ${enteFile.uploadedFileID}",
+      );
+      throw CouldNotRetrieveAnyFileData();
+    }
+
+    final String smallDataPath = thumbnailPath ?? filePath!;
+    final String largeDataPath = filePath ?? thumbnailPath!;
+
+    final Stopwatch stopwatch = Stopwatch()..start();
+    late FaceMlResult result;
+
+    try {
+      final resultJsonString = await _runInIsolate(
+        (
+          FaceMlOperation.analyzeImage,
+          {
+            "enteFileID": enteFile.uploadedFileID ?? -1,
+            "smallDataPath": smallDataPath,
+            "largeDataPath": largeDataPath,
+            "faceDetectionAddress":
+                YoloOnnxFaceDetection.instance.sessionAddress,
+            "faceEmbeddingAddress": FaceEmbeddingOnnx.instance.sessionAddress,
+          }
+        ),
+      ) as String;
+      result = FaceMlResult.fromJsonString(resultJsonString);
+    } catch (e, s) {
+      _logger.severe(
+        "Could not analyze image with ID ${enteFile.uploadedFileID} \n",
+        e,
+        s,
+      );
+      final resultBuilder = FaceMlResultBuilder.fromEnteFile(enteFile);
+      return resultBuilder.buildErrorOccurred();
+    }
+    stopwatch.stop();
+    _logger.info(
+      "Finished Analyze image (${result.faces.length} faces) with uploadedFileID ${enteFile.uploadedFileID}, in "
+      "${stopwatch.elapsedMilliseconds} ms",
+    );
+
+    return result;
+  }
+
+  Future<String?> _getImagePathForML(
+    EnteFile enteFile, {
+    FileDataForML typeOfData = FileDataForML.fileData,
+  }) async {
+    String? imagePath;
+
+    switch (typeOfData) {
+      case FileDataForML.fileData:
+        final stopwatch = Stopwatch()..start();
+        final File? file = await getFile(enteFile, isOrigin: true);
+        if (file == null) {
+          _logger.warning("Could not get file for $enteFile");
+          imagePath = null;
+          break;
+        }
+        imagePath = file.path;
+        stopwatch.stop();
+        _logger.info(
+          "Getting file data for uploadedFileID ${enteFile.uploadedFileID} took ${stopwatch.elapsedMilliseconds} ms",
+        );
+        break;
+
+      case FileDataForML.thumbnailData:
+        final stopwatch = Stopwatch()..start();
+        final File? thumbnail = await getThumbnailForUploadedFile(enteFile);
+        if (thumbnail == null) {
+          _logger.warning("Could not get thumbnail for $enteFile");
+          imagePath = null;
+          break;
+        }
+        imagePath = thumbnail.path;
+        stopwatch.stop();
+        _logger.info(
+          "Getting thumbnail data for uploadedFileID ${enteFile.uploadedFileID} took ${stopwatch.elapsedMilliseconds} ms",
+        );
+        break;
+
+      case FileDataForML.compressedFileData:
+        _logger.warning(
+          "Getting compressed file data for uploadedFileID ${enteFile.uploadedFileID} is not implemented yet",
+        );
+        imagePath = null;
+        break;
+    }
+
+    return imagePath;
+  }
+
   Future<Uint8List?> _getDataForML(
     EnteFile enteFile, {
     FileDataForML typeOfData = FileDataForML.fileData,
@@ -497,7 +808,7 @@ class FaceMlService {
     switch (typeOfData) {
       case FileDataForML.fileData:
         final stopwatch = Stopwatch()..start();
-        final io.File? actualIoFile = await getFile(enteFile, isOrigin: true);
+        final File? actualIoFile = await getFile(enteFile, isOrigin: true);
         if (actualIoFile != null) {
           data = await actualIoFile.readAsBytes();
         }
@@ -521,7 +832,7 @@ class FaceMlService {
         final stopwatch = Stopwatch()..start();
         final String tempPath = Configuration.instance.getTempDirectory() +
             "${enteFile.uploadedFileID!}";
-        final io.File? actualIoFile = await getFile(enteFile);
+        final File? actualIoFile = await getFile(enteFile);
         if (actualIoFile != null) {
           final compressResult = await FlutterImageCompress.compressAndGetFile(
             actualIoFile.path,
@@ -548,8 +859,8 @@ class FaceMlService {
   /// Returns a list of face detection results.
   ///
   /// Throws [CouldNotInitializeFaceDetector], [CouldNotRunFaceDetector] or [GeneralFaceMlException] if something goes wrong.
-  Future<List<FaceDetectionRelative>> _detectFaces(
-    Uint8List thumbnailData,
+  Future<List<FaceDetectionRelative>> _detectFacesIsolate(
+    String imagePath,
     // Uint8List fileData,
     {
     FaceMlResultBuilder? resultBuilder,
@@ -557,7 +868,7 @@ class FaceMlService {
     try {
       // Get the bounding boxes of the faces
       final (List<FaceDetectionRelative> faces, dataSize) =
-          await YoloOnnxFaceDetection.instance.predict(thumbnailData);
+          await YoloOnnxFaceDetection.instance.predictInComputer(imagePath);
 
       // Add detected faces to the resultBuilder
       if (resultBuilder != null) {
@@ -575,6 +886,45 @@ class FaceMlService {
     }
   }
 
+  /// Detects faces in the given image data.
+  ///
+  /// `imageData`: The image data to analyze.
+  ///
+  /// Returns a list of face detection results.
+  ///
+  /// Throws [CouldNotInitializeFaceDetector], [CouldNotRunFaceDetector] or [GeneralFaceMlException] if something goes wrong.
+  static Future<List<FaceDetectionRelative>> detectFacesSync(
+    String imagePath,
+    int interpreterAddress, {
+    FaceMlResultBuilder? resultBuilder,
+  }) async {
+    dev.log(
+      "isInitialized: ${YoloOnnxFaceDetection.instance.isInitialized}, sessionOptions: ${YoloOnnxFaceDetection.instance.sessionOptions}",
+    );
+    try {
+      // Get the bounding boxes of the faces
+      final (List<FaceDetectionRelative> faces, dataSize) =
+          await YoloOnnxFaceDetection.predictSync(
+        imagePath,
+        interpreterAddress,
+      );
+
+      // Add detected faces to the resultBuilder
+      if (resultBuilder != null) {
+        resultBuilder.addNewlyDetectedFaces(faces, dataSize);
+      }
+
+      return faces;
+    } on YOLOInterpreterInitializationException {
+      throw CouldNotInitializeFaceDetector();
+    } on YOLOInterpreterRunException {
+      throw CouldNotRunFaceDetector();
+    } catch (e) {
+      dev.log('[SEVERE] Face detection failed: $e');
+      throw GeneralFaceMlException('Face detection failed: $e');
+    }
+  }
+
   /// Aligns multiple faces from the given image data.
   ///
   /// `imageData`: The image data in [Uint8List] that contains the faces.
@@ -583,8 +933,8 @@ class FaceMlService {
   /// Returns a list of the aligned faces as image data.
   ///
   /// Throws [CouldNotWarpAffine] or [GeneralFaceMlException] if the face alignment fails.
-  Future<List<Num3DInputMatrix>> _alignFaces(
-    Uint8List imageData,
+  Future<Float32List> _alignFaces(
+    String imagePath,
     List<FaceDetectionRelative> faces, {
     FaceMlResultBuilder? resultBuilder,
   }) async {
@@ -596,7 +946,7 @@ class FaceMlService {
         blurValues,
         originalImageSize
       ) = await ImageMlIsolate.instance
-          .preprocessMobileFaceNet(imageData, faces);
+          .preprocessMobileFaceNetOnnx(imagePath, faces);
 
       if (resultBuilder != null) {
         resultBuilder.addAlignmentResults(
@@ -613,6 +963,48 @@ class FaceMlService {
     }
   }
 
+  /// Aligns multiple faces from the given image data.
+  ///
+  /// `imageData`: The image data in [Uint8List] that contains the faces.
+  /// `faces`: The face detection results in a list of [FaceDetectionAbsolute] for the faces to align.
+  ///
+  /// Returns a list of the aligned faces as image data.
+  ///
+  /// Throws [CouldNotWarpAffine] or [GeneralFaceMlException] if the face alignment fails.
+  static Future<Float32List> alignFacesSync(
+    String imagePath,
+    List<FaceDetectionRelative> faces, {
+    FaceMlResultBuilder? resultBuilder,
+  }) async {
+    try {
+      final stopwatch = Stopwatch()..start();
+      final (
+        alignedFaces,
+        alignmentResults,
+        isBlurs,
+        blurValues,
+        originalImageSize
+      ) = await preprocessToMobileFaceNetFloat32List(imagePath, faces);
+      stopwatch.stop();
+      dev.log(
+        "Face alignment image decoding and processing took ${stopwatch.elapsedMilliseconds} ms",
+      );
+
+      if (resultBuilder != null) {
+        resultBuilder.addAlignmentResults(
+          alignmentResults,
+          blurValues,
+          originalImageSize,
+        );
+      }
+
+      return alignedFaces;
+    } catch (e, s) {
+      dev.log('[SEVERE] Face alignment failed: $e $s');
+      throw CouldNotWarpAffine();
+    }
+  }
+
   /// Embeds multiple faces from the given input matrices.
   ///
   /// `facesMatrices`: The input matrices of the faces to embed.
@@ -621,13 +1013,13 @@ class FaceMlService {
   ///
   /// Throws [CouldNotInitializeFaceEmbeddor], [CouldNotRunFaceEmbeddor], [InputProblemFaceEmbeddor] or [GeneralFaceMlException] if the face embedding fails.
   Future<List<List<double>>> _embedFaces(
-    List<Num3DInputMatrix> facesMatrices, {
+    Float32List facesList, {
     FaceMlResultBuilder? resultBuilder,
   }) async {
     try {
       // Get the embedding of the faces
       final List<List<double>> embeddings =
-          await FaceEmbedding.instance.predict(facesMatrices);
+          await FaceEmbeddingOnnx.instance.predictInComputer(facesList);
 
       // Add the embeddings to the resultBuilder
       if (resultBuilder != null) {
@@ -648,6 +1040,39 @@ class FaceMlService {
       // ignore: avoid_catches_without_on_clauses
     } catch (e) {
       _logger.severe('Face embedding (batch) failed: $e');
+      throw GeneralFaceMlException('Face embedding (batch) failed: $e');
+    }
+  }
+
+  static Future<List<List<double>>> embedFacesSync(
+    Float32List facesList,
+    int interpreterAddress, {
+    FaceMlResultBuilder? resultBuilder,
+  }) async {
+    try {
+      // Get the embedding of the faces
+      final List<List<double>> embeddings =
+          await FaceEmbeddingOnnx.predictSync(facesList, interpreterAddress);
+
+      // Add the embeddings to the resultBuilder
+      if (resultBuilder != null) {
+        resultBuilder.addEmbeddingsToExistingFaces(embeddings);
+      }
+
+      return embeddings;
+    } on MobileFaceNetInterpreterInitializationException {
+      throw CouldNotInitializeFaceEmbeddor();
+    } on MobileFaceNetInterpreterRunException {
+      throw CouldNotRunFaceEmbeddor();
+    } on MobileFaceNetEmptyInput {
+      throw InputProblemFaceEmbeddor("Input is empty");
+    } on MobileFaceNetWrongInputSize {
+      throw InputProblemFaceEmbeddor("Input size is wrong");
+    } on MobileFaceNetWrongInputRange {
+      throw InputProblemFaceEmbeddor("Input range is wrong");
+      // ignore: avoid_catches_without_on_clauses
+    } catch (e) {
+      dev.log('[SEVERE] Face embedding (batch) failed: $e');
       throw GeneralFaceMlException('Face embedding (batch) failed: $e');
     }
   }
