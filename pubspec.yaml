@@ -14,8 +14,7 @@ publish_to: none
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 
-version: 0.8.49+569
-
+version: 0.8.61+581
 environment:
   sdk: ">=3.0.0 <4.0.0"
 
@@ -25,6 +24,7 @@ dependencies:
   animated_list_plus: ^0.4.5
   archive: ^3.1.2
   background_fetch: ^1.2.1
+  battery_info: ^1.1.1
   bip39: ^1.0.6
   cached_network_image: ^3.0.0
   chewie:

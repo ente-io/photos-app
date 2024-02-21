@@ -7,13 +7,13 @@ import "package:logging/logging.dart";
 import "package:photos/core/constants.dart";
 import "package:photos/core/event_bus.dart";
 import "package:photos/events/location_tag_updated_event.dart";
+import "package:photos/extensions/stop_watch.dart";
 import "package:photos/models/api/entity/type.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/models/local_entity_data.dart";
 import "package:photos/models/location/location.dart";
 import 'package:photos/models/location_tag/location_tag.dart';
 import "package:photos/services/entity_service.dart";
-import "package:photos/services/feature_flag_service.dart";
 import "package:photos/services/remote_assets_service.dart";
 import "package:shared_preferences/shared_preferences.dart";
 
@@ -32,9 +32,7 @@ class LocationService {
 
   void init(SharedPreferences preferences) {
     prefs = preferences;
-    if (FeatureFlagService.instance.isInternalUserOrDebugBuild()) {
-      _loadCities();
-    }
+    _loadCities();
   }
 
   Future<Iterable<LocalEntity<LocationTag>>> _getStoredLocationTags() async {
@@ -48,6 +46,8 @@ class LocationService {
     List<EnteFile> allFiles,
     String query,
   ) async {
+    final EnteWatch w = EnteWatch("cities_search")..start();
+    w.log('start for files ${allFiles.length} and query $query');
     final result = await _computer.compute(
       getCityResults,
       param: {
@@ -55,6 +55,10 @@ class LocationService {
         "cities": _cities,
         "files": allFiles,
       },
+    );
+    w.log(
+      'end for query: $query  on ${allFiles.length} files, found '
+      '${result.length} cities',
     );
     return result;
   }
@@ -238,30 +242,28 @@ Future<List<City>> parseCities(Map args) async {
 
 Map<City, List<EnteFile>> getCityResults(Map args) {
   final query = (args["query"] as String).toLowerCase();
-  final cities = args["cities"] as List<City>;
-  final files = args["files"] as List<EnteFile>;
+  final List<City> cities = args["cities"] as List<City>;
+  final List<EnteFile> files = args["files"] as List<EnteFile>;
 
-  final matchingCities = cities.where(
-    (city) => city.city.toLowerCase().contains(query),
-  );
+  final matchingCities = cities
+      .where(
+        (city) => city.city.toLowerCase().contains(query),
+      )
+      .toList();
 
   final Map<City, List<EnteFile>> results = {};
-  for (final city in matchingCities) {
-    final List<EnteFile> matchingFiles = [];
-    final cityLocation = Location(latitude: city.lat, longitude: city.lng);
-    for (final file in files) {
-      if (file.hasLocation) {
-        if (isFileInsideLocationTag(
-          cityLocation,
-          file.location!,
-          defaultCityRadius,
-        )) {
-          matchingFiles.add(file);
-        }
+  for (final file in files) {
+    if (!file.hasLocation) continue; // Skip files without location
+    for (final city in matchingCities) {
+      final cityLocation = Location(latitude: city.lat, longitude: city.lng);
+      if (isFileInsideLocationTag(
+        cityLocation,
+        file.location!,
+        defaultCityRadius,
+      )) {
+        results.putIfAbsent(city, () => []).add(file);
+        break; // Stop searching once a file is matched with a city
       }
-    }
-    if (matchingFiles.isNotEmpty) {
-      results[city] = matchingFiles;
     }
   }
   return results;
