@@ -955,10 +955,10 @@ class MessageLookup extends MessageLookupByLibrary {
             "Optional, as short as you like..."),
         "orPickAnExistingOne":
             MessageLookupByLibrary.simpleMessage("Or pick an existing one"),
+        "pair": MessageLookupByLibrary.simpleMessage("Pair"),
         "passkey": MessageLookupByLibrary.simpleMessage("Passkey"),
         "passkeyAuthTitle":
             MessageLookupByLibrary.simpleMessage("Passkey authentication"),
-        "pair": MessageLookupByLibrary.simpleMessage("Pair"),
         "password": MessageLookupByLibrary.simpleMessage("Password"),
         "passwordChangedSuccessfully": MessageLookupByLibrary.simpleMessage(
             "Password changed successfully"),

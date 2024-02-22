@@ -8318,31 +8318,11 @@ class S {
     );
   }
 
-  /// `Play album on TV`
-  String get playOnTv {
-    return Intl.message(
-      'Play album on TV',
-      name: 'playOnTv',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Launch passkey URL again`
   String get launchPasskeyUrlAgain {
     return Intl.message(
       'Launch passkey URL again',
       name: 'launchPasskeyUrlAgain',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Pair`
-  String get pair {
-    return Intl.message(
-      'Pair',
-      name: 'pair',
       desc: '',
       args: [],
     );
@@ -8358,21 +8338,41 @@ class S {
     );
   }
 
-  /// `Device not found`
-  String get deviceNotFound {
-    return Intl.message(
-      'Device not found',
-      name: 'deviceNotFound',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Passkey authentication`
   String get passkeyAuthTitle {
     return Intl.message(
       'Passkey authentication',
       name: 'passkeyAuthTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Play album on TV`
+  String get playOnTv {
+    return Intl.message(
+      'Play album on TV',
+      name: 'playOnTv',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Pair`
+  String get pair {
+    return Intl.message(
+      'Pair',
+      name: 'pair',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Device not found`
+  String get deviceNotFound {
+    return Intl.message(
+      'Device not found',
+      name: 'deviceNotFound',
       desc: '',
       args: [],
     );
