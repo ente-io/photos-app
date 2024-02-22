@@ -3,6 +3,7 @@ import "dart:io";
 import "dart:math";
 
 import "package:computer/computer.dart";
+import "package:flutter/foundation.dart";
 import "package:logging/logging.dart";
 import "package:photos/core/constants.dart";
 import "package:photos/core/event_bus.dart";
@@ -376,6 +377,7 @@ class GPSData {
     if (Location.isValidLocation(result)) {
       return result;
     } else {
+      debugPrint("Invalid location ${result.toString()}");
       return null;
     }
   }
