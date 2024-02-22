@@ -49,43 +49,6 @@ class AccountSectionWidget extends StatelessWidget {
         sectionOptionSpacing,
         MenuItemWidget(
           captionedTextWidget: CaptionedTextWidget(
-            title: S.of(context).recoveryKey,
-          ),
-          pressedColor: getEnteColorScheme(context).fillFaint,
-          trailingIcon: Icons.chevron_right_outlined,
-          trailingIconIsMuted: true,
-          showOnlyLoadingState: true,
-          onTap: () async {
-            final hasAuthenticated = await LocalAuthenticationService.instance
-                .requestLocalAuthentication(
-              context,
-              S.of(context).authToViewYourRecoveryKey,
-            );
-            if (hasAuthenticated) {
-              String recoveryKey;
-              try {
-                recoveryKey = await _getOrCreateRecoveryKey(context);
-              } catch (e) {
-                await showGenericErrorDialog(context: context, error: e);
-                return;
-              }
-              unawaited(
-                routeToPage(
-                  context,
-                  RecoveryKeyPage(
-                    recoveryKey,
-                    S.of(context).ok,
-                    showAppBar: true,
-                    onDone: () {},
-                  ),
-                ),
-              );
-            }
-          },
-        ),
-        sectionOptionSpacing,
-        MenuItemWidget(
-          captionedTextWidget: CaptionedTextWidget(
             title: S.of(context).changeEmail,
           ),
           pressedColor: getEnteColorScheme(context).fillFaint,
@@ -135,6 +98,43 @@ class AccountSectionWidget extends StatelessWidget {
                       mode: PasswordEntryMode.update,
                     );
                   },
+                ),
+              );
+            }
+          },
+        ),
+        sectionOptionSpacing,
+        MenuItemWidget(
+          captionedTextWidget: CaptionedTextWidget(
+            title: S.of(context).recoveryKey,
+          ),
+          pressedColor: getEnteColorScheme(context).fillFaint,
+          trailingIcon: Icons.chevron_right_outlined,
+          trailingIconIsMuted: true,
+          showOnlyLoadingState: true,
+          onTap: () async {
+            final hasAuthenticated = await LocalAuthenticationService.instance
+                .requestLocalAuthentication(
+              context,
+              S.of(context).authToViewYourRecoveryKey,
+            );
+            if (hasAuthenticated) {
+              String recoveryKey;
+              try {
+                recoveryKey = await _getOrCreateRecoveryKey(context);
+              } catch (e) {
+                await showGenericErrorDialog(context: context, error: e);
+                return;
+              }
+              unawaited(
+                routeToPage(
+                  context,
+                  RecoveryKeyPage(
+                    recoveryKey,
+                    S.of(context).ok,
+                    showAppBar: true,
+                    onDone: () {},
+                  ),
                 ),
               );
             }
