@@ -41,6 +41,7 @@ const supportEmail = 'support@ente.io';
 class FFDefault {
   static const bool enableStripe = true;
   static const bool disableCFWorker = false;
+  static const bool enablePasskey = false;
 }
 
 const kDefaultProductionEndpoint = 'https://api.ente.io';
