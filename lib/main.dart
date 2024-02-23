@@ -24,6 +24,7 @@ import "package:photos/l10n/l10n.dart";
 import 'package:photos/services/app_lifecycle_service.dart';
 import 'package:photos/services/billing_service.dart';
 import 'package:photos/services/collections_service.dart';
+import 'package:photos/services/discovery/discovery_service.dart';
 import "package:photos/services/entity_service.dart";
 import 'package:photos/services/favorites_service.dart';
 import 'package:photos/services/feature_flag_service.dart';
@@ -195,6 +196,7 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
   }
   unawaited(FeatureFlagService.instance.init());
   unawaited(SemanticSearchService.instance.init());
+  unawaited(DiscoveryService.instance.init());
   MachineLearningController.instance.init();
   // Can not including existing tf/ml binaries as they are not being built
   // from source.
