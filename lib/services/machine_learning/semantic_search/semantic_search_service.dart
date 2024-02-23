@@ -130,32 +130,41 @@ class SemanticSearchService {
     _isSyncing = false;
   }
 
-  Future<List<EnteFile>> search(String query) async {
+  Future<List<EnteFile>> search(
+    String query, {
+    bool shouldThrottle = true,
+    double scoreThreshold = kScoreThreshold,
+  }) async {
     if (!LocalSettings.instance.hasEnabledMagicSearch() ||
         !_frameworkInitialization.isCompleted) {
       return [];
     }
-    if (_ongoingRequest == null) {
-      _ongoingRequest = _getMatchingFiles(query).then((result) {
-        _ongoingRequest = null;
-        if (_nextQuery != null) {
-          final next = _nextQuery;
-          _nextQuery = null;
-          search(next!.query).then((nextResult) {
-            next.completer.complete(nextResult);
-          });
-        }
-
-        return result;
-      });
-      return _ongoingRequest!;
+    if (shouldThrottle) {
+      if (_ongoingRequest == null) {
+        _ongoingRequest =
+            _getMatchingFiles(query, scoreThreshold).then((result) {
+          _ongoingRequest = null;
+          if (_nextQuery != null) {
+            final next = _nextQuery;
+            _nextQuery = null;
+            search(next!.query).then((nextResult) {
+              next.completer.complete(nextResult);
+            });
+          }
+          return result;
+        });
+        return _ongoingRequest!;
+      } else {
+        // If there's an ongoing request, create or replace the nextCompleter.
+        _logger.info("Queuing query $query");
+        await _nextQuery?.completer.future.timeout(
+          const Duration(seconds: 0),
+        ); // Cancels the previous future.
+        _nextQuery = PendingQuery(query, Completer<List<EnteFile>>());
+        return _nextQuery!.completer.future;
+      }
     } else {
-      // If there's an ongoing request, create or replace the nextCompleter.
-      _logger.info("Queuing query $query");
-      await _nextQuery?.completer.future
-          .timeout(const Duration(seconds: 0)); // Cancels the previous future.
-      _nextQuery = PendingQuery(query, Completer<List<EnteFile>>());
-      return _nextQuery!.completer.future;
+      return _getMatchingFiles(query, scoreThreshold);
     }
   }
 
@@ -232,10 +241,13 @@ class SemanticSearchService {
     _queue.clear();
   }
 
-  Future<List<EnteFile>> _getMatchingFiles(String query) async {
+  Future<List<EnteFile>> _getMatchingFiles(
+    String query,
+    double scoreThreshold,
+  ) async {
     final textEmbedding = await _getTextEmbedding(query);
 
-    final queryResults = await _getScores(textEmbedding);
+    final queryResults = await _getScores(textEmbedding, scoreThreshold);
 
     final filesMap = await FilesDB.instance
         .getFilesFromIDs(queryResults.map((e) => e.id).toList());
@@ -351,13 +363,17 @@ class SemanticSearchService {
     }
   }
 
-  Future<List<QueryResult>> _getScores(List<double> textEmbedding) async {
+  Future<List<QueryResult>> _getScores(
+    List<double> textEmbedding,
+    double scoreThreshold,
+  ) async {
     final startTime = DateTime.now();
     final List<QueryResult> queryResults = await _computer.compute(
       computeBulkScore,
       param: {
         "imageEmbeddings": _cachedEmbeddings,
         "textEmbedding": textEmbedding,
+        "scoreThreshold": scoreThreshold,
       },
       taskName: "computeBulkScore",
     );
@@ -398,12 +414,13 @@ List<QueryResult> computeBulkScore(Map args) {
   final queryResults = <QueryResult>[];
   final imageEmbeddings = args["imageEmbeddings"] as List<Embedding>;
   final textEmbedding = args["textEmbedding"] as List<double>;
+  final scoreThreshold = args["scoreThreshold"];
   for (final imageEmbedding in imageEmbeddings) {
     final score = computeScore(
       imageEmbedding.embedding,
       textEmbedding,
     );
-    if (score >= SemanticSearchService.kScoreThreshold) {
+    if (score >= scoreThreshold) {
       queryResults.add(QueryResult(imageEmbedding.fileID, score));
     }
   }
