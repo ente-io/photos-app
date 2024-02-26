@@ -1,24 +1,26 @@
+import "dart:io" show File;
 import 'dart:math' as math show max, min, sqrt;
 import 'dart:typed_data' show Float32List;
 
 import 'package:computer/computer.dart';
-import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
 import 'package:onnxruntime/onnxruntime.dart';
 import "package:photos/services/face_ml/face_detection/detection.dart";
+import "package:photos/services/remote_assets_service.dart";
 import "package:photos/utils/image_ml_isolate.dart";
 import "package:synchronized/synchronized.dart";
 
 class FaceEmbeddingOnnx {
-  static const String kModelPath =
-      'assets/models/mobilefacenet/mobilefacenet_opset15.onnx';
+  static const kModelBucketEndpoint = "https://models.ente.io/";
+  static const kRemoteBucketModelPath = "mobilefacenet_opset15.onnx";
+  static const modelRemotePath = kModelBucketEndpoint + kRemoteBucketModelPath;
 
   static const int kInputSize = 112;
   static const int kEmbeddingSize = 192;
 
   static final _logger = Logger('FaceEmbeddingOnnx');
 
-  bool _isInitialized = false;
+  bool isInitialized = false;
   int sessionAddress = 0;
 
   final _computer = Computer.shared();
@@ -39,49 +41,60 @@ class FaceEmbeddingOnnx {
 
   /// Check if the interpreter is initialized, if not initialize it with `loadModel()`
   Future<void> init() async {
-    if (!_isInitialized) {
-      sessionAddress = await _loadModel({'modelPath': kModelPath});
+    if (!isInitialized) {
+      _logger.info('init is called');
+      final model =
+          await RemoteAssetsService.instance.getAsset(modelRemotePath);
+      final startTime = DateTime.now();
+      // Doing this from main isolate since `rootBundle` cannot be accessed outside it
+      sessionAddress = await _computer.compute(
+        _loadModel,
+        param: {
+          "modelPath": model.path,
+        },
+      );
+      final endTime = DateTime.now();
+      _logger.info(
+        "Face embedding model loaded, took: ${(endTime.millisecondsSinceEpoch - startTime.millisecondsSinceEpoch).toString()}ms",
+      );
       if (sessionAddress != -1) {
-        _isInitialized = true;
+        isInitialized = true;
       }
     }
   }
 
-  Future<void> dispose() async {
-    if (_isInitialized) {
-      await _computer.compute(releaseModel, param: {'address': sessionAddress});
-      _isInitialized = false;
+  Future<void> release() async {
+    if (isInitialized) {
+      await _computer.compute(_releaseModel, param: {'address': sessionAddress});
+      isInitialized = false;
       sessionAddress = 0;
     }
   }
 
-  Future<int> _loadModel(Map args) async {
+  static Future<int> _loadModel(Map args) async {
     final sessionOptions = OrtSessionOptions()
       ..setInterOpNumThreads(1)
       ..setIntraOpNumThreads(1)
       ..setSessionGraphOptimizationLevel(GraphOptimizationLevel.ortEnableAll);
     try {
-      OrtEnv.instance.init();
-      _logger.info('Loading face embedding model');
-      final rawAssetFile = await rootBundle.load(args['modelPath'] as String);
-      final modelBytes = rawAssetFile.buffer.asUint8List();
-      final session = OrtSession.fromBuffer(modelBytes, sessionOptions);
-      _logger.info('Face embedding model loaded');
+      // _logger.info('Loading face embedding model');
+      final session =
+          OrtSession.fromFile(File(args["modelPath"]), sessionOptions);
+      // _logger.info('Face embedding model loaded');
       return session.address;
-    } catch (e, s) {
-      _logger.severe('Face embedding model not loaded', e, s);
+    } catch (e, _) {
+      // _logger.severe('Face embedding model not loaded', e, s);
     }
     return -1;
   }
 
-  static Future<void> releaseModel(Map args) async {
+  static Future<void> _releaseModel(Map args) async {
     final address = args['address'] as int;
     if (address == 0) {
       return;
     }
     final session = OrtSession.fromAddress(address);
     session.release();
-    OrtEnv.instance.release();
     return;
   }
 
@@ -89,7 +102,7 @@ class FaceEmbeddingOnnx {
     String imagePath,
     FaceDetectionRelative face,
   ) async {
-    assert(sessionAddress != 0 && sessionAddress != -1 && _isInitialized);
+    assert(sessionAddress != 0 && sessionAddress != -1 && isInitialized);
 
     try {
       final stopwatchDecoding = Stopwatch()..start();
@@ -140,7 +153,7 @@ class FaceEmbeddingOnnx {
   }
 
   Future<List<List<double>>> predictInComputer(Float32List input) async {
-    assert(sessionAddress != 0 && sessionAddress != -1 && _isInitialized);
+    assert(sessionAddress != 0 && sessionAddress != -1 && isInitialized);
     return await _computerLock.synchronized(() async {
       try {
         final stopwatch = Stopwatch()..start();

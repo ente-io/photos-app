@@ -6,13 +6,13 @@ import 'dart:typed_data' show Float32List, Uint8List;
 
 import "package:computer/computer.dart";
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:logging/logging.dart';
 import 'package:onnxruntime/onnxruntime.dart';
 import "package:photos/services/face_ml/face_detection/detection.dart";
 import "package:photos/services/face_ml/face_detection/naive_non_max_suppression.dart";
 import "package:photos/services/face_ml/face_detection/yolov5face/yolo_face_detection_exceptions.dart";
 import "package:photos/services/face_ml/face_detection/yolov5face/yolo_filter_extract_detections.dart";
+import "package:photos/services/remote_assets_service.dart";
 import "package:photos/utils/image_ml_isolate.dart";
 import "package:photos/utils/image_ml_util.dart";
 import "package:synchronized/synchronized.dart";
@@ -24,19 +24,19 @@ class YoloOnnxFaceDetection {
 
   final _computer = Computer.shared();
 
-  OrtSessionOptions? get sessionOptions => _sessionOptions;
-  OrtSessionOptions? _sessionOptions;
   int sessionAddress = 0;
 
-  static const String kModelPath =
-      'assets/models/yolov5face/yolov5s_face_640_640_dynamic.onnx';
+  static const kModelBucketEndpoint = "https://models.ente.io/";
+  static const kRemoteBucketModelPath = "yolov5s_face_640_640_dynamic.onnx";
+  // static const kRemoteBucketModelPath = "yolov5n_face_640_640.onnx";
+  static const modelRemotePath = kModelBucketEndpoint + kRemoteBucketModelPath;
+
   static const kInputWidth = 640;
   static const kInputHeight = 640;
   static const kIouThreshold = 0.4;
   static const kMinScoreSigmoidThreshold = 0.8;
 
-  bool get isInitialized => _isInitialized;
-  bool _isInitialized = false;
+  bool isInitialized = false;
 
   // Isolate things
   Timer? _inactivityTimer;
@@ -63,34 +63,38 @@ class YoloOnnxFaceDetection {
   /// config options: yoloV5FaceN //
   static final instance = YoloOnnxFaceDetection._privateConstructor();
 
-  factory YoloOnnxFaceDetection() {
-    OrtEnv.instance.init();
-    return instance;
-  }
+  factory YoloOnnxFaceDetection() => instance;
 
   /// Check if the interpreter is initialized, if not initialize it with `loadModel()`
   Future<void> init() async {
-    if (!_isInitialized) {
+    if (!isInitialized) {
       _logger.info('init is called');
-      await _loadModel();
+      final model =
+          await RemoteAssetsService.instance.getAsset(modelRemotePath);
+      final startTime = DateTime.now();
+      // Doing this from main isolate since `rootBundle` cannot be accessed outside it
+      sessionAddress = await _computer.compute(
+        _loadModel,
+        param: {
+          "modelPath": model.path,
+        },
+      );
+      final endTime = DateTime.now();
+      _logger.info(
+        "Face detection model loaded, took: ${(endTime.millisecondsSinceEpoch - startTime.millisecondsSinceEpoch).toString()}ms",
+      );
+      if (sessionAddress != -1) {
+        isInitialized = true;
+      }
     }
   }
 
-  Future<void> dispose() async {
-    _logger.info('dispose is called');
-    if (_isInitialized) {
-      try {
-        _sessionOptions?.release();
-        _sessionOptions = null;
-        // _session?.release();
-        // _session = null;
-        OrtEnv.instance.release();
-
-        _isInitialized = false;
-      } catch (e, s) {
-        _logger.severe('Error while disposing YOLO onnx: $e \n $s');
-        rethrow;
-      }
+  Future<void> release() async {
+    if (isInitialized) {
+      await _computer
+          .compute(_releaseModel, param: {'address': sessionAddress});
+      isInitialized = false;
+      sessionAddress = 0;
     }
   }
 
@@ -247,7 +251,7 @@ class YoloOnnxFaceDetection {
   Future<(List<FaceDetectionRelative>, Size)> predict(
     Uint8List imageData,
   ) async {
-    assert(_isInitialized && _sessionOptions != null);
+    assert(isInitialized);
 
     final stopwatch = Stopwatch()..start();
 
@@ -383,7 +387,7 @@ class YoloOnnxFaceDetection {
     Uint8List imageData,
   ) async {
     await ensureSpawnedIsolate();
-    assert(_isInitialized && _sessionOptions != null);
+    assert(isInitialized);
 
     _logger.info('predictInIsolate() is called');
 
@@ -444,7 +448,7 @@ class YoloOnnxFaceDetection {
   Future<(List<FaceDetectionRelative>, Size)> predictInComputer(
     String imagePath,
   ) async {
-    assert(_isInitialized && _sessionOptions != null);
+    assert(isInitialized);
 
     _logger.info('predictInComputer() is called');
 
@@ -513,7 +517,7 @@ class YoloOnnxFaceDetection {
   Future<List<FaceDetectionRelative>> predictBatch(
     List<Uint8List> imageDataList,
   ) async {
-    assert(_isInitialized && _sessionOptions != null);
+    assert(isInitialized);
 
     final stopwatch = Stopwatch()..start();
 
@@ -592,7 +596,7 @@ class YoloOnnxFaceDetection {
 
     // // Get output tensors
     final nestedResults =
-        outputs?[0]?.value as List<List<List<double>>>; // [b, 25200, 16]
+        outputs[0]?.value as List<List<List<double>>>; // [b, 25200, 16]
     final selectedResults = nestedResults[imageOutputToUse]; // [25200, 16]
 
     // final rawScores = <double>[];
@@ -612,9 +616,9 @@ class YoloOnnxFaceDetection {
     );
 
     // Release outputs
-    outputs?.forEach((element) {
+    for (var element in outputs) {
       element?.release();
-    });
+    }
 
     // Account for the fact that the aspect ratio was maintained
     for (final faceDetection in relativeDetections) {
@@ -701,30 +705,31 @@ class YoloOnnxFaceDetection {
   }
 
   /// Initialize the interpreter by loading the model file.
-  Future<void> _loadModel() async {
-    _logger.info('loadModel is called');
-
+  static Future<int> _loadModel(Map args) async {
+    final sessionOptions = OrtSessionOptions()
+      ..setInterOpNumThreads(1)
+      ..setIntraOpNumThreads(1)
+      ..setSessionGraphOptimizationLevel(GraphOptimizationLevel.ortEnableAll);
     try {
-      // final threadOptions = OrtThreadingOptions().;
-      OrtEnv.instance.init();
-      OrtEnv.instance.availableProviders().forEach((element) {
-        _logger.info('onnx provider= $element');
-      });
-
-      _sessionOptions = OrtSessionOptions()
-        ..setInterOpNumThreads(1)
-        ..setIntraOpNumThreads(1)
-        ..setSessionGraphOptimizationLevel(GraphOptimizationLevel.ortEnableAll);
-      final rawAssetFile = await rootBundle.load(kModelPath);
-      final bytes = rawAssetFile.buffer.asUint8List();
-      final session = OrtSession.fromBuffer(bytes, _sessionOptions!);
-      sessionAddress = session.address;
-
-      _isInitialized = true;
-    } catch (e, s) {
-      _logger.severe('Error while initializing YOLO onnx: $e \n $s');
-      throw YOLOInterpreterInitializationException();
+      // _logger.info('Loading face embedding model');
+      final session =
+          OrtSession.fromFile(File(args["modelPath"]), sessionOptions);
+      // _logger.info('Face embedding model loaded');
+      return session.address;
+    } catch (e, _) {
+      // _logger.severe('Face embedding model not loaded', e, s);
     }
+    return -1;
+  }
+
+  static Future<void> _releaseModel(Map args) async {
+    final address = args['address'] as int;
+    if (address == 0) {
+      return;
+    }
+    final session = OrtSession.fromAddress(address);
+    session.release();
+    return;
   }
 
   static Future<(List<FaceDetectionRelative>, int, DateTime)>

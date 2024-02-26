@@ -4,9 +4,11 @@ import "dart:io" show File;
 import "dart:isolate";
 import "dart:typed_data" show Uint8List, Float32List;
 
+import "package:computer/computer.dart";
 import "package:flutter_image_compress/flutter_image_compress.dart";
 import "package:flutter_isolate/flutter_isolate.dart";
 import "package:logging/logging.dart";
+import "package:onnxruntime/onnxruntime.dart";
 import "package:photos/core/configuration.dart";
 import "package:photos/core/constants.dart";
 import "package:photos/core/event_bus.dart";
@@ -24,10 +26,10 @@ import "package:photos/models/file/file_type.dart";
 import "package:photos/models/ml/ml_versions.dart";
 import "package:photos/services/face_ml/face_clustering/linear_clustering_service.dart";
 import "package:photos/services/face_ml/face_detection/detection.dart";
+import 'package:photos/services/face_ml/face_detection/yolov5face/onnx_face_detection.dart';
 import "package:photos/services/face_ml/face_detection/yolov5face/yolo_face_detection_exceptions.dart";
-import "package:photos/services/face_ml/face_detection/yolov5face/yolo_face_detection_onnx.dart";
 import "package:photos/services/face_ml/face_embedding/face_embedding_exceptions.dart";
-import "package:photos/services/face_ml/face_embedding/face_embedding_onnx.dart";
+import 'package:photos/services/face_ml/face_embedding/onnx_face_embedding.dart';
 import "package:photos/services/face_ml/face_ml_exceptions.dart";
 import "package:photos/services/face_ml/face_ml_result.dart";
 import "package:photos/services/search_service.dart";
@@ -69,16 +71,19 @@ class FaceMlService {
   final _initLock = Lock();
   final _functionLock = Lock();
 
-  bool initialized = false;
+  final _computer = Computer.shared();
+
+  bool isInitialized = false;
   bool isImageIndexRunning = false;
   int kParallelism = 15;
 
   Future<void> init({bool initializeImageMlIsolate = false}) async {
     return _initLock.synchronized(() async {
-      if (initialized) {
+      if (isInitialized) {
         return;
       }
       _logger.info("init called");
+      await _computer.compute(initOrtEnv);
       try {
         await YoloOnnxFaceDetection.instance.init();
       } catch (e, s) {
@@ -97,8 +102,12 @@ class FaceMlService {
         _logger.severe("Could not initialize mobilefacenet", e, s);
       }
 
-      initialized = true;
+      isInitialized = true;
     });
+  }
+
+  static void initOrtEnv() async {
+    OrtEnv.instance.init();
   }
 
   void listenIndexOnDiffSync() {
@@ -111,19 +120,19 @@ class FaceMlService {
   }
 
   Future<void> ensureInitialized() async {
-    if (!initialized) {
+    if (!isInitialized) {
       await init();
     }
   }
 
-  Future<void> dispose() async {
+  Future<void> release() async {
     return _initLock.synchronized(() async {
       _logger.info("dispose called");
-      if (!initialized) {
+      if (!isInitialized) {
         return;
       }
       try {
-        await YoloOnnxFaceDetection.instance.dispose();
+        await YoloOnnxFaceDetection.instance.release();
       } catch (e, s) {
         _logger.severe("Could not dispose yolo onnx", e, s);
       }
@@ -133,11 +142,12 @@ class FaceMlService {
         _logger.severe("Could not dispose image ml isolate", e, s);
       }
       try {
-        await FaceEmbeddingOnnx.instance.dispose();
+        await FaceEmbeddingOnnx.instance.release();
       } catch (e, s) {
         _logger.severe("Could not dispose mobilefacenet", e, s);
       }
-      initialized = false;
+      OrtEnv.instance.release();
+      isInitialized = false;
     });
   }
 
@@ -310,13 +320,14 @@ class FaceMlService {
         _logger.info(
           'Clustering Isolate has been inactive for ${_inactivityDuration.inSeconds} seconds with no tasks running. Killing isolate.',
         );
-        dispose();
+        disposeIsolate();
       }
     });
   }
 
-  void disposeIsolate() {
+  void disposeIsolate() async {
     if (!isIsolateSpawned) return;
+    await release();
 
     isIsolateSpawned = false;
     _isolate.kill();
@@ -409,7 +420,6 @@ class FaceMlService {
         for (final enteFile in chunk) {
           if (isImageIndexRunning == false) {
             _logger.info("indexAllImages() was paused, stopping");
-            await dispose();
             break outerLoop;
           }
           if (_skipAnalysisEnteFile(
@@ -432,7 +442,7 @@ class FaceMlService {
 
       // Dispose of all the isolates
       // ImageMlIsolate.instance.dispose();
-      unawaited(dispose());
+      // await release();
     } catch (e, s) {
       _logger.severe("indexAllImages failed", e, s);
     } finally {
@@ -899,7 +909,7 @@ class FaceMlService {
     FaceMlResultBuilder? resultBuilder,
   }) async {
     dev.log(
-      "isInitialized: ${YoloOnnxFaceDetection.instance.isInitialized}, sessionOptions: ${YoloOnnxFaceDetection.instance.sessionOptions}",
+      "Faces model isInitialized: ${YoloOnnxFaceDetection.instance.isInitialized}",
     );
     try {
       // Get the bounding boxes of the faces
