@@ -908,9 +908,6 @@ class FaceMlService {
     int interpreterAddress, {
     FaceMlResultBuilder? resultBuilder,
   }) async {
-    dev.log(
-      "Faces model isInitialized: ${YoloOnnxFaceDetection.instance.isInitialized}",
-    );
     try {
       // Get the bounding boxes of the faces
       final (List<FaceDetectionRelative> faces, dataSize) =
