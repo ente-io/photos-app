@@ -282,6 +282,11 @@ class FaceMlService {
     await ensureSpawnedIsolate();
     return _functionLock.synchronized(() async {
       _resetInactivityTimer();
+
+      if (isImageIndexRunning == false) {
+        return null;
+      }
+
       final completer = Completer<dynamic>();
       final answerPort = ReceivePort();
 
@@ -459,11 +464,17 @@ class FaceMlService {
     );
 
     try {
-      final FaceMlResult result = await analyzeImageInSingleIsolate(
+      final FaceMlResult? result = await analyzeImageInSingleIsolate(
         enteFile,
         // preferUsingThumbnailForEverything: false,
         // disposeImageIsolateAfterUse: false,
       );
+      if (result == null) {
+        _logger.warning(
+          "Image not analyzed with uploadedFileID: ${enteFile.uploadedFileID}",
+        );
+        return;
+      }
       final List<Face> faces = [];
       if (!result.hasFaces) {
         faces.add(
@@ -704,7 +715,7 @@ class FaceMlService {
     }
   }
 
-  Future<FaceMlResult> analyzeImageInSingleIsolate(EnteFile enteFile) async {
+  Future<FaceMlResult?> analyzeImageInSingleIsolate(EnteFile enteFile) async {
     _checkEnteFileForID(enteFile);
     await ensureInitialized();
 
@@ -741,7 +752,10 @@ class FaceMlService {
             "faceEmbeddingAddress": FaceEmbeddingOnnx.instance.sessionAddress,
           }
         ),
-      ) as String;
+      ) as String?;
+      if (resultJsonString == null) {
+        return null;
+      }
       result = FaceMlResult.fromJsonString(resultJsonString);
     } catch (e, s) {
       _logger.severe(
