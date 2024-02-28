@@ -318,9 +318,11 @@ class UserService {
   Future<void> acceptPasskey(
     BuildContext context,
     Map response,
-    String userPassword,
     Uint8List keyEncryptionKey,
   ) async {
+    final userPassword = Configuration.instance.getVolatilePassword();
+    if (userPassword == null) throw Exception("volatile password is null");
+
     await _saveConfiguration(response);
 
     if (Configuration.instance.getEncryptedToken() != null) {
@@ -680,7 +682,6 @@ class UserService {
       } else if (passkeySessionID.isNotEmpty) {
         page = PasskeyPage(
           passkeySessionID,
-          userPassword: userPassword,
           keyEncryptionKey: keyEncryptionKey,
         );
       } else {

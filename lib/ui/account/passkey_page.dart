@@ -12,13 +12,11 @@ import 'package:url_launcher/url_launcher_string.dart';
 
 class PasskeyPage extends StatefulWidget {
   final String sessionID;
-  final String userPassword;
   final Uint8List keyEncryptionKey;
 
   const PasskeyPage(
     this.sessionID, {
     Key? key,
-    required this.userPassword,
     required this.keyEncryptionKey,
   }) : super(key: key);
 
@@ -63,12 +61,15 @@ class _PasskeyPageState extends State<PasskeyPage> {
       final res = utf8.decode(base64.decode(uri!));
       final json = jsonDecode(res) as Map<String, dynamic>;
 
-      await UserService.instance.acceptPasskey(
-        context,
-        json,
-        widget.userPassword,
-        widget.keyEncryptionKey,
-      );
+      try {
+        await UserService.instance.acceptPasskey(
+          context,
+          json,
+          widget.keyEncryptionKey,
+        );
+      } catch (e) {
+        _logger.severe(e);
+      }
     }
   }
 
