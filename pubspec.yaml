@@ -13,6 +13,7 @@ description: ente photos application
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 
 version: 0.8.49+569
+publish_to: none
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
