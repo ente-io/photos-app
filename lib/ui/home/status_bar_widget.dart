@@ -15,6 +15,7 @@ import 'package:photos/ui/account/verify_recovery_page.dart';
 import 'package:photos/ui/components/home_header_widget.dart';
 import 'package:photos/ui/components/notification_widget.dart';
 import 'package:photos/ui/home/header_error_widget.dart';
+import "package:photos/ui/home/memory_uploading_page.dart";
 import 'package:photos/utils/navigation_util.dart';
 
 const double kContainerHeight = 36;
@@ -86,11 +87,9 @@ class _StatusBarWidgetState extends State<StatusBarWidget> {
     return Column(
       children: [
         HomeHeaderWidget(
-          centerWidget: _showStatus
-              ? _showErrorBanner
-                  ? const Text("ente", style: brandStyleMedium)
-                  : const SyncStatusWidget()
-              : const Text("ente", style: brandStyleMedium),
+          centerWidget: false && (!_showStatus || _showErrorBanner)
+              ? const Text("ente", style: brandStyleMedium)
+              : const SyncStatusWidget(),
         ),
         _showErrorBanner
             ? const Divider(
@@ -157,20 +156,20 @@ class _SyncStatusWidgetState extends State<SyncStatusWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isNotOutdatedEvent = _event != null &&
-        (_event!.status == SyncStatus.completedBackup ||
-            _event!.status == SyncStatus.completedFirstGalleryImport) &&
-        (DateTime.now().microsecondsSinceEpoch - _event!.timestamp >
-            kSleepDuration.inMicroseconds);
-    if (_event == null ||
-        isNotOutdatedEvent ||
-        //sync error cases are handled in StatusBarWidget
-        _event!.status == SyncStatus.error) {
-      return const SizedBox.shrink();
-    }
-    if (_event!.status == SyncStatus.completedBackup) {
-      return const SyncStatusCompletedWidget();
-    }
+    // final bool isNotOutdatedEvent = _event != null &&
+    //     (_event!.status == SyncStatus.completedBackup ||
+    //         _event!.status == SyncStatus.completedFirstGalleryImport) &&
+    //     (DateTime.now().microsecondsSinceEpoch - _event!.timestamp >
+    //         kSleepDuration.inMicroseconds);
+    // if (_event == null ||
+    //     isNotOutdatedEvent ||
+    //     //sync error cases are handled in StatusBarWidget
+    //     _event!.status == SyncStatus.error) {
+    //   return const SizedBox.shrink();
+    // }
+    // if (_event!.status == SyncStatus.completedBackup) {
+    //   return const SyncStatusCompletedWidget();
+    // }
     return RefreshIndicatorWidget(_event);
   }
 }
@@ -187,32 +186,42 @@ class RefreshIndicatorWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: kContainerHeight,
-      alignment: Alignment.center,
-      child: SingleChildScrollView(
-        physics: const NeverScrollableScrollPhysics(),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(2),
-                  width: 22,
-                  height: 22,
-                  child: _inProgressIcon,
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 4, 0, 0),
-                  child: Text(_getRefreshingText(context)),
-                ),
-              ],
-            ),
-          ],
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const MemoryUploadingPage(),
+          ),
+        );
+      },
+      child: Container(
+        height: kContainerHeight,
+        alignment: Alignment.center,
+        child: SingleChildScrollView(
+          physics: const NeverScrollableScrollPhysics(),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(2),
+                    width: 22,
+                    height: 22,
+                    child: _inProgressIcon,
+                  ),
+                  // Padding(
+                  //   padding: const EdgeInsets.fromLTRB(12, 4, 0, 0),
+                  //   child: Text(_getRefreshingText(context)),
+                  // ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
