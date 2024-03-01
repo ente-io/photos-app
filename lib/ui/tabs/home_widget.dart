@@ -47,13 +47,13 @@ import 'package:photos/ui/home/landing_page_widget.dart';
 import "package:photos/ui/home/loading_photos_widget.dart";
 import 'package:photos/ui/home/start_backup_hook_widget.dart';
 import 'package:photos/ui/notification/update/change_log_page.dart';
-import "package:photos/ui/search_tab.dart";
-import 'package:photos/ui/settings/app_update_dialog.dart';
+import "package:photos/ui/settings/app_update_dialog.dart";
 import "package:photos/ui/settings_page.dart";
 import "package:photos/ui/tabs/shared_collections_tab.dart";
 import "package:photos/ui/tabs/user_collections_tab.dart";
 import "package:photos/ui/viewer/gallery/collection_page.dart";
-import 'package:photos/ui/viewer/search/search_widget.dart';
+import "package:photos/ui/viewer/search/search_widget.dart";
+import 'package:photos/ui/viewer/search_tab/search_tab.dart';
 import 'package:photos/utils/dialog_util.dart';
 import "package:photos/utils/navigation_util.dart";
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
@@ -120,11 +120,13 @@ class _HomeWidgetState extends State<HomeWidget> {
         debugPrint(
           "TabChange going from $_selectedTabIndex to ${event.selectedIndex} souce: ${event.source}",
         );
-        _pageController.animateToPage(
-          event.selectedIndex,
-          duration: const Duration(milliseconds: 100),
-          curve: Curves.easeIn,
-        );
+        if (_pageController.hasClients) {
+          _pageController.animateToPage(
+            event.selectedIndex,
+            duration: const Duration(milliseconds: 100),
+            curve: Curves.easeIn,
+          );
+        }
       }
     });
     _subscriptionPurchaseEvent =

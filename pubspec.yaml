@@ -14,7 +14,9 @@ publish_to: none
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 
-version: 0.8.61+581
+version: 0.8.64+584
+publish_to: none
+
 environment:
   sdk: ">=3.0.0 <4.0.0"
 
@@ -48,7 +50,7 @@ dependencies:
   device_info_plus: ^9.0.3
   dio: ^4.0.6
   dots_indicator: ^2.0.0
-  dotted_border: ^2.0.0+2
+  dotted_border: ^2.1.0
   dropdown_button2: ^2.0.0
   email_validator: ^2.0.1
   equatable: ^2.0.5
@@ -60,6 +62,7 @@ dependencies:
   fade_indexed_stack: ^0.2.2
   fast_base58: ^0.2.1
 
+  figma_squircle: ^0.5.3
   file_saver:
     # Use forked version till this PR is merged: https://github.com/incrediblezayed/file_saver/pull/87
     git: https://github.com/jesims/file_saver.git
@@ -90,6 +93,10 @@ dependencies:
   fluttertoast: ^8.0.6
   freezed_annotation: ^2.2.0
   google_nav_bar: ^5.0.5
+  home_widget:
+    git:
+      url: https://github.com/prateekmedia/FlutterHomeWidget
+      ref: main
   html_unescape: ^2.0.0
   http: ^1.1.0
   image: ^4.0.17
@@ -120,7 +127,9 @@ dependencies:
 
   # open_file: ^3.2.1
   onnxruntime:
-    git: "https://github.com/ente-io/onnxruntime.git"
+    git:
+      url: https://github.com/ente-io/onnxruntime.git
+      ref: 5f26aef45ed9f5e563c26f90c1e21b3339ed906d
   open_mail_app: ^0.4.5
   package_info_plus: ^4.1.0
   page_transition: ^2.0.2
@@ -128,13 +137,13 @@ dependencies:
   path: #dart
   path_provider: ^2.1.1
   pedantic: ^1.9.2
-  photo_manager: ^2.5.0
+  photo_manager: ^2.8.1
   photo_view: ^0.14.0
   pinput: ^1.2.2
   pointycastle: ^3.7.3
   provider: ^6.0.0
   quiver: ^3.0.1
-  receive_sharing_intent: ^1.4.5
+  receive_sharing_intent: ^1.6.7
   scrollable_positioned_list: ^0.3.5
   sentry: ^7.9.0
   sentry_flutter: ^7.9.0
@@ -168,6 +177,7 @@ dependencies:
   wallpaper_manager_flutter: ^0.0.2
   wechat_assets_picker: ^8.6.3
   widgets_to_image: ^0.0.2
+  workmanager: ^0.5.2
 
 dependency_overrides:
   # current fork of tfite_flutter_helper depends on ffi: ^1.x.x
