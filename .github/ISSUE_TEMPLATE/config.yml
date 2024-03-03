@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+    - name: Bug reports
+      url: https://github.com/ente-io/ente/issues/new/choose
+      about: Open issues in our new repository ente-io/ente
+    - name: Feature requests and questions
+      url: https://github.com/ente-io/ente/discussions
+      about: Open feature requests in our new repository ente-io/ente
