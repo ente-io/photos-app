@@ -847,6 +847,7 @@
   "clubByFileName": "Club by file name",
   "count": "Count",
   "totalSize": "Total size",
+  "time": "Time",
   "longpressOnAnItemToViewInFullscreen": "Long-press on an item to view in full-screen",
   "decryptingVideo": "Decrypting video...",
   "authToViewYourMemories": "Please authenticate to view your memories",
@@ -1193,5 +1194,17 @@
   "deviceNotFound": "Device not found",
   "castInstruction": "Visit cast.ente.io on the device you want to pair.\n\nEnter the code below to play the album on your TV.",
   "deviceCodeHint": "Enter the code",
-  "joinDiscord": "Join Discord"
+  "joinDiscord": "Join Discord",
+  "emergencyContacts": "Emergency Contacts",
+  "acceptTrustInvite": "Accept Invite",
+  "declineTrustInvite": "Decline Invite",
+  "removeYourselfAsTrustedContact": "Remove yourself as trusted contact",
+  "addTrustedContact": "Add Trusted Contact",
+  "myTrustedContact": "My Trusted Contact",
+  "trustedContacts": "Trusted Contacts",
+  "removeInvite": "Remove invite",
+  "cancelAccountRecovery": "Cancel recovery",
+  "cancelAccountRecoveryBody": "Are you sure you want to cancel recovery?",
+  "startAccountRecoveryTitle": "Start recovery",
+  "whyAddTrustContact": "Trusted contact can help in recovering your data."
 }

@@ -20,15 +20,14 @@ import 'package:photos/services/user_service.dart';
 import 'package:photos/theme/colors.dart';
 import 'package:photos/theme/ente_theme.dart';
 import 'package:photos/ui/common/progress_dialog.dart';
+import "package:photos/ui/common/user_dialogs.dart";
 import 'package:photos/ui/components/action_sheet_widget.dart';
 import 'package:photos/ui/components/buttons/button_widget.dart';
-import 'package:photos/ui/components/dialog_widget.dart';
 import 'package:photos/ui/components/models/button_type.dart';
 import 'package:photos/ui/payment/subscription.dart';
 import 'package:photos/utils/date_time_util.dart';
 import 'package:photos/utils/dialog_util.dart';
 import 'package:photos/utils/email_util.dart';
-import 'package:photos/utils/share_util.dart';
 import 'package:photos/utils/toast_util.dart';
 import "package:styled_text/styled_text.dart";
 
@@ -246,28 +245,7 @@ class CollectionActions {
     if (publicKey == null || publicKey == '') {
       // todo: neeraj replace this as per the design where a new screen
       // is used for error. Do this change along with handling of network errors
-      await showDialogWidget(
-        context: context,
-        title: S.of(context).inviteToEnte,
-        icon: Icons.info_outline,
-        body: S.of(context).emailNoEnteAccount(email),
-        isDismissible: true,
-        buttons: [
-          ButtonWidget(
-            buttonType: ButtonType.neutral,
-            icon: Icons.adaptive.share,
-            labelText: S.of(context).sendInvite,
-            isInAlert: true,
-            onTap: () async {
-              unawaited(
-                shareText(
-                  S.of(context).shareTextRecommendUsingEnte,
-                ),
-              );
-            },
-          ),
-        ],
-      );
+      await showInviteDialog(context, email);
       return false;
     } else {
       try {
