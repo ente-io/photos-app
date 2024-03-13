@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 // import 'package:flutter/foundation.dart';
 // import 'package:flutter_inapp_purchase/flutter_inapp_purchase.dart';
-import 'package:in_app_purchase/in_app_purchase.dart';
+// import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:logging/logging.dart';
 import 'package:photos/core/errors.dart';
 import 'package:photos/core/network/network.dart';
@@ -40,6 +40,7 @@ class BillingService {
   Future<BillingPlans>? _future;
 
   void init() {
+    /*InAppPurchaseConnection.enablePendingPurchases();
     // if (Platform.isIOS && kDebugMode) {
     //   await FlutterInappPurchase.instance.initConnection;
     //   FlutterInappPurchase.instance.clearTransactionIOS();
@@ -60,7 +61,7 @@ class BillingService {
           InAppPurchase.instance.completePurchase(purchase);
         }
       }
-    });
+    });*/
   }
 
   void clearCache() {

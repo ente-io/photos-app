@@ -1,0 +1,7 @@
+* Quick links: Select some photos, choose "Create link" from the selection options, and, well, that's it! You'll get a end-to-end encrypted link that you can share. Quick links appear at the bottom of the share tab so that you can remove them or convert them to regular albums
+
+* You can search for files by their names now
+
+* Added a button on the albums tab to remove all empty albums in one go
+
+* In Settings > General > Advanced you'll now see an option to view & manage ente's temporary storage

@@ -1,0 +1,9 @@
+* Map View
+You can now explore the photos you've taken around the world!
+Click on the Map icon on the Search screen to view your photos laid out on a map.
+
+* Cover Photos
+You can now set cover photos for your albums.
+Open an album, and click on the overflow menu on the top right corner to pick your favorite memory from that album.
+
+* Translations: Add support for German language

@@ -1,0 +1,4 @@
+- Graceful handling for Crypto payments
+- Added a nudge to verify your Recovery Key
+- Added the ability to view all albums a photo is a part of
+- Multiple bug fixes, and performance improvements

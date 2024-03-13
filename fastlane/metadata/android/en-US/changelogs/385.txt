@@ -1,0 +1,11 @@
+* Hide your photos!
+
+On popular demand, ente now supports photos that are hidden behind a lock. This is in addition to the existing functionality to archive your photos so that they do not show in your timeline (but are otherwise visible).
+
+* Add a description to your photos
+
+You can now add a caption / description to your photos and videos. These will show up on the photo view.
+
+* And search photos descriptions too
+
+This allows you to, for example, tag your photos and quickly search for them.

@@ -1,0 +1,5 @@
+Hey there, another round of improvements on their way!
+- Reduce friction during signup and login by providing an all numeric OTP and
+showing the numpad.
+- Performance improvements when scrolling through thumbnails.
+- Gracefully handle cases where the device photo does not have a valid EXIF date.

@@ -1,0 +1,11 @@
+* Customizable photo grid size!
+
+You can now change how many photos you see in a row (the option is in Settings > General > Advanced). Since this was a much requested feature we've released this initial feature asap, later we'll also add gestures
+
+* Free up space per album
+
+There is now an option to free up space per on device album. This provides a more granular and faster way to lighten your phone
+
+* Remove limits on photo description
+
+The previous 280 char limit has been increased to 5000
